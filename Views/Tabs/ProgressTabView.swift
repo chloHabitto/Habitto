@@ -272,7 +272,7 @@ struct ProgressTabView: View {
         .cornerRadius(24)
         .overlay(
           RoundedRectangle(cornerRadius: 24)
-            .stroke(Color("appOutline02"), lineWidth: 2))
+            .stroke(Color("appOutline1Variant"), lineWidth: 2))
 
         // Weekly Analysis Card
         // weeklyAnalysisCard // Hidden
@@ -381,7 +381,7 @@ struct ProgressTabView: View {
         .cornerRadius(24)
         .overlay(
           RoundedRectangle(cornerRadius: 24)
-            .stroke(Color("appOutline02"), lineWidth: 2))
+            .stroke(Color("appOutline1Variant"), lineWidth: 2))
     }
     .padding(.horizontal, 20)
   }
@@ -455,10 +455,21 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.appSurface01))
+        .fill(.appSurface01)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.04), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.01), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
-        .stroke(Color("appOutline02"), lineWidth: 2))
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
     .padding(.horizontal, 20)
   }
 
@@ -1393,7 +1404,7 @@ struct ProgressTabView: View {
         .fill(Color("appSecondaryContainer03")))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
-        .stroke(Color("appOutline02"), lineWidth: 1.0))
+        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
     .clipShape(RoundedRectangle(cornerRadius: 16))
     .opacity(isEnabled ? 1.0 : 0.6)
   }
@@ -1994,7 +2005,7 @@ struct ProgressTabView: View {
         .fill(.surface4))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
-        .stroke(Color.outline3, lineWidth: 1.5))
+        .stroke(Color("appOutline1Variant"), lineWidth: 1.5))
   }
 
   // MARK: - Weekly Analysis Card Pages
@@ -2985,7 +2996,7 @@ struct ProgressTabView: View {
       HStack {
         Text("Difficulty")
           .font(.appTitleMediumEmphasised)
-          .foregroundColor(.onPrimaryContainer)
+          .foregroundColor(.appText03)
 
         Spacer()
 
@@ -2995,18 +3006,18 @@ struct ProgressTabView: View {
         }) {
           HStack(spacing: 4) {
             Text("See more")
-              .font(.appBodySmall)
-              .foregroundColor(.text02)
+              .font(.appBodyMediumEmphasised)
+              .foregroundColor(.appText05)
 
             Image(systemName: "chevron.right")
-              .font(.system(size: 12, weight: .medium))
-              .foregroundColor(.text02)
+              .font(.system(size: 8, weight: .bold))
+              .foregroundColor(.appText05)
           }
         }
       }
       .padding(.horizontal, 20)
       .padding(.top, 20)
-      .padding(.bottom, 24)
+      .padding(.bottom, 16)
 
       // Difficulty Content
       if let selectedHabit {
@@ -3096,12 +3107,22 @@ struct ProgressTabView: View {
       }
     }
     .background(
-      RoundedRectangle(cornerRadius: 16)
-        .fill(.surface4)
+      RoundedRectangle(cornerRadius: 24)
+        .fill(.appSurface01)
         .overlay(
-          RoundedRectangle(cornerRadius: 16)
-            .stroke(Color.outline3, lineWidth: 1)))
-    .clipShape(RoundedRectangle(cornerRadius: 16))
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.04), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.01), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
+    .overlay(
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
     .padding(.horizontal, 20)
   }
 
@@ -3641,7 +3662,7 @@ struct ProgressTabView: View {
         .fill(.surface4))
     .overlay(
       RoundedRectangle(cornerRadius: 24)
-        .stroke(Color.outline3, lineWidth: 1.5))
+        .stroke(Color("appOutline1Variant"), lineWidth: 1.5))
   }
 
   // MARK: - Monthly Analysis Card Pages
@@ -4118,11 +4139,11 @@ struct ProgressTabView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Difficulty Trends")
           .font(.appTitleMediumEmphasised)
-          .foregroundColor(.onPrimaryContainer)
+          .foregroundColor(.appText02)
 
         Text("How challenging this habit felt this week")
           .font(.appBodySmall)
-          .foregroundColor(.text02)
+          .foregroundColor(.appText04)
       }
       .padding(.bottom, 8)
 
@@ -4181,7 +4202,7 @@ struct ProgressTabView: View {
         .fill(Color.surface))
     .overlay(
       RoundedRectangle(cornerRadius: 32)
-        .stroke(Color.outline3, lineWidth: 1.0))
+        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
   }
 
   // MARK: - Monthly Difficulty Graph
@@ -4192,11 +4213,11 @@ struct ProgressTabView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Difficulty Trends")
           .font(.appTitleMediumEmphasised)
-          .foregroundColor(.onPrimaryContainer)
+          .foregroundColor(.appText02)
 
         Text("How challenging this habit felt this month")
           .font(.appBodySmall)
-          .foregroundColor(.text02)
+          .foregroundColor(.appText04)
       }
       .padding(.bottom, 8)
 
@@ -4231,11 +4252,12 @@ struct ProgressTabView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 20)
-    .background(.surface4)
-    .cornerRadius(24)
+    .background(
+      RoundedRectangle(cornerRadius: 32)
+        .fill(Color.surface))
     .overlay(
-      RoundedRectangle(cornerRadius: 24)
-        .stroke(Color.outline3, lineWidth: 1.0))
+      RoundedRectangle(cornerRadius: 32)
+        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
   }
 
   // MARK: - Time Base Completion Chart
@@ -4246,11 +4268,11 @@ struct ProgressTabView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text("Time base completion")
           .font(.appTitleMediumEmphasised)
-          .foregroundColor(.onPrimaryContainer)
+          .foregroundColor(.appText02)
 
         Text("When you typically complete this habit")
           .font(.appBodySmall)
-          .foregroundColor(.text02)
+          .foregroundColor(.appText04)
       }
       .padding(.bottom, 8)
 
@@ -4331,7 +4353,7 @@ struct ProgressTabView: View {
         .fill(Color.surface))
     .overlay(
       RoundedRectangle(cornerRadius: 32)
-        .stroke(Color.outline3, lineWidth: 1.0))
+        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
   }
 
   // MARK: - Time Base Completion Data Helper
@@ -4662,8 +4684,8 @@ struct TimeBaseCompletionChart: View {
           ForEach(0 ... 4, id: \.self) { index in
             let percentage = 100 - (index * 25)
             Text("\(percentage)%")
-              .font(.appLabelSmall)
-              .foregroundColor(.text02)
+              .font(.appLabelSmallEmphasised)
+              .foregroundColor(.appText05)
               .frame(height: 40)
           }
         }
@@ -4688,8 +4710,8 @@ struct TimeBaseCompletionChart: View {
 
         ForEach(data, id: \.id) { item in
           Text(item.timePeriod)
-            .font(.appLabelSmall)
-            .foregroundColor(.text02)
+            .font(.appLabelSmallEmphasised)
+            .foregroundColor(.appText05)
             .frame(maxWidth: .infinity)
         }
       }
@@ -4834,8 +4856,8 @@ struct DifficultyLineChart: View {
             let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
 
             Text(difficultyLabel(for: difficultyLevel))
-              .font(.appLabelSmall)
-              .foregroundColor(.text02)
+              .font(.appLabelSmallEmphasised)
+              .foregroundColor(.appText05)
               .frame(height: 140 / 4, alignment: .center)
           }
         }
@@ -4879,8 +4901,8 @@ struct DifficultyLineChart: View {
               let x = CGFloat(index) * stepX
 
               Text(dayName)
-                .font(.appLabelSmall)
-                .foregroundColor(.text02)
+                .font(.appLabelSmallEmphasised)
+                .foregroundColor(.appText05)
                 .position(x: x, y: 0)
             }
           }
@@ -5101,8 +5123,8 @@ struct MonthlyDifficultyChart: View {
             let difficultyLevel = 5 - level // 5, 4, 3, 2, 1
 
             Text(difficultyLabel(for: difficultyLevel))
-              .font(.appLabelSmall)
-              .foregroundColor(.text02)
+              .font(.appLabelSmallEmphasised)
+              .foregroundColor(.appText05)
               .frame(height: 140 / 4, alignment: .center)
           }
         }
@@ -5147,15 +5169,15 @@ struct MonthlyDifficultyChart: View {
                 let x = padding + (CGFloat(index) * stepX) // Start from padding position
 
                 Text(weekLabel)
-                  .font(.appLabelSmall)
-                  .foregroundColor(.text02)
+                  .font(.appLabelSmallEmphasised)
+                  .foregroundColor(.appText05)
                   .position(x: x, y: 10) // Position at bottom of the GeometryReader
               }
             } else {
               // Show placeholder when no data - always show at least one label
               Text("W1")
-                .font(.appLabelSmall)
-                .foregroundColor(.text02)
+                .font(.appLabelSmallEmphasised)
+                .foregroundColor(.appText05)
                 .position(x: (labelGeometry.size.width - 60) / 2, y: 10)
             }
           }
