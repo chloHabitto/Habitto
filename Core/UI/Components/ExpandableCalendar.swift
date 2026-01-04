@@ -138,9 +138,10 @@ struct ExpandableCalendar: View {
         }) {
           HStack(spacing: 4) {
             Image(.iconReplay)
+              .renderingMode(.template)
               .resizable()
               .frame(width: 12, height: 12)
-              .foregroundColor(.appText06)
+              .foregroundColor(.appText05)
             Text("Today")
               .font(.appLabelMedium)
               .foregroundColor(.appText05)
