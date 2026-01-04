@@ -28,7 +28,7 @@ struct StreakHeaderView: View {
 
       Spacer()
 
-      Text("Overview")
+      Text("Streak")
         .font(.appTitleMediumEmphasised)
         .foregroundColor(.white)
 

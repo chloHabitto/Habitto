@@ -80,7 +80,7 @@ struct OverviewView: View {
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .background(Color("appSurfaceFixed"))
-      .navigationTitle("Overview")
+      .navigationTitle("Streak")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbarColorScheme(.dark, for: .navigationBar)
