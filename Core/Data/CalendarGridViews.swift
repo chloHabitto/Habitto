@@ -284,10 +284,21 @@ struct MonthlyCalendarGridView: View {
             }
             .background(
               RoundedRectangle(cornerRadius: 24)
-                .fill(.appSurface01))
+                .fill(.appSurface01)
+                .overlay(
+                  LinearGradient(
+                    stops: [
+                      Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                      Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                    ],
+                    startPoint: UnitPoint(x: 0.08, y: 0.09),
+                    endPoint: UnitPoint(x: 0.88, y: 1)
+                  )
+                  .clipShape(RoundedRectangle(cornerRadius: 24))
+                ))
             .overlay(
               RoundedRectangle(cornerRadius: 24)
-                .stroke(Color("appOutline02"), lineWidth: 2))
+                .stroke(Color("appOutline1Variant"), lineWidth: 2))
             .id("month-habit-\(habit.id)-\(index)")
           }
         }
@@ -766,10 +777,21 @@ struct YearlyCalendarGridView: View {
             .frame(maxWidth: .infinity)
             .background(
               RoundedRectangle(cornerRadius: 24)
-                .fill(.appSurface01))
+                .fill(.appSurface01)
+                .overlay(
+                  LinearGradient(
+                    stops: [
+                      Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                      Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                    ],
+                    startPoint: UnitPoint(x: 0.08, y: 0.09),
+                    endPoint: UnitPoint(x: 0.88, y: 1)
+                  )
+                  .clipShape(RoundedRectangle(cornerRadius: 24))
+                ))
             .overlay(
               RoundedRectangle(cornerRadius: 24)
-                .stroke(Color("appOutline02"), lineWidth: 2))
+                .stroke(Color("appOutline1Variant"), lineWidth: 2))
             .id("year-habit-\(habit.id)-\(index)")
           }
         }
