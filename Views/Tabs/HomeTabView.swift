@@ -131,6 +131,13 @@ struct HomeTabView: View {
       .onReceive(
         NotificationCenter.default.publisher(for: .vacationModeEnded),
         perform: handleVacationModeEnded)
+      .onReceive(
+        NotificationCenter.default.publisher(for: NSNotification.Name("StreakUpdated"))) { notification in
+        handleStreakUpdated(notification: notification)
+      }
+      .fullScreenCover(isPresented: $showStreakMilestone) {
+        StreakMilestoneSheet(isPresented: $showStreakMilestone, streakCount: milestoneStreakCount)
+      }
       .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
         Button("Cancel", role: .cancel) { }
         Button("End Vacation", role: .destructive) {
@@ -187,6 +194,9 @@ struct HomeTabView: View {
   @State private var cancellables = Set<AnyCancellable>()
   @State private var lastHabitJustCompleted = false
   @State private var wasPartialCompletion: Bool = false
+  @State private var showStreakMilestone = false
+  @State private var milestoneStreakCount = 0
+  @State private var pendingMilestone: Int? = nil
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   @State private var completionStatusMap: [UUID: Bool] = [:]
@@ -427,7 +437,16 @@ struct HomeTabView: View {
         isPresented: $showCelebration,
         isPartialCompletion: wasPartialCompletion,
         onDismiss: {
-          // Celebration dismissed, ready for next time
+          // Celebration dismissed, check if we should show milestone sheet
+          if let milestone = pendingMilestone {
+            debugLog("🎉 CELEBRATION_DISMISSED: Showing milestone sheet for streak \(milestone)")
+            milestoneStreakCount = milestone
+            pendingMilestone = nil
+            // Show milestone sheet after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+              showStreakMilestone = true
+            }
+          }
         })
       }
     }
@@ -676,6 +695,41 @@ struct HomeTabView: View {
     // Refresh UI when vacation mode ends
     // Vacation mode ended notification received
     // This will trigger a view update to reflect the new vacation state
+  }
+
+  private func handleStreakUpdated(notification: Notification) {
+    guard let userInfo = notification.userInfo,
+          let newStreak = userInfo["newStreak"] as? Int else {
+      return
+    }
+    
+    debugLog("🔥 MILESTONE_CHECK: Streak updated to \(newStreak)")
+    
+    // Check if this is a milestone streak
+    if isMilestoneStreak(newStreak) {
+      debugLog("🎉 MILESTONE_CHECK: Streak \(newStreak) is a milestone!")
+      milestoneStreakCount = newStreak
+      
+      // For streak 1, show milestone sheet INSTEAD of regular celebration
+      if newStreak == 1 {
+        debugLog("🎉 MILESTONE_CHECK: Streak 1 - showing milestone sheet INSTEAD of celebration")
+        // Cancel any pending celebration
+        showCelebration = false
+        // Show milestone sheet after a short delay to ensure celebration is cancelled
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+          showStreakMilestone = true
+        }
+      } else {
+        // For other milestones, show milestone sheet AFTER celebration
+        debugLog("🎉 MILESTONE_CHECK: Streak \(newStreak) - will show milestone sheet after celebration")
+        // Store the milestone to show after celebration is dismissed
+        pendingMilestone = newStreak
+      }
+    }
+  }
+
+  private func isMilestoneStreak(_ streak: Int) -> Bool {
+    return [1, 3, 7, 14, 30].contains(streak) || (streak > 30 && streak % 30 == 0)
   }
 
   private func getWeekdayName(_ weekday: Int) -> String {

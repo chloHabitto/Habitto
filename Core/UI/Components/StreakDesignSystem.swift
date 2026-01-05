@@ -34,7 +34,7 @@ enum StreakColors {
 
   // Background Colors
   static let glassBackground = Color.white.opacity(0.6)
-  static let cardBackground = Color.surface
+  static let cardBackground = Color.surface01
   static let surfaceBackground = Color.surface2
 
   // Text Colors
