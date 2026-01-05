@@ -507,28 +507,17 @@ struct AccountView: View {
   // MARK: - Log Out Button
   
   private var logOutButton: some View {
-    VStack(spacing: 0) {
-      // Gradient overlay to fade content behind button
-      LinearGradient(
-        gradient: Gradient(colors: [Color.sheetBackground.opacity(0), Color.sheetBackground]),
-        startPoint: .top,
-        endPoint: .bottom)
-        .frame(height: 20)
-      
-      // Button container
-      HStack {
-        Button(action: {
-          showingSignOutAlert = true
-        }) {
-          Text("Log out")
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.primary)
-        }
+    HStack {
+      Button(action: {
+        showingSignOutAlert = true
+      }) {
+        Text("Log out")
+          .font(.system(size: 16, weight: .medium))
+          .foregroundColor(.primary)
       }
-      .padding(.horizontal, 20)
-      .padding(.bottom, 40)
-      .background(Color.sheetBackground)
     }
+    .padding(.horizontal, 20)
+    .padding(.bottom, 40)
   }
   
   // MARK: - Helper Views
