@@ -124,8 +124,7 @@ struct HabitDetailView: View {
           }
         }
       }
-      .toolbarBackground(.visible, for: .navigationBar)
-      .toolbarBackground(.appSurface02, for: .navigationBar)
+      .toolbarBackground(.hidden, for: .navigationBar)
       .navigationViewStyle(.stack)
     }
     .onChange(of: habit.id) { _, _ in
@@ -741,10 +740,7 @@ struct HabitDetailView: View {
     }
     .padding(16)
     .background(.appSurface01Variant)
-    .cornerRadius(16)
-    .overlay(
-      RoundedRectangle(cornerRadius: 16)
-        .stroke(Color.outline3, lineWidth: 1))
+    .cornerRadius(20)
   }
 
   private func reminderRow(for reminder: ReminderItem) -> some View {

@@ -102,12 +102,27 @@ class HomeViewState: ObservableObject {
   private let streakUpdateInterval: TimeInterval = 0.5
   private var pendingStreakRecalculation = false
   private var activePersistenceOperations = 0
+  // ✅ STEP 1: Add flag to track if current recalculation is user-initiated
+  private var isUserInitiatedRecalculation = false
   
   /// Calculate and update streak (call this when habits change)
   func updateStreak() {
     // ✅ FIX: Read streak from GlobalStreakModel in SwiftData instead of old calculation
     Task { @MainActor in
       defer { self.processStreakRecalculationQueue() }
+      
+      // ✅ STEP 1: Read the flag before async operations
+      let isUserInitiated = self.isUserInitiatedRecalculation
+      if isUserInitiated {
+        debugLog("✅ STEP1_FLAG: Reading isUserInitiatedRecalculation = true in updateStreak()")
+      }
+      
+      // ✅ STEP 1: Reset the flag immediately after reading
+      self.isUserInitiatedRecalculation = false
+      if isUserInitiated {
+        debugLog("✅ STEP1_FLAG: Reset isUserInitiatedRecalculation = false")
+      }
+      
       do {
         // ✅ FIX: Add small delay to ensure SwiftData context sees the newly saved streak
         try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 second
@@ -146,11 +161,16 @@ class HomeViewState: ObservableObject {
           print("   Final: currentStreak=\(self.currentStreak)")
           
           // ✅ FIX: Also broadcast via notification for consistency
+          // ✅ STEP 1: Include isUserInitiated flag in notification
           NotificationCenter.default.post(
             name: NSNotification.Name("StreakUpdated"),
             object: nil,
-            userInfo: ["newStreak": loadedStreak]
+            userInfo: [
+              "newStreak": loadedStreak,
+              "isUserInitiated": isUserInitiated
+            ]
           )
+          debugLog("📢 STEP1_NOTIFICATION: Posted StreakUpdated notification with newStreak: \(loadedStreak), isUserInitiated: \(isUserInitiated)")
         } else {
           debugLog("🔍 UI_STREAK: updateStreak() found no GlobalStreakModel, defaulting to 0")
           currentStreak = 0
@@ -343,9 +363,16 @@ class HomeViewState: ObservableObject {
 
   // MARK: - Streak Recalculation Queue
 
-  func requestStreakRecalculation(reason: String, delay: TimeInterval = 0) {
+  func requestStreakRecalculation(reason: String, delay: TimeInterval = 0, isUserInitiated: Bool = false) {
     debugLog(
-      "📥 STREAK_QUEUE: Request received (\(reason)) delay=\(String(format: "%.2f", delay))s")
+      "📥 STREAK_QUEUE: Request received (\(reason)) delay=\(String(format: "%.2f", delay))s, isUserInitiated: \(isUserInitiated)")
+    
+    // ✅ STEP 1: Store the flag when user-initiated
+    if isUserInitiated {
+      self.isUserInitiatedRecalculation = true
+      debugLog("✅ STEP1_FLAG: Set isUserInitiatedRecalculation = true (reason: \(reason))")
+    }
+    
     pendingStreakRecalculation = true
 
     if delay > 0 {
