@@ -1021,26 +1021,6 @@ struct HomeView: View {
       // Add haptic feedback when tab is selected
       UISelectionFeedbackGenerator().selectionChanged()
     }
-    .safeAreaInset(edge: .bottom, spacing: 0) {
-      // Vacation mode banner
-      if VacationManager.shared.isActive {
-        VStack(spacing: 0) {
-          HStack(spacing: 6) {
-            Image("Icon-Vacation_Filled")
-              .resizable()
-              .frame(width: 16, height: 16)
-              .foregroundColor(.blue)
-            Text("Vacation Mode")
-              .font(.system(size: 12, weight: .medium))
-              .foregroundColor(.blue)
-          }
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
-          .background(Color.blue.opacity(0.1))
-          .frame(maxWidth: .infinity)
-        }
-      }
-    }
     .onAppear {
       debugLog("🚀 HomeView: onAppear called!")
       debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
