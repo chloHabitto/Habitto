@@ -34,6 +34,7 @@
 		890160DC2EDF14DA002E85DA /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		890C9EDC2E4E05B7006E28C7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		890D68592F0BFE0600F81F22 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		891320BA2EE8606B004D663E /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		891CC9DA2EFEE0130037BF7B /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		892A1A5F2ED87C4D00939C59 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -126,6 +127,11 @@
 				890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		890D686F2F0BFE0600F81F22 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
 			sourceTree = "<group>";
 		};
 		891320CA2EE8606B004D663E /* Products */ = {
@@ -356,12 +362,12 @@
 					ProjectRef = 89883C6D2EF446610077E5B9 /* Habitto.xcodeproj */;
 				},
 				{
-					ProductGroup = 89B6935D2EEF335B0062CDA7 /* Products */;
-					ProjectRef = 89B693482EEF335B0062CDA7 /* Habitto.xcodeproj */;
+					ProductGroup = 8998120B2ED863AA006B0EA7 /* Products */;
+					ProjectRef = 899811FC2ED863AA006B0EA7 /* Habitto.xcodeproj */;
 				},
 				{
-					ProductGroup = 891320CA2EE8606B004D663E /* Products */;
-					ProjectRef = 891320BA2EE8606B004D663E /* Habitto.xcodeproj */;
+					ProductGroup = 89FB7B252EFE771000365C11 /* Products */;
+					ProjectRef = 89FB7B0F2EFE771000365C11 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89FDE58C2EF1DAFC00B06073 /* Products */;
@@ -416,6 +422,10 @@
 					ProjectRef = 891CC9DA2EFEE0130037BF7B /* Habitto.xcodeproj */;
 				},
 				{
+					ProductGroup = 890D686F2F0BFE0600F81F22 /* Products */;
+					ProjectRef = 890D68592F0BFE0600F81F22 /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 8973D2792ED9D3C400BF3B8C /* Products */;
 					ProjectRef = 8973D26A2ED9D3C400BF3B8C /* Habitto.xcodeproj */;
 				},
@@ -452,16 +462,16 @@
 					ProjectRef = 89622B172ED9AB7C00A238B9 /* Habitto.xcodeproj */;
 				},
 				{
+					ProductGroup = 891320CA2EE8606B004D663E /* Products */;
+					ProjectRef = 891320BA2EE8606B004D663E /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 89B6935D2EEF335B0062CDA7 /* Products */;
+					ProjectRef = 89B693482EEF335B0062CDA7 /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 89813E982F0177C400319E2C /* Products */;
 					ProjectRef = 89813E822F0177C400319E2C /* Habitto.xcodeproj */;
-				},
-				{
-					ProductGroup = 8998120B2ED863AA006B0EA7 /* Products */;
-					ProjectRef = 899811FC2ED863AA006B0EA7 /* Habitto.xcodeproj */;
-				},
-				{
-					ProductGroup = 89FB7B252EFE771000365C11 /* Products */;
-					ProjectRef = 89FB7B0F2EFE771000365C11 /* Habitto.xcodeproj */;
 				},
 			);
 			projectRoot = "";
