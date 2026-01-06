@@ -26,7 +26,7 @@ struct FAQView: View {
           Spacer(minLength: 24)
         }
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("FAQ")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -78,12 +78,21 @@ struct FAQView: View {
     HStack(spacing: 12) {
       Image(systemName: "magnifyingglass")
         .font(.system(size: 16, weight: .medium))
-        .foregroundColor(.text03)
+        .foregroundColor(.text05)
 
-      TextField("Search FAQ...", text: $searchText)
-        .font(.appBodyMedium)
-        .foregroundColor(.text01)
-        .textFieldStyle(PlainTextFieldStyle())
+      ZStack(alignment: .leading) {
+        // Placeholder text
+        if searchText.isEmpty {
+          Text("Search FAQ...")
+            .font(.appBodyLarge)
+            .foregroundColor(.text05)
+        }
+        // Actual text field
+        TextField("", text: $searchText)
+          .font(.appBodyLarge)
+          .foregroundColor(.text01)
+          .textFieldStyle(PlainTextFieldStyle())
+      }
 
       if !searchText.isEmpty {
         Button(action: {
@@ -91,16 +100,16 @@ struct FAQView: View {
         }) {
           Image(systemName: "xmark.circle.fill")
             .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.text03)
+            .foregroundColor(.text05)
         }
       }
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
     .background(
-      RoundedRectangle(cornerRadius: 12)
+      RoundedRectangle(cornerRadius: 16)
         .fill(Color.surface)
-        .stroke(Color.outline3, lineWidth: 1))
+        .stroke(Color.outline02, lineWidth: 1.5))
     .padding(.horizontal, 20)
   }
 
@@ -118,13 +127,13 @@ struct FAQView: View {
 
         if faqItem.question != faqData.last?.question {
           Divider()
-            .background(Color.outline3)
+            .background(Color("appOutline02Variant"))
             .padding(.leading, 20)
         }
       }
     }
-    .background(Color.surface)
-    .cornerRadius(16)
+    .background(Color("appSurface02Variant"))
+    .cornerRadius(24)
     .padding(.horizontal, 20)
   }
 
@@ -172,8 +181,8 @@ struct FAQQuestionRow: View {
           Spacer()
 
           Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-            .font(.system(size: 14, weight: .medium))
-            .foregroundColor(.text02)
+            .font(.system(size: 14, weight: .bold))
+            .foregroundColor(.outline3)
             .rotationEffect(.degrees(isExpanded ? 0 : 0))
             .animation(.easeInOut(duration: 0.2), value: isExpanded)
         }
@@ -186,7 +195,7 @@ struct FAQQuestionRow: View {
       if isExpanded {
         VStack(alignment: .leading, spacing: 12) {
           Divider()
-            .background(Color.outline3)
+            .background(Color("appOutline02Variant"))
             .padding(.horizontal, 20)
 
           Text(faqItem.answer)
