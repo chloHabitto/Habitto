@@ -89,10 +89,16 @@ struct HomeTabView: View {
             case .dailyAwardGranted(let dateKey):
               debugLog("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
 
-              // ✅ FIX 2: Only show celebration if milestone is NOT about to show
-              // Milestone logic in handleStreakUpdated will handle the display
-              guard milestoneStreakCount == 0 && pendingMilestone == nil else {
-                debugLog("🎯 STEP 12: Skipping celebration - milestone will show instead (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
+              // ✅ BUG 4 FIX: Check if milestone is pending - if so, don't show celebration
+              if milestoneStreakCount > 0 || pendingMilestone != nil {
+                debugLog("🎯 STEP 12: Skipping celebration - milestone will show (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
+                return
+              }
+              
+              // ✅ BUG 4 FIX: Also check if we're on today's date
+              let todayKey = Habit.dateKey(for: Date())
+              guard dateKey == todayKey else {
+                debugLog("🎯 STEP 12: Skipping celebration - dateKey \(dateKey) is not today (\(todayKey))")
                 return
               }
 
@@ -709,6 +715,12 @@ struct HomeTabView: View {
   private func handleSelectedDateChange(_: Date, _: Date) {
     // Reset celebration when date changes
     showCelebration = false
+    
+    // ✅ BUG 2 FIX: Clear milestone state when switching dates to prevent cross-date contamination
+    milestoneStreakCount = 0
+    pendingMilestone = nil
+    // Don't clear lastShownMilestoneStreak/Date - those track what was shown today
+    debugLog("🧹 DATE_CHANGE: Cleared milestone state (milestoneStreakCount=0, pendingMilestone=nil)")
   }
 
   private func handleVacationModeEnded(_: Notification) {
@@ -786,11 +798,23 @@ struct HomeTabView: View {
         // Show milestone sheet after a short delay to ensure celebration is cancelled
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
           debugLog("🔍 MILESTONE_DEBUG: Inside asyncAfter - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone)")
+          
+          // ✅ BUG 3 FIX: Verify we're still on today's date before showing milestone
+          let today = Calendar.current.startOfDay(for: Date())
+          let currentSelectedDate = Calendar.current.startOfDay(for: selectedDate)
+          
+          guard currentSelectedDate == today else {
+            debugLog("⚠️ MILESTONE_CHECK: Aborted - user switched to different date (selectedDate=\(currentSelectedDate), today=\(today))")
+            milestoneStreakCount = 0
+            return
+          }
+          
           guard milestoneStreakCount > 0 else {
             debugLog("⚠️ MILESTONE_CHECK: Aborted - milestoneStreakCount is 0")
             debugLog("🔍 MILESTONE_DEBUG: Guard failed - milestoneStreakCount=\(milestoneStreakCount)")
             return
           }
+          
           debugLog("🔍 MILESTONE_DEBUG: Setting showStreakMilestone=true")
           showStreakMilestone = true
           debugLog("🔍 MILESTONE_DEBUG: After setting - showStreakMilestone=\(showStreakMilestone)")
@@ -1308,8 +1332,8 @@ struct HomeTabView: View {
             }
             
             // Trigger streak recalculation
-            onStreakRecalculationNeeded?(true)  // ✅ STEP 2: Mark as user-initiated (partial completion is user action)
-            debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=true (partial completion)")
+            onStreakRecalculationNeeded?(false)  // ✅ BUG 1 FIX: Partial completion is NOT completion of all habits
+            debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=false (partial completion - extra progress)")
           }
         } else {
       // Present difficulty sheet (existing logic)
@@ -1405,13 +1429,19 @@ struct HomeTabView: View {
       // Celebration should show EVERY time all habits are complete, regardless of DailyAward status
       // Trust lastHabitJustCompleted flag - it's already set correctly when last habit completes
       
-      // Step 1: Always trigger celebration if lastHabitJustCompleted is true
-      // The flag is only set when the last habit needed to complete the day is finished
-      debugLog("🎉 COMPLETION_FLOW: Last habit completed for \(dateKey) - triggering celebration!")
-      // Delay celebration to ensure sheet is fully dismissed
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-        showCelebration = true
-        debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
+      // ✅ BUG 5 FIX: Only show celebration if NOT showing milestone
+      // Milestone takes priority over celebration for milestone days
+      let shouldShowCelebration = milestoneStreakCount == 0 && pendingMilestone == nil
+      
+      if shouldShowCelebration {
+        debugLog("🎉 COMPLETION_FLOW: Last habit completed for \(dateKey) - triggering celebration!")
+        // Delay celebration to ensure sheet is fully dismissed
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+          showCelebration = true
+          debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
+        }
+      } else {
+        debugLog("🎉 COMPLETION_FLOW: Last habit completed - milestone will show instead of celebration (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
       }
       
       // Step 2: Only award XP if DailyAward doesn't already exist
