@@ -62,9 +62,9 @@ struct HabitCompletionBottomSheet: View {
       impactFeedback.impactOccurred()
     }
     .padding(.horizontal, 24)
-    .padding(.top, 24)
+    .padding(.top, 8)
     .padding(.bottom, 24)
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .background(.surface01Variant)
     .ignoresSafeArea(edges: .bottom)
   }
