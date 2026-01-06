@@ -89,6 +89,13 @@ struct HomeTabView: View {
             case .dailyAwardGranted(let dateKey):
               debugLog("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
 
+              // ✅ FIX 2: Only show celebration if milestone is NOT about to show
+              // Milestone logic in handleStreakUpdated will handle the display
+              guard milestoneStreakCount == 0 && pendingMilestone == nil else {
+                debugLog("🎯 STEP 12: Skipping celebration - milestone will show instead (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
+                return
+              }
+
               // ✅ FIX: Delay celebration to ensure sheet is fully dismissed
               // Set delay to 0.8s to ensure difficulty sheet is completely closed
               DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -726,15 +733,15 @@ struct HomeTabView: View {
     guard isUserInitiated else {
       debugLog("🔍 MILESTONE_DEBUG: SKIP - not user initiated")
       debugLog("⏭️ MILESTONE_CHECK: Skipping milestone check - not user-initiated (app launch/recalculation)")
-      // ✅ STEP 2: Clear stale milestone state when streak changes from automatic recalculation
-      if pendingMilestone != nil || milestoneStreakCount > 0 {
-        debugLog("🧹 MILESTONE_CHECK: Clearing stale milestone state (pendingMilestone: \(pendingMilestone?.description ?? "nil"), milestoneStreakCount: \(milestoneStreakCount))")
-        pendingMilestone = nil
-        milestoneStreakCount = 0
-        showStreakMilestone = false  // ✅ FIX: Ensure milestone sheet won't show
-      }
+      
+      // ✅ FIX 1: DON'T clear milestone state if we're waiting to show a milestone
+      // The user-initiated notification already set this up, don't interfere
+      // Only clear if streak actually changed to a DIFFERENT value
+      // (This handles edge case where automatic recalc finds different streak)
+      // We'll let the user-initiated path handle milestone display
+      
       debugLog("🔍 MILESTONE_DEBUG: END (skipped) - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone)")
-      return
+      return  // ← Just return, don't clear anything!
     }
     
     let isMilestone = isMilestoneStreak(newStreak)
@@ -799,6 +806,16 @@ struct HomeTabView: View {
     } else {
       // ✅ STEP 2: Clear stale milestone state when streak changes to non-milestone
       debugLog("🔍 MILESTONE_DEBUG: Streak \(newStreak) is NOT a milestone")
+      
+      // ✅ FIX 3: Reset milestone tracking when streak goes to 0
+      // This allows milestone to show again when streak is re-earned
+      if newStreak == 0 {
+        debugLog("🔍 MILESTONE_DEBUG: Streak is 0 - resetting milestone tracking")
+        lastShownMilestoneStreak = nil
+        lastShownMilestoneDate = nil
+        debugLog("🔍 MILESTONE_DEBUG: Reset lastShownMilestoneStreak and lastShownMilestoneDate")
+      }
+      
       if pendingMilestone != nil || milestoneStreakCount > 0 {
         debugLog("🧹 MILESTONE_CHECK: Clearing stale milestone state - streak \(newStreak) is not a milestone")
         pendingMilestone = nil
