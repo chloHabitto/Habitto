@@ -136,7 +136,13 @@ struct HomeTabView: View {
         handleStreakUpdated(notification: notification)
       }
       .fullScreenCover(isPresented: $showStreakMilestone) {
-        StreakMilestoneSheet(isPresented: $showStreakMilestone, streakCount: milestoneStreakCount)
+        // ✅ FIX: Guard against showing with invalid streak count
+        if milestoneStreakCount > 0 {
+          StreakMilestoneSheet(isPresented: $showStreakMilestone, streakCount: milestoneStreakCount)
+        } else {
+          // Invalid state - dismiss immediately
+          Color.clear.onAppear { showStreakMilestone = false }
+        }
       }
       .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
         Button("Cancel", role: .cancel) { }
@@ -447,6 +453,10 @@ struct HomeTabView: View {
             pendingMilestone = nil
             // Show milestone sheet after a short delay
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+              guard milestoneStreakCount > 0 else {
+                debugLog("⚠️ CELEBRATION_DISMISSED: Aborted milestone sheet - count is 0")
+                return
+              }
               showStreakMilestone = true
             }
           }
@@ -718,6 +728,7 @@ struct HomeTabView: View {
         debugLog("🧹 MILESTONE_CHECK: Clearing stale milestone state (pendingMilestone: \(pendingMilestone?.description ?? "nil"), milestoneStreakCount: \(milestoneStreakCount))")
         pendingMilestone = nil
         milestoneStreakCount = 0
+        showStreakMilestone = false  // ✅ FIX: Ensure milestone sheet won't show
       }
       return
     }
@@ -754,6 +765,10 @@ struct HomeTabView: View {
         showCelebration = false
         // Show milestone sheet after a short delay to ensure celebration is cancelled
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+          guard milestoneStreakCount > 0 else {
+            debugLog("⚠️ MILESTONE_CHECK: Aborted - milestoneStreakCount is 0")
+            return
+          }
           showStreakMilestone = true
         }
       } else {
@@ -768,6 +783,7 @@ struct HomeTabView: View {
         debugLog("🧹 MILESTONE_CHECK: Clearing stale milestone state - streak \(newStreak) is not a milestone")
         pendingMilestone = nil
         milestoneStreakCount = 0
+        showStreakMilestone = false  // ✅ FIX: Ensure milestone sheet won't show
       }
     }
   }
