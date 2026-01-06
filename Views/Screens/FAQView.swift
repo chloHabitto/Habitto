@@ -168,14 +168,13 @@ struct FAQView: View {
   // MARK: - Helper Functions
 
   private func toggleQuestion(_ question: String) {
-    if expandedQuestions.contains(question) {
-      // If clicking the same question, close it
-      expandedQuestions.remove(question)
-    } else {
-      // If opening a new question, close any previously opened question first
-      expandedQuestions.removeAll()
-      // Then open the new question
-      expandedQuestions.insert(question)
+    withAnimation(.easeInOut(duration: 0.25)) {
+      if expandedQuestions.contains(question) {
+        expandedQuestions.remove(question)
+      } else {
+        expandedQuestions.removeAll()
+        expandedQuestions.insert(question)
+      }
     }
   }
 }
@@ -199,44 +198,40 @@ struct FAQQuestionRow: View {
       // Question Row
       Button(action: onTap) {
         HStack(spacing: 12) {
-          VStack(alignment: .leading, spacing: 4) {
-            Text(faqItem.question)
-              .font(.appBodyLarge)
-              .foregroundColor(.text01)
-              .multilineTextAlignment(.leading)
-          }
+          Text(faqItem.question)
+            .font(.appBodyLarge)
+            .foregroundColor(.text01)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-          Spacer()
-
-          Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+          Image(systemName: "chevron.down")
             .font(.system(size: 14, weight: .bold))
             .foregroundColor(.outline3)
-            .rotationEffect(.degrees(isExpanded ? 0 : 0))
-            .animation(.easeInOut(duration: 0.2), value: isExpanded)
+            .rotationEffect(.degrees(isExpanded ? -180 : 0))
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
       }
       .buttonStyle(PlainButtonStyle())
 
-      // Answer (shown when expanded)
-      if isExpanded {
-        VStack(alignment: .leading, spacing: 12) {
-          Divider()
-            .background(Color("appOutline02Variant"))
-            .padding(.horizontal, 20)
+      // Answer - always in view hierarchy, animates height smoothly
+      VStack(alignment: .leading, spacing: 12) {
+        Divider()
+          .background(Color("appOutline02Variant"))
+          .padding(.horizontal, 20)
 
-          Text(faqItem.answer)
-            .font(.appBodyMedium)
-            .foregroundColor(.text02)
-            .multilineTextAlignment(.leading)
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
-        }
-        .transition(.opacity.combined(with: .move(edge: .top)))
-        .animation(.easeInOut(duration: 0.2), value: isExpanded)
+        Text(faqItem.answer)
+          .font(.appBodyMedium)
+          .foregroundColor(.text02)
+          .multilineTextAlignment(.leading)
+          .padding(.horizontal, 20)
+          .padding(.bottom, 16)
       }
+      .frame(maxHeight: isExpanded ? nil : 0, alignment: .top)
+      .clipped()
+      .opacity(isExpanded ? 1 : 0)
     }
+    .animation(.easeInOut(duration: 0.25), value: isExpanded)
   }
 }
 
