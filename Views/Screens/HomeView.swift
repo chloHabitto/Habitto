@@ -888,9 +888,10 @@ struct HomeView: View {
           print("🗑️ DELETE_FLOW: HomeView - showingDeleteConfirmation set, confirmationDialog should appear")
         },
         onCompletionDismiss: {
-          // ✅ FIX: Update streak UI after completion flow finishes
+          // ✅ FIX: Streak update is handled by onStreakRecalculationNeeded callback with proper flag
+          // Don't call updateStreak() here as it bypasses the isUserInitiated flag system
           debugLog("🔄 HomeView: Habit completion bottom sheet dismissed")
-          state.updateStreak()
+          // Note: Streak will be updated via onStreakRecalculationNeeded callback which sets isUserInitiated=true
         },
         onStreakRecalculationNeeded: { isUserInitiated in
           // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
