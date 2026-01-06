@@ -72,6 +72,17 @@ struct FAQView: View {
       answer: "Currently, habit data is stored locally on your device. We're working on cloud sync and export features for future updates.")
   ]
 
+  /// Filtered FAQ data based on search text
+  private var filteredFaqData: [FAQItem] {
+    if searchText.isEmpty {
+      return faqData
+    }
+    return faqData.filter { item in
+      item.question.localizedCaseInsensitiveContains(searchText) ||
+      item.answer.localizedCaseInsensitiveContains(searchText)
+    }
+  }
+
   // MARK: - Search Bar
 
   private var searchBar: some View {
@@ -117,18 +128,35 @@ struct FAQView: View {
 
   private var faqQuestionsList: some View {
     VStack(spacing: 0) {
-      ForEach(faqData, id: \.question) { faqItem in
-        FAQQuestionRow(
-          faqItem: faqItem,
-          isExpanded: expandedQuestions.contains(faqItem.question),
-          onTap: {
-            toggleQuestion(faqItem.question)
-          })
+      if filteredFaqData.isEmpty {
+        // Empty state when no results found
+        VStack(spacing: 16) {
+          Text("No results found")
+            .font(.appBodyLarge)
+            .foregroundColor(.text02)
+          
+          if !searchText.isEmpty {
+            Text("for '\(searchText)'")
+              .font(.appBodyMedium)
+              .foregroundColor(.text05)
+          }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 48)
+      } else {
+        ForEach(filteredFaqData, id: \.question) { faqItem in
+          FAQQuestionRow(
+            faqItem: faqItem,
+            isExpanded: expandedQuestions.contains(faqItem.question),
+            onTap: {
+              toggleQuestion(faqItem.question)
+            })
 
-        if faqItem.question != faqData.last?.question {
-          Divider()
-            .background(Color("appOutline02Variant"))
-            .padding(.leading, 20)
+          if faqItem.question != filteredFaqData.last?.question {
+            Divider()
+              .background(Color("appOutline02Variant"))
+              .padding(.leading, 20)
+          }
         }
       }
     }

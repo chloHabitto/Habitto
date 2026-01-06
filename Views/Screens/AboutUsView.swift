@@ -26,7 +26,7 @@ struct SectionCard: View {
         .fixedSize(horizontal: false, vertical: true)
     }
     .padding(16)
-    .background(Color.surface, in: RoundedRectangle(cornerRadius: 16))
+    .background(Color("appSurface02Variant"), in: RoundedRectangle(cornerRadius: 24))
   }
 }
 
@@ -45,15 +45,6 @@ struct AboutUsView: View {
             .foregroundColor(.text05)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, 8)
-
-          // Hanging image - full width outside VStack padding
-        Image("Hanging")
-          .resizable()
-          .aspectRatio(contentMode: .fit)
-          .frame(maxWidth: .infinity)
-//                    .padding(.top, 16)
-          .padding(.horizontal, -20) // Negative padding to counteract parent VStack padding
-          .padding(.bottom, -32) // Negative bottom padding to reduce space to next section
 
         // Our Promise
         SectionCard(
@@ -118,7 +109,7 @@ struct AboutUsView: View {
           .padding(.leading, 8)
         }
         .padding(16)
-        .background(Color.surface, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color("appSurface02Variant"), in: RoundedRectangle(cornerRadius: 24))
 
         // Our Vision for the Future
         VStack(alignment: .leading, spacing: 12) {
@@ -165,7 +156,7 @@ struct AboutUsView: View {
           .padding(.leading, 8)
         }
         .padding(16)
-        .background(Color.surface, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color("appSurface02Variant"), in: RoundedRectangle(cornerRadius: 24))
 
         // Closing Note
         VStack(alignment: .leading, spacing: 8) {
@@ -186,7 +177,7 @@ struct AboutUsView: View {
       .navigationTitle("About Us")
       .navigationBarTitleDisplayMode(.inline)
       .toolbarBackground(.visible, for: .navigationBar)
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationBarBackButtonHidden(true)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {

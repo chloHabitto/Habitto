@@ -6,7 +6,7 @@ struct SendFeedbackView: View {
   var body: some View {
     NavigationView {
       ZStack {
-        Color.surface2
+        Color("appSurface01Variant02")
           .ignoresSafeArea()
 
         VStack(spacing: 0) {
