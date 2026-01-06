@@ -20,7 +20,7 @@ struct HomeTabView: View {
     onSetProgress: ((Habit, Date, Int) -> Void)?,
     onDeleteHabit: ((Habit) -> Void)?,
     onCompletionDismiss: (() -> Void)?,
-    onStreakRecalculationNeeded: (() -> Void)? = nil)
+    onStreakRecalculationNeeded: ((Bool) -> Void)? = nil)
   {
     self._selectedDate = selectedDate
     self._selectedStatsTab = selectedStatsTab
@@ -56,7 +56,7 @@ struct HomeTabView: View {
   let onSetProgress: ((Habit, Date, Int) -> Void)?
   let onDeleteHabit: ((Habit) -> Void)?
   let onCompletionDismiss: (() -> Void)?
-  let onStreakRecalculationNeeded: (() -> Void)?
+  let onStreakRecalculationNeeded: ((Bool) -> Void)?
 
   var body: some View {
     return mainContent
@@ -197,6 +197,9 @@ struct HomeTabView: View {
   @State private var showStreakMilestone = false
   @State private var milestoneStreakCount = 0
   @State private var pendingMilestone: Int? = nil
+  // ✅ STEP 2: Track last shown milestone to prevent duplicates
+  @State private var lastShownMilestoneStreak: Int? = nil
+  @State private var lastShownMilestoneDate: Date? = nil
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   @State private var completionStatusMap: [UUID: Bool] = [:]
@@ -703,11 +706,45 @@ struct HomeTabView: View {
       return
     }
     
-    debugLog("🔥 MILESTONE_CHECK: Streak updated to \(newStreak)")
+    let isUserInitiated = userInfo["isUserInitiated"] as? Bool ?? false
+    
+    debugLog("🔥 MILESTONE_CHECK: Streak updated to \(newStreak), isUserInitiated: \(isUserInitiated)")
+    
+    // ✅ STEP 2: Only process milestone logic for user-initiated updates
+    guard isUserInitiated else {
+      debugLog("⏭️ MILESTONE_CHECK: Skipping milestone check - not user-initiated (app launch/recalculation)")
+      // ✅ STEP 2: Clear stale milestone state when streak changes from automatic recalculation
+      if pendingMilestone != nil || milestoneStreakCount > 0 {
+        debugLog("🧹 MILESTONE_CHECK: Clearing stale milestone state (pendingMilestone: \(pendingMilestone?.description ?? "nil"), milestoneStreakCount: \(milestoneStreakCount))")
+        pendingMilestone = nil
+        milestoneStreakCount = 0
+      }
+      return
+    }
+    
+    // ✅ STEP 2: Check if this milestone was already shown today
+    let today = Calendar.current.startOfDay(for: Date())
+    let lastShownDate = lastShownMilestoneDate.map { Calendar.current.startOfDay(for: $0) }
+    let alreadyShownToday = lastShownMilestoneStreak == newStreak && lastShownDate == today
     
     // Check if this is a milestone streak
     if isMilestoneStreak(newStreak) {
       debugLog("🎉 MILESTONE_CHECK: Streak \(newStreak) is a milestone!")
+      
+      // ✅ STEP 2: If already shown today, show regular celebration instead
+      if alreadyShownToday {
+        debugLog("⏭️ MILESTONE_CHECK: Milestone \(newStreak) already shown today - showing regular celebration instead")
+        // Clear any pending milestone and let regular celebration show
+        pendingMilestone = nil
+        milestoneStreakCount = 0
+        return
+      }
+      
+      // ✅ STEP 2: Mark this milestone as shown
+      lastShownMilestoneStreak = newStreak
+      lastShownMilestoneDate = Date()
+      debugLog("✅ STEP2_TRACKING: Marked milestone \(newStreak) as shown on \(lastShownMilestoneDate?.description ?? "nil")")
+      
       milestoneStreakCount = newStreak
       
       // For streak 1, show milestone sheet INSTEAD of regular celebration
@@ -724,6 +761,13 @@ struct HomeTabView: View {
         debugLog("🎉 MILESTONE_CHECK: Streak \(newStreak) - will show milestone sheet after celebration")
         // Store the milestone to show after celebration is dismissed
         pendingMilestone = newStreak
+      }
+    } else {
+      // ✅ STEP 2: Clear stale milestone state when streak changes to non-milestone
+      if pendingMilestone != nil || milestoneStreakCount > 0 {
+        debugLog("🧹 MILESTONE_CHECK: Clearing stale milestone state - streak \(newStreak) is not a milestone")
+        pendingMilestone = nil
+        milestoneStreakCount = 0
       }
     }
   }
@@ -1208,7 +1252,8 @@ struct HomeTabView: View {
             }
             
             // Trigger streak recalculation
-            onStreakRecalculationNeeded?()
+            onStreakRecalculationNeeded?(true)  // ✅ STEP 2: Mark as user-initiated (partial completion is user action)
+            debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=true (partial completion)")
           }
         } else {
       // Present difficulty sheet (existing logic)
@@ -1242,7 +1287,8 @@ struct HomeTabView: View {
       // This ensures streak always reflects current state, regardless of which day is uncompleted
       debugLog("🔄 DERIVED_STREAK: Recalculating streak after uncomplete")
       await MainActor.run {
-        onStreakRecalculationNeeded?()
+        onStreakRecalculationNeeded?(false)  // ✅ STEP 2: Mark as NOT user-initiated (uncompletion)
+        debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=false (uncompletion)")
       }
       debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
       
@@ -1351,7 +1397,8 @@ struct HomeTabView: View {
 
         debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
-          onStreakRecalculationNeeded?()
+          onStreakRecalculationNeeded?(true)  // ✅ STEP 2: Mark as user-initiated
+          debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=true (completion)")
         }
         debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
 
@@ -1541,9 +1588,12 @@ struct HomeTabView: View {
         NotificationCenter.default.post(
           name: NSNotification.Name("StreakUpdated"),
           object: nil,
-          userInfo: ["newStreak": newStreakValue]
+          userInfo: [
+            "newStreak": newStreakValue,
+            "isUserInitiated": false  // ✅ STEP 2: Uncompleting is not user-initiated for milestone purposes
+          ]
         )
-        debugLog("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(newStreakValue)")
+        debugLog("📢 STREAK_REVERSAL: Posted StreakUpdated notification with newStreak: \(newStreakValue), isUserInitiated: false")
       }
       
       return newStreakValue

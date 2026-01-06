@@ -892,12 +892,12 @@ struct HomeView: View {
           debugLog("🔄 HomeView: Habit completion bottom sheet dismissed")
           state.updateStreak()
         },
-        onStreakRecalculationNeeded: {
+        onStreakRecalculationNeeded: { isUserInitiated in
           // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
           // This ensures streak updates reactively, just like XP does
-          debugLog("🔄 HomeView: Streak recalculation requested from HomeTabView")
-          state.requestStreakRecalculation(reason: "HomeTabView callback")
-          debugLog("✅ HomeView: Streak recalculation enqueued")
+          debugLog("🔄 HomeView: Streak recalculation requested from HomeTabView, isUserInitiated: \(isUserInitiated)")
+          state.requestStreakRecalculation(reason: "HomeTabView callback", isUserInitiated: isUserInitiated)
+          debugLog("✅ HomeView: Streak recalculation enqueued with isUserInitiated=\(isUserInitiated)")
         })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
