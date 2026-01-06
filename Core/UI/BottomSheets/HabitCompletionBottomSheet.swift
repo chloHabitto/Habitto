@@ -72,7 +72,7 @@ struct HabitCompletionBottomSheet: View {
   // MARK: - Header Section
 
   private var headerSection: some View {
-    VStack(spacing: 4) {
+    VStack(spacing: 0) {
       // Close button and title row
       HStack {
         Spacer()
@@ -98,7 +98,7 @@ struct HabitCompletionBottomSheet: View {
 
       // Difficulty question
       Text("How difficult was this habit today?")
-        .font(Font.appTitleSmall)
+        .font(Font.appBodyMediumEmphasised)
         .foregroundColor(.text05)
         .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -178,49 +178,43 @@ struct HabitCompletionBottomSheet: View {
                 Image("Difficulty-VeryEasy@4x")
                   .resizable()
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 120)
+                  .frame(height: 128)
 
               case .easy:
                 Image("Difficulty-Easy@4x")
                   .resizable()
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 120)
+                  .frame(height: 128)
 
               case .medium:
                 Image("Difficulty-Medium@4x")
                   .resizable()
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 120)
+                  .frame(height: 128)
 
               case .hard:
                 Image("Difficulty-Hard@4x")
                   .resizable()
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 120)
+                  .frame(height: 128)
 
               case .veryHard:
                 Image("Difficulty-VeryHard@4x")
                   .resizable()
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 120)
+                  .frame(height: 128)
               }
             }
             
             // Chat bubble
             ZStack {
-              // Chat bubble image with tint color
-              Image("Chatbubble")
+              // Chat bubble image
+              Image("Chatbubble-stroke")
                 .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 60)
-                .foregroundColor(.outline1Variant)
-              
-              // Border overlay using a rounded rectangle that approximates the bubble shape
-              RoundedRectangle(cornerRadius: 16)
-                .stroke(.outline02, lineWidth: 2)
-                .frame(height: 60)
-                .padding(.horizontal, 4)
+                .foregroundColor(.appOutline02)
               
               // Text overlay on chat bubble
               Text(difficulty.displayName + "!")
