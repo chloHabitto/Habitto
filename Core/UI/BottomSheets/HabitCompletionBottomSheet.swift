@@ -40,7 +40,7 @@ struct HabitCompletionBottomSheet: View {
   }
 
   var body: some View {
-    VStack(spacing: 16) {
+    VStack(spacing: 20) {
       // Header Section
       headerSection
 
@@ -61,18 +61,18 @@ struct HabitCompletionBottomSheet: View {
       let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
       impactFeedback.impactOccurred()
     }
-    .frame(height: 500)
     .padding(.horizontal, 24)
     .padding(.top, 24)
     .padding(.bottom, 24)
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(.surface01Variant)
-    .cornerRadius(40, corners: [.topLeft, .topRight])
+    .ignoresSafeArea(edges: .bottom)
   }
 
   // MARK: - Header Section
 
   private var headerSection: some View {
-    VStack(spacing: 0) {
+    VStack(spacing: 4) {
       // Close button and title row
       HStack {
         Spacer()
@@ -220,6 +220,7 @@ struct HabitCompletionBottomSheet: View {
               Text(difficulty.displayName + "!")
                 .font(.appTitleMediumEmphasised)
                 .foregroundColor(.text03)
+                .padding(.leading, 10)
             }
             .padding(.leading, 8)
           }
