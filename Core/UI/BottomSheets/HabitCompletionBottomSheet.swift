@@ -65,7 +65,7 @@ struct HabitCompletionBottomSheet: View {
     .padding(.horizontal, 24)
     .padding(.top, 24)
     .padding(.bottom, 24)
-    .background(.surface)
+    .background(.surface01Variant)
     .cornerRadius(40, corners: [.topLeft, .topRight])
   }
 
@@ -75,19 +75,18 @@ struct HabitCompletionBottomSheet: View {
     VStack(spacing: 4) {
       // Close button and title row
       HStack {
+        Spacer()
+        
         // Close button
         Button(action: {
           isPresented = false
         }) {
-          Image(.iconClose)
-            .resizable()
-            .frame(width: 24, height: 24)
-            .foregroundColor(.text04)
-            .frame(width: 48, height: 48)
+          Image(systemName: "xmark")
+            .font(.system(size: 16, weight: .heavy))
+            .foregroundColor(.text07)
+            .frame(width: 44, height: 44)
         }
-        .padding(.leading, -12)
-
-        Spacer()
+        .padding(.trailing, -12)
       }
       .padding(.top, 8)
 
@@ -169,40 +168,60 @@ struct HabitCompletionBottomSheet: View {
     VStack(spacing: 24) {
       // Difficulty slider
       VStack(spacing: 16) {
-        // Show image based on selected difficulty
+        // Character image with chat bubble
         if let difficulty = selectedDifficulty {
-          Group {
-            switch difficulty {
-            case .veryEasy:
-              Image("Difficulty-VeryEasy@4x")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 120)
+          HStack(alignment: .bottom, spacing: 12) {
+            // Character image
+            Group {
+              switch difficulty {
+              case .veryEasy:
+                Image("Difficulty-VeryEasy@4x")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(height: 120)
 
-            case .easy:
-              Image("Difficulty-Easy@4x")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 120)
+              case .easy:
+                Image("Difficulty-Easy@4x")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(height: 120)
 
-            case .medium:
-              Image("Difficulty-Medium@4x")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 120)
+              case .medium:
+                Image("Difficulty-Medium@4x")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(height: 120)
 
-            case .hard:
-              Image("Difficulty-Hard@4x")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 120)
+              case .hard:
+                Image("Difficulty-Hard@4x")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(height: 120)
 
-            case .veryHard:
-              Image("Difficulty-VeryHard@4x")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(height: 120)
+              case .veryHard:
+                Image("Difficulty-VeryHard@4x")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(height: 120)
+              }
             }
+            
+            // Chat bubble
+            ZStack {
+              // Chat bubble image
+              Image("Chatbubble")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(height: 60)
+              
+              // Text overlay on chat bubble
+              Text(difficulty.displayName + "!")
+                .font(.appBodyMedium)
+                .foregroundColor(.text01)
+            }
+            .padding(.leading, 8)
+            
+            Spacer()
           }
           .padding(.bottom, 8)
         }
@@ -237,31 +256,14 @@ struct HabitCompletionBottomSheet: View {
         // Difficulty labels
         HStack {
           Text("Very Easy")
-            .font(.appBodySmall)
-            .foregroundColor(.text03)
+            .font(.appBodySmallEmphasised)
+            .foregroundColor(.text02)
 
           Spacer()
 
           Text("Very Hard")
-            .font(.appBodySmall)
-            .foregroundColor(.text03)
-        }
-
-        // Selected difficulty display
-        if let difficulty = selectedDifficulty {
-          HStack(spacing: 8) {
-            Circle()
-              .fill(difficulty.color)
-              .frame(width: 12, height: 12)
-
-            Text(difficulty.displayName)
-              .font(Font.appBodyMedium)
-              .foregroundColor(.text01)
-          }
-          .padding(.horizontal, 16)
-          .padding(.vertical, 8)
-          .background(difficulty.color.opacity(0.1))
-          .cornerRadius(8)
+            .font(.appBodySmallEmphasised)
+            .foregroundColor(.text02)
         }
       }
     }
@@ -278,14 +280,11 @@ struct HabitCompletionBottomSheet: View {
       }) {
         Text("Skip")
           .font(Font.appButtonText1)
-          .foregroundColor(.text02)
+          .foregroundColor(.text04)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)
-          .background(.surface2)
+          .background(.outline02)
           .cornerRadius(30)
-          .overlay(
-            RoundedRectangle(cornerRadius: 30)
-              .stroke(.outline3, lineWidth: 1))
       }
       .buttonStyle(PlainButtonStyle())
 
