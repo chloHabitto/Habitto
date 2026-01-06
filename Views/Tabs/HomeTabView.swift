@@ -88,26 +88,11 @@ struct HomeTabView: View {
             switch event {
             case .dailyAwardGranted(let dateKey):
               debugLog("🎯 STEP 12: Received dailyAwardGranted event for \(dateKey)")
-
-              // ✅ BUG 4 FIX: Check if milestone is pending - if so, don't show celebration
-              if milestoneStreakCount > 0 || pendingMilestone != nil {
-                debugLog("🎯 STEP 12: Skipping celebration - milestone will show (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
-                return
-              }
-              
-              // ✅ BUG 4 FIX: Also check if we're on today's date
-              let todayKey = Habit.dateKey(for: Date())
-              guard dateKey == todayKey else {
-                debugLog("🎯 STEP 12: Skipping celebration - dateKey \(dateKey) is not today (\(todayKey))")
-                return
-              }
-
-              // ✅ FIX: Delay celebration to ensure sheet is fully dismissed
-              // Set delay to 0.8s to ensure difficulty sheet is completely closed
-              DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                debugLog("🎯 STEP 12: Setting showCelebration = true")
-                showCelebration = true
-              }
+              // ✅ BUG 1 FIX: Do NOT trigger celebration from event bus
+              // Celebration is handled exclusively in onDifficultySheetDismissed
+              // This event is only for background XP state updates
+              debugLog("🎯 STEP 12: Skipping celebration - handled by onDifficultySheetDismissed")
+              // DO NOT set showCelebration = true here!
 
             case .dailyAwardRevoked(let dateKey):
               debugLog("🎯 STEP 12: Received dailyAwardRevoked event for \(dateKey)")
@@ -1425,35 +1410,15 @@ struct HomeTabView: View {
 
     // Check if the last habit was just completed
     if lastHabitJustCompleted {
-      // ✅ FIX: Separate celebration logic from XP award logic
-      // Celebration should show EVERY time all habits are complete, regardless of DailyAward status
-      // Trust lastHabitJustCompleted flag - it's already set correctly when last habit completes
-      
-      // ✅ BUG 5 FIX: Only show celebration if NOT showing milestone
-      // Milestone takes priority over celebration for milestone days
-      let shouldShowCelebration = milestoneStreakCount == 0 && pendingMilestone == nil
-      
-      if shouldShowCelebration {
-        debugLog("🎉 COMPLETION_FLOW: Last habit completed for \(dateKey) - triggering celebration!")
-        // Delay celebration to ensure sheet is fully dismissed
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-          showCelebration = true
-          debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
-        }
-      } else {
-        debugLog("🎉 COMPLETION_FLOW: Last habit completed - milestone will show instead of celebration (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
-      }
-      
-      // Step 2: Only award XP if DailyAward doesn't already exist
+      // Step 1: Only award XP if DailyAward doesn't already exist
       if awardedDateKeys.contains(dateKey) {
         debugLog("⏭️ COMPLETION_FLOW: Daily award already granted for \(dateKey), skipping duplicate XP award")
-        debugLog("✅ COMPLETION_FLOW: Celebration already triggered above (separate from XP award)")
         lastHabitJustCompleted = false
         onCompletionDismiss?()
         return
       }
       
-      // Step 4: Award XP (only if not already awarded)
+      // Step 2: Award XP (only if not already awarded)
       awardedDateKeys.insert(dateKey)
       // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
       // This is the ONLY place where XP should be awarded for habit completion
@@ -1481,6 +1446,7 @@ struct HomeTabView: View {
         // DO NOT call publishXP() here - it overwrites the database value with calculated value
         debugLog("✅ DERIVED_XP: Skipping XP recalculation - XP will update via DailyAwardService when award is granted")
 
+        // ✅ BUG 2 FIX: Call streak recalculation FIRST
         debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
           debugLog("🔍 BEFORE_CALLBACK: About to call onStreakRecalculationNeeded?(true)")
@@ -1488,6 +1454,11 @@ struct HomeTabView: View {
           debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=true (completion)")
         }
         debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
+
+        // ✅ BUG 2 FIX: Wait for streak notification to be processed
+        // This allows handleStreakUpdated to set milestoneStreakCount before we check it
+        try? await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
+        debugLog("🔍 COMPLETION_FLOW: Waited 0.6s for streak notification to process")
 
         do {
           let modelContext = SwiftDataContainer.shared.modelContext
@@ -1501,7 +1472,6 @@ struct HomeTabView: View {
           try modelContext.save()
           debugLog("✅ COMPLETION_FLOW: DailyAward record created for history")
           debugLog("✅ COMPLETION_FLOW: Streak will be recalculated by callback (no manual update)")
-          // Note: Celebration already triggered above (separate from XP award)
           debugLog("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
         } catch {
           awardedDateKeys.remove(dateKey)
@@ -1516,7 +1486,21 @@ struct HomeTabView: View {
         debugLog("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
         debugLog("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")
 
+        // ✅ BUG 2 FIX: NOW check if milestone is pending - only show celebration if NOT
         await MainActor.run {
+          let shouldShowCelebration = milestoneStreakCount == 0 && pendingMilestone == nil && !showStreakMilestone
+          
+          if shouldShowCelebration {
+            debugLog("🎉 COMPLETION_FLOW: No milestone pending - showing celebration!")
+            // Small additional delay to ensure sheet is fully dismissed
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+              showCelebration = true
+              debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
+            }
+          } else {
+            debugLog("🎉 COMPLETION_FLOW: Milestone will show instead (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"), showStreakMilestone=\(showStreakMilestone))")
+          }
+          
           onCompletionDismiss?()
           debugLog("✅ COMPLETION_FLOW: Called onCompletionDismiss callback")
         }
