@@ -747,8 +747,16 @@ struct HomeTabView: View {
     // ✅ STEP 2: Check if this milestone was already shown today
     let today = Calendar.current.startOfDay(for: Date())
     let lastShownDate = lastShownMilestoneDate.map { Calendar.current.startOfDay(for: $0) }
-    let alreadyShownToday = lastShownMilestoneStreak == newStreak && lastShownDate == today
-    debugLog("🔍 MILESTONE_DEBUG: alreadyShownToday=\(alreadyShownToday) (lastShownMilestoneStreak=\(lastShownMilestoneStreak ?? -1), lastShownDate=\(lastShownDate?.description ?? "nil"), today=\(today))")
+    let alreadyShownToday = lastShownMilestoneStreak == newStreak && 
+                            lastShownMilestoneDate != nil && 
+                            Calendar.current.isDate(lastShownMilestoneDate!, inSameDayAs: Date())
+    
+    debugLog("🔍 MILESTONE_DEBUG: alreadyShownToday=\(alreadyShownToday)")
+    debugLog("   - lastShownMilestoneStreak=\(lastShownMilestoneStreak ?? -1) vs newStreak=\(newStreak): \(lastShownMilestoneStreak == newStreak)")
+    debugLog("   - lastShownMilestoneDate=\(lastShownMilestoneDate?.description ?? "nil")")
+    if let date = lastShownMilestoneDate {
+      debugLog("   - isDateInToday=\(Calendar.current.isDate(date, inSameDayAs: Date()))")
+    }
     
     // Check if this is a milestone streak
     if isMilestone {
@@ -802,6 +810,10 @@ struct HomeTabView: View {
           
           debugLog("🔍 MILESTONE_DEBUG: Setting showStreakMilestone=true")
           showStreakMilestone = true
+          
+          // ✅ BUG 3 FIX: Set the date when milestone is shown
+          lastShownMilestoneDate = Date()
+          debugLog("🔍 MILESTONE_DEBUG: Set lastShownMilestoneDate=\(lastShownMilestoneDate?.description ?? "nil")")
           debugLog("🔍 MILESTONE_DEBUG: After setting - showStreakMilestone=\(showStreakMilestone)")
         }
       } else {
@@ -1303,22 +1315,23 @@ struct HomeTabView: View {
             // Don't set selectedHabit = nil here - let the difficulty sheet show
           } else if isPartialCompletion {
             // Partial completion: habit not fully done, but day meets streak criteria
-            // Skip difficulty sheet, trigger celebration directly
-            debugLog("🎉 PARTIAL_COMPLETION: Triggering celebration directly (no difficulty sheet)")
+            debugLog("🎉 PARTIAL_COMPLETION: Day meets streak criteria but habit not fully complete")
             
-            // XP will be awarded automatically via HabitStore.checkDailyCompletionAndAwardXP
-            // (which now uses meetsStreakCriteria) when progress is saved
-            debugLog("✅ PARTIAL_COMPLETION: XP will be awarded automatically via HabitStore.checkDailyCompletionAndAwardXP")
-            
-            // Show celebration after short delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-              self.showCelebration = true
-              debugLog("🎉 PARTIAL_COMPLETION: Celebration shown!")
-            }
+            // ✅ BUG 1 FIX: Don't trigger celebration directly - let it go through onDifficultySheetDismissed
+            // The difficulty sheet will still show for this habit
+            // Set flag so celebration shows after sheet dismisses
+            lastHabitJustCompleted = true
+            wasPartialCompletion = true
+            debugLog("✅ PARTIAL_COMPLETION: Set lastHabitJustCompleted=true, celebration will show after sheet dismissal")
             
             // Trigger streak recalculation
-            onStreakRecalculationNeeded?(false)  // ✅ BUG 1 FIX: Partial completion is NOT completion of all habits
+            onStreakRecalculationNeeded?(false)  // NOT user-initiated (partial completion)
             debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=false (partial completion - extra progress)")
+            
+            // ❌ REMOVED: Direct celebration trigger that showed behind sheet
+            // DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            //   self.showCelebration = true
+            // }
           }
         } else {
       // Present difficulty sheet (existing logic)
@@ -1374,6 +1387,22 @@ struct HomeTabView: View {
     
     debugLog(
       "🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")
+    
+    // ✅ BUG 2 FIX: Check if this is truly the FIRST completion of all habits today
+    // or if user is just adding extra progress to an already-complete day
+    let todayKey = Habit.dateKey(for: Date())
+    let isExtraProgress = awardedDateKeys.contains(dateKey)
+    
+    if isExtraProgress && !lastHabitJustCompleted {
+      // Day was already awarded, this is just extra progress
+      // Show celebration but skip milestone/XP logic
+      debugLog("🎯 COMPLETION_FLOW: Extra progress on already-complete day - showing celebration only")
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+        showCelebration = true
+      }
+      onCompletionDismiss?()
+      return
+    }
 
     // ✅ FIX: Wait 1 second before resorting to allow smooth sheet dismissal animation
     Task { @MainActor in
