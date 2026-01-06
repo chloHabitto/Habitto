@@ -170,7 +170,7 @@ struct HabitCompletionBottomSheet: View {
       VStack(spacing: 16) {
         // Character image with chat bubble
         if let difficulty = selectedDifficulty {
-          HStack(alignment: .bottom, spacing: 12) {
+          HStack(alignment: .center, spacing: 12) {
             // Character image
             Group {
               switch difficulty {
@@ -208,21 +208,28 @@ struct HabitCompletionBottomSheet: View {
             
             // Chat bubble
             ZStack {
-              // Chat bubble image
+              // Chat bubble image with tint color
               Image("Chatbubble")
+                .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(height: 60)
+                .foregroundColor(.outline1Variant)
+              
+              // Border overlay using a rounded rectangle that approximates the bubble shape
+              RoundedRectangle(cornerRadius: 16)
+                .stroke(.outline02, lineWidth: 2)
+                .frame(height: 60)
+                .padding(.horizontal, 4)
               
               // Text overlay on chat bubble
               Text(difficulty.displayName + "!")
-                .font(.appBodyMedium)
-                .foregroundColor(.text01)
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(.text03)
             }
             .padding(.leading, 8)
-            
-            Spacer()
           }
+          .frame(maxWidth: .infinity)
           .padding(.bottom, 8)
         }
 
@@ -283,7 +290,7 @@ struct HabitCompletionBottomSheet: View {
           .foregroundColor(.text04)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)
-          .background(.outline02)
+          .background(.badgeBackground)
           .cornerRadius(30)
       }
       .buttonStyle(PlainButtonStyle())
