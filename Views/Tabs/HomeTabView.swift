@@ -745,8 +745,6 @@ struct HomeTabView: View {
     debugLog("🔍 MILESTONE_DEBUG: isMilestoneStreak(\(newStreak)) = \(isMilestone)")
     
     // ✅ STEP 2: Check if this milestone was already shown today
-    let today = Calendar.current.startOfDay(for: Date())
-    let lastShownDate = lastShownMilestoneDate.map { Calendar.current.startOfDay(for: $0) }
     let alreadyShownToday = lastShownMilestoneStreak == newStreak && 
                             lastShownMilestoneDate != nil && 
                             Calendar.current.isDate(lastShownMilestoneDate!, inSameDayAs: Date())
@@ -1390,7 +1388,6 @@ struct HomeTabView: View {
     
     // ✅ BUG 2 FIX: Check if this is truly the FIRST completion of all habits today
     // or if user is just adding extra progress to an already-complete day
-    let todayKey = Habit.dateKey(for: Date())
     let isExtraProgress = awardedDateKeys.contains(dateKey)
     
     if isExtraProgress && !lastHabitJustCompleted {
