@@ -22,7 +22,7 @@ extension TutorialSlide {
       title: "Track Progress",
       description: "Swipe left or right on your habits to update your daily progress and stay motivated."),
     TutorialSlide(
-      imageName: "Sticker-Exciting",
+      imageName: "Love",
       title: "We're here to help 🩷",
       description: "We're constantly working to improve Habitto and help you build better habits. Your feedback means the world to us!")
   ]
