@@ -43,7 +43,7 @@ struct TutorialBottomSheet: View {
                           .fill(Color.primary.opacity(0.3))
                           .frame(width: 40, height: 40)
                       }
-                      .offset(x: 83, y: -112)
+                      .offset(x: 83, y: -112.2)
                     }
                   }
                   
@@ -208,28 +208,37 @@ struct TutorialBottomSheet: View {
   }
   
   private func animatePulse() {
-    // Reset to initial state
-    pulsingRingScale = 1.0
-    pulsingRingOpacity = 0.6
+    guard isPulsingActive else { return }
     
-    // Animate outward
-    withAnimation(.easeOut(duration: 1.5)) {
-      pulsingRingScale = 1.8
-      pulsingRingOpacity = 0.0
+    // Reset to initial state without animation
+    withAnimation(nil) {
+      pulsingRingScale = 1.0
+      pulsingRingOpacity = 0.6
     }
     
-    // Loop back after animation completes
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-      if isPulsingActive {
-        animatePulse()
+    // Small delay to ensure reset is applied
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+      guard self.isPulsingActive else { return }
+      
+      // Animate outward
+      withAnimation(.easeOut(duration: 1.2)) {
+        self.pulsingRingScale = 1.8
+        self.pulsingRingOpacity = 0.0
+      }
+      
+      // Loop back after animation completes
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+        self.animatePulse()
       }
     }
   }
   
   private func stopPulsingAnimation() {
     isPulsingActive = false
-    pulsingRingScale = 1.0
-    pulsingRingOpacity = 0.6
+    withAnimation(nil) {
+      pulsingRingScale = 1.0
+      pulsingRingOpacity = 0.6
+    }
   }
 }
 
