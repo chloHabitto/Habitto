@@ -226,7 +226,7 @@ struct BackupRecoveryView: View {
                 HStack {
                   if isBackingUp {
                     ProgressView()
-                      .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                      .progressViewStyle(CircularProgressViewStyle(tint: .appOnPrimary))
                       .scaleEffect(0.8)
                   } else {
                     Image("Icon-RefreshSquare2_Filled")
@@ -234,12 +234,12 @@ struct BackupRecoveryView: View {
                       .resizable()
                       .aspectRatio(contentMode: .fit)
                       .frame(width: 20, height: 20)
-                      .foregroundColor(.white)
+                      .foregroundColor(.appOnPrimary)
                   }
 
                   Text(isBackingUp ? "Creating iCloud Backup..." : "Create iCloud Backup")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(.appOnPrimary)
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
