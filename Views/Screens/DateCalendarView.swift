@@ -150,25 +150,14 @@ struct DateCalendarView: View {
   // MARK: - Save Button
 
   private var saveButton: some View {
-    VStack(spacing: 0) {
-      // Gradient overlay to fade content behind button
-      LinearGradient(
-        gradient: Gradient(colors: [Color("appSurface02Variant").opacity(0), Color("appSurface02Variant")]),
-        startPoint: .top,
-        endPoint: .bottom)
-        .frame(height: 20)
-
-      // Button container
-      HStack {
-        HabittoButton.largeFillPrimary(
-          text: "Save",
-          state: hasChanges ? .default : .disabled,
-          action: saveChanges)
-      }
-      .padding(.horizontal, 20)
-      .padding(.bottom, 40)
-      .background(Color("appSurface02Variant"))
+    HStack {
+      HabittoButton.largeFillPrimary(
+        text: "Save",
+        state: hasChanges ? .default : .disabled,
+        action: saveChanges)
     }
+    .padding(.horizontal, 20)
+    .padding(.bottom, 40)
   }
 
   // MARK: - Success Toast

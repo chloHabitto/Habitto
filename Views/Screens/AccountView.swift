@@ -409,8 +409,8 @@ struct AccountView: View {
           
           // Chevron
           Image(systemName: "chevron.right")
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.text04)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundColor(.appOutline03)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -566,8 +566,8 @@ struct AccountView: View {
           trailing
         } else if hasChevron {
           Image(systemName: "chevron.right")
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(.text04)
+            .font(.system(size: 12, weight: .bold))
+            .foregroundColor(.appOutline03)
         }
       }
       .padding(.horizontal, 20)
@@ -1112,8 +1112,8 @@ struct AccountOptionRow: View {
 
         if hasChevron {
           Image(systemName: "chevron.right")
-            .font(.system(size: 16))
-            .foregroundColor(.text03)
+            .font(.system(size: 16, weight: .bold))
+            .foregroundColor(.appOutline03)
         }
       }
       .padding(.horizontal, 20)

@@ -206,7 +206,7 @@ struct FAQQuestionRow: View {
 
           Image(systemName: "chevron.down")
             .font(.system(size: 14, weight: .bold))
-            .foregroundColor(.outline3)
+            .foregroundColor(.appOutline03)
             .rotationEffect(.degrees(isExpanded ? -180 : 0))
         }
         .padding(.horizontal, 20)
