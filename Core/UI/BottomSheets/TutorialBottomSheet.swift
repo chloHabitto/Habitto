@@ -111,7 +111,7 @@ struct TutorialBottomSheet: View {
                       
                       // Hand icon overlay for swipe demonstration
                       if handIconOpacity > 0 {
-                        Image("Hand-right")
+                        Image(currentHandIcon)
                           .resizable()
                           .aspectRatio(contentMode: .fit)
                           .frame(width: 45, height: 45)
@@ -244,6 +244,7 @@ struct TutorialBottomSheet: View {
   // Hand icon animation state
   @State private var handIconOffset: CGFloat = -90 // Start on the left
   @State private var handIconOpacity: CGFloat = 0
+  @State private var currentHandIcon: String = "Hand-right" // Switch between Hand-right and Hand-left
   
   // Demo habit with mutable progress
   @State private var demoHabit: Habit = {
@@ -315,6 +316,7 @@ struct TutorialBottomSheet: View {
     habitItemOffsetY = 20
     handIconOffset = -90
     handIconOpacity = 0
+    currentHandIcon = "Hand-right"
     
     // Reset demo habit progress to initial value (2/5)
     let dateKey = Habit.dateKey(for: Date())
@@ -343,48 +345,87 @@ struct TutorialBottomSheet: View {
   private func startHandSwipeDemonstration() {
     guard currentIndex == 1 else { return }
     
-    // Show hand icon on the left
-    withAnimation(.easeOut(duration: 0.3)) {
-      handIconOpacity = 1.0
-      handIconOffset = -90 // Start on the left side
+    // Start the sequence: 2 right swipes, then 2 left swipes
+    performSwipeSequence(step: 0)
+  }
+  
+  private func performSwipeSequence(step: Int) {
+    guard currentIndex == 1 else { return }
+    
+    // Step 0-1: Right swipes (increase)
+    // Step 2-3: Left swipes (decrease)
+    let isRightSwipe = step < 2
+    let startOffset: CGFloat = isRightSwipe ? -90 : 90
+    let endOffset: CGFloat = isRightSwipe ? 90 : -90
+    let handIconName = isRightSwipe ? "Hand-right" : "Hand-left"
+    let progressChange = isRightSwipe ? 1 : -1
+    
+    // Determine current progress based on step
+    let currentProgress: Int
+    switch step {
+    case 0: currentProgress = 2  // Start at 2
+    case 1: currentProgress = 3  // After first right swipe
+    case 2: currentProgress = 4  // After second right swipe
+    case 3: currentProgress = 3  // After first left swipe
+    default: currentProgress = 2
+    }
+    let newProgress = currentProgress + progressChange
+    
+    // Set hand icon type
+    currentHandIcon = handIconName
+    
+    // Reset hand position and opacity
+    handIconOffset = startOffset
+    handIconOpacity = 0
+    
+    // Start movement animation (0.8s total)
+    withAnimation(.easeInOut(duration: 0.8)) {
+      handIconOffset = endOffset
     }
     
-    // Small delay before starting movement
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+    // Fade in during first 30% of movement (0.24s = 30% of 0.8s)
+    withAnimation(.easeOut(duration: 0.24)) {
+      handIconOpacity = 1.0
+    }
+    
+    // Update progress at midpoint (0.4s into movement)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+      guard self.currentIndex == 1 else { return }
+      let dateKey = Habit.dateKey(for: Date())
+      var updatedHabit = self.demoHabit
+      updatedHabit.completionHistory[dateKey] = newProgress
+      self.demoHabit = updatedHabit
+    }
+    
+    // Fade out during last 30% of movement (starts at 0.56s, duration 0.24s)
+    // 0.8s - 0.24s = 0.56s (last 30% of 0.8s movement)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.56) {
+      guard self.currentIndex == 1 else { return }
+      withAnimation(.easeIn(duration: 0.24)) {
+        self.handIconOpacity = 0
+      }
+    }
+    
+    // After swipe completes, move to next step or loop
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
       guard self.currentIndex == 1 else { return }
       
-      // Move hand from left to right while updating progress
-      withAnimation(.easeInOut(duration: 0.8)) {
-        self.handIconOffset = 90 // Move to the right
-      }
-      
-      // Update progress during movement (2 → 3)
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-        guard self.currentIndex == 1 else { return }
-        let dateKey = Habit.dateKey(for: Date())
-        // Create new habit instance to ensure SwiftUI detects state change
-        var updatedHabit = self.demoHabit
-        updatedHabit.completionHistory[dateKey] = 3
-        self.demoHabit = updatedHabit
-      }
-      
-      // Fade out hand at the end
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-        guard self.currentIndex == 1 else { return }
-        withAnimation(.easeOut(duration: 0.3)) {
-          self.handIconOpacity = 0
-        }
-        
-        // Reset and loop after a delay
+      if step < 3 {
+        // Continue to next swipe after brief pause
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
           guard self.currentIndex == 1 else { return }
-          // Reset progress back to 2
+          self.performSwipeSequence(step: step + 1)
+        }
+      } else {
+        // All swipes complete, pause then loop
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+          guard self.currentIndex == 1 else { return }
+          // Reset progress to 2 and restart
           let dateKey = Habit.dateKey(for: Date())
           var updatedHabit = self.demoHabit
           updatedHabit.completionHistory[dateKey] = 2
           self.demoHabit = updatedHabit
-          // Restart animation
-          self.startHandSwipeDemonstration()
+          self.performSwipeSequence(step: 0)
         }
       }
     }
@@ -396,6 +437,7 @@ struct TutorialBottomSheet: View {
       habitItemOffsetY = 20
       handIconOffset = -90
       handIconOpacity = 0
+      currentHandIcon = "Hand-right"
     }
     
     // Reset demo habit progress

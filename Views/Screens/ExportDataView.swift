@@ -156,9 +156,9 @@ struct ExportDataView: View {
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
                   .background(Color("appSurface02Variant"))
-                  .cornerRadius(24)
+                  .cornerRadius(16)
                   .overlay(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 16)
                       .stroke(Color.grey200, lineWidth: 1))
                 }
               }
@@ -199,9 +199,9 @@ struct ExportDataView: View {
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
                   .background(Color("appSurface02Variant"))
-                  .cornerRadius(24)
+                  .cornerRadius(16)
                   .overlay(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 16)
                       .stroke(Color.grey200, lineWidth: 1))
                 }
               }
@@ -242,9 +242,9 @@ struct ExportDataView: View {
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
                   .background(Color("appSurface02Variant"))
-                  .cornerRadius(24)
+                  .cornerRadius(16)
                   .overlay(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 16)
                       .stroke(Color.grey200, lineWidth: 1))
                 }
               }
