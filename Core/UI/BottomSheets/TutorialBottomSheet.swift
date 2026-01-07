@@ -12,20 +12,40 @@ struct TutorialBottomSheet: View {
         TabView(selection: $currentIndex) {
           ForEach(Array(slides.enumerated()), id: \.element.id) { index, slide in
             VStack(spacing: 0) {
-              // Image area - phoneImage for first screen, carousel for others
+              // Image area - phoneImage for first and second screen, carousel for others
               if index == 0 {
-                // First screen: phoneImage
+                // First screen: phoneImage with pulsing ring
                 VStack {
                   Spacer()
                   
-                  Image("phoneImage")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 0)
-                    .scaleEffect(1.1)
-                    .offset(y: phoneImageOffset)
-                    .opacity(phoneImageOpacity)
+                  ZStack {
+                    Image("phoneImage")
+                      .resizable()
+                      .aspectRatio(contentMode: .fit)
+                      .frame(maxWidth: .infinity)
+                      .padding(.horizontal, 0)
+                      .scaleEffect(1.1)
+                      .offset(y: phoneImageOffset)
+                      .opacity(phoneImageOpacity)
+                    
+                    // Pulsing ring animation overlay
+                    if currentIndex == 0 && phoneImageOpacity > 0.9 {
+                      ZStack {
+                        // Outer pulsing ring
+                        Circle()
+                          .stroke(Color.primary, lineWidth: 2)
+                          .frame(width: 40, height: 40)
+                          .scaleEffect(pulsingRingScale)
+                          .opacity(pulsingRingOpacity)
+                        
+                        // Inner static circle
+                        Circle()
+                          .fill(Color.primary.opacity(0.3))
+                          .frame(width: 40, height: 40)
+                      }
+                      .offset(x: 83, y: -112)
+                    }
+                  }
                   
                   Spacer()
                 }
@@ -37,6 +57,11 @@ struct TutorialBottomSheet: View {
                     phoneImageOffset = 0
                     phoneImageOpacity = 1.0
                   }
+                  
+                  // Start pulsing ring animation after entrance animation (0.8s delay)
+                  DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                    startPulsingAnimation()
+                  }
                 }
                 .onChange(of: currentIndex) { newIndex in
                   // Reset animation when coming back to first screen
@@ -47,44 +72,55 @@ struct TutorialBottomSheet: View {
                       phoneImageOffset = 0
                       phoneImageOpacity = 1.0
                     }
+                    
+                    // Restart pulsing animation after entrance
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                      startPulsingAnimation()
+                    }
+                  } else {
+                    // Stop animation when leaving first screen
+                    stopPulsingAnimation()
                   }
                 }
                 
                 // Fixed 48pt spacing between image and text for first screen
                 Color.clear
                   .frame(height: 48)
+              } else if index == 1 {
+                // Second screen: phoneImage without pulsing animation
+                VStack {
+                  Spacer()
+                  
+                  Image("phoneImage")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 0)
+                    .scaleEffect(1.1)
+                  
+                  Spacer()
+                }
+                .frame(height: 300)
+                .padding(.top, 20)
+                
+                // Fixed 48pt spacing between image and text for consistency with first screen
+                Color.clear
+                  .frame(height: 48)
               } else {
                 // Other screens: Regular images
-                let isLastSlide = slide.id == TutorialSlide.tutorialSlides.last?.id
                 VStack {
                   Spacer()
                   
                   Image(slide.imageName)
                     .resizable()
-                    .aspectRatio(contentMode: isLastSlide ? .fit : .fill)
-                    .frame(width: isLastSlide ? 260 : nil, height: isLastSlide ? 260 : 280)
-                    .clipped()
-                    .offset(y: isLastSlide ? lastImageOffset : 0)
-                    .scaleEffect(isLastSlide ? lastImageScale : 1.0)
-                    .opacity(isLastSlide ? lastImageOpacity : 1.0)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
                   
                   Spacer()
                 }
-                .frame(height: 280)
+                .frame(height: 300)
                 .padding(.top, 20)
-                .onAppear {
-                  if isLastSlide {
-                    // Animate last slide image when it appears (from bottom to top)
-                    lastImageOffset = 30
-                    lastImageScale = 0.8
-                    lastImageOpacity = 0.0
-                    withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
-                      lastImageOffset = 0
-                      lastImageScale = 1.0
-                      lastImageOpacity = 1.0
-                    }
-                  }
-                }
                 
                 // Fixed 48pt spacing between image and text for consistency with first screen
                 Color.clear
@@ -101,19 +137,6 @@ struct TutorialBottomSheet: View {
           }
         }
         .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-        .onChange(of: currentIndex) { newIndex in
-          // Trigger animation when navigating to last slide (from bottom to top)
-          if newIndex == slides.count - 1 {
-            lastImageOffset = 30
-            lastImageScale = 0.8
-            lastImageOpacity = 0.0
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
-              lastImageOffset = 0
-              lastImageScale = 1.0
-              lastImageOpacity = 1.0
-            }
-          }
-        }
         
         // Fixed page controls at bottom (outside TabView)
         HStack(spacing: 8) {
@@ -170,11 +193,44 @@ struct TutorialBottomSheet: View {
   @State private var currentIndex = 0
   @State private var phoneImageOffset: CGFloat = 50
   @State private var phoneImageOpacity: Double = 0.0
-  @State private var lastImageOffset: CGFloat = 30
-  @State private var lastImageScale: CGFloat = 0.8
-  @State private var lastImageOpacity: Double = 0.0
+  @State private var pulsingRingScale: CGFloat = 1.0
+  @State private var pulsingRingOpacity: Double = 0.6
+  @State private var isPulsingActive: Bool = false
 
   private let slides = TutorialSlide.tutorialSlides
+  
+  // MARK: - Pulsing Animation Helpers
+  
+  private func startPulsingAnimation() {
+    guard !isPulsingActive else { return }
+    isPulsingActive = true
+    animatePulse()
+  }
+  
+  private func animatePulse() {
+    // Reset to initial state
+    pulsingRingScale = 1.0
+    pulsingRingOpacity = 0.6
+    
+    // Animate outward
+    withAnimation(.easeOut(duration: 1.5)) {
+      pulsingRingScale = 1.8
+      pulsingRingOpacity = 0.0
+    }
+    
+    // Loop back after animation completes
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+      if isPulsingActive {
+        animatePulse()
+      }
+    }
+  }
+  
+  private func stopPulsingAnimation() {
+    isPulsingActive = false
+    pulsingRingScale = 1.0
+    pulsingRingOpacity = 0.6
+  }
 }
 
 #Preview {
