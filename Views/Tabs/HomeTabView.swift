@@ -1512,12 +1512,16 @@ struct HomeTabView: View {
         debugLog("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
         debugLog("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")
 
-        // ✅ BUG 2 FIX: NOW check if milestone is pending - only show celebration if NOT
+        // ✅ BUG FIX: Show celebration logic:
+        // - Streak 1: milestoneStreakCount = 1, pendingMilestone = nil → NO celebration (milestone shows instead)
+        // - Streak 3+: milestoneStreakCount = 3, pendingMilestone = 3 → YES celebration (milestone shows after)
+        // - No milestone: milestoneStreakCount = 0, pendingMilestone = nil → YES celebration
+        // Key insight: pendingMilestone being set means "show milestone AFTER celebration"
         await MainActor.run {
-          let shouldShowCelebration = milestoneStreakCount == 0 && pendingMilestone == nil && !showStreakMilestone
+          let shouldShowCelebration = pendingMilestone != nil || (milestoneStreakCount == 0 && !showStreakMilestone)
           
           if shouldShowCelebration {
-            debugLog("🎉 COMPLETION_FLOW: No milestone pending - showing celebration!")
+            debugLog("🎉 COMPLETION_FLOW: Showing celebration! (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
             // Small additional delay to ensure sheet is fully dismissed
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
               showCelebration = true
