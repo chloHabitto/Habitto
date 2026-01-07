@@ -11,6 +11,7 @@ enum ColorTokens {
   static let primaryFocus = Color("appPrimaryFocus")
   static let onPrimary = Color("appOnPrimary")
   static let primaryContainer = Color("appPrimaryContainer")
+  static let primaryContainer02 = Color("appPrimaryContainer02")
   static let onPrimaryContainer = Color("appOnPrimaryContainer")
   static let primaryDim = Color("appPrimaryDim")
   static let primaryContainerFocus = Color("appPrimaryContainerFocus")
@@ -105,6 +106,7 @@ extension Color {
   static let primaryFocus = ColorTokens.primaryFocus
   static let onPrimary = ColorTokens.onPrimary
   static let primaryContainer = ColorTokens.primaryContainer
+  static let primaryContainer02 = ColorTokens.primaryContainer02
   static let onPrimaryContainer = ColorTokens.onPrimaryContainer
   static let primaryDim = ColorTokens.primaryDim
   static let primaryContainerFocus = ColorTokens.primaryContainerFocus
@@ -195,6 +197,7 @@ extension ShapeStyle where Self == Color {
   static var primaryFocus: Color { ColorTokens.primaryFocus }
   static var onPrimary: Color { ColorTokens.onPrimary }
   static var primaryContainer: Color { ColorTokens.primaryContainer }
+  static var primaryContainer02: Color { ColorTokens.primaryContainer02 }
   static var onPrimaryContainer: Color { ColorTokens.onPrimaryContainer }
   static var primaryDim: Color { ColorTokens.primaryDim }
   static var primaryContainerFocus: Color { ColorTokens.primaryContainerFocus }
