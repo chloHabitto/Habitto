@@ -1060,11 +1060,11 @@ struct ExportPreviewView: View {
               VStack(alignment: .leading, spacing: 8) {
                 Text(sampleDataPreview)
                   .font(.system(size: 12, weight: .regular, design: .monospaced))
-                  .foregroundColor(.text02)
+                  .foregroundColor(.text03)
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
-                  .background(Color.grey100)
-                  .cornerRadius(8)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
                   .frame(maxWidth: .infinity, alignment: .leading)
               }
               .padding(.horizontal, 20)
