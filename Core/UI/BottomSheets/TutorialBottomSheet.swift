@@ -113,6 +113,8 @@ struct TutorialBottomSheet: View {
                       // Always render (even when opacity is 0) so it can be positioned and animated
                       Image(currentHandIcon)
                         .resizable()
+                        .renderingMode(.template)
+                        .foregroundColor(currentHandIcon == "Hand-right" ? Color("green300") : Color("red300"))
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 45, height: 45)
                         .offset(x: handIconOffset, y: -40 + habitItemOffsetY)
@@ -251,7 +253,7 @@ struct TutorialBottomSheet: View {
       name: "Morning Exercise",
       description: "30 minutes of cardio",
       icon: "🏃‍♂️",
-      color: .blue,
+      color: Color("pastelBlue"),
       habitType: .formation,
       schedule: "Everyday",
       goal: "5 times",
