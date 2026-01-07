@@ -22,7 +22,7 @@ struct TutorialBottomSheet: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 24)
+                    .padding(.horizontal, 12)
                     .offset(y: phoneImageOffset)
                     .opacity(phoneImageOpacity)
                   
@@ -40,7 +40,7 @@ struct TutorialBottomSheet: View {
                 .onChange(of: currentIndex) { newIndex in
                   // Reset animation when coming back to first screen
                   if newIndex == 0 {
-                    phoneImageOffset = -30
+                    phoneImageOffset = 50
                     phoneImageOpacity = 0.0
                     withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                       phoneImageOffset = 0
@@ -167,7 +167,7 @@ struct TutorialBottomSheet: View {
 
   @Environment(\.dismiss) private var dismiss
   @State private var currentIndex = 0
-  @State private var phoneImageOffset: CGFloat = -30
+  @State private var phoneImageOffset: CGFloat = 50
   @State private var phoneImageOpacity: Double = 0.0
   @State private var lastImageOffset: CGFloat = 30
   @State private var lastImageScale: CGFloat = 0.8
