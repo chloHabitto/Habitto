@@ -10,7 +10,7 @@ struct PreferencesView: View {
   @State private var showingStreakMode = false
 
   private var iconColor: Color {
-    Color.primaryDim
+    Color.appIconColor
   }
 
   var body: some View {

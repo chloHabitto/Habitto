@@ -17,18 +17,13 @@ struct StreakModeView: View {
         }
         
         // Save button at bottom
-        VStack(spacing: 0) {
-          Divider()
-          
-          HabittoButton.largeFillPrimary(
-            text: "Save",
-            state: hasChanges ? .default : .disabled,
-            action: {
-              saveStreakMode()
-            })
-            .padding(24)
-        }
-        .background(Color.sheetBackground)
+        HabittoButton.largeFillPrimary(
+          text: "Save",
+          state: hasChanges ? .default : .disabled,
+          action: {
+            saveStreakMode()
+          })
+          .padding(24)
       }
       .background(Color("appSurface01Variant02"))
       .navigationTitle("Streak Mode")

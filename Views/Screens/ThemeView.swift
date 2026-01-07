@@ -100,7 +100,7 @@ struct ThemeView: View {
         // Icon
         Image(systemName: preference.icon)
           .font(.system(size: 20, weight: .medium))
-          .foregroundColor(.primaryDim)
+          .foregroundColor(.appIconColor)
           .frame(width: 24, height: 24)
         
         VStack(alignment: .leading, spacing: 4) {

@@ -59,7 +59,7 @@ struct BackupRecoveryView: View {
                       .resizable()
                       .aspectRatio(contentMode: .fit)
                       .frame(width: 24, height: 24)
-                      .foregroundColor(.navy200)
+                      .foregroundColor(.appIconColor)
 
                     VStack(alignment: .leading, spacing: 2) {
                       Text("iCloud Backup")
@@ -94,7 +94,7 @@ struct BackupRecoveryView: View {
                       .resizable()
                       .aspectRatio(contentMode: .fit)
                       .frame(width: 24, height: 24)
-                      .foregroundColor(.navy200)
+                      .foregroundColor(.appIconColor)
 
                     VStack(alignment: .leading, spacing: 2) {
                       Text("Backup Frequency")
@@ -133,7 +133,7 @@ struct BackupRecoveryView: View {
                       .resizable()
                       .aspectRatio(contentMode: .fit)
                       .frame(width: 24, height: 24)
-                      .foregroundColor(.navy200)
+                      .foregroundColor(.appIconColor)
 
                     VStack(alignment: .leading, spacing: 2) {
                       Text("WiFi Only")
@@ -176,7 +176,7 @@ struct BackupRecoveryView: View {
                       .resizable()
                       .aspectRatio(contentMode: .fit)
                       .frame(width: 24, height: 24)
-                      .foregroundColor(.navy200)
+                      .foregroundColor(.appIconColor)
 
                     VStack(alignment: .leading, spacing: 2) {
                       Text("Last iCloud Backup")
@@ -193,7 +193,7 @@ struct BackupRecoveryView: View {
                       showingBackupList = true
                     }
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.navy200)
+                    .foregroundColor(.appIconColor)
                   }
                   .padding(.horizontal, 20)
                   .padding(.vertical, 16)
