@@ -151,15 +151,15 @@ struct ExportDataView: View {
 
                     Image(systemName: "chevron.down")
                       .font(.system(size: 12, weight: .bold))
-                      .foregroundColor(.appOutline03)
+                      .foregroundColor(.appOutline04)
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
-                  .background(Color("appSurface02Variant"))
+                  .background(Color("appSurface01Variant"))
                   .cornerRadius(16)
                   .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                      .stroke(Color.grey200, lineWidth: 1))
+                      .stroke(Color("appOutline02"), lineWidth: 1))
                 }
               }
 
@@ -181,15 +181,15 @@ struct ExportDataView: View {
 
                     Image(systemName: "chevron.down")
                       .font(.system(size: 12, weight: .bold))
-                      .foregroundColor(.appOutline03)
+                      .foregroundColor(.appOutline04)
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
-                  .background(Color("appSurface02Variant"))
+                  .background(Color("appSurface01Variant"))
                   .cornerRadius(16)
                   .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                      .stroke(Color.grey200, lineWidth: 1))
+                      .stroke(Color("appOutline02"), lineWidth: 1))
                 }
               }
 
@@ -211,15 +211,15 @@ struct ExportDataView: View {
 
                     Image(systemName: "chevron.down")
                       .font(.system(size: 12, weight: .bold))
-                      .foregroundColor(.appOutline03)
+                      .foregroundColor(.appOutline04)
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
-                  .background(Color("appSurface02Variant"))
+                  .background(Color("appSurface01Variant"))
                   .cornerRadius(16)
                   .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                      .stroke(Color.grey200, lineWidth: 1))
+                      .stroke(Color("appOutline02"), lineWidth: 1))
                 }
               }
             }
@@ -257,7 +257,7 @@ struct ExportDataView: View {
 
                   Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.appOutline03)
+                    .foregroundColor(.appOutline04)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)

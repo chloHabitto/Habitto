@@ -63,7 +63,7 @@ struct TutorialBottomSheet: View {
                     startPulsingAnimation()
                   }
                 }
-                .onChange(of: currentIndex) { newIndex in
+                .onChange(of: currentIndex) { _, newIndex in
                   // Reset animation when coming back to first screen
                   if newIndex == 0 {
                     phoneImageOffset = 50
@@ -133,7 +133,7 @@ struct TutorialBottomSheet: View {
                     startHabitItemAnimations()
                   }
                 }
-                .onChange(of: currentIndex) { newIndex in
+                .onChange(of: currentIndex) { _, newIndex in
                   if newIndex == 1 {
                     // Reset and start animations when navigating to screen 2
                     resetHabitItemAnimations()
