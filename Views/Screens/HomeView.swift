@@ -1045,6 +1045,7 @@ struct HomeView: View {
         }
         .tag(Tab.more)
     }
+    .customTabBarAppearance()
     .onChange(of: state.selectedTab) { oldValue, newValue in
       // Add haptic feedback when tab is selected
       UISelectionFeedbackGenerator().selectionChanged()
