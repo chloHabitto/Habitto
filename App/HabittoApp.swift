@@ -367,7 +367,7 @@ struct HabittoApp: App {
   
   // MARK: - Tab Bar Appearance
   
-  private func configureTabBarAppearance() {
+  static func configureTabBarAppearance() {
     let appearance = UITabBarAppearance()
     appearance.configureWithDefaultBackground()
     appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
@@ -384,8 +384,25 @@ struct HabittoApp: App {
       .foregroundColor: UIColor(named: "appPrimary") ?? .systemBlue
     ]
     
+    // Apply to all tab bars
     UITabBar.appearance().standardAppearance = appearance
     UITabBar.appearance().scrollEdgeAppearance = appearance
+    
+    // Also apply to all existing tab bars in the window hierarchy
+    if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+      windowScene.windows.forEach { window in
+        window.rootViewController?.view.subviews.forEach { view in
+          if let tabBar = view as? UITabBar {
+            tabBar.standardAppearance = appearance
+            tabBar.scrollEdgeAppearance = appearance
+          }
+        }
+      }
+    }
+  }
+  
+  private func configureTabBarAppearance() {
+    Self.configureTabBarAppearance()
   }
 
   var body: some Scene {
