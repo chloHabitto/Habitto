@@ -22,13 +22,14 @@ struct TutorialBottomSheet: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 0)
+                    .scaleEffect(1.1)
                     .offset(y: phoneImageOffset)
                     .opacity(phoneImageOpacity)
                   
                   Spacer()
                 }
-                .frame(height: 280)
+                .frame(height: 300)
                 .padding(.top, 20)
                 .onAppear {
                   // Animate phoneImage when first screen appears
