@@ -4,130 +4,95 @@ import UIKit
 // MARK: - TabBarAppearanceModifier
 
 /// View modifier that ensures custom tab bar colors are applied to SwiftUI TabView
-/// This fixes the issue where UITabBarAppearance set in app init is sometimes ignored
+/// Uses the image-based approach: bakes unselected color into image with .alwaysOriginal,
+/// while keeping selected as .alwaysTemplate so SwiftUI's .tint() applies
 struct TabBarAppearanceModifier: ViewModifier {
+  @Environment(\.colorScheme) var colorScheme
+  
   func body(content: Content) -> some View {
     content
-      .background(
-        TabBarAppearanceHelper()
-      )
+      .tint(Color("appBottomeNavIcon_Active")) // Selected color via SwiftUI
       .onAppear {
-        // Re-apply appearance when view appears
-        applyTabBarAppearance()
+        configureTabBarAppearance()
+      }
+      .onChange(of: colorScheme) { _, _ in
+        // Reapply when theme changes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+          configureTabBarAppearance()
+        }
       }
   }
   
-  private func applyTabBarAppearance() {
+  private func configureTabBarAppearance() {
+    guard let unselectedColor = UIColor(named: "appBottomeNavIcon_Inactive"),
+          let selectedColor = UIColor(named: "appBottomeNavIcon_Active"),
+          let unselectedTextColor = UIColor(named: "appText03"),
+          let selectedTextColor = UIColor(named: "appPrimary") else {
+      print("❌ [TAB_BAR] Failed to load color assets")
+      return
+    }
+    
     let appearance = UITabBarAppearance()
     appearance.configureWithDefaultBackground()
-    appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
     
-    // Unselected state
-    appearance.stackedLayoutAppearance.normal.iconColor = UIColor(named: "appBottomeNavIcon_Inactive")
+    // Text colors work fine via appearance
     appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-      .foregroundColor: UIColor(named: "appText03") ?? .gray
+      .foregroundColor: unselectedTextColor
     ]
-    
-    // Selected state
-    appearance.stackedLayoutAppearance.selected.iconColor = UIColor(named: "appBottomeNavIcon_Active")
     appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-      .foregroundColor: UIColor(named: "appPrimary") ?? .systemBlue
+      .foregroundColor: selectedTextColor
     ]
     
-    // Apply to global appearance
     UITabBar.appearance().standardAppearance = appearance
     UITabBar.appearance().scrollEdgeAppearance = appearance
     
-    // Apply to existing tab bars and fix image rendering mode
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-        windowScene.windows.forEach { window in
-          findAndConfigureTabBar(in: window, appearance: appearance)
-        }
-      }
+    // Find and configure tab bar items with the image trick
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+      self.configureTabBarItemImages(
+        unselectedColor: unselectedColor,
+        selectedColor: selectedColor
+      )
     }
   }
   
-  private func findAndConfigureTabBar(in view: UIView, appearance: UITabBarAppearance) {
+  private func configureTabBarItemImages(unselectedColor: UIColor, selectedColor: UIColor) {
+    guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
+    
+    for window in windowScene.windows {
+      findAndConfigureTabBar(in: window, unselectedColor: unselectedColor, selectedColor: selectedColor)
+    }
+  }
+  
+  private func findAndConfigureTabBar(in view: UIView, unselectedColor: UIColor, selectedColor: UIColor) {
     if let tabBar = view as? UITabBar {
-      tabBar.standardAppearance = appearance
-      tabBar.scrollEdgeAppearance = appearance
+      print("🎨 [TAB_BAR] Found UITabBar with \(tabBar.items?.count ?? 0) items")
       
-      // CRITICAL: Force each tab bar item's image to use template rendering
-      // SwiftUI's Label(title:image:) doesn't always set the correct rendering mode
-      tabBar.items?.forEach { item in
-        if let image = item.image {
-          item.image = image.withRenderingMode(.alwaysTemplate)
-        }
-        if let selectedImage = item.selectedImage {
-          item.selectedImage = selectedImage.withRenderingMode(.alwaysTemplate)
+      tabBar.items?.enumerated().forEach { index, item in
+        print("🎨 [TAB_BAR] Configuring item \(index): \(item.title ?? "no title")")
+        
+        if let originalImage = item.image {
+          // Unselected: Bake the color in with .alwaysOriginal
+          let unselectedImage = originalImage
+            .withTintColor(unselectedColor, renderingMode: .alwaysOriginal)
+          
+          // Selected: Use template so tint color applies
+          let selectedImage = originalImage
+            .withRenderingMode(.alwaysTemplate)
+          
+          item.image = unselectedImage
+          item.selectedImage = selectedImage
+          
+          print("🎨 [TAB_BAR] ✅ Applied colors to item \(index)")
         }
       }
+      
+      // Force refresh
+      tabBar.setNeedsLayout()
+      tabBar.layoutIfNeeded()
     }
     
     for subview in view.subviews {
-      findAndConfigureTabBar(in: subview, appearance: appearance)
-    }
-  }
-}
-
-// MARK: - TabBarAppearanceHelper
-
-/// Helper view that uses UIKit introspection to find and configure tab bars
-private struct TabBarAppearanceHelper: UIViewRepresentable {
-  func makeUIView(context: Context) -> UIView {
-    let view = UIView()
-    view.backgroundColor = .clear
-    return view
-  }
-  
-  func updateUIView(_ uiView: UIView, context: Context) {
-    // Multiple attempts to catch the tab bar after SwiftUI finishes layout
-    // SwiftUI can take time to fully render the TabView, so we try multiple times
-    for delay in [0.1, 0.3, 0.5] {
-      DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-          windowScene.windows.forEach { window in
-            configureTabBar(in: window)
-          }
-        }
-      }
-    }
-  }
-  
-  private func configureTabBar(in view: UIView) {
-    if let tabBar = view as? UITabBar {
-      let appearance = UITabBarAppearance()
-      appearance.configureWithDefaultBackground()
-      appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
-      
-      appearance.stackedLayoutAppearance.normal.iconColor = UIColor(named: "appBottomeNavIcon_Inactive")
-      appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-        .foregroundColor: UIColor(named: "appText03") ?? .gray
-      ]
-      
-      appearance.stackedLayoutAppearance.selected.iconColor = UIColor(named: "appBottomeNavIcon_Active")
-      appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-        .foregroundColor: UIColor(named: "appPrimary") ?? .systemBlue
-      ]
-      
-      tabBar.standardAppearance = appearance
-      tabBar.scrollEdgeAppearance = appearance
-      
-      // CRITICAL: Force template rendering mode on all tab bar item images
-      // This ensures UIKit applies the iconColor from UITabBarAppearance
-      tabBar.items?.forEach { item in
-        if let image = item.image {
-          item.image = image.withRenderingMode(.alwaysTemplate)
-        }
-        if let selectedImage = item.selectedImage {
-          item.selectedImage = selectedImage.withRenderingMode(.alwaysTemplate)
-        }
-      }
-    }
-    
-    for subview in view.subviews {
-      configureTabBar(in: subview)
+      findAndConfigureTabBar(in: subview, unselectedColor: unselectedColor, selectedColor: selectedColor)
     }
   }
 }
