@@ -87,21 +87,50 @@ struct TutorialBottomSheet: View {
                 Color.clear
                   .frame(height: 48)
               } else if index == 1 {
-                // Second screen: phoneImage without pulsing animation
+                // Second screen: phoneImage with ScheduledHabitItemView overlay
                 VStack {
                   Spacer()
                   
-                  Image("phoneImage")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 0)
-                    .scaleEffect(1.1)
+                  ZStack {
+                    Image("phoneImage")
+                      .resizable()
+                      .aspectRatio(contentMode: .fit)
+                      .frame(maxWidth: .infinity)
+                      .padding(.horizontal, 0)
+                      .scaleEffect(1.1)
+                    
+                    // ScheduledHabitItemView overlay
+                    if currentIndex == 1 {
+                      ScheduledHabitItem(
+                        habit: sampleHabit,
+                        selectedDate: Date())
+                      .scaleEffect(0.75) // Scale down to fit phone image
+                      .offset(x: habitItemSwipeOffset, y: -40 + habitItemOffsetY) // Combined offset: position over phone + animation offsets
+                      .opacity(habitItemOpacity)
+                    }
+                  }
                   
                   Spacer()
                 }
                 .frame(height: 300)
                 .padding(.top, 20)
+                .onAppear {
+                  // Reset and start animations when screen 2 appears
+                  if currentIndex == 1 {
+                    resetHabitItemAnimations()
+                    startHabitItemAnimations()
+                  }
+                }
+                .onChange(of: currentIndex) { newIndex in
+                  if newIndex == 1 {
+                    // Reset and start animations when navigating to screen 2
+                    resetHabitItemAnimations()
+                    startHabitItemAnimations()
+                  } else {
+                    // Stop animations when leaving screen 2
+                    stopHabitItemAnimations()
+                  }
+                }
                 
                 // Fixed 48pt spacing between image and text for consistency with first screen
                 Color.clear
@@ -196,8 +225,29 @@ struct TutorialBottomSheet: View {
   @State private var pulsingRingScale: CGFloat = 1.0
   @State private var pulsingRingOpacity: Double = 0.6
   @State private var isPulsingActive: Bool = false
+  
+  // Habit item animation state for screen 2
+  @State private var habitItemOpacity: CGFloat = 0
+  @State private var habitItemOffsetY: CGFloat = 20
+  @State private var habitItemSwipeOffset: CGFloat = 0
+  @State private var isSwipeAnimationActive: Bool = false
 
   private let slides = TutorialSlide.tutorialSlides
+  
+  // Sample habit for display on screen 2
+  private var sampleHabit: Habit {
+    Habit(
+      name: "Morning Exercise",
+      description: "30 minutes of cardio",
+      icon: "🏃‍♂️",
+      color: .blue,
+      habitType: .formation,
+      schedule: "Everyday",
+      goal: "5 times",
+      reminder: "No reminder",
+      startDate: Date(),
+      endDate: nil)
+  }
   
   // MARK: - Pulsing Animation Helpers
   
@@ -238,6 +288,80 @@ struct TutorialBottomSheet: View {
     withAnimation(nil) {
       pulsingRingScale = 1.0
       pulsingRingOpacity = 0.6
+    }
+  }
+  
+  // MARK: - Habit Item Animation Helpers
+  
+  private func resetHabitItemAnimations() {
+    habitItemOpacity = 0
+    habitItemOffsetY = 20
+    habitItemSwipeOffset = 0
+    isSwipeAnimationActive = false
+  }
+  
+  private func startHabitItemAnimations() {
+    // Appearing animation: fade in + slide up
+    // Delay: 0.3s after screen appears
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      withAnimation(.easeOut(duration: 0.5)) {
+        habitItemOpacity = 1.0
+        habitItemOffsetY = 0
+      }
+      
+      // Start ghost swipe animation after appearing animation completes
+      // Delay: 0.5s (appearing duration) + 0.8s (additional delay) = 1.3s total
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + 0.8) {
+        startGhostSwipeAnimation()
+      }
+    }
+  }
+  
+  private func startGhostSwipeAnimation() {
+    guard currentIndex == 1 else { return }
+    isSwipeAnimationActive = true
+    performGhostSwipeLoop(iteration: 0)
+  }
+  
+  private func performGhostSwipeLoop(iteration: Int) {
+    guard isSwipeAnimationActive && currentIndex == 1 && iteration < 2 else {
+      return
+    }
+    
+    // Shift LEFT (~15-20pt)
+    withAnimation(.easeInOut(duration: 0.4)) {
+      habitItemSwipeOffset = -18
+    }
+    
+    // Then shift RIGHT (~30-40pt, passing center)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+      guard self.isSwipeAnimationActive && self.currentIndex == 1 else { return }
+      withAnimation(.easeInOut(duration: 0.4)) {
+        self.habitItemSwipeOffset = 35
+      }
+      
+      // Then return to CENTER
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+        guard self.isSwipeAnimationActive && self.currentIndex == 1 else { return }
+        withAnimation(.easeInOut(duration: 0.4)) {
+          self.habitItemSwipeOffset = 0
+        }
+        
+        // Loop again if not done
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+          guard self.isSwipeAnimationActive && self.currentIndex == 1 else { return }
+          self.performGhostSwipeLoop(iteration: iteration + 1)
+        }
+      }
+    }
+  }
+  
+  private func stopHabitItemAnimations() {
+    isSwipeAnimationActive = false
+    withAnimation(nil) {
+      habitItemOpacity = 0
+      habitItemOffsetY = 20
+      habitItemSwipeOffset = 0
     }
   }
 }
