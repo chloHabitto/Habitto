@@ -191,7 +191,6 @@ struct DateCalendarSettingsView: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 40)
-      .background(Color("appSurface02Variant"))
     }
   }
 

@@ -30,7 +30,7 @@ struct StreakModeView: View {
         }
         .background(Color.sheetBackground)
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Streak Mode")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -73,8 +73,8 @@ struct StreakModeView: View {
           .padding(.leading, 60) // Account for icon (24) + spacing (16) + padding (20)
         streakModeRow(mode: .partial, isSelected: selectedMode == .partial)
       }
-      .background(Color.surface)
-      .cornerRadius(16)
+      .background(Color("appSurface02Variant"))
+      .cornerRadius(24)
     }
   }
 
