@@ -201,9 +201,9 @@ struct HomeTabView: View {
   @State private var showStreakMilestone = false
   @State private var milestoneStreakCount = 0
   @State private var pendingMilestone: Int? = nil
-  // ✅ STEP 2: Track last shown milestone to prevent duplicates
-  @State private var lastShownMilestoneStreak: Int? = nil
-  @State private var lastShownMilestoneDate: Date? = nil
+  // ✅ STEP 2: Track last shown milestone to prevent duplicates (persisted with @AppStorage)
+  @AppStorage("lastShownMilestoneStreak") private var lastShownMilestoneStreak: Int = -1  // -1 means "none"
+  @AppStorage("lastShownMilestoneDateTimestamp") private var lastShownMilestoneDateTimestamp: Double = 0  // Store as timestamp
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   @State private var completionStatusMap: [UUID: Bool] = [:]
@@ -724,7 +724,7 @@ struct HomeTabView: View {
     let isUserInitiated = userInfo["isUserInitiated"] as? Bool ?? false
     
     debugLog("🔍 MILESTONE_DEBUG: START - newStreak=\(newStreak), isUserInitiated=\(isUserInitiated)")
-    debugLog("🔍 MILESTONE_DEBUG: Current state - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone), lastShownMilestoneStreak=\(lastShownMilestoneStreak ?? -1), pendingMilestone=\(pendingMilestone?.description ?? "nil")")
+    debugLog("🔍 MILESTONE_DEBUG: Current state - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone), lastShownMilestoneStreak=\(lastShownMilestoneStreak), pendingMilestone=\(pendingMilestone?.description ?? "nil")")
     
     // ✅ STEP 2: Only process milestone logic for user-initiated updates
     guard isUserInitiated else {
@@ -745,14 +745,18 @@ struct HomeTabView: View {
     debugLog("🔍 MILESTONE_DEBUG: isMilestoneStreak(\(newStreak)) = \(isMilestone)")
     
     // ✅ STEP 2: Check if this milestone was already shown today
+    // Convert timestamp back to Date for comparison
+    let lastShownDate = lastShownMilestoneDateTimestamp > 0 ? Date(timeIntervalSince1970: lastShownMilestoneDateTimestamp) : nil
+    
     let alreadyShownToday = lastShownMilestoneStreak == newStreak && 
-                            lastShownMilestoneDate != nil && 
-                            Calendar.current.isDate(lastShownMilestoneDate!, inSameDayAs: Date())
+                            lastShownMilestoneStreak != -1 &&
+                            lastShownDate != nil && 
+                            Calendar.current.isDate(lastShownDate!, inSameDayAs: Date())
     
     debugLog("🔍 MILESTONE_DEBUG: alreadyShownToday=\(alreadyShownToday)")
-    debugLog("   - lastShownMilestoneStreak=\(lastShownMilestoneStreak ?? -1) vs newStreak=\(newStreak): \(lastShownMilestoneStreak == newStreak)")
-    debugLog("   - lastShownMilestoneDate=\(lastShownMilestoneDate?.description ?? "nil")")
-    if let date = lastShownMilestoneDate {
+    debugLog("   - lastShownMilestoneStreak=\(lastShownMilestoneStreak) vs newStreak=\(newStreak): \(lastShownMilestoneStreak == newStreak)")
+    debugLog("   - lastShownMilestoneDateTimestamp=\(lastShownMilestoneDateTimestamp), lastShownDate=\(lastShownDate?.description ?? "nil")")
+    if let date = lastShownDate {
       debugLog("   - isDateInToday=\(Calendar.current.isDate(date, inSameDayAs: Date()))")
     }
     
@@ -773,8 +777,9 @@ struct HomeTabView: View {
       
       // ✅ STEP 2: Mark this milestone as shown
       lastShownMilestoneStreak = newStreak
-      lastShownMilestoneDate = Date()
-      debugLog("✅ STEP2_TRACKING: Marked milestone \(newStreak) as shown on \(lastShownMilestoneDate?.description ?? "nil")")
+      lastShownMilestoneDateTimestamp = Date().timeIntervalSince1970
+      let shownDate = Date(timeIntervalSince1970: lastShownMilestoneDateTimestamp)
+      debugLog("✅ STEP2_TRACKING: Marked milestone \(newStreak) as shown on \(shownDate.description)")
       
       milestoneStreakCount = newStreak
       debugLog("🔍 MILESTONE_DEBUG: Set milestoneStreakCount=\(milestoneStreakCount)")
@@ -810,8 +815,9 @@ struct HomeTabView: View {
           showStreakMilestone = true
           
           // ✅ BUG 3 FIX: Set the date when milestone is shown
-          lastShownMilestoneDate = Date()
-          debugLog("🔍 MILESTONE_DEBUG: Set lastShownMilestoneDate=\(lastShownMilestoneDate?.description ?? "nil")")
+          lastShownMilestoneDateTimestamp = Date().timeIntervalSince1970
+          let shownDate = Date(timeIntervalSince1970: lastShownMilestoneDateTimestamp)
+          debugLog("🔍 MILESTONE_DEBUG: Set lastShownMilestoneDateTimestamp=\(lastShownMilestoneDateTimestamp), date=\(shownDate.description)")
           debugLog("🔍 MILESTONE_DEBUG: After setting - showStreakMilestone=\(showStreakMilestone)")
         }
       } else {
@@ -830,9 +836,9 @@ struct HomeTabView: View {
       // This allows milestone to show again when streak is re-earned
       if newStreak == 0 {
         debugLog("🔍 MILESTONE_DEBUG: Streak is 0 - resetting milestone tracking")
-        lastShownMilestoneStreak = nil
-        lastShownMilestoneDate = nil
-        debugLog("🔍 MILESTONE_DEBUG: Reset lastShownMilestoneStreak and lastShownMilestoneDate")
+        lastShownMilestoneStreak = -1
+        lastShownMilestoneDateTimestamp = 0
+        debugLog("🔍 MILESTONE_DEBUG: Reset lastShownMilestoneStreak and lastShownMilestoneDateTimestamp")
       }
       
       if pendingMilestone != nil || milestoneStreakCount > 0 {
