@@ -1274,6 +1274,16 @@ struct HomeTabView: View {
     debugLog(
       "🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=debug_user_id")
 
+    // ✅ FIX: Check if this day was already awarded (extra progress scenario)
+    if awardedDateKeys.contains(dateKey) {
+      debugLog("🎯 COMPLETION_FLOW: Day already awarded - this is extra progress, skipping celebration trigger")
+      // Still show difficulty sheet, but don't set lastHabitJustCompleted
+      // The difficulty sheet will still appear via the normal flow
+      deferResort = true
+      completionStatusMap[habit.id] = true
+      return  // Don't continue to the celebration logic
+    }
+
     // Mark complete and present difficulty sheet
     deferResort = true
 
