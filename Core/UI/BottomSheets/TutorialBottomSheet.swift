@@ -102,11 +102,22 @@ struct TutorialBottomSheet: View {
                     // ScheduledHabitItemView overlay
                     if currentIndex == 1 {
                       ScheduledHabitItem(
-                        habit: sampleHabit,
+                        habit: demoHabit,
                         selectedDate: Date())
+                      .fixedSize(horizontal: false, vertical: true) // Fix height to hug content
                       .scaleEffect(0.75) // Scale down to fit phone image
-                      .offset(x: habitItemSwipeOffset, y: -40 + habitItemOffsetY) // Combined offset: position over phone + animation offsets
+                      .offset(y: -40 + habitItemOffsetY) // Position over phone + animation offset
                       .opacity(habitItemOpacity)
+                      
+                      // Hand icon overlay for swipe demonstration
+                      if handIconOpacity > 0 {
+                        Image("Hand-right")
+                          .resizable()
+                          .aspectRatio(contentMode: .fit)
+                          .frame(width: 45, height: 45)
+                          .offset(x: handIconOffset, y: -40 + habitItemOffsetY)
+                          .opacity(handIconOpacity)
+                      }
                     }
                   }
                   
@@ -229,14 +240,14 @@ struct TutorialBottomSheet: View {
   // Habit item animation state for screen 2
   @State private var habitItemOpacity: CGFloat = 0
   @State private var habitItemOffsetY: CGFloat = 20
-  @State private var habitItemSwipeOffset: CGFloat = 0
-  @State private var isSwipeAnimationActive: Bool = false
-
-  private let slides = TutorialSlide.tutorialSlides
   
-  // Sample habit for display on screen 2
-  private var sampleHabit: Habit {
-    Habit(
+  // Hand icon animation state
+  @State private var handIconOffset: CGFloat = -90 // Start on the left
+  @State private var handIconOpacity: CGFloat = 0
+  
+  // Demo habit with mutable progress
+  @State private var demoHabit: Habit = {
+    var habit = Habit(
       name: "Morning Exercise",
       description: "30 minutes of cardio",
       icon: "🏃‍♂️",
@@ -247,7 +258,13 @@ struct TutorialBottomSheet: View {
       reminder: "No reminder",
       startDate: Date(),
       endDate: nil)
-  }
+    // Set initial progress to 2/5
+    let dateKey = Habit.dateKey(for: Date())
+    habit.completionHistory[dateKey] = 2
+    return habit
+  }()
+
+  private let slides = TutorialSlide.tutorialSlides
   
   // MARK: - Pulsing Animation Helpers
   
@@ -296,8 +313,14 @@ struct TutorialBottomSheet: View {
   private func resetHabitItemAnimations() {
     habitItemOpacity = 0
     habitItemOffsetY = 20
-    habitItemSwipeOffset = 0
-    isSwipeAnimationActive = false
+    handIconOffset = -90
+    handIconOpacity = 0
+    
+    // Reset demo habit progress to initial value (2/5)
+    let dateKey = Habit.dateKey(for: Date())
+    var updatedHabit = demoHabit
+    updatedHabit.completionHistory[dateKey] = 2
+    demoHabit = updatedHabit
   }
   
   private func startHabitItemAnimations() {
@@ -309,60 +332,77 @@ struct TutorialBottomSheet: View {
         habitItemOffsetY = 0
       }
       
-      // Start ghost swipe animation after appearing animation completes
+      // Start hand icon swipe demonstration after appearing animation completes
       // Delay: 0.5s (appearing duration) + 0.8s (additional delay) = 1.3s total
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5 + 0.8) {
-        startGhostSwipeAnimation()
+        startHandSwipeDemonstration()
       }
     }
   }
   
-  private func startGhostSwipeAnimation() {
+  private func startHandSwipeDemonstration() {
     guard currentIndex == 1 else { return }
-    isSwipeAnimationActive = true
-    performGhostSwipeLoop(iteration: 0)
-  }
-  
-  private func performGhostSwipeLoop(iteration: Int) {
-    guard isSwipeAnimationActive && currentIndex == 1 && iteration < 2 else {
-      return
+    
+    // Show hand icon on the left
+    withAnimation(.easeOut(duration: 0.3)) {
+      handIconOpacity = 1.0
+      handIconOffset = -90 // Start on the left side
     }
     
-    // Shift LEFT (~15-20pt)
-    withAnimation(.easeInOut(duration: 0.4)) {
-      habitItemSwipeOffset = -18
-    }
-    
-    // Then shift RIGHT (~30-40pt, passing center)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-      guard self.isSwipeAnimationActive && self.currentIndex == 1 else { return }
-      withAnimation(.easeInOut(duration: 0.4)) {
-        self.habitItemSwipeOffset = 35
+    // Small delay before starting movement
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      guard self.currentIndex == 1 else { return }
+      
+      // Move hand from left to right while updating progress
+      withAnimation(.easeInOut(duration: 0.8)) {
+        self.handIconOffset = 90 // Move to the right
       }
       
-      // Then return to CENTER
+      // Update progress during movement (2 → 3)
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-        guard self.isSwipeAnimationActive && self.currentIndex == 1 else { return }
-        withAnimation(.easeInOut(duration: 0.4)) {
-          self.habitItemSwipeOffset = 0
+        guard self.currentIndex == 1 else { return }
+        let dateKey = Habit.dateKey(for: Date())
+        // Create new habit instance to ensure SwiftUI detects state change
+        var updatedHabit = self.demoHabit
+        updatedHabit.completionHistory[dateKey] = 3
+        self.demoHabit = updatedHabit
+      }
+      
+      // Fade out hand at the end
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+        guard self.currentIndex == 1 else { return }
+        withAnimation(.easeOut(duration: 0.3)) {
+          self.handIconOpacity = 0
         }
         
-        // Loop again if not done
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-          guard self.isSwipeAnimationActive && self.currentIndex == 1 else { return }
-          self.performGhostSwipeLoop(iteration: iteration + 1)
+        // Reset and loop after a delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+          guard self.currentIndex == 1 else { return }
+          // Reset progress back to 2
+          let dateKey = Habit.dateKey(for: Date())
+          var updatedHabit = self.demoHabit
+          updatedHabit.completionHistory[dateKey] = 2
+          self.demoHabit = updatedHabit
+          // Restart animation
+          self.startHandSwipeDemonstration()
         }
       }
     }
   }
   
   private func stopHabitItemAnimations() {
-    isSwipeAnimationActive = false
     withAnimation(nil) {
       habitItemOpacity = 0
       habitItemOffsetY = 20
-      habitItemSwipeOffset = 0
+      handIconOffset = -90
+      handIconOpacity = 0
     }
+    
+    // Reset demo habit progress
+    let dateKey = Habit.dateKey(for: Date())
+    var updatedHabit = demoHabit
+    updatedHabit.completionHistory[dateKey] = 2
+    demoHabit = updatedHabit
   }
 }
 
