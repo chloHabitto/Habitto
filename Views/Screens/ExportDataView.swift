@@ -349,18 +349,21 @@ struct ExportDataView: View {
         selectedDataTypes: $selectedDataTypes)
         .presentationDetents([.fraction(0.45)])
         .presentationDragIndicator(.visible)
+        .presentationCornerRadius(32)
     }
     .sheet(isPresented: $showingDateRangePicker) {
       DateRangePickerView(
         selectedDateRange: $selectedDateRange)
         .presentationDetents([.fraction(0.35)])
         .presentationDragIndicator(.visible)
+        .presentationCornerRadius(32)
     }
     .sheet(isPresented: $showingFormatPicker) {
       ExportFormatPickerView(
         selectedFormat: $selectedFormat)
         .presentationDetents([.fraction(0.35)])
         .presentationDragIndicator(.visible)
+        .presentationCornerRadius(32)
     }
     .alert("Export Error", isPresented: .constant(exportError != nil)) {
       Button("OK") {
@@ -1191,23 +1194,28 @@ struct DataTypePickerView: View {
       // Header
       HStack {
         Text("Data Types")
-          .font(.system(size: 18, weight: .semibold))
+          .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
 
-        Button("Done") {
+        Button(action: {
           dismiss()
+        }) {
+          Image(systemName: "xmark")
+            .font(.system(size: 16, weight: .heavy))
+            .foregroundColor(Color("appText07Variant"))
         }
-        .font(.system(size: 16, weight: .medium))
-        .foregroundColor(.primary)
+        .frame(width: 44, height: 44)
+        .buttonStyle(PlainButtonStyle())
       }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.leading, 20)
+      .padding(.trailing, 8)
+      .padding(.top, 6)
 
       // List
       List {
-        ForEach(ExportDataView.DataType.allCases, id: \.self) { dataType in
+        ForEach(Array(ExportDataView.DataType.allCases.enumerated()), id: \.element) { index, dataType in
           Button(action: {
             if selectedDataTypes.contains(dataType) {
               selectedDataTypes.remove(dataType)
@@ -1230,11 +1238,12 @@ struct DataTypePickerView: View {
             }
             .padding(.vertical, 4)
           }
+          .listRowSeparator(index == ExportDataView.DataType.allCases.count - 1 ? .hidden : .visible)
         }
       }
       .listStyle(.plain)
     }
-    .background(Color("appSurface01Variant02"))
+    .background(Color(.systemBackground))
   }
 
   // MARK: Private
@@ -1254,23 +1263,28 @@ struct DateRangePickerView: View {
       // Header
       HStack {
         Text("Date Range")
-          .font(.system(size: 18, weight: .semibold))
+          .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
 
-        Button("Done") {
+        Button(action: {
           dismiss()
+        }) {
+          Image(systemName: "xmark")
+            .font(.system(size: 16, weight: .heavy))
+            .foregroundColor(Color("appText07Variant"))
         }
-        .font(.system(size: 16, weight: .medium))
-        .foregroundColor(.primary)
+        .frame(width: 44, height: 44)
+        .buttonStyle(PlainButtonStyle())
       }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.leading, 20)
+      .padding(.trailing, 8)
+      .padding(.top, 6)
 
       // List
       List {
-        ForEach(ExportDataView.DateRange.allCases, id: \.self) { range in
+        ForEach(Array(ExportDataView.DateRange.allCases.enumerated()), id: \.element) { index, range in
           Button(action: {
             selectedDateRange = range
             dismiss()
@@ -1290,11 +1304,12 @@ struct DateRangePickerView: View {
             }
             .padding(.vertical, 4)
           }
+          .listRowSeparator(index == ExportDataView.DateRange.allCases.count - 1 ? .hidden : .visible)
         }
       }
       .listStyle(.plain)
     }
-    .background(Color("appSurface01Variant02"))
+    .background(Color(.systemBackground))
   }
 
   // MARK: Private
@@ -1314,23 +1329,28 @@ struct ExportFormatPickerView: View {
       // Header
       HStack {
         Text("Export Format")
-          .font(.system(size: 18, weight: .semibold))
+          .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
 
-        Button("Done") {
+        Button(action: {
           dismiss()
+        }) {
+          Image(systemName: "xmark")
+            .font(.system(size: 16, weight: .heavy))
+            .foregroundColor(Color("appText07Variant"))
         }
-        .font(.system(size: 16, weight: .medium))
-        .foregroundColor(.primary)
+        .frame(width: 44, height: 44)
+        .buttonStyle(PlainButtonStyle())
       }
-      .padding(.horizontal, 20)
-      .padding(.vertical, 16)
+      .padding(.leading, 20)
+      .padding(.trailing, 8)
+      .padding(.top, 6)
 
       // List
       List {
-        ForEach(ExportDataView.ExportFormat.allCases, id: \.self) { format in
+        ForEach(Array(ExportDataView.ExportFormat.allCases.enumerated()), id: \.element) { index, format in
           Button(action: {
             selectedFormat = format
             dismiss()
@@ -1350,11 +1370,12 @@ struct ExportFormatPickerView: View {
             }
             .padding(.vertical, 4)
           }
+          .listRowSeparator(index == ExportDataView.ExportFormat.allCases.count - 1 ? .hidden : .visible)
         }
       }
       .listStyle(.plain)
     }
-    .background(Color("appSurface01Variant02"))
+    .background(Color(.systemBackground))
   }
 
   // MARK: Private
