@@ -18,13 +18,11 @@ struct TutorialCarousel: View {
             .tag(index)
         } else {
           // Regular images for slides 1+
+          let isLastSlide = slide.id == TutorialSlide.tutorialSlides.last?.id
           Image(slide.imageName)
             .resizable()
-            .aspectRatio(contentMode: slide.id == TutorialSlide.tutorialSlides.last?.id
-              ? .fit
-              : .fill)
-            .frame(maxWidth: .infinity)
-            .frame(height: 280)
+            .aspectRatio(contentMode: isLastSlide ? .fit : .fill)
+            .frame(width: isLastSlide ? 260 : nil, height: isLastSlide ? 260 : 280)
             .clipped()
             .tag(index)
         }
@@ -56,20 +54,10 @@ struct TutorialTextContent: View {
         .multilineTextAlignment(.center)
         .lineLimit(nil)
         .fixedSize(horizontal: false, vertical: true)
-
-      // Page Indicators
-      HStack(spacing: 8) {
-        ForEach(0 ..< slides.count, id: \.self) { index in
-          Circle()
-            .fill(index == currentIndex ? Color.appText02 : Color.grey300.opacity(0.4))
-            .frame(width: 8, height: 8)
-            .animation(.easeInOut(duration: 0.2), value: currentIndex)
-        }
-      }
-      .padding(.top, 20)
     }
     .padding(.horizontal, 20)
     .padding(.top, 24)
+    .padding(.bottom, 24)
     .animation(.easeInOut(duration: 0.2), value: currentIndex)
   }
 }
