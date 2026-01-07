@@ -38,38 +38,35 @@ struct TabBarAppearanceModifier: ViewModifier {
     UITabBar.appearance().standardAppearance = appearance
     UITabBar.appearance().scrollEdgeAppearance = appearance
     
-    // Also apply to existing tab bars in the window hierarchy
+    // Apply to existing tab bars and fix image rendering mode
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
       if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
         windowScene.windows.forEach { window in
-          findAndConfigureTabBar(in: window)
+          findAndConfigureTabBar(in: window, appearance: appearance)
         }
       }
     }
   }
   
-  private func findAndConfigureTabBar(in view: UIView) {
+  private func findAndConfigureTabBar(in view: UIView, appearance: UITabBarAppearance) {
     if let tabBar = view as? UITabBar {
-      let appearance = UITabBarAppearance()
-      appearance.configureWithDefaultBackground()
-      appearance.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
-      
-      appearance.stackedLayoutAppearance.normal.iconColor = UIColor(named: "appBottomeNavIcon_Inactive")
-      appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-        .foregroundColor: UIColor(named: "appText03") ?? .gray
-      ]
-      
-      appearance.stackedLayoutAppearance.selected.iconColor = UIColor(named: "appBottomeNavIcon_Active")
-      appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-        .foregroundColor: UIColor(named: "appPrimary") ?? .systemBlue
-      ]
-      
       tabBar.standardAppearance = appearance
       tabBar.scrollEdgeAppearance = appearance
+      
+      // CRITICAL: Force each tab bar item's image to use template rendering
+      // SwiftUI's Label(title:image:) doesn't always set the correct rendering mode
+      tabBar.items?.forEach { item in
+        if let image = item.image {
+          item.image = image.withRenderingMode(.alwaysTemplate)
+        }
+        if let selectedImage = item.selectedImage {
+          item.selectedImage = selectedImage.withRenderingMode(.alwaysTemplate)
+        }
+      }
     }
     
     for subview in view.subviews {
-      findAndConfigureTabBar(in: subview)
+      findAndConfigureTabBar(in: subview, appearance: appearance)
     }
   }
 }
@@ -85,11 +82,14 @@ private struct TabBarAppearanceHelper: UIViewRepresentable {
   }
   
   func updateUIView(_ uiView: UIView, context: Context) {
-    // Find and configure tab bar in the view hierarchy
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-      if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-        windowScene.windows.forEach { window in
-          configureTabBar(in: window)
+    // Multiple attempts to catch the tab bar after SwiftUI finishes layout
+    // SwiftUI can take time to fully render the TabView, so we try multiple times
+    for delay in [0.1, 0.3, 0.5] {
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+          windowScene.windows.forEach { window in
+            configureTabBar(in: window)
+          }
         }
       }
     }
@@ -113,6 +113,17 @@ private struct TabBarAppearanceHelper: UIViewRepresentable {
       
       tabBar.standardAppearance = appearance
       tabBar.scrollEdgeAppearance = appearance
+      
+      // CRITICAL: Force template rendering mode on all tab bar item images
+      // This ensures UIKit applies the iconColor from UITabBarAppearance
+      tabBar.items?.forEach { item in
+        if let image = item.image {
+          item.image = image.withRenderingMode(.alwaysTemplate)
+        }
+        if let selectedImage = item.selectedImage {
+          item.selectedImage = selectedImage.withRenderingMode(.alwaysTemplate)
+        }
+      }
     }
     
     for subview in view.subviews {
@@ -130,4 +141,3 @@ extension View {
     modifier(TabBarAppearanceModifier())
   }
 }
-
