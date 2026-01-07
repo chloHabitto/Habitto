@@ -18,8 +18,6 @@ struct ThemeView: View {
         
         // Save button at bottom
         VStack(spacing: 0) {
-          Divider()
-          
           HabittoButton.largeFillPrimary(
             text: "Save",
             state: hasChanges ? .default : .disabled,
@@ -28,7 +26,6 @@ struct ThemeView: View {
             })
             .padding(24)
         }
-        .background(Color.sheetBackground)
       }
       .background(Color("appSurface01Variant02"))
       .navigationTitle("Theme")
