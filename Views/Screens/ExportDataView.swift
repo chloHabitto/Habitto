@@ -117,7 +117,7 @@ struct ExportDataView: View {
 
   var body: some View {
     NavigationView {
-      VStack(spacing: 0) {
+      ZStack(alignment: .bottom) {
         // Scrollable content
         ScrollView {
           VStack(spacing: 24) {
@@ -268,23 +268,6 @@ struct ExportDataView: View {
             .buttonStyle(PlainButtonStyle())
             .padding(.horizontal, 20)
 
-            // Export Button
-            Button(action: {
-              Task {
-                await performExport()
-              }
-            }) {
-              Text(isExporting ? "Exporting..." : "Export Data")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.primary)
-                .cornerRadius(28)
-            }
-            .disabled(isExporting || selectedDataTypes.isEmpty)
-            .padding(.horizontal, 20)
-
             // Export Information
             VStack(spacing: 8) {
               HStack {
@@ -314,8 +297,22 @@ struct ExportDataView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 24)
           }
+          .padding(.bottom, 100) // Space for bottom button
         }
         .background(Color("appSurface01Variant02"))
+        
+        // Bottom-fixed Export button
+        VStack(spacing: 0) {
+          HabittoButton.largeFillPrimary(
+            text: isExporting ? "Exporting..." : "Export Data",
+            state: (!isExporting && !selectedDataTypes.isEmpty) ? .default : .disabled,
+            action: {
+              Task {
+                await performExport()
+              }
+            })
+            .padding(24)
+        }
       }
       .background(Color("appSurface01Variant02"))
       .navigationTitle("Export Data")
@@ -350,14 +347,20 @@ struct ExportDataView: View {
     .sheet(isPresented: $showingDataTypePicker) {
       DataTypePickerView(
         selectedDataTypes: $selectedDataTypes)
+        .presentationDetents([.fraction(0.45)])
+        .presentationDragIndicator(.visible)
     }
     .sheet(isPresented: $showingDateRangePicker) {
       DateRangePickerView(
         selectedDateRange: $selectedDateRange)
+        .presentationDetents([.fraction(0.35)])
+        .presentationDragIndicator(.visible)
     }
     .sheet(isPresented: $showingFormatPicker) {
       ExportFormatPickerView(
         selectedFormat: $selectedFormat)
+        .presentationDetents([.fraction(0.35)])
+        .presentationDragIndicator(.visible)
     }
     .alert("Export Error", isPresented: .constant(exportError != nil)) {
       Button("OK") {
@@ -1184,7 +1187,25 @@ struct DataTypePickerView: View {
   @Binding var selectedDataTypes: Set<ExportDataView.DataType>
 
   var body: some View {
-    NavigationView {
+    VStack(spacing: 0) {
+      // Header
+      HStack {
+        Text("Data Types")
+          .font(.system(size: 18, weight: .semibold))
+          .foregroundColor(.text01)
+
+        Spacer()
+
+        Button("Done") {
+          dismiss()
+        }
+        .font(.system(size: 16, weight: .medium))
+        .foregroundColor(.primary)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+
+      // List
       List {
         ForEach(ExportDataView.DataType.allCases, id: \.self) { dataType in
           Button(action: {
@@ -1211,20 +1232,9 @@ struct DataTypePickerView: View {
           }
         }
       }
-      .listStyle(.insetGrouped)
-      .background(Color("appSurface01Variant02"))
-      .navigationTitle("Data Types")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
-            dismiss()
-          }
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.primary)
-        }
-      }
+      .listStyle(.plain)
     }
+    .background(Color("appSurface01Variant02"))
   }
 
   // MARK: Private
@@ -1240,7 +1250,25 @@ struct DateRangePickerView: View {
   @Binding var selectedDateRange: ExportDataView.DateRange
 
   var body: some View {
-    NavigationView {
+    VStack(spacing: 0) {
+      // Header
+      HStack {
+        Text("Date Range")
+          .font(.system(size: 18, weight: .semibold))
+          .foregroundColor(.text01)
+
+        Spacer()
+
+        Button("Done") {
+          dismiss()
+        }
+        .font(.system(size: 16, weight: .medium))
+        .foregroundColor(.primary)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+
+      // List
       List {
         ForEach(ExportDataView.DateRange.allCases, id: \.self) { range in
           Button(action: {
@@ -1264,20 +1292,9 @@ struct DateRangePickerView: View {
           }
         }
       }
-      .listStyle(.insetGrouped)
-      .background(Color("appSurface01Variant02"))
-      .navigationTitle("Date Range")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
-            dismiss()
-          }
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.primary)
-        }
-      }
+      .listStyle(.plain)
     }
+    .background(Color("appSurface01Variant02"))
   }
 
   // MARK: Private
@@ -1293,7 +1310,25 @@ struct ExportFormatPickerView: View {
   @Binding var selectedFormat: ExportDataView.ExportFormat
 
   var body: some View {
-    NavigationView {
+    VStack(spacing: 0) {
+      // Header
+      HStack {
+        Text("Export Format")
+          .font(.system(size: 18, weight: .semibold))
+          .foregroundColor(.text01)
+
+        Spacer()
+
+        Button("Done") {
+          dismiss()
+        }
+        .font(.system(size: 16, weight: .medium))
+        .foregroundColor(.primary)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+
+      // List
       List {
         ForEach(ExportDataView.ExportFormat.allCases, id: \.self) { format in
           Button(action: {
@@ -1317,20 +1352,9 @@ struct ExportFormatPickerView: View {
           }
         }
       }
-      .listStyle(.insetGrouped)
-      .background(Color("appSurface01Variant02"))
-      .navigationTitle("Export Format")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
-            dismiss()
-          }
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.primary)
-        }
-      }
+      .listStyle(.plain)
     }
+    .background(Color("appSurface01Variant02"))
   }
 
   // MARK: Private

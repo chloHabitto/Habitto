@@ -110,14 +110,13 @@ struct TutorialBottomSheet: View {
                       .opacity(habitItemOpacity)
                       
                       // Hand icon overlay for swipe demonstration
-                      if handIconOpacity > 0 {
-                        Image(currentHandIcon)
-                          .resizable()
-                          .aspectRatio(contentMode: .fit)
-                          .frame(width: 45, height: 45)
-                          .offset(x: handIconOffset, y: -40 + habitItemOffsetY)
-                          .opacity(handIconOpacity)
-                      }
+                      // Always render (even when opacity is 0) so it can be positioned and animated
+                      Image(currentHandIcon)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 45, height: 45)
+                        .offset(x: handIconOffset, y: -40 + habitItemOffsetY)
+                        .opacity(handIconOpacity)
                     }
                   }
                   
@@ -374,18 +373,25 @@ struct TutorialBottomSheet: View {
     // Set hand icon type
     currentHandIcon = handIconName
     
-    // Reset hand position and opacity
-    handIconOffset = startOffset
-    handIconOpacity = 0
-    
-    // Start movement animation (0.8s total)
-    withAnimation(.easeInOut(duration: 0.8)) {
-      handIconOffset = endOffset
+    // Reset hand position and opacity instantly (no animation)
+    withAnimation(nil) {
+      handIconOffset = startOffset
+      handIconOpacity = 0
     }
     
-    // Fade in during first 30% of movement (0.24s = 30% of 0.8s)
-    withAnimation(.easeOut(duration: 0.24)) {
-      handIconOpacity = 1.0
+    // Small delay to ensure state is set, then start animation
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+      guard self.currentIndex == 1 else { return }
+      
+      // Animate movement from start to end position (0.8s total)
+      withAnimation(.easeInOut(duration: 0.8)) {
+        self.handIconOffset = endOffset
+      }
+      
+      // Fade in during first 30% of movement (0.24s = 30% of 0.8s)
+      withAnimation(.easeOut(duration: 0.24)) {
+        self.handIconOpacity = 1.0
+      }
     }
     
     // Update progress at midpoint (0.4s into movement)
