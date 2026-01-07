@@ -235,7 +235,7 @@ struct MoreTabView: View {
 
       Image(systemName: "chevron.right")
         .font(.system(size: 14, weight: .heavy))
-        .foregroundColor(.onPrimary)
+        .foregroundColor(.appOutline03)
     }
     .padding(.trailing, 16)
     .frame(height: 80)
@@ -408,7 +408,7 @@ struct MoreTabView: View {
         Spacer()
         Image(systemName: "chevron.right")
           .font(.system(size: 12, weight: .heavy))
-          .foregroundColor(.text04)
+          .foregroundColor(.appOutline03)
       }
       .padding(.horizontal, 16)
       .padding(.vertical, 12)
@@ -544,7 +544,7 @@ struct MoreTabView: View {
               if item.hasChevron {
                 Image(systemName: "chevron.right")
                   .font(.system(size: 12, weight: .heavy))
-                  .foregroundColor(.text04)
+                  .foregroundColor(.appOutline03)
               }
             }
           }

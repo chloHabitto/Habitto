@@ -167,8 +167,8 @@ struct ExportDataView: View {
                     Spacer()
 
                     Image(systemName: "chevron.down")
-                      .font(.system(size: 14, weight: .medium))
-                      .foregroundColor(.text03)
+                      .font(.system(size: 14, weight: .bold))
+                      .foregroundColor(.appOutline03)
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
@@ -210,8 +210,8 @@ struct ExportDataView: View {
                     Spacer()
 
                     Image(systemName: "chevron.down")
-                      .font(.system(size: 14, weight: .medium))
-                      .foregroundColor(.text03)
+                      .font(.system(size: 14, weight: .bold))
+                      .foregroundColor(.appOutline03)
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
@@ -253,8 +253,8 @@ struct ExportDataView: View {
                     Spacer()
 
                     Image(systemName: "chevron.down")
-                      .font(.system(size: 14, weight: .medium))
-                      .foregroundColor(.text03)
+                      .font(.system(size: 14, weight: .bold))
+                      .foregroundColor(.appOutline03)
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
@@ -299,8 +299,8 @@ struct ExportDataView: View {
                   Spacer()
 
                   Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.text03)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.appOutline03)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
