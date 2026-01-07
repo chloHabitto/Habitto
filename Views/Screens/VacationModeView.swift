@@ -18,7 +18,15 @@ struct VacationModeView: View {
         ZStack(alignment: .bottom) {
           ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-              // Travel image at the top
+              // Description text
+              Text("Manage your vacation periods and settings")
+                .font(.appBodyMedium)
+                .foregroundColor(.text05)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+              
+              // Travel image
               HStack {
                 Spacer()
                 Image("Travel")
@@ -28,14 +36,6 @@ struct VacationModeView: View {
                 Spacer()
               }
               .padding(.top, 20)
-              
-              // Description text
-              Text("Manage your vacation periods and settings")
-                .font(.appBodyMedium)
-                .foregroundColor(.text05)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
 
               // Vacation Mode Status Section
               VStack(alignment: .leading, spacing: 16) {

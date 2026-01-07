@@ -349,7 +349,7 @@ struct AccountView: View {
         // Icon
         Image(systemName: "person.fill")
           .font(.system(size: 20))
-          .foregroundColor(.primaryDim)
+          .foregroundColor(.appIconColor)
           .frame(width: 24, height: 24)
         
         // Title and Value in VStack
@@ -390,7 +390,7 @@ struct AccountView: View {
           // Icon
           Image(systemName: "gift.fill")
             .font(.system(size: 20))
-            .foregroundColor(.primaryDim)
+            .foregroundColor(.appIconColor)
             .frame(width: 24, height: 24)
           
           // Title and Value in VStack
@@ -474,7 +474,7 @@ struct AccountView: View {
         // Icon
         Image(systemName: "apple.logo")
           .font(.system(size: 20))
-          .foregroundColor(.primaryDim)
+          .foregroundColor(.appIconColor)
           .frame(width: 24, height: 24)
         
         // Title and Value in VStack
@@ -542,7 +542,7 @@ struct AccountView: View {
         // Icon
         Image(systemName: icon)
           .font(.system(size: 20))
-          .foregroundColor(.primaryDim)
+          .foregroundColor(.appIconColor)
           .frame(width: 24, height: 24)
         
         // Title and Value
@@ -1060,7 +1060,7 @@ struct AccountOptionRow: View {
     title: String,
     subtitle: String,
     hasChevron: Bool,
-    iconColor: Color = .navy200,
+    iconColor: Color = .appIconColor,
     action: @escaping () -> Void)
   {
     self.icon = icon

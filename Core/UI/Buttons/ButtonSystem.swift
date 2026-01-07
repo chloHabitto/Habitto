@@ -86,6 +86,7 @@ struct HabittoButton: View {
   @ViewBuilder
   private func iconOnlyView(_ iconName: String) -> some View {
     Image(iconName)
+      .renderingMode(.template)
       .resizable()
       .frame(width: size.iconSize, height: size.iconSize)
       .foregroundColor(style.iconColor(for: state))
@@ -98,6 +99,7 @@ struct HabittoButton: View {
   private func textAndIconView(_ text: String, _ iconName: String) -> some View {
     HStack(spacing: 8) {
       Image(iconName)
+        .renderingMode(.template)
         .resizable()
         .frame(width: size.iconSize, height: size.iconSize)
         .foregroundColor(style.iconColor(for: state))
