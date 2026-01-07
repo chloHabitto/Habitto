@@ -169,22 +169,9 @@ struct ExportDataView: View {
                   .font(.system(size: 16, weight: .medium))
                   .foregroundColor(.text01)
 
-                Menu {
-                  ForEach(DateRange.allCases, id: \.self) { range in
-                    Button(action: {
-                      selectedDateRange = range
-                    }) {
-                      HStack {
-                        Text(range.displayName)
-                        Spacer()
-                        if selectedDateRange == range {
-                          Image(systemName: "checkmark")
-                            .foregroundColor(.primary)
-                        }
-                      }
-                    }
-                  }
-                } label: {
+                Button(action: {
+                  showingDateRangePicker = true
+                }) {
                   HStack {
                     Text(selectedDateRange.displayName)
                       .font(.system(size: 16, weight: .regular))
@@ -212,22 +199,9 @@ struct ExportDataView: View {
                   .font(.system(size: 16, weight: .medium))
                   .foregroundColor(.text01)
 
-                Menu {
-                  ForEach(ExportFormat.allCases, id: \.self) { format in
-                    Button(action: {
-                      selectedFormat = format
-                    }) {
-                      HStack {
-                        Text(format.displayName)
-                        Spacer()
-                        if selectedFormat == format {
-                          Image(systemName: "checkmark")
-                            .foregroundColor(.primary)
-                        }
-                      }
-                    }
-                  }
-                } label: {
+                Button(action: {
+                  showingFormatPicker = true
+                }) {
                   HStack {
                     Text(selectedFormat.displayName)
                       .font(.system(size: 16, weight: .regular))
@@ -377,6 +351,14 @@ struct ExportDataView: View {
       DataTypePickerView(
         selectedDataTypes: $selectedDataTypes)
     }
+    .sheet(isPresented: $showingDateRangePicker) {
+      DateRangePickerView(
+        selectedDateRange: $selectedDateRange)
+    }
+    .sheet(isPresented: $showingFormatPicker) {
+      ExportFormatPickerView(
+        selectedFormat: $selectedFormat)
+    }
     .alert("Export Error", isPresented: .constant(exportError != nil)) {
       Button("OK") {
         exportError = nil
@@ -402,6 +384,8 @@ struct ExportDataView: View {
   @State private var exportError: String?
   @State private var showingPreview = false
   @State private var showingDataTypePicker = false
+  @State private var showingDateRangePicker = false
+  @State private var showingFormatPicker = false
 
   private var estimatedTotalSize: String {
     // Calculate actual estimated size based on selected data types and date range
@@ -1230,6 +1214,112 @@ struct DataTypePickerView: View {
       .listStyle(.insetGrouped)
       .background(Color("appSurface01Variant02"))
       .navigationTitle("Data Types")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Button("Done") {
+            dismiss()
+          }
+          .font(.system(size: 16, weight: .medium))
+          .foregroundColor(.primary)
+        }
+      }
+    }
+  }
+
+  // MARK: Private
+
+  @Environment(\.dismiss) private var dismiss
+}
+
+// MARK: - DateRangePickerView
+
+struct DateRangePickerView: View {
+  // MARK: Internal
+
+  @Binding var selectedDateRange: ExportDataView.DateRange
+
+  var body: some View {
+    NavigationView {
+      List {
+        ForEach(ExportDataView.DateRange.allCases, id: \.self) { range in
+          Button(action: {
+            selectedDateRange = range
+            dismiss()
+          }) {
+            HStack {
+              Text(range.displayName)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.text01)
+
+              Spacer()
+
+              if selectedDateRange == range {
+                Image(systemName: "checkmark")
+                  .foregroundColor(.primary)
+                  .font(.system(size: 16, weight: .semibold))
+              }
+            }
+            .padding(.vertical, 4)
+          }
+        }
+      }
+      .listStyle(.insetGrouped)
+      .background(Color("appSurface01Variant02"))
+      .navigationTitle("Date Range")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Button("Done") {
+            dismiss()
+          }
+          .font(.system(size: 16, weight: .medium))
+          .foregroundColor(.primary)
+        }
+      }
+    }
+  }
+
+  // MARK: Private
+
+  @Environment(\.dismiss) private var dismiss
+}
+
+// MARK: - ExportFormatPickerView
+
+struct ExportFormatPickerView: View {
+  // MARK: Internal
+
+  @Binding var selectedFormat: ExportDataView.ExportFormat
+
+  var body: some View {
+    NavigationView {
+      List {
+        ForEach(ExportDataView.ExportFormat.allCases, id: \.self) { format in
+          Button(action: {
+            selectedFormat = format
+            dismiss()
+          }) {
+            HStack {
+              Text(format.displayName)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.text01)
+
+              Spacer()
+
+              if selectedFormat == format {
+                Image(systemName: "checkmark")
+                  .foregroundColor(.primary)
+                  .font(.system(size: 16, weight: .semibold))
+              }
+            }
+            .padding(.vertical, 4)
+          }
+        }
+      }
+      .listStyle(.insetGrouped)
+      .background(Color("appSurface01Variant02"))
+      .navigationTitle("Export Format")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
