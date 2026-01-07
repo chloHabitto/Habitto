@@ -37,7 +37,7 @@ struct DateCalendarView: View {
           saveButton
         }
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Date & Calendar")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -110,7 +110,7 @@ struct DateCalendarView: View {
           }
         }
       }
-      .background(.surface)
+      .background(Color("appSurface02Variant"))
       .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -141,7 +141,7 @@ struct DateCalendarView: View {
           }
         }
       }
-      .background(.surface)
+      .background(Color("appSurface02Variant"))
       .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
@@ -153,7 +153,7 @@ struct DateCalendarView: View {
     VStack(spacing: 0) {
       // Gradient overlay to fade content behind button
       LinearGradient(
-        gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
+        gradient: Gradient(colors: [Color("appSurface02Variant").opacity(0), Color("appSurface02Variant")]),
         startPoint: .top,
         endPoint: .bottom)
         .frame(height: 20)
@@ -167,7 +167,7 @@ struct DateCalendarView: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 40)
-      .background(Color.surface2)
+      .background(Color("appSurface02Variant"))
     }
   }
 

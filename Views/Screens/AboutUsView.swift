@@ -170,7 +170,6 @@ struct AboutUsView: View {
             .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.bottom, 24)
-        .padding(.horizontal, 24)
         }
         .padding(.horizontal, 20)
       }

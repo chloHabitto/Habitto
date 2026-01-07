@@ -48,8 +48,8 @@ struct DeleteDataView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
-            .background(Color.surface)
-            .cornerRadius(16)
+            .background(Color("appSurface02Variant"))
+            .cornerRadius(24)
             .padding(.horizontal, 20)
 
             Spacer(minLength: 100)
@@ -57,7 +57,7 @@ struct DeleteDataView: View {
           .padding(.top, 24)
           .padding(.bottom, 24)
         }
-        .background(Color.surface2)
+        .background(Color("appSurface01Variant02"))
 
         // Fixed Bottom Section - Delete Button
         VStack(spacing: 16) {
@@ -78,9 +78,9 @@ struct DeleteDataView: View {
           .padding(.horizontal, 20)
         }
         .padding(.vertical, 20)
-        .background(Color.surface2)
+        .background(Color("appSurface01Variant02"))
       }
-      .background(Color.surface2)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Delete Data")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -384,7 +384,7 @@ struct DeleteCompleteView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
       }
-      .background(Color.surface2)
+      .background(Color("appSurface01Variant02"))
     }
   }
 }

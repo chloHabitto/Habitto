@@ -83,8 +83,8 @@ struct BackupRecoveryView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
-                .background(Color.surface)
-                .cornerRadius(16)
+                .background(Color("appSurface02Variant"))
+                .cornerRadius(24)
 
                 // Backup Frequency (shown when automatic backup is enabled)
                 if isAutomaticBackupEnabled {
@@ -121,8 +121,8 @@ struct BackupRecoveryView: View {
                   }
                   .padding(.horizontal, 20)
                   .padding(.vertical, 16)
-                  .background(Color.surface)
-                  .cornerRadius(16)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
                 }
 
                 // WiFi Only Toggle (shown when automatic backup is enabled)
@@ -151,13 +151,13 @@ struct BackupRecoveryView: View {
                       .onChange(of: wifiOnlyBackup) {
                         Task {
                           await saveBackupSettings()
-                        }
                       }
+                    }
                   }
                   .padding(.horizontal, 20)
                   .padding(.vertical, 16)
-                  .background(Color.surface)
-                  .cornerRadius(16)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
                 }
               }
               }
@@ -197,21 +197,21 @@ struct BackupRecoveryView: View {
                   }
                   .padding(.horizontal, 20)
                   .padding(.vertical, 16)
-                  .background(Color.surface)
-                  .cornerRadius(16)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
                 }
               }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 140) // Extra bottom padding for fixed button
           }
-          .background(Color.surface2)
+          .background(Color("appSurface01Variant02"))
 
           // Fixed Backup Now Button at bottom
           VStack(spacing: 0) {
             // Gradient overlay to fade content behind button
             LinearGradient(
-              gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
+              gradient: Gradient(colors: [Color("appSurface01Variant02").opacity(0), Color("appSurface01Variant02")]),
               startPoint: .top,
               endPoint: .bottom)
               .frame(height: 20)
@@ -250,7 +250,7 @@ struct BackupRecoveryView: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 40)
-            .background(Color.surface2)
+            .background(Color("appSurface01Variant02"))
           }
         }
       }
@@ -341,8 +341,8 @@ struct BackupRecoveryView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(Color.surface)
-        .cornerRadius(12)
+        .background(Color("appSurface02Variant"))
+        .cornerRadius(24)
         
       case .active:
         HStack {
@@ -360,8 +360,8 @@ struct BackupRecoveryView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(Color.surface)
-        .cornerRadius(12)
+        .background(Color("appSurface02Variant"))
+        .cornerRadius(24)
         
       case .inactive:
         HStack {
@@ -379,8 +379,8 @@ struct BackupRecoveryView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(Color.surface)
-        .cornerRadius(12)
+        .background(Color("appSurface02Variant"))
+        .cornerRadius(24)
       }
     }
   }

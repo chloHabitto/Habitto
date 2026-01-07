@@ -66,7 +66,7 @@ struct PreferencesView: View {
             }
           }
           .background(Color("appSurface02Variant"))
-          .cornerRadius(16)
+          .cornerRadius(24)
           .padding(.horizontal, 20)
 
           Spacer(minLength: 24)
