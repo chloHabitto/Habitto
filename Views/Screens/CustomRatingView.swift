@@ -7,11 +7,11 @@ struct CustomRatingView: View {
     NavigationView {
       ZStack(alignment: .bottom) {
         // Background
-        Color.sheetBackground
+        Color("appSurface01Variant02")
           .ignoresSafeArea(.all)
         
         ScrollView {
-          VStack(spacing: 24) {
+          VStack(spacing: 20) {
             // Header
             VStack(spacing: 16) {
               Image("Rate")
@@ -22,19 +22,21 @@ struct CustomRatingView: View {
             .padding(.top, 20)
 
             // Star Rating
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
               Text("How would you rate your experience?")
-                .font(.appHeadlineSmallEmphasised)
-                .foregroundColor(.text01)
+                .font(.appTitleLargeEmphasised)
+                .foregroundColor(.text04)
 
-              HStack(spacing: 8) {
+              HStack(spacing: 12) {
                 ForEach(1 ... maxRating, id: \.self) { index in
                   Button(action: {
                     selectedRating = index
                   }) {
-                    Image(systemName: index <= selectedRating ? "star.fill" : "star")
-                      .font(.system(size: 32))
+                    Image("Icon-Star_Filled")
+                      .resizable()
+                      .aspectRatio(contentMode: .fit)
                       .foregroundColor(index <= selectedRating ? .yellow : .gray)
+                      .frame(width: 32, height: 32)
                   }
                   .buttonStyle(PlainButtonStyle())
                 }
@@ -42,8 +44,8 @@ struct CustomRatingView: View {
 
               if selectedRating > 0 {
                 Text(ratingText)
-                  .font(.appBodyMedium)
-                  .foregroundColor(.text02)
+                  .font(.appBodyLarge)
+                  .foregroundColor(.text05)
                   .multilineTextAlignment(.center)
               }
             }
@@ -52,22 +54,23 @@ struct CustomRatingView: View {
             // Comment Section
             VStack(alignment: .leading, spacing: 12) {
               Text("Share your thoughts (optional)")
-                .font(.appBodyLarge)
-                .foregroundColor(.text01)
+                .font(.appBodyMediumEmphasised)
+                .foregroundColor(.text04)
 
               VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .topLeading) {
                   TextEditor(text: $comment)
                     .font(.appBodyMedium)
                     .foregroundColor(.text01)
+                    .scrollContentBackground(.hidden)
                     .padding(12)
-                    .background(Color.surface)
+                    .background(Color.surface01)
                     .overlay(
-                      RoundedRectangle(cornerRadius: 8)
+                      RoundedRectangle(cornerRadius: 16)
                         .stroke(
-                          comment.count > maxCommentLength ? Color.red : Color.outline3,
-                          lineWidth: 1))
-                    .cornerRadius(8)
+                          comment.count > maxCommentLength ? Color.red : Color.outline02,
+                          lineWidth: 1.5))
+                    .cornerRadius(16)
                     .frame(minHeight: 100)
                     .keyboardDoneButton()
                     .onChange(of: comment) { _, newValue in
@@ -90,12 +93,13 @@ struct CustomRatingView: View {
                 HStack {
                   Spacer()
                   Text("\(comment.count)/\(maxCommentLength)")
-                    .font(.appCaptionMedium)
-                    .foregroundColor(comment.count > maxCommentLength ? .red : .text03)
+                    .font(.appBodySmall)
+                    .foregroundColor(comment.count > maxCommentLength ? .red : .text06)
                 }
               }
             }
             .padding(.horizontal, 20)
+            .padding(.top, 28) // Spacing of 48 total (20 from parent VStack + 28 padding)
             .padding(.bottom, 120) // Padding to prevent content from being covered by bottom buttons
           }
         }
@@ -111,34 +115,28 @@ struct CustomRatingView: View {
             submitReview()
           }
           .disabled(selectedRating == 0)
-
-          Button("Skip for now") {
-            dismiss()
-          }
-          .font(.appBodyMedium)
-          .foregroundColor(.text02)
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
         .padding(.bottom, 8)
         .background(
           VStack(spacing: 0) {
-            Color.sheetBackground
+            Color("appSurface01Variant02")
               .frame(height: 1)
             LinearGradient(
               gradient: Gradient(colors: [
-                Color.sheetBackground.opacity(0),
-                Color.sheetBackground
+                Color("appSurface01Variant02").opacity(0),
+                Color("appSurface01Variant02")
               ]),
               startPoint: .top,
               endPoint: .bottom
             )
             .frame(height: 20)
-            Color.sheetBackground
+            Color("appSurface01Variant02")
           }
         )
       }
-      .navigationTitle("Rate App")
+      .navigationTitle("Rate Us")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {

@@ -11,27 +11,27 @@ struct SendFeedbackView: View {
 
         VStack(spacing: 0) {
           ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .center, spacing: 24) {
               // Feedback Content
-              VStack(alignment: .leading, spacing: 24) {
+              VStack(alignment: .center, spacing: 24) {
                 // Icon and description
-                VStack(spacing: 16) {
+                VStack(alignment: .center, spacing: 20) {
                   Image("Sticker-Exciting")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 180, height: 180)
+                    .frame(width: 132, height: 132)
 
-                  Text("We'd love to hear from you!")
-                    .font(.appTitleMedium)
-                    .foregroundColor(.text01)
+                  VStack(alignment: .center, spacing: 8) {
+                    Text("We'd love to hear from you!")
+                      .font(.appTitleLargeEmphasised)
+                      .foregroundColor(.text04)
 
-                  Text(
-                    "Share your thoughts, suggestions, or report any issues. You can use Gmail, Mail, or any other email app you prefer.")
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text02)
-                    .multilineTextAlignment(.leading)
+                    Text("Share your thoughts, suggestions, or report any issues.")
+                      .font(.appBodyLarge)
+                      .foregroundColor(.text05)
+                      .multilineTextAlignment(.center)
+                  }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
               }
               .padding(.horizontal, 20)
               .padding(.top, 24)
@@ -53,8 +53,9 @@ struct SendFeedbackView: View {
             }
 
             Text("This will open your preferred email app")
-              .font(.appCaptionMedium)
+              .font(.appBodySmall)
               .foregroundColor(.text03)
+              .padding(.top, 12)
           }
           .padding(.horizontal, 20)
           .padding(.bottom, 20)
