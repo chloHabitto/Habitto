@@ -1112,7 +1112,7 @@ struct AccountOptionRow: View {
 
         if hasChevron {
           Image(systemName: "chevron.right")
-            .font(.system(size: 16, weight: .bold))
+            .font(.system(size: 12, weight: .bold))
             .foregroundColor(.appOutline03)
         }
       }
