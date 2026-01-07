@@ -57,7 +57,7 @@ struct StreakMilestoneSheet: View {
             }) {
               Text("Continue")
                 .font(.appButtonText1)
-                .foregroundColor(.white)
+                .foregroundColor(.appOnPrimary)
                 .padding(.horizontal, 28)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
