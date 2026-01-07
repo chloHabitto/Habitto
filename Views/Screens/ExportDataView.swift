@@ -137,26 +137,9 @@ struct ExportDataView: View {
                   .font(.system(size: 16, weight: .medium))
                   .foregroundColor(.text01)
 
-                Menu {
-                  ForEach(DataType.allCases, id: \.self) { dataType in
-                    Button(action: {
-                      if selectedDataTypes.contains(dataType) {
-                        selectedDataTypes.remove(dataType)
-                      } else {
-                        selectedDataTypes.insert(dataType)
-                      }
-                    }) {
-                      HStack {
-                        Text(dataType.displayName)
-                        Spacer()
-                        if selectedDataTypes.contains(dataType) {
-                          Image(systemName: "checkmark")
-                            .foregroundColor(.primary)
-                        }
-                      }
-                    }
-                  }
-                } label: {
+                Button(action: {
+                  showingDataTypePicker = true
+                }) {
                   HStack {
                     Text(selectedDataTypes.isEmpty
                       ? "Select data types..."
@@ -175,7 +158,7 @@ struct ExportDataView: View {
                   .background(Color("appSurface02Variant"))
                   .cornerRadius(24)
                   .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 24)
                       .stroke(Color.grey200, lineWidth: 1))
                 }
               }
@@ -218,7 +201,7 @@ struct ExportDataView: View {
                   .background(Color("appSurface02Variant"))
                   .cornerRadius(24)
                   .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 24)
                       .stroke(Color.grey200, lineWidth: 1))
                 }
               }
@@ -261,7 +244,7 @@ struct ExportDataView: View {
                   .background(Color("appSurface02Variant"))
                   .cornerRadius(24)
                   .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 24)
                       .stroke(Color.grey200, lineWidth: 1))
                 }
               }
@@ -390,6 +373,10 @@ struct ExportDataView: View {
         selectedFormat: selectedFormat,
         estimatedSize: estimatedTotalSize)
     }
+    .sheet(isPresented: $showingDataTypePicker) {
+      DataTypePickerView(
+        selectedDataTypes: $selectedDataTypes)
+    }
     .alert("Export Error", isPresented: .constant(exportError != nil)) {
       Button("OK") {
         exportError = nil
@@ -414,6 +401,7 @@ struct ExportDataView: View {
   @State private var exportFileURL: URL?
   @State private var exportError: String?
   @State private var showingPreview = false
+  @State private var showingDataTypePicker = false
 
   private var estimatedTotalSize: String {
     // Calculate actual estimated size based on selected data types and date range
@@ -1202,6 +1190,62 @@ struct DataTypePreviewRow: View {
     .cornerRadius(24)
     .padding(.horizontal, 20)
   }
+}
+
+// MARK: - DataTypePickerView
+
+struct DataTypePickerView: View {
+  // MARK: Internal
+
+  @Binding var selectedDataTypes: Set<ExportDataView.DataType>
+
+  var body: some View {
+    NavigationView {
+      List {
+        ForEach(ExportDataView.DataType.allCases, id: \.self) { dataType in
+          Button(action: {
+            if selectedDataTypes.contains(dataType) {
+              selectedDataTypes.remove(dataType)
+            } else {
+              selectedDataTypes.insert(dataType)
+            }
+          }) {
+            HStack {
+              Text(dataType.displayName)
+                .font(.system(size: 16, weight: .regular))
+                .foregroundColor(.text01)
+
+              Spacer()
+
+              if selectedDataTypes.contains(dataType) {
+                Image(systemName: "checkmark")
+                  .foregroundColor(.primary)
+                  .font(.system(size: 16, weight: .semibold))
+              }
+            }
+            .padding(.vertical, 4)
+          }
+        }
+      }
+      .listStyle(.insetGrouped)
+      .background(Color("appSurface01Variant02"))
+      .navigationTitle("Data Types")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Button("Done") {
+            dismiss()
+          }
+          .font(.system(size: 16, weight: .medium))
+          .foregroundColor(.primary)
+        }
+      }
+    }
+  }
+
+  // MARK: Private
+
+  @Environment(\.dismiss) private var dismiss
 }
 
 // MARK: - ExportCompleteView
