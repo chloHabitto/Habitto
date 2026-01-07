@@ -172,8 +172,8 @@ struct ExportDataView: View {
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
-                  .background(Color.surface)
-                  .cornerRadius(12)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
                   .overlay(
                     RoundedRectangle(cornerRadius: 12)
                       .stroke(Color.grey200, lineWidth: 1))
@@ -215,8 +215,8 @@ struct ExportDataView: View {
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
-                  .background(Color.surface)
-                  .cornerRadius(12)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
                   .overlay(
                     RoundedRectangle(cornerRadius: 12)
                       .stroke(Color.grey200, lineWidth: 1))
@@ -258,8 +258,8 @@ struct ExportDataView: View {
                   }
                   .padding(.horizontal, 16)
                   .padding(.vertical, 12)
-                  .background(Color.surface)
-                  .cornerRadius(12)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
                   .overlay(
                     RoundedRectangle(cornerRadius: 12)
                       .stroke(Color.grey200, lineWidth: 1))
@@ -304,8 +304,8 @@ struct ExportDataView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
-                .background(Color.surface)
-                .cornerRadius(12)
+                .background(Color("appSurface02Variant"))
+                .cornerRadius(24)
               }
             }
             .buttonStyle(PlainButtonStyle())
@@ -358,9 +358,9 @@ struct ExportDataView: View {
             .padding(.bottom, 24)
           }
         }
-        .background(Color.surface2)
+        .background(Color("appSurface01Variant02"))
       }
-      .background(Color.surface2)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Export Data")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -969,8 +969,8 @@ struct ExportPreviewView: View {
               }
               .padding(.horizontal, 20)
               .padding(.vertical, 16)
-              .background(Color.surface)
-              .cornerRadius(16)
+              .background(Color("appSurface02Variant"))
+              .cornerRadius(24)
             }
             .padding(.horizontal, 20)
 
@@ -1026,8 +1026,8 @@ struct ExportPreviewView: View {
               }
               .padding(.horizontal, 20)
               .padding(.vertical, 12)
-              .background(Color.surface)
-              .cornerRadius(12)
+              .background(Color("appSurface02Variant"))
+              .cornerRadius(24)
             }
             .padding(.horizontal, 20)
 
@@ -1063,8 +1063,8 @@ struct ExportPreviewView: View {
               }
               .padding(.horizontal, 20)
               .padding(.vertical, 12)
-              .background(Color.surface)
-              .cornerRadius(12)
+              .background(Color("appSurface02Variant"))
+              .cornerRadius(24)
             }
             .padding(.horizontal, 20)
 
@@ -1094,9 +1094,9 @@ struct ExportPreviewView: View {
             .padding(.bottom, 24)
           }
         }
-        .background(Color.surface2)
+        .background(Color("appSurface01Variant02"))
       }
-      .background(Color.surface2)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Export Preview")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -1198,8 +1198,8 @@ struct DataTypePreviewRow: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 12)
-    .background(Color.surface)
-    .cornerRadius(12)
+    .background(Color("appSurface02Variant"))
+    .cornerRadius(24)
     .padding(.horizontal, 20)
   }
 }
@@ -1295,8 +1295,8 @@ struct ExportCompleteView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
-        .background(Color.surface)
-        .cornerRadius(16)
+        .background(Color("appSurface02Variant"))
+        .cornerRadius(24)
         .padding(.horizontal, 20)
 
         Spacer()
@@ -1328,13 +1328,13 @@ struct ExportCompleteView: View {
           .foregroundColor(.text02)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)
-          .background(Color.surface)
-          .cornerRadius(12)
+          .background(Color("appSurface02Variant"))
+          .cornerRadius(24)
         }
         .padding(.horizontal, 20)
         .padding(.bottom, 24)
       }
-      .background(Color.surface2)
+      .background(Color("appSurface01Variant02"))
     }
     .sheet(isPresented: $showingShareSheet) {
       ShareSheet(activityItems: [fileURL])

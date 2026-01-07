@@ -16,22 +16,22 @@ struct AccountView: View {
           // Account Options for authenticated users
           ZStack(alignment: .bottom) {
             ScrollView {
-              VStack(spacing: 0) {
+              VStack(spacing: 24) {
                 // Profile Section
                 profileSection
                   .padding(.top, 20)
                 
                 // User Information Section
                 userInformationSection
-                  .padding(.top, 32)
                 
                 // Login Information Section
                 loginInformationSection
-                  .padding(.top, 32)
                 
                 // Spacer for bottom button
                 Spacer(minLength: 100)
               }
+              .padding(.horizontal, 20)
+              .padding(.top, 0)
               .padding(.bottom, 20)
             }
             
@@ -434,6 +434,8 @@ struct AccountView: View {
       */
     }
     .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     .sheet(isPresented: $showingBirthdayView) {
       BirthdayBottomSheet(
         selectedDate: $selectedBirthday,
@@ -464,7 +466,8 @@ struct AccountView: View {
         Spacer()
       }
       .padding(.horizontal, 20)
-      .padding(.bottom, 16)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
       
       // My social account Row - Custom layout with VStack for title and value
       HStack(spacing: 12) {
@@ -502,6 +505,8 @@ struct AccountView: View {
       .padding(.vertical, 16)
     }
     .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
   }
   
   // MARK: - Log Out Button

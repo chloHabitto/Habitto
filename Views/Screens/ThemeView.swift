@@ -30,7 +30,7 @@ struct ThemeView: View {
         }
         .background(Color.sheetBackground)
       }
-      .background(Color.sheetBackground)
+      .background(Color("appSurface01Variant02"))
       .navigationTitle("Theme")
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
@@ -88,8 +88,8 @@ struct ThemeView: View {
           .padding(.leading, 60) // Account for icon (24) + spacing (16) + padding (20)
         colorSchemeRow(preference: .dark, isSelected: selectedPreference == .dark)
       }
-      .background(Color.surface)
-      .cornerRadius(16)
+      .background(Color("appSurface02Variant"))
+      .cornerRadius(24)
     }
   }
 

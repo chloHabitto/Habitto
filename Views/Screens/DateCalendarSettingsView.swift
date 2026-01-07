@@ -40,7 +40,7 @@ struct DateCalendarSettingsView: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(Color(.systemGray6))
+    .background(Color("appSurface01Variant02"))
     .gesture(
       DragGesture()
         .onEnded { value in
@@ -133,8 +133,8 @@ struct DateCalendarSettingsView: View {
           }
         }
       }
-      .background(.surface)
-      .clipShape(RoundedRectangle(cornerRadius: 0))
+      .background(Color("appSurface02Variant"))
+      .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
   }
@@ -165,8 +165,8 @@ struct DateCalendarSettingsView: View {
           }
         }
       }
-      .background(.surface)
-      .clipShape(RoundedRectangle(cornerRadius: 0))
+      .background(Color("appSurface02Variant"))
+      .clipShape(RoundedRectangle(cornerRadius: 24))
       .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     }
   }
@@ -177,7 +177,7 @@ struct DateCalendarSettingsView: View {
     VStack(spacing: 0) {
       // Gradient overlay to fade content behind button
       LinearGradient(
-        gradient: Gradient(colors: [Color(.systemGray6).opacity(0), Color(.systemGray6)]),
+        gradient: Gradient(colors: [Color("appSurface02Variant").opacity(0), Color("appSurface02Variant")]),
         startPoint: .top,
         endPoint: .bottom)
         .frame(height: 20)
@@ -191,7 +191,7 @@ struct DateCalendarSettingsView: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 40)
-      .background(Color(.systemGray6))
+      .background(Color("appSurface02Variant"))
     }
   }
 
