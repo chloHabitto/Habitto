@@ -739,7 +739,21 @@ struct HomeTabView: View {
     debugLog("🔍 MILESTONE_DEBUG: START - newStreak=\(newStreak), isUserInitiated=\(isUserInitiated)")
     debugLog("🔍 MILESTONE_DEBUG: Current state - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone), lastShownMilestoneStreak=\(lastShownMilestoneStreak), pendingMilestone=\(pendingMilestone?.description ?? "nil")")
     
-    // ✅ STEP 2: Only process milestone logic for user-initiated updates
+    // ✅ FIX: ALWAYS reset milestone tracking when streak goes to 0
+    // This must happen BEFORE the isUserInitiated guard!
+    // When streak is lost, user should be able to re-earn milestone
+    if newStreak == 0 {
+      debugLog("🔍 MILESTONE_DEBUG: Streak is 0 - resetting milestone tracking (regardless of isUserInitiated)")
+      lastShownMilestoneStreak = -1
+      lastShownMilestoneDateTimestamp = 0
+      pendingMilestone = nil
+      milestoneStreakCount = 0
+      showStreakMilestone = false
+      debugLog("🔍 MILESTONE_DEBUG: END (streak 0 reset)")
+      return  // Nothing more to do for streak 0
+    }
+    
+    // ✅ STEP 2: Only process milestone DISPLAY logic for user-initiated updates
     guard isUserInitiated else {
       debugLog("🔍 MILESTONE_DEBUG: SKIP - not user initiated")
       debugLog("⏭️ MILESTONE_CHECK: Skipping milestone check - not user-initiated (app launch/recalculation)")
@@ -842,15 +856,8 @@ struct HomeTabView: View {
         debugLog("🔍 MILESTONE_DEBUG: Set pendingMilestone=\(pendingMilestone ?? -1)")
       }
     } else {
-      // ✅ STEP 2: Clear stale milestone state when streak changes to non-milestone
+      // Streak is NOT a milestone
       debugLog("🔍 MILESTONE_DEBUG: Streak \(newStreak) is NOT a milestone")
-      
-      // ✅ FIX: Reset milestone tracking when streak goes to 0
-      if newStreak == 0 {
-        debugLog("🔍 MILESTONE_DEBUG: Streak is 0 - resetting milestone tracking")
-        lastShownMilestoneStreak = -1
-        lastShownMilestoneDateTimestamp = 0
-      }
       
       // Clear any stale milestone state
       if pendingMilestone != nil || milestoneStreakCount > 0 {
@@ -859,7 +866,7 @@ struct HomeTabView: View {
         showStreakMilestone = false
       }
       
-      // ✅ NEW: For non-milestone streaks > 0, show celebration
+      // ✅ FIX: Show celebration for non-milestone streaks
       if newStreak > 0 {
         debugLog("🎉 MILESTONE_DEBUG: Non-milestone streak \(newStreak) - showing celebration")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
