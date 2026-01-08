@@ -603,6 +603,13 @@ struct HabittoApp: App {
                 await performCompletionRecordReconciliation()
               }
               
+              // ✅ PRIORITY 4: Run HabitStore data integrity validation
+              // This ensures habit data structure is valid (e.g., no duplicate IDs)
+              Task.detached(priority: .background) { @MainActor in
+                try? await Task.sleep(nanoseconds: 500_000_000) // Wait for reconciliation to start
+                await performDataIntegrityValidation()
+              }
+              
               // ✅ DEBUG: Run DailyAward integrity investigation on app launch (silent unless issues found)
               #if DEBUG
               Task.detached { @MainActor in
@@ -1061,6 +1068,57 @@ struct HabittoApp: App {
     }
     
     logger.info("✅ CompletionRecord Reconciliation: Completed")
+  }
+  
+  /// Perform HabitStore data integrity validation on app launch
+  ///
+  /// ✅ PRIORITY 4: Ensures habit data structure is valid (e.g., no duplicate IDs).
+  /// Runs in background to avoid blocking app startup.
+  @MainActor
+  private func performDataIntegrityValidation() async {
+    let logger = Logger(subsystem: "com.habitto.app", category: "DataIntegrityValidation")
+    
+    logger.info("🔍 Data Integrity Validation: Starting automatic validation on app launch...")
+    
+    // Prevent multiple simultaneous validations
+    struct ValidationLock {
+      static var isRunning = false
+    }
+    
+    guard !ValidationLock.isRunning else {
+      logger.info("⏭️ Data Integrity Validation: Already running, skipping duplicate validation")
+      return
+    }
+    
+    ValidationLock.isRunning = true
+    defer { ValidationLock.isRunning = false }
+    
+    do {
+      let isValid = try await HabitStore.shared.validateDataIntegrity()
+      
+      if isValid {
+        logger.info("✅ Data Integrity Validation: All checks passed - no issues found")
+      } else {
+        logger.warning("⚠️ Data Integrity Validation: Issues detected (check logs for details)")
+        // Non-fatal - log warning but don't crash the app
+        // The validation method already logs specific issues (e.g., duplicate IDs)
+      }
+      
+    } catch {
+      // Handle errors gracefully - don't crash app
+      logger.error("❌ Data Integrity Validation: Failed to validate: \(error.localizedDescription)")
+      logger.error("   Error details: \(error)")
+      
+      // Log error to Crashlytics for monitoring (if available)
+      #if canImport(FirebaseCrashlytics)
+      Crashlytics.crashlytics().record(error: error)
+      #endif
+      
+      // Continue app launch even if validation fails
+      // User can manually trigger validation if needed
+    }
+    
+    logger.info("✅ Data Integrity Validation: Completed")
   }
   
   // MARK: - Guest Data Migration
