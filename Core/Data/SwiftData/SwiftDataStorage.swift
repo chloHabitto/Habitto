@@ -5,6 +5,9 @@ import FirebaseAuth
 import FirebaseCore
 import SQLite3
 
+// TODO: [LOGGING] Standardize logging - currently mixes print() and os.Logger
+// See: Docs/Guides/LOGGING_STANDARDS.md
+
 // MARK: - SwiftData Storage Implementation
 
 @MainActor
