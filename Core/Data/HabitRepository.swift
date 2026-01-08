@@ -794,6 +794,13 @@ class HabitRepository: ObservableObject {
 
     } catch {
       debugLog("❌ HabitRepository: Failed to load habits: \(error.localizedDescription)")
+      
+      // Track silent failures for monitoring
+      CrashlyticsService.shared.recordError(error, additionalInfo: [
+        "operation": "loadHabits",
+        "context": "HabitRepository.loadHabits - returning cached data due to load failure"
+      ])
+      
       // Keep existing habits if loading fails
     }
   }
@@ -870,6 +877,13 @@ class HabitRepository: ObservableObject {
 
       } catch {
         debugLog("❌ HabitRepository: Failed to save habits: \(error.localizedDescription)")
+        
+        // Track silent failures for monitoring
+        CrashlyticsService.shared.recordError(error, additionalInfo: [
+          "operation": "saveHabits",
+          "habitCount": String(habits.count),
+          "context": "HabitRepository.saveHabits - error swallowed for graceful degradation"
+        ])
       }
     }
   }
