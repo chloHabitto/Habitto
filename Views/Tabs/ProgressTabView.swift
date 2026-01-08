@@ -1232,7 +1232,7 @@ struct ProgressTabView: View {
                 .renderingMode(.template)
                 .resizable()
                 .frame(width: 20, height: 20)
-                .foregroundColor(.text07)
+                .foregroundColor(.text03)
             }
             .padding(.leading, 16)
             .padding(.trailing, 12)

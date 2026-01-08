@@ -1076,6 +1076,8 @@ struct HabittoApp: App {
   /// Runs in background to avoid blocking app startup.
   @MainActor
   private func performDataIntegrityValidation() async {
+    print("🔍🔍🔍 DATA INTEGRITY VALIDATION STARTING 🔍🔍🔍")
+    
     let logger = Logger(subsystem: "com.habitto.app", category: "DataIntegrityValidation")
     
     logger.info("🔍 Data Integrity Validation: Starting automatic validation on app launch...")
