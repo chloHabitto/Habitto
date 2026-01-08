@@ -107,6 +107,7 @@ struct AddedHabitItem: View {
             } label: {
               Image(.iconMoreVert)
                 .resizable()
+                .renderingMode(.template)
                 .frame(width: 24, height: 24)
                 .foregroundColor(.outline3)
                 .contentShape(Rectangle())
