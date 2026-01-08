@@ -623,7 +623,8 @@ final actor HabitStore {
       }
       
       // ⚠️ DEPRECATED: Direct state update - kept for backward compatibility
-      // TODO: Remove this once all code paths use event replay
+      // TODO: [PHASE-5] Remove this once all code paths use event replay
+      // See: Docs/Implementation/DEPRECATION_TRACKING.md for migration status
       // Progress should be calculated from ProgressEvents using calculateProgressFromEvents()
       currentHabits[index].completionHistory[dateKey] = progress
       let isComplete = progress >= goalAmount
