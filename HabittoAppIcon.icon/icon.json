@@ -1,29 +1,56 @@
 {
   "fill" : {
-    "linear-gradient" : [
-      "display-p3:0.11698,0.15324,0.28963,1.00000",
-      "display-p3:0.04056,0.09643,0.19932,1.00000"
-    ],
-    "orientation" : {
-      "start" : {
-        "x" : 0.5,
-        "y" : 0
-      },
-      "stop" : {
-        "x" : 0.5,
-        "y" : 0.7
-      }
-    }
+    "solid" : "display-p3:0.11757,0.11757,0.11757,1.00000"
   },
   "groups" : [
     {
       "layers" : [
         {
-          "fill" : {
-            "solid" : "display-p3:1.00000,0.99689,0.97879,1.00000"
-          },
-          "image-name" : "check.svg",
-          "name" : "check"
+          "image-name" : "Hands.png",
+          "name" : "Hands",
+          "position" : {
+            "scale" : 2.85,
+            "translation-in-points" : [
+              -5.5,
+              292.40625
+            ]
+          }
+        },
+        {
+          "hidden" : false,
+          "image-name" : "body.svg",
+          "name" : "body",
+          "position" : {
+            "scale" : 2.75,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "hidden" : false,
+          "image-name" : "body 2.png",
+          "name" : "body 2",
+          "position" : {
+            "scale" : 2.75,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "glass" : true,
+          "image-name" : "CircleBG.svg",
+          "name" : "CircleBG",
+          "position" : {
+            "scale" : 2.7,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
       ],
       "shadow" : {
