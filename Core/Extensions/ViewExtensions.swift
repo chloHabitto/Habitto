@@ -244,34 +244,6 @@ enum LegacyDateUtils {
   }()
 }
 
-// MARK: - Array Performance Extensions
-
-extension Array {
-  /// Optimized filtering with early exit
-  func optimizedFilter(_ predicate: (Element) -> Bool) -> [Element] {
-    var result: [Element] = []
-    result.reserveCapacity(count / 2) // Pre-allocate space for better performance
-
-    for element in self {
-      if predicate(element) {
-        result.append(element)
-      }
-    }
-    return result
-  }
-
-  /// Optimized mapping with pre-allocated capacity
-  func optimizedMap<T>(_ transform: (Element) -> T) -> [T] {
-    var result: [T] = []
-    result.reserveCapacity(count)
-
-    for element in self {
-      result.append(transform(element))
-    }
-    return result
-  }
-}
-
 // MARK: - String Performance Extensions
 
 extension String {
