@@ -28,6 +28,13 @@ final actor HabitStore {
   
   // ✅ CRITICAL FIX: Track deleted habit IDs to prevent restoration
   private static let deletedHabitsKey = "DeletedHabitIDs"
+  
+  // MARK: - ProgressEvent Failure Tracking
+  
+  /// Track ProgressEvent creation failures for observability
+  /// Reset on app launch, used to detect systemic issues
+  private var eventCreationFailureCount: Int = 0
+  private var lastEventCreationFailure: Date? = nil
 
   // MARK: - Load Habits
 
@@ -574,9 +581,42 @@ final actor HabitStore {
           logger.info("   → Progress Delta: \(progressDelta)")
           logger.info("   → Operation ID: \(event.operationId.prefix(20))...")
         } catch {
-          // Log error but don't throw - continue with existing flow for backward compatibility
-          logger.error("❌ setProgress: Failed to create ProgressEvent: \(error.localizedDescription)")
-          logger.info("⚠️ setProgress: Continuing with existing progress update flow (no event created)")
+          // Track failure for monitoring (actor-isolated - update directly)
+          self.eventCreationFailureCount += 1
+          self.lastEventCreationFailure = Date()
+          
+          // Capture values for use in MainActor closure (actor isolation fix)
+          let failureCount = self.eventCreationFailureCount
+          let habitName = habit.name
+          let habitIdString = habit.id.uuidString
+          
+          // Log detailed error
+          logger.error("❌ setProgress: Failed to create ProgressEvent")
+          logger.error("   Habit: \(habitName) (\(habit.id))")
+          logger.error("   Date: \(dateKey)")
+          logger.error("   Error: \(error.localizedDescription)")
+          logger.error("   Failure count this session: \(failureCount)")
+          
+          // Track in Crashlytics for production monitoring
+          // Must run on MainActor, use captured values to avoid actor isolation issues
+          await MainActor.run {
+            CrashlyticsService.shared.recordError(error, additionalInfo: [
+              "operation": "createProgressEvent",
+              "habitId": habitIdString,
+              "dateKey": dateKey,
+              "progressValue": String(progress),
+              "failureCount": String(failureCount)
+            ])
+          }
+          
+          // Warn if seeing repeated failures (potential systemic issue)
+          if failureCount >= 3 {
+            logger.warning("⚠️ ALERT: Multiple ProgressEvent failures this session (\(failureCount))")
+            logger.warning("   This may indicate a systemic issue with event creation")
+          }
+          
+          // Continue with legacy path (backward compatibility)
+          logger.info("⚠️ Continuing with deprecated completionHistory update (fallback)")
         }
       } else {
         logger.info("📝 setProgress: Skipping event creation (delta == 0, no change)")
@@ -1475,5 +1515,18 @@ final actor HabitStore {
       logger.warning("⚠️ Failed to delete invalid DailyAward from Firestore: \(error.localizedDescription)")
       // Don't throw - this is cleanup, not critical
     }
+  }
+  
+  // MARK: - ProgressEvent Failure Diagnostics
+  
+  /// Get the number of ProgressEvent creation failures this session
+  /// Useful for diagnostics and debugging
+  func getEventCreationFailureCount() -> Int {
+    eventCreationFailureCount
+  }
+  
+  /// Get the last time an event creation failed
+  func getLastEventCreationFailure() -> Date? {
+    lastEventCreationFailure
   }
 }
