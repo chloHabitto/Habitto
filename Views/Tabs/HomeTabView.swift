@@ -845,21 +845,26 @@ struct HomeTabView: View {
       // ✅ STEP 2: Clear stale milestone state when streak changes to non-milestone
       debugLog("🔍 MILESTONE_DEBUG: Streak \(newStreak) is NOT a milestone")
       
-      // ✅ FIX 3: Reset milestone tracking when streak goes to 0
-      // This allows milestone to show again when streak is re-earned
+      // ✅ FIX: Reset milestone tracking when streak goes to 0
       if newStreak == 0 {
         debugLog("🔍 MILESTONE_DEBUG: Streak is 0 - resetting milestone tracking")
         lastShownMilestoneStreak = -1
         lastShownMilestoneDateTimestamp = 0
-        debugLog("🔍 MILESTONE_DEBUG: Reset lastShownMilestoneStreak and lastShownMilestoneDateTimestamp")
       }
       
+      // Clear any stale milestone state
       if pendingMilestone != nil || milestoneStreakCount > 0 {
-        debugLog("🧹 MILESTONE_CHECK: Clearing stale milestone state - streak \(newStreak) is not a milestone")
         pendingMilestone = nil
         milestoneStreakCount = 0
-        showStreakMilestone = false  // ✅ FIX: Ensure milestone sheet won't show
-        debugLog("🔍 MILESTONE_DEBUG: Cleared stale state - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone)")
+        showStreakMilestone = false
+      }
+      
+      // ✅ NEW: For non-milestone streaks > 0, show celebration
+      if newStreak > 0 {
+        debugLog("🎉 MILESTONE_DEBUG: Non-milestone streak \(newStreak) - showing celebration")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+          showCelebration = true
+        }
       }
     }
     
@@ -1524,11 +1529,6 @@ struct HomeTabView: View {
         }
         debugLog("✅ DERIVED_STREAK: Streak recalculation triggered")
 
-        // ✅ BUG 2 FIX: Wait for streak notification to be processed
-        // This allows handleStreakUpdated to set milestoneStreakCount before we check it
-        try? await Task.sleep(nanoseconds: 600_000_000) // 0.6 seconds
-        debugLog("🔍 COMPLETION_FLOW: Waited 0.6s for streak notification to process")
-
         do {
           let modelContext = SwiftDataContainer.shared.modelContext
           let dailyAward = DailyAward(
@@ -1555,25 +1555,14 @@ struct HomeTabView: View {
         debugLog("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
         debugLog("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")
 
-        // ✅ BUG FIX: Show celebration logic:
-        // - Streak 1: milestoneStreakCount = 1, pendingMilestone = nil → NO celebration (milestone shows instead)
-        // - Streak 3+: milestoneStreakCount = 3, pendingMilestone = 3 → YES celebration (milestone shows after)
-        // - No milestone: milestoneStreakCount = 0, pendingMilestone = nil → YES celebration
-        // Key insight: pendingMilestone being set means "show milestone AFTER celebration"
+        // ✅ FIX: DON'T decide celebration/milestone here!
+        // Let handleStreakUpdated be the single source of truth.
+        // It will set milestoneStreakCount and either:
+        // - For streak 1: show milestone directly (no celebration)
+        // - For streak 3+: set pendingMilestone and trigger celebration
+        // - For non-milestone: trigger celebration
+        
         await MainActor.run {
-          let shouldShowCelebration = pendingMilestone != nil || (milestoneStreakCount == 0 && !showStreakMilestone)
-          
-          if shouldShowCelebration {
-            debugLog("🎉 COMPLETION_FLOW: Showing celebration! (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"))")
-            // Small additional delay to ensure sheet is fully dismissed
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-              showCelebration = true
-              debugLog("🎉 COMPLETION_FLOW: Celebration triggered!")
-            }
-          } else {
-            debugLog("🎉 COMPLETION_FLOW: Milestone will show instead (milestoneStreakCount=\(milestoneStreakCount), pendingMilestone=\(pendingMilestone?.description ?? "nil"), showStreakMilestone=\(showStreakMilestone))")
-          }
-          
           onCompletionDismiss?()
           debugLog("✅ COMPLETION_FLOW: Called onCompletionDismiss callback")
         }
