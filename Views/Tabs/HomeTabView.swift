@@ -142,14 +142,18 @@ struct HomeTabView: View {
           Color.clear.onAppear { showStreakMilestone = false }
         }
       }
-      .alert("Cancel Vacation", isPresented: $showingCancelVacationAlert) {
+      .alert("End Vacation", isPresented: $showingCancelVacationAlert) {
         Button("Cancel", role: .cancel) { }
         Button("End Vacation", role: .destructive) {
-          VacationManager.shared.cancelVacationForDate(selectedDate)
+          VacationManager.shared.endVacation()
         }
       } message: {
-        Text(
-          "Are you sure you want to end vacation mode for this date? This will resume all habit tracking.")
+        Text("Are you sure you want to end vacation mode? All habits will resume immediately.")
+      }
+      .sheet(isPresented: $showingVacationModeView) {
+        VacationModeView()
+          .environmentObject(AuthenticationManager.shared)
+          .environmentObject(VacationManager.shared)
       }
   }
 
@@ -193,6 +197,7 @@ struct HomeTabView: View {
   @State private var selectedHabit: Habit? = nil
   @State private var showCelebration = false
   @State private var showingCancelVacationAlert = false
+  @State private var showingVacationModeView = false
   @State private var deferResort = false
   @State private var sortedHabits: [Habit] = []
   @State private var cancellables = Set<AnyCancellable>()
@@ -519,13 +524,22 @@ struct HomeTabView: View {
         // Vacation status indicator - first item in scrollable view
         if VacationManager.shared.isActive, VacationManager.shared.isVacationDay(selectedDate) {
           HStack(spacing: 8) {
-            Image("Icon-Vacation_Filled")
-              .resizable()
-              .frame(width: 20, height: 20)
-              .foregroundColor(.onSecondary)
-            Text("On Vacation")
-              .font(.system(size: 14, weight: .medium))
-              .foregroundColor(.onSecondary)
+            Button(action: {
+              showingVacationModeView = true
+            }) {
+              HStack(spacing: 6) {
+                Image("Icon-Vacation_Filled")
+                  .resizable()
+                  .frame(width: 16, height: 16)
+                  .foregroundColor(Color("apponBadgeBackgroundFixed"))
+                Text("On Vacation")
+                  .font(.appLabelMediumEmphasised)
+                  .foregroundColor(Color("apponBadgeBackgroundFixed"))
+              }
+              .padding(.leading, 16)
+              .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
 
             // Cancel vacation button
             Button(action: {
@@ -533,13 +547,12 @@ struct HomeTabView: View {
             }) {
               Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 16))
-                .foregroundColor(.onSecondary.opacity(0.4))
+                .foregroundColor(.navy200)
+                .frame(width: 32, height: 32)
             }
             .buttonStyle(PlainButtonStyle())
           }
-          .padding(.horizontal, 16)
-          .padding(.vertical, 10)
-          .background(Color.secondaryContainer)
+          .background(Color("appBadgeBackgroundFixed"))
           .clipShape(Capsule())
           .frame(maxWidth: .infinity, alignment: .leading)
           .padding(.bottom, 8)

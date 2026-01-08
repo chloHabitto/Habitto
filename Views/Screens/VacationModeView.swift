@@ -38,15 +38,21 @@ struct VacationModeView: View {
               .padding(.top, 20)
 
               // Vacation Mode Status Section
-              VStack(alignment: .leading, spacing: 16) {
-                // Status text
-                VStack(alignment: .leading, spacing: 8) {
-                  if vacationManager.isActive {
-                    if let currentVacation = vacationManager.current {
-                      VStack(alignment: .leading, spacing: 8) {
-                        Text("Vacation Mode Active")
-                          .font(.system(size: 16, weight: .medium))
-                          .foregroundColor(.blue)
+              if vacationManager.isActive {
+                if let currentVacation = vacationManager.current {
+                  VStack(alignment: .center, spacing: 16) {
+                    // Status text
+                    VStack(alignment: .center, spacing: 8) {
+                      VStack(alignment: .center, spacing: 8) {
+                        HStack(spacing: 4) {
+                          Circle()
+                            .fill(Color.blue)
+                            .frame(width: 12, height: 12)
+                          
+                          Text("Vacation Mode Active")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                        }
 
                         Text("Started: \(currentVacation.start, formatter: dateFormatter)")
                           .font(.system(size: 14))
@@ -59,19 +65,23 @@ struct VacationModeView: View {
                         }
                       }
                     }
-                  } else {
-                    Text("Vacation mode is currently inactive")
-                      .font(.system(size: 16, weight: .medium))
-                      .foregroundColor(.text04)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
                   }
+                  .padding(.top, 16)
+                  .background(Color("appSurface02Variant"))
+                  .cornerRadius(24)
+                  .padding(.horizontal, 20)
+                  .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 16)
+              } else {
+                Text("Vacation mode is currently inactive")
+                  .font(.appTitleMediumEmphasised)
+                  .foregroundColor(.text03)
+                  .frame(maxWidth: .infinity)
+                  .multilineTextAlignment(.center)
+                  .padding(.top, 16)
               }
-              .padding(.top, 16)
-              .background(Color("appSurface02Variant"))
-              .cornerRadius(24)
-              .padding(.horizontal, 20)
 
               // Vacation Settings Section (Date Selection Only)
               VStack(alignment: .leading, spacing: 12) {
@@ -167,19 +177,30 @@ struct VacationModeView: View {
       // Button container
       HStack {
         if vacationManager.isActive {
-          // End Vacation button (destructive style)
-          HabittoButton(
-            size: .large,
-            style: .fillDestructive,
-            content: .textAndIcon("End Vacation", "Icon-Vacation_Filled"),
-            state: .default,
-            action: {
-              // Add haptic feedback
-              let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
-              impactFeedback.impactOccurred()
+          // End Vacation button (custom red200 background, red900 text/icon)
+          Button(action: {
+            // Add haptic feedback
+            let impactFeedback = UIImpactFeedbackGenerator(style: .heavy)
+            impactFeedback.impactOccurred()
 
-              vacationManager.endVacation()
-            })
+            vacationManager.endVacation()
+          }) {
+            HStack(spacing: 8) {
+              Image("Icon-Vacation_Filled")
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 20, height: 20)
+                .foregroundColor(Color("red900"))
+
+              Text("End Vacation")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(Color("red900"))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(Color("red200"))
+            .clipShape(RoundedRectangle(cornerRadius: 28))
+          }
         } else {
           // Start Vacation button (primary style)
           HabittoButton(

@@ -195,8 +195,8 @@ struct ExpandableCalendar: View {
       HStack {
         Button(action: { changeMonth(by: -1) }) {
           Image(systemName: "chevron.left")
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.text05)
+            .font(.system(size: 12, weight: .heavy))
+            .foregroundColor(.appOutline03)
             .frame(width: 44, height: 44)
         }
 
@@ -210,8 +210,8 @@ struct ExpandableCalendar: View {
 
         Button(action: { changeMonth(by: 1) }) {
           Image(systemName: "chevron.right")
-            .font(.system(size: 16, weight: .semibold))
-            .foregroundColor(.text05)
+            .font(.system(size: 12, weight: .heavy))
+            .foregroundColor(.appOutline03)
             .frame(width: 44, height: 44)
         }
       }

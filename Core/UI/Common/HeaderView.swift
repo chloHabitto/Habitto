@@ -143,7 +143,7 @@ struct HeaderView: View {
               .foregroundColor(.onSurfaceFixed)
           }
           .padding(.horizontal, 12)
-          .frame(height: 40)
+          .frame(height: 44)
           .background {
             RoundedRectangle(cornerRadius: 24)
               .fill(.surfaceFixed20)
@@ -165,7 +165,7 @@ struct HeaderView: View {
 //              }
           }
         }
-        .padding(.vertical, 6)  // Maintain 52pt touch target (40pt visual + 6pt top + 6pt bottom)
+        .padding(.vertical, 6)  // Maintain 56pt touch target (44pt visual + 6pt top + 6pt bottom)
         .buttonStyle(PlainButtonStyle())
       }
 
@@ -249,7 +249,7 @@ struct HeaderView: View {
     .padding(.leading, 20)
     .padding(.trailing, 16)
     .padding(.top, 8)
-    .padding(.bottom, 16)
+    .padding(.bottom, 20)
     .background(.headerBackground)
     // CRITICAL: Force view to observe isPremium changes by using it in .id()
     .id("header-premium-\(subscriptionManager.isPremium)")

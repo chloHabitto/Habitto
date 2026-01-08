@@ -146,15 +146,15 @@ struct VacationModeSheet: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 20, height: 20)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color("red900"))
 
                   Text("End Vacation")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                    .foregroundColor(Color("red900"))
                 }
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(Color.red)
+                .background(Color("red200"))
                 .cornerRadius(12)
               }
               .padding(.horizontal, 20)

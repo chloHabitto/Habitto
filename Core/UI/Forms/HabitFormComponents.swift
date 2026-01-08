@@ -47,8 +47,8 @@ struct UnifiedInputElement: View {
               .font(.appBodyLarge)
               .foregroundColor(isValid ? .text04 : .text06)
             Image(systemName: "chevron.right")
-              .font(.appLabelSmall)
-              .foregroundColor(.appPrimaryDim)
+              .font(.system(size: 12, weight: .heavy))
+              .foregroundColor(.appOutline03)
           }
           .frame(minWidth: 70)
           .fixedSize(horizontal: true, vertical: false)
@@ -71,8 +71,8 @@ struct UnifiedInputElement: View {
               .lineLimit(1)
               .minimumScaleFactor(0.8)
             Image(systemName: "chevron.right")
-              .font(.appLabelSmall)
-              .foregroundColor(.appPrimaryDim)
+              .font(.system(size: 12, weight: .heavy))
+              .foregroundColor(.appOutline03)
           }
           .frame(maxWidth: .infinity)
           .inputFieldStyle()
@@ -143,8 +143,8 @@ struct ReminderSection: View {
           .font(.appBodyLarge)
           .foregroundColor(.appText04)
         Image(systemName: "chevron.right")
-          .font(.appLabelMedium)
-          .foregroundColor(.appPrimaryDim)
+          .font(.system(size: 12, weight: .heavy))
+          .foregroundColor(.appOutline03)
       }
       .frame(minHeight: 24)
       .onTapGesture {
