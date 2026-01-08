@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit // For UIApplication.didReceiveMemoryWarningNotification
 
 // MARK: - PerformanceOptimizer
 
@@ -63,6 +64,25 @@ enum LegacyDateUtils {
   // MARK: Internal
 
   static let calendar = Calendar.current
+  
+  // MARK: - Memory Management
+  
+  /// Register for memory warnings on first use
+  private static let memoryWarningObserver: Void = {
+    NotificationCenter.default.addObserver(
+      forName: UIApplication.didReceiveMemoryWarningNotification,
+      object: nil,
+      queue: .main
+    ) { _ in
+      clearDateCache()
+      print("🧹 LegacyDateUtils: Cleared date cache due to memory warning")
+    }
+  }()
+  
+  /// Ensure memory warning observer is registered
+  private static func ensureMemoryWarningObserver() {
+    _ = memoryWarningObserver
+  }
 
   // MARK: - Robust Today's Date Calculation
 
@@ -173,10 +193,23 @@ enum LegacyDateUtils {
   }
 
   static func cachedStartOfDay(for date: Date) -> Date {
+    // Ensure we're listening for memory warnings
+    ensureMemoryWarningObserver()
+    
     let key = "start_\(date.timeIntervalSince1970)"
     if let cached = dateCache[key] {
       return cached
     }
+    
+    // Evict oldest entries if cache is too large
+    if dateCache.count >= maxDateCacheSize {
+      // Simple eviction: clear half the cache
+      let keysToRemove = Array(dateCache.keys.prefix(maxDateCacheSize / 2))
+      for key in keysToRemove {
+        dateCache.removeValue(forKey: key)
+      }
+    }
+    
     let result = startOfDay(for: date)
     dateCache[key] = result
     return result
@@ -190,6 +223,7 @@ enum LegacyDateUtils {
 
   /// Performance optimization: Cache date calculations
   private static var dateCache: [String: Date] = [:]
+  private static let maxDateCacheSize = 500
 
   /// Performance optimization: Use cached formatter for date keys
   private static let dateKeyFormatter: DateFormatter = {
@@ -267,7 +301,11 @@ extension String {
 
   // MARK: Private
 
-  /// Cache for expensive string operations
+  // MARK: - String Cache (Currently Unused)
+  // NOTE: This cache is not currently used. Consider removing if not needed.
+  // If reactivated, add memory warning handling similar to dateCache.
+  
+  /// Cache for expensive string operations (currently unused)
   private static var stringCache: [String: String] = [:]
 }
 
