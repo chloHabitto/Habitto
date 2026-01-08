@@ -128,8 +128,8 @@ struct CreateHabitStep1View: View {
             }
 
             Image(systemName: "chevron.right")
-              .font(.appLabelSmall)
-              .foregroundColor(.appPrimaryDim)
+              .font(.system(size: 12, weight: .heavy))
+              .foregroundColor(.appOutline03)
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
@@ -180,8 +180,8 @@ struct CreateHabitStep1View: View {
             }
 
             Image(systemName: "chevron.right")
-              .font(.appLabelSmall)
-              .foregroundColor(.appPrimaryDim)
+              .font(.system(size: 12, weight: .heavy))
+              .foregroundColor(.appOutline03)
           }
           .padding(.horizontal, 20)
           .padding(.vertical, 12)
@@ -268,9 +268,9 @@ struct CreateHabitStep1View: View {
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 20)
-      .background(.appSurface04Variant)
+      .background(Color("appSurface01Variant02"))
     }
-    .background(.appSurface04Variant)
+    .background(Color("appSurface01Variant02"))
     .navigationBarHidden(true)
     .scrollDismissesKeyboard(.interactively)
     .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -396,7 +396,7 @@ struct CreateHabitStep1View: View {
       }
       .frame(maxWidth: .infinity, minHeight: 48)
       .padding(.horizontal, 16)
-      .background(.appSurface01Variant)
+      .background(.appSurface01)
       .overlay(
         RoundedRectangle(cornerRadius: 12)
           .stroke(limitReached.wrappedValue && isFocused.wrappedValue ? .warning : .outline3, lineWidth: 1.5))

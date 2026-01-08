@@ -564,6 +564,12 @@ struct ProgressTabView: View {
       // Calculate the safe area top inset (status bar, notch, Dynamic Island)
       let safeAreaTop = geometry.safeAreaInsets.top
       
+      // Calculate the safe area bottom inset
+      let safeAreaBottom = geometry.safeAreaInsets.bottom
+      
+      // Tab bar height
+      let tabBarHeight: CGFloat = 80
+      
       // Header height: habit selector (~50pt) + tabs (~44pt) + padding (~16pt) = ~110pt
       let headerHeight: CGFloat = 110
       
@@ -572,6 +578,9 @@ struct ProgressTabView: View {
       
       // Total passthrough zone from actual screen top
       let passthroughHeight = safeAreaTop + headerHeight + dateSectionHeight
+      
+      // Calculate gradient height to stop before tab bar
+      let gradientHeight = geometry.size.height - passthroughHeight - tabBarHeight - safeAreaBottom
       
       VStack(spacing: 0) {
         // Touch passthrough zone - covers safe area + header + date button
@@ -593,23 +602,22 @@ struct ProgressTabView: View {
           )
           .allowsHitTesting(true)
           
-          // CTA Button
-          VStack {
-            Spacer()
-            
-            HabittoButton.largeFillPrimary(text: "See more progress") {
-              activeSheet = .paywall
-            }
-            .overlay(
-              // Shimmer effect overlay
-              ShimmerEffect()
-                .clipShape(RoundedRectangle(cornerRadius: 28)) // Match button corner radius
-            )
-            .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+          // CTA Button - positioned at bottom of gradient using ZStack alignment
+          HabittoButton.largeFillPrimary(text: "See more progress") {
+            activeSheet = .paywall
           }
+          .overlay(
+            // Shimmer effect overlay
+            ShimmerEffect()
+              .clipShape(RoundedRectangle(cornerRadius: 28)) // Match button corner radius
+          )
+          .padding(.horizontal, 20)
+          .padding(.bottom, 20)
         }
-        .frame(maxHeight: .infinity)
+        .frame(height: gradientHeight)
+        
+        // Spacer to fill remaining tab bar area
+        Spacer()
       }
     }
     .ignoresSafeArea(.all)
