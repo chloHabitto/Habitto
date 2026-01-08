@@ -1274,14 +1274,14 @@ struct HomeTabView: View {
     debugLog(
       "🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=debug_user_id")
 
-    // ✅ FIX: Check if this day was already awarded (extra progress scenario)
+    // ✅ BUG 2 FIX: Check if this day was already awarded (extra progress scenario)
+    // If day was already complete and awarded, this is just extra progress - don't trigger celebration
     if awardedDateKeys.contains(dateKey) {
       debugLog("🎯 COMPLETION_FLOW: Day already awarded - this is extra progress, skipping celebration trigger")
-      // Still show difficulty sheet, but don't set lastHabitJustCompleted
-      // The difficulty sheet will still appear via the normal flow
       deferResort = true
       completionStatusMap[habit.id] = true
-      return  // Don't continue to the celebration logic
+      // Don't set lastHabitJustCompleted - just return
+      return
     }
 
     // Mark complete and present difficulty sheet
@@ -1356,6 +1356,21 @@ struct HomeTabView: View {
   }
 
   private func onHabitUncompleted(_ habit: Habit) {
+    let dateKey = Habit.dateKey(for: selectedDate)
+    
+    // ✅ BUG 1 FIX: Check if day is now incomplete after this uncompletion
+    let allComplete = baseHabitsForSelectedDate.allSatisfy { h in
+      h.meetsStreakCriteria(for: selectedDate)
+    }
+    
+    if !allComplete && awardedDateKeys.contains(dateKey) {
+      // Day became incomplete - reset award tracking so user can re-earn
+      awardedDateKeys.remove(dateKey)
+      lastShownMilestoneStreak = -1
+      lastShownMilestoneDateTimestamp = 0
+      debugLog("🔄 UNCOMPLETION: Day became incomplete - reset award tracking and milestone state")
+    }
+    
     // ✅ FIX: Update completion status map immediately for this habit
     completionStatusMap[habit.id] = false
 
@@ -1366,7 +1381,6 @@ struct HomeTabView: View {
       debugLog("🔍 DEBUG: onHabitUncompleted - revoke call #\(debugRevokeCalls)")
       #endif
 
-      let dateKey = Habit.dateKey(for: selectedDate)
       debugLog("🎯 UNCOMPLETE_FLOW: Habit '\(habit.name)' uncompleted for \(dateKey)")
       
       // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)

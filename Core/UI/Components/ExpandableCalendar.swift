@@ -226,7 +226,7 @@ struct ExpandableCalendar: View {
         ForEach(weekdayNames, id: \.self) { day in
           Text(day.uppercased())
             .font(.system(size: 10, weight: .bold))
-            .foregroundColor(.text08)
+            .foregroundColor(.appText06)
             .frame(height: 32)
         }
 
@@ -365,7 +365,7 @@ fileprivate struct WeekDayButton: View {
         Text(dayAbbreviation(for: date).uppercased())
           .font(.system(size: 10, weight: .bold))
           .frame(height: 16) // Line height 16
-          .foregroundColor(dayAbbreviationColor)
+          .foregroundColor(isSelected ? .appOnPrimary80 : .appText06)
         
         Text("\(calendar.component(.day, from: date))")
           .font(.appBodyMedium)
@@ -381,16 +381,6 @@ fileprivate struct WeekDayButton: View {
   
   private var calendar: Calendar {
     AppDateFormatter.shared.getUserCalendar()
-  }
-  
-  private var dayAbbreviationColor: Color {
-    if isSelected {
-      return .text09
-    } else if isToday {
-      return Color("navy200")
-    } else {
-      return .text08
-    }
   }
   
   private var dayNumberColor: Color {
