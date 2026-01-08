@@ -3,6 +3,10 @@ import StoreKit
 import UIKit
 import FirebaseAuth
 
+// TODO: [LOGGING] Migrate print() statements to HabittoLogger
+// This file has 330+ print() statements that run in production
+// See: Docs/Guides/LOGGING_STANDARDS.md
+
 /// Manages subscription status and premium features
 @MainActor
 class SubscriptionManager: ObservableObject {

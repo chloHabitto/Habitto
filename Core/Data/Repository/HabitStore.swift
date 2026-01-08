@@ -6,6 +6,9 @@ import OSLog
 import SwiftData
 import SwiftUI
 
+// TODO: [LOGGING] Standardize logging - currently mixes print() and os.Logger
+// See: Docs/Guides/LOGGING_STANDARDS.md
+
 // MARK: - Habit Store Actor
 
 // This actor handles all data operations off the main thread
