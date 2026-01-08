@@ -1376,12 +1376,18 @@ struct HomeTabView: View {
   private func onHabitUncompleted(_ habit: Habit) {
     let dateKey = Habit.dateKey(for: selectedDate)
     
-    // ✅ BUG 1 FIX: Check if day is now incomplete after this uncompletion
-    let allComplete = baseHabitsForSelectedDate.allSatisfy { h in
-      h.meetsStreakCriteria(for: selectedDate)
-    }
+    // ✅ FIX: Exclude the habit being uncompleted from the check
+    // because meetsStreakCriteria still returns true due to race condition
+    let otherHabits = baseHabitsForSelectedDate.filter { $0.id != habit.id }
+    let allOthersComplete = otherHabits.allSatisfy { $0.meetsStreakCriteria(for: selectedDate) }
     
-    if !allComplete && awardedDateKeys.contains(dateKey) {
+    // Day is incomplete if:
+    // - No other habits exist (this was the only habit), OR
+    // - Other habits are not all complete
+    // Since THIS habit is being uncompleted (progress=0), it no longer counts
+    let dayIsNowIncomplete = otherHabits.isEmpty || !allOthersComplete
+    
+    if dayIsNowIncomplete && awardedDateKeys.contains(dateKey) {
       // Day became incomplete - reset award tracking so user can re-earn
       awardedDateKeys.remove(dateKey)
       lastShownMilestoneStreak = -1
