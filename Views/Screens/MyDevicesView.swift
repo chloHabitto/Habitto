@@ -13,8 +13,10 @@ struct MyDevicesView: View {
   @State private var devices: [UserDevice] = []
   @State private var isLoading = true
   @State private var errorMessage: String?
-  @State private var editingDeviceId: String?
-  @State private var editingDeviceName: String = ""
+  @State private var showingDeviceNameEditSheet = false
+  @State private var editedDeviceName: String = ""
+  @FocusState private var isDeviceNameFieldFocused: Bool
+  @State private var deviceBeingEdited: UserDevice?
   @State private var showingSubscriptionView = false
   @State private var showingDeleteConfirmation = false
   @State private var deviceToDelete: UserDevice?
@@ -56,6 +58,18 @@ struct MyDevicesView: View {
       }
       .sheet(isPresented: $showingSubscriptionView) {
         SubscriptionView()
+      }
+      .sheet(isPresented: $showingDeviceNameEditSheet) {
+        DeviceNameEditBottomSheet(
+          name: $editedDeviceName,
+          isFocused: $isDeviceNameFieldFocused,
+          onClose: {
+            showingDeviceNameEditSheet = false
+            deviceBeingEdited = nil
+          },
+          onSave: {
+            saveDeviceName()
+          })
       }
       .alert("Remove Device", isPresented: $showingDeleteConfirmation) {
         Button("Cancel", role: .cancel) {
@@ -154,46 +168,33 @@ struct MyDevicesView: View {
           .frame(width: 24, height: 24)
         
         VStack(alignment: .leading, spacing: 4) {
-          if editingDeviceId == device.id {
-            // Inline editing
-            TextField("Device name", text: $editingDeviceName)
+          // Display mode
+          HStack(spacing: 8) {
+            Text(device.deviceName)
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
-              .textFieldStyle(.plain)
-              .onSubmit {
-                saveDeviceName(device)
-              }
-              .onAppear {
-                editingDeviceName = device.deviceName
-              }
-          } else {
-            // Display mode
-            HStack(spacing: 8) {
-              Text(device.deviceName)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.text01)
-              
-              if isCurrent {
-                Button(action: {
-                  editingDeviceId = device.id
-                  editingDeviceName = device.deviceName
-                }) {
-                  Image(systemName: "pencil")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.text04)
-                }
+            
+            if isCurrent {
+              Button(action: {
+                deviceBeingEdited = device
+                editedDeviceName = device.deviceName
+                showingDeviceNameEditSheet = true
+              }) {
+                Image(systemName: "pencil")
+                  .font(.system(size: 12, weight: .medium))
+                  .foregroundColor(.text04)
               }
             }
-            
-            Text(device.deviceModel)
-              .font(.system(size: 12, weight: .regular))
-              .foregroundColor(.text04)
-            
-            Text("Last login: \(DateUtilities.shared.relativeString(for: device.lastLogin))")
-              .font(.system(size: 12, weight: .regular))
-              .foregroundColor(.text05)
-              .padding(.top, 2)
           }
+          
+          Text(device.deviceModel)
+            .font(.system(size: 12, weight: .regular))
+            .foregroundColor(.text04)
+          
+          Text("Last login: \(DateUtilities.shared.relativeString(for: device.lastLogin))")
+            .font(.system(size: 12, weight: .regular))
+            .foregroundColor(.text05)
+            .padding(.top, 2)
         }
         
         Spacer()
@@ -335,26 +336,30 @@ struct MyDevicesView: View {
     }
   }
   
-  private func saveDeviceName(_ device: UserDevice) {
-    guard !editingDeviceName.trimmingCharacters(in: .whitespaces).isEmpty else {
-      editingDeviceId = nil
+  private func saveDeviceName() {
+    guard let device = deviceBeingEdited else { return }
+    guard !editedDeviceName.trimmingCharacters(in: .whitespaces).isEmpty else {
+      showingDeviceNameEditSheet = false
+      deviceBeingEdited = nil
       return
     }
     
     Task {
       do {
-        try await DeviceManager.shared.updateDeviceName(editingDeviceName)
+        try await DeviceManager.shared.updateDeviceName(editedDeviceName)
         await MainActor.run {
           // Update local state
           if let index = devices.firstIndex(where: { $0.id == device.id }) {
-            devices[index].deviceName = editingDeviceName
+            devices[index].deviceName = editedDeviceName
           }
-          editingDeviceId = nil
+          showingDeviceNameEditSheet = false
+          deviceBeingEdited = nil
         }
       } catch {
         await MainActor.run {
           errorMessage = "Failed to update device name: \(error.localizedDescription)"
-          editingDeviceId = nil
+          showingDeviceNameEditSheet = false
+          deviceBeingEdited = nil
         }
       }
     }
@@ -375,6 +380,84 @@ struct MyDevicesView: View {
         }
       }
     }
+  }
+}
+
+// MARK: - Preview
+
+// MARK: - DeviceNameEditBottomSheet
+
+struct DeviceNameEditBottomSheet: View {
+  @Binding var name: String
+  @FocusState.Binding var isFocused: Bool
+  let onClose: () -> Void
+  let onSave: () -> Void
+  
+  @State private var originalName: String = ""
+  
+  private let maxLength = 30  // Longer than name (12) since device names can be longer
+  
+  private var hasChanges: Bool {
+    name.trimmingCharacters(in: .whitespacesAndNewlines) != originalName.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+  
+  var body: some View {
+    BaseBottomSheet(
+      title: "Device Name",
+      description: "",
+      onClose: onClose,
+      useGlassCloseButton: true,
+      confirmButton: {
+        onSave()
+      },
+      confirmButtonTitle: "Done",
+      isConfirmButtonDisabled: !hasChanges)
+    {
+      VStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
+          TextField("Enter device name", text: $name)
+            .font(.appBodyLarge)
+            .foregroundColor(.text01)
+            .accentColor(.text01)
+            .focused($isFocused)
+            .submitLabel(.done)
+            .frame(maxWidth: .infinity, minHeight: 48)
+            .padding(.horizontal, 16)
+            .background(Color.surface2)
+            .overlay(
+              RoundedRectangle(cornerRadius: 12)
+                .stroke(isFocused ? .primary : .outline3, lineWidth: isFocused ? 2 : 1.5))
+            .cornerRadius(12)
+            .onChange(of: name) { oldValue, newValue in
+              // Enforce character limit
+              if newValue.count > maxLength {
+                name = String(newValue.prefix(maxLength))
+              }
+            }
+            .onAppear {
+              // Store original name when sheet appears
+              originalName = name
+              // Focus the field when sheet appears
+              DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                isFocused = true
+              }
+            }
+          
+          // Character count
+          HStack {
+            Spacer()
+            Text("\(name.count)/\(maxLength)")
+              .font(.appLabelSmall)
+              .foregroundColor(.text04)
+          }
+        }
+        
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+    }
+    .presentationDetents([.height(350)])
   }
 }
 

@@ -998,7 +998,7 @@ struct NameEditBottomSheet: View {
       title: "Name",
       description: "",
       onClose: onClose,
-      useGlassCloseButton: true,
+      useSimpleCloseButton: true,
       confirmButton: {
         onSave()
       },
