@@ -468,6 +468,14 @@ actor SyncEngine {
             // Continue with local sync even if pull fails
         }
         
+        // ✅ BUG FIX: Retry pending Firestore deletions that failed previously
+        // This cleans up orphaned habits that couldn't be deleted due to network errors
+        await MainActor.run {
+            Task {
+                await FirebaseBackupService.shared.retryPendingDeletions()
+            }
+        }
+        
         // Step 2: Sync local changes to server (in order of dependency)
         // Events first (they affect completions), then completions, then awards
         do {
@@ -1050,8 +1058,16 @@ actor SyncEngine {
         // In production, you'd want to add an updatedAt field to habits
         let snapshot = try await habitsRef.getDocuments()
         var pulledCount = 0
+        var remoteHabitIds: Set<UUID> = []
         
         for document in snapshot.documents {
+            // Track all remote habit IDs (even if we don't pull them due to timestamp)
+            let habitIdString = document.documentID
+            guard let uuid = UUID(uuidString: habitIdString) else {
+                continue
+            }
+            remoteHabitIds.insert(uuid)
+            
             let data = document.data()
             
             // Check if habit was updated since last sync
@@ -1063,17 +1079,14 @@ actor SyncEngine {
                 continue
             }
             
-            // Convert Firestore data to HabitData
-            let habitIdString = document.documentID
-            guard let uuid = UUID(uuidString: habitIdString) else {
-                continue
-            }
-            
             // Merge habit into SwiftData
             // ✅ BUG FIX: Errors are now logged inside mergeHabitFromFirestore, sync continues
             await mergeHabitFromFirestore(data: data, habitId: uuid, userId: userId)
             pulledCount += 1
         }
+        
+        // ✅ BUG FIX: Reconcile deletions - Delete from Firestore any habits that were deleted locally
+        await reconcileDeletedHabits(userId: userId, remoteHabitIds: remoteHabitIds)
         
         return pulledCount
     }
@@ -1771,6 +1784,45 @@ actor SyncEngine {
         }
         
         return habitData
+    }
+    
+    /// ✅ BUG FIX: Reconcile deletions - Remove habits from Firestore that were deleted locally
+    /// Call this after pullHabits() completes to clean up orphaned habits in Firestore
+    private func reconcileDeletedHabits(userId: String, remoteHabitIds: Set<UUID>) async {
+        // Get local habit IDs
+        let localHabitIds: Set<UUID> = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<HabitData> { habit in
+                habit.userId == userId
+            }
+            let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
+            let localHabits = (try? modelContext.fetch(descriptor)) ?? []
+            return Set(localHabits.map { $0.id })
+        }
+        
+        // Find habits that exist in Firestore but not locally (they were deleted locally)
+        let deletedHabitIds = remoteHabitIds.subtracting(localHabitIds)
+        
+        guard !deletedHabitIds.isEmpty else {
+            return
+        }
+        
+        logger.info("🗑️ SyncEngine: Found \(deletedHabitIds.count) habits deleted locally but still in Firestore - cleaning up")
+        
+        // Delete from Firestore
+        for habitId in deletedHabitIds {
+            do {
+                let docRef = firestore.collection("users")
+                    .document(userId)
+                    .collection("habits")
+                    .document(habitId.uuidString)
+                
+                try await docRef.delete()
+                logger.info("✅ SyncEngine: Deleted orphaned habit \(habitId.uuidString.prefix(8))... from Firestore")
+            } catch {
+                logger.error("❌ SyncEngine: Failed to delete orphaned habit \(habitId.uuidString.prefix(8))... from Firestore: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
