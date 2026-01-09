@@ -471,7 +471,7 @@ actor SyncEngine {
         // ✅ BUG FIX: Retry pending Firestore deletions that failed previously
         // This cleans up orphaned habits that couldn't be deleted due to network errors
         await MainActor.run {
-            Task {
+            _ = Task {
                 await FirebaseBackupService.shared.retryPendingDeletions()
             }
         }
@@ -1786,8 +1786,10 @@ actor SyncEngine {
         return habitData
     }
     
-    /// ✅ BUG FIX: Reconcile deletions - Remove habits from Firestore that were deleted locally
-    /// Call this after pullHabits() completes to clean up orphaned habits in Firestore
+    /// ✅ BUG FIX: Reconcile deletions bidirectionally:
+    /// 1. Delete from Firestore: habits that exist remotely but not locally (deleted on this device)
+    /// 2. Delete from Local: habits that exist locally but not remotely (deleted on another device)
+    /// Call this after pullHabits() completes to clean up orphaned habits
     private func reconcileDeletedHabits(userId: String, remoteHabitIds: Set<UUID>) async {
         // Get local habit IDs
         let localHabitIds: Set<UUID> = await MainActor.run {
@@ -1800,27 +1802,67 @@ actor SyncEngine {
             return Set(localHabits.map { $0.id })
         }
         
-        // Find habits that exist in Firestore but not locally (they were deleted locally)
-        let deletedHabitIds = remoteHabitIds.subtracting(localHabitIds)
+        // DIRECTION 1: Delete from Firestore habits that were deleted locally
+        // (exist in Firestore but not locally)
+        let deletedLocallyButInFirestore = remoteHabitIds.subtracting(localHabitIds)
         
-        guard !deletedHabitIds.isEmpty else {
-            return
+        if !deletedLocallyButInFirestore.isEmpty {
+            logger.info("🗑️ SyncEngine: Found \(deletedLocallyButInFirestore.count) habits deleted locally but still in Firestore - cleaning up Firestore")
+            
+            for habitId in deletedLocallyButInFirestore {
+                do {
+                    let docRef = firestore.collection("users")
+                        .document(userId)
+                        .collection("habits")
+                        .document(habitId.uuidString)
+                    
+                    try await docRef.delete()
+                    logger.info("✅ SyncEngine: Deleted orphaned habit \(habitId.uuidString.prefix(8))... from Firestore")
+                } catch {
+                    logger.error("❌ SyncEngine: Failed to delete orphaned habit \(habitId.uuidString.prefix(8))... from Firestore: \(error.localizedDescription)")
+                }
+            }
         }
         
-        logger.info("🗑️ SyncEngine: Found \(deletedHabitIds.count) habits deleted locally but still in Firestore - cleaning up")
+        // DIRECTION 2: Delete locally habits that were deleted remotely
+        // (exist locally but not in Firestore)
+        let deletedRemotelyButLocal = localHabitIds.subtracting(remoteHabitIds)
         
-        // Delete from Firestore
-        for habitId in deletedHabitIds {
-            do {
-                let docRef = firestore.collection("users")
-                    .document(userId)
-                    .collection("habits")
-                    .document(habitId.uuidString)
+        if !deletedRemotelyButLocal.isEmpty {
+            logger.info("🗑️ SyncEngine: Found \(deletedRemotelyButLocal.count) habits deleted remotely but still local - cleaning up local SwiftData")
+            
+            await MainActor.run {
+                let modelContext = SwiftDataContainer.shared.modelContext
                 
-                try await docRef.delete()
-                logger.info("✅ SyncEngine: Deleted orphaned habit \(habitId.uuidString.prefix(8))... from Firestore")
-            } catch {
-                logger.error("❌ SyncEngine: Failed to delete orphaned habit \(habitId.uuidString.prefix(8))... from Firestore: \(error.localizedDescription)")
+                for habitId in deletedRemotelyButLocal {
+                    // Find and delete the local habit
+                    let predicate = #Predicate<HabitData> { habit in
+                        habit.id == habitId && habit.userId == userId
+                    }
+                    let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
+                    
+                    if let habitToDelete = try? modelContext.fetch(descriptor).first {
+                        logger.info("🗑️ SyncEngine: Deleting locally orphaned habit '\(habitToDelete.name)' (\(habitId.uuidString.prefix(8))...)")
+                        modelContext.delete(habitToDelete)
+                    }
+                }
+                
+                do {
+                    try modelContext.save()
+                    logger.info("✅ SyncEngine: Deleted \(deletedRemotelyButLocal.count) locally orphaned habits from SwiftData")
+                } catch {
+                    logger.error("❌ SyncEngine: Failed to save after deleting local orphaned habits: \(error.localizedDescription)")
+                }
+            }
+            
+            // Clear cache and notify UI to reload
+            await habitStore.clearStorageCache()
+            await MainActor.run {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("SyncPullCompleted"),
+                    object: nil,
+                    userInfo: ["habitsDeleted": deletedRemotelyButLocal.count]
+                )
             }
         }
     }
