@@ -128,21 +128,51 @@ struct FAQView: View {
 
   private var faqQuestionsList: some View {
     VStack(spacing: 0) {
-      if filteredFaqData.isEmpty {
-        // Empty state when no results found
-        VStack(spacing: 16) {
-          Text("No results found")
-            .font(.appBodyLarge)
-            .foregroundColor(.text02)
+      if filteredFaqData.isEmpty && !searchText.isEmpty {
+        // Empty state when no search results found
+        VStack(spacing: 0) {
+          // Image
+          Image("Habit-List-Empty-State@4x")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 120, height: 120)
           
-          if !searchText.isEmpty {
-            Text("for '\(searchText)'")
-              .font(.appBodyMedium)
-              .foregroundColor(.text05)
+          // Space 8
+          Spacer()
+            .frame(height: 8)
+          
+          // "No result found" text
+          Text("No result found")
+            .font(.appTitleLargeEmphasised)
+            .foregroundColor(Color("appText04"))
+            .multilineTextAlignment(.center)
+          
+          // "Try searching for something else instead" text
+          Text("Try searching for something else instead")
+            .font(.appBodyLarge)
+            .foregroundColor(Color("appText05"))
+            .multilineTextAlignment(.center)
+          
+          // Space 20
+          Spacer()
+            .frame(height: 20)
+          
+          // Contact Us button
+          HabittoButton(
+            size: .medium,
+            style: .fillPrimary,
+            content: .text("Contact Us"),
+            hugging: false)
+          {
+            openContactUs()
           }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 48)
+        .padding(.horizontal, 20)
+      } else if filteredFaqData.isEmpty {
+        // Empty state when no search text (shouldn't happen, but handle gracefully)
+        EmptyView()
       } else {
         ForEach(filteredFaqData, id: \.question) { faqItem in
           FAQQuestionRow(
@@ -175,6 +205,19 @@ struct FAQView: View {
         expandedQuestions.removeAll()
         expandedQuestions.insert(question)
       }
+    }
+  }
+
+  private func openContactUs() {
+    // Open email app with the same configuration as Send Feedback screen
+    let recipientEmail = "chloe@habitto.nl"
+    let emailSubject = "App Feedback"
+    let emailBody = "Hello, I'd like to share some feedback:\n\n"
+    
+    let mailtoURL = "mailto:\(recipientEmail)?subject=\(emailSubject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&body=\(emailBody.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
+    
+    if let url = URL(string: mailtoURL) {
+      UIApplication.shared.open(url)
     }
   }
 }
