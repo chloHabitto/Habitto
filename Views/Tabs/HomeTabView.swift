@@ -1383,16 +1383,26 @@ struct HomeTabView: View {
   private func onHabitUncompleted(_ habit: Habit) {
     let dateKey = Habit.dateKey(for: selectedDate)
     
+    // ✅ ADD DEBUG LOGGING to trace why the condition might fail
+    debugLog("🔴 UNCOMPLETE_CHECK: habitId=\(habit.id), dateKey=\(dateKey)")
+    debugLog("🔴 UNCOMPLETE_CHECK: baseHabitsForSelectedDate.count=\(baseHabitsForSelectedDate.count)")
+    
     // ✅ FIX: Exclude the habit being uncompleted from the check
     // because meetsStreakCriteria still returns true due to race condition
     let otherHabits = baseHabitsForSelectedDate.filter { $0.id != habit.id }
+    debugLog("🔴 UNCOMPLETE_CHECK: otherHabits.count=\(otherHabits.count)")
+    
     let allOthersComplete = otherHabits.allSatisfy { $0.meetsStreakCriteria(for: selectedDate) }
+    debugLog("🔴 UNCOMPLETE_CHECK: allOthersComplete=\(allOthersComplete)")
     
     // Day is incomplete if:
     // - No other habits exist (this was the only habit), OR
     // - Other habits are not all complete
     // Since THIS habit is being uncompleted (progress=0), it no longer counts
     let dayIsNowIncomplete = otherHabits.isEmpty || !allOthersComplete
+    debugLog("🔴 UNCOMPLETE_CHECK: dayIsNowIncomplete=\(dayIsNowIncomplete)")
+    debugLog("🔴 UNCOMPLETE_CHECK: awardedDateKeys=\(awardedDateKeys)")
+    debugLog("🔴 UNCOMPLETE_CHECK: awardedDateKeys.contains(\(dateKey))=\(awardedDateKeys.contains(dateKey))")
     
     if dayIsNowIncomplete && awardedDateKeys.contains(dateKey) {
       // Day became incomplete - reset award tracking so user can re-earn
@@ -1400,6 +1410,8 @@ struct HomeTabView: View {
       lastShownMilestoneStreak = -1
       lastShownMilestoneDateTimestamp = 0
       debugLog("🔄 UNCOMPLETION: Day became incomplete - reset award tracking and milestone state")
+    } else {
+      debugLog("🔴 UNCOMPLETE_CHECK: Condition failed - dayIsNowIncomplete=\(dayIsNowIncomplete), contains=\(awardedDateKeys.contains(dateKey))")
     }
     
     // ✅ FIX: Update completion status map immediately for this habit
@@ -1506,7 +1518,10 @@ struct HomeTabView: View {
       }
       
       // Step 2: Award XP (only if not already awarded)
-      awardedDateKeys.insert(dateKey)
+      if !awardedDateKeys.contains(dateKey) {
+        awardedDateKeys.insert(dateKey)
+        debugLog("✅ AWARD_TRACKING: Added \(dateKey) to awardedDateKeys, now contains: \(awardedDateKeys)")
+      }
       // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
       // This is the ONLY place where XP should be awarded for habit completion
       // Do NOT call XPManager methods directly - always use DailyAwardService
