@@ -10,96 +10,110 @@ struct CustomRatingView: View {
         Color("appSurface01Variant02")
           .ignoresSafeArea(.all)
         
-        ScrollView {
-          VStack(spacing: 20) {
-            // Header
-            VStack(spacing: 16) {
-              Image("Rate")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 120, height: 120)
-            }
-            .padding(.top, 20)
-
-            // Star Rating
-            VStack(spacing: 16) {
-              Text("How would you rate your experience?")
-                .font(.appTitleLargeEmphasised)
-                .foregroundColor(.text04)
-
-              HStack(spacing: 12) {
-                ForEach(1 ... maxRating, id: \.self) { index in
-                  Button(action: {
-                    selectedRating = index
-                  }) {
-                    Image("Icon-Star_Filled")
-                      .resizable()
-                      .aspectRatio(contentMode: .fit)
-                      .foregroundColor(index <= selectedRating ? .yellow : .gray)
-                      .frame(width: 32, height: 32)
-                  }
-                  .buttonStyle(PlainButtonStyle())
-                }
+        ScrollViewReader { proxy in
+          ScrollView {
+            VStack(spacing: 20) {
+              // Header
+              VStack(spacing: 16) {
+                Image("Rate")
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(width: 120, height: 120)
               }
+              .padding(.top, 20)
 
-              if selectedRating > 0 {
-                Text(ratingText)
-                  .font(.appBodyLarge)
-                  .foregroundColor(.text05)
-                  .multilineTextAlignment(.center)
-              }
-            }
-            .padding(.horizontal, 20)
+              // Star Rating
+              VStack(spacing: 16) {
+                Text("How would you rate your experience?")
+                  .font(.appTitleLargeEmphasised)
+                  .foregroundColor(.text04)
 
-            // Comment Section
-            VStack(alignment: .leading, spacing: 12) {
-              Text("Share your thoughts (optional)")
-                .font(.appBodyMediumEmphasised)
-                .foregroundColor(.text04)
-
-              VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .topLeading) {
-                  TextEditor(text: $comment)
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
-                    .scrollContentBackground(.hidden)
-                    .padding(12)
-                    .background(Color.surface01)
-                    .overlay(
-                      RoundedRectangle(cornerRadius: 16)
-                        .stroke(
-                          comment.count > maxCommentLength ? Color.red : Color.outline02,
-                          lineWidth: 1.5))
-                    .cornerRadius(16)
-                    .frame(minHeight: 100)
-                    .onChange(of: comment) { _, newValue in
-                      // Limit comment length
-                      if newValue.count > maxCommentLength {
-                        comment = String(newValue.prefix(maxCommentLength))
-                      }
+                HStack(spacing: 12) {
+                  ForEach(1 ... maxRating, id: \.self) { index in
+                    Button(action: {
+                      selectedRating = index
+                    }) {
+                      Image("Icon-Star_Filled")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundColor(index <= selectedRating ? .yellow : .gray)
+                        .frame(width: 32, height: 32)
                     }
-
-                  if comment.isEmpty {
-                    Text("Tell us what you think about the app...")
-                      .font(.appBodyMedium)
-                      .foregroundColor(.text03)
-                      .padding(.horizontal, 16)
-                      .padding(.vertical, 20)
-                      .allowsHitTesting(false)
+                    .buttonStyle(PlainButtonStyle())
                   }
                 }
 
-                HStack {
-                  Spacer()
-                  Text("\(comment.count)/\(maxCommentLength)")
-                    .font(.appBodySmall)
-                    .foregroundColor(comment.count > maxCommentLength ? .red : .text06)
+                if selectedRating > 0 {
+                  Text(ratingText)
+                    .font(.appBodyLarge)
+                    .foregroundColor(.text05)
+                    .multilineTextAlignment(.center)
+                }
+              }
+              .padding(.horizontal, 20)
+
+              // Comment Section
+              VStack(alignment: .leading, spacing: 12) {
+                Text("Share your thoughts (optional)")
+                  .font(.appBodyMediumEmphasised)
+                  .foregroundColor(.text04)
+
+                VStack(alignment: .leading, spacing: 8) {
+                  ZStack(alignment: .topLeading) {
+                    TextEditor(text: $comment)
+                      .font(.appBodyMedium)
+                      .foregroundColor(.text01)
+                      .scrollContentBackground(.hidden)
+                      .padding(12)
+                      .background(Color.surface01)
+                      .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                          .stroke(
+                            comment.count > maxCommentLength ? Color.red : Color.outline02,
+                            lineWidth: 1.5))
+                      .cornerRadius(16)
+                      .frame(minHeight: 100)
+                      .focused($isCommentFocused)
+                      .onChange(of: comment) { _, newValue in
+                        // Limit comment length
+                        if newValue.count > maxCommentLength {
+                          comment = String(newValue.prefix(maxCommentLength))
+                        }
+                      }
+
+                    if comment.isEmpty {
+                      Text("Tell us what you think about the app...")
+                        .font(.appBodyMedium)
+                        .foregroundColor(.text03)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 20)
+                        .allowsHitTesting(false)
+                    }
+                  }
+
+                  HStack {
+                    Spacer()
+                    Text("\(comment.count)/\(maxCommentLength)")
+                      .font(.appBodySmall)
+                      .foregroundColor(comment.count > maxCommentLength ? .red : .text06)
+                  }
+                }
+              }
+              .padding(.horizontal, 20)
+              .padding(.top, 28) // Spacing of 48 total (20 from parent VStack + 28 padding)
+              .padding(.bottom, isCommentFocused ? 300 : 120) // Extra padding when keyboard is visible
+              .id("commentSection")
+            }
+          }
+          .onChange(of: isCommentFocused) { _, isFocused in
+            if isFocused {
+              // Scroll to comment section when focused, with a slight delay to allow keyboard to appear
+              DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                  proxy.scrollTo("commentSection", anchor: .center)
                 }
               }
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 28) // Spacing of 48 total (20 from parent VStack + 28 padding)
-            .padding(.bottom, 120) // Padding to prevent content from being covered by bottom buttons
           }
         }
         
@@ -149,6 +163,7 @@ struct CustomRatingView: View {
           }
         }
       }
+      .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     .alert("Open App Store", isPresented: $showingAppStore) {
       Button("Open App Store") {
@@ -164,6 +179,7 @@ struct CustomRatingView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
+  @FocusState private var isCommentFocused: Bool
   @State private var selectedRating = 5
   @State private var comment = ""
   @State private var showingAppStore = false
