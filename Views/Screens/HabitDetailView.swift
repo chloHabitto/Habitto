@@ -35,7 +35,7 @@ struct HabitDetailView: View {
                     value: contentGeometry.frame(in: .global).minY)
               })
         }
-        .background(.appSurface04Variant)
+        .background(.appSurface01Variant02)
         .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
           let newOffset = -value
           if abs(newOffset - scrollOffset) > 1 {
