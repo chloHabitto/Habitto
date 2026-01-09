@@ -403,10 +403,10 @@ struct DeviceNameEditBottomSheet: View {
   
   var body: some View {
     BaseBottomSheet(
-      title: "Device Name",
+      title: "Name",
       description: "",
       onClose: onClose,
-      useGlassCloseButton: true,
+      useSimpleCloseButton: true,
       confirmButton: {
         onSave()
       },
