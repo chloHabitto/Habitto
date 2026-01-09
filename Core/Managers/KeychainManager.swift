@@ -155,4 +155,26 @@ extension KeychainManager {
     // Clear Apple user display names (we don't know all user IDs, so this is best effort)
     // In a real app, you might want to track user IDs to clean them up properly
   }
+  
+  // MARK: - Device Identifier Methods
+  
+  /// Store device identifier in Keychain
+  func storeDeviceIdentifier(_ identifier: String) -> Bool {
+    return storeString(key: Self.deviceIdentifierKey, string: identifier)
+  }
+  
+  /// Retrieve device identifier from Keychain
+  func retrieveDeviceIdentifier() -> String? {
+    return retrieveString(key: Self.deviceIdentifierKey)
+  }
+  
+  /// Get existing device identifier or create and store a new one
+  func getOrCreateDeviceIdentifier() -> String {
+    if let existing = retrieveDeviceIdentifier() {
+      return existing
+    }
+    let newId = UUID().uuidString
+    _ = storeDeviceIdentifier(newId)
+    return newId
+  }
 }

@@ -117,6 +117,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         debugLog("✅ AppDelegate: Periodic sync started")
         NSLog("✅ AppDelegate: Periodic sync started")
         
+        // ✅ Register/update device on every app launch (non-guest users only)
+        if !CurrentUser.isGuestId(uid) {
+          Task {
+            await DeviceManager.shared.registerCurrentDevice()
+          }
+        }
+        
       } catch {
         debugLog("❌ AppDelegate: Failed to authenticate user: \(error.localizedDescription)")
         NSLog("❌ AppDelegate: Failed to authenticate user: %@", error.localizedDescription)

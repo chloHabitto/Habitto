@@ -46,5 +46,10 @@ service cloud.firestore {
     match /users/{uid}/meta/migration {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+    
+    // Device management (optional - wildcard rule above already covers this)
+    match /users/{uid}/devices/{deviceId} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
   }
 }
