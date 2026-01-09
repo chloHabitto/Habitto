@@ -329,7 +329,7 @@ final class MigrationTestHelper {
         
         let testHabit = habits[0]
         let today = Date()
-        let dateKey = CoreDataManager.dateKey(for: today)
+        let dateKey = DateUtils.dateKey(for: today)
         
         // Get current progress
         let currentProgress = await HabitStore.shared.getProgress(for: testHabit, date: today)

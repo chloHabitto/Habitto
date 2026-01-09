@@ -501,7 +501,7 @@ final actor HabitStore {
   }
 
   func scheduledHabits(for date: Date) async throws -> [Habit] {
-    let dateKey = CoreDataManager.dateKey(for: date)
+    let dateKey = DateUtils.dateKey(for: date)
     if let cache = scheduledHabitsCache, cache.dateKey == dateKey {
       return cache.habits
     }
@@ -516,7 +516,7 @@ final actor HabitStore {
   // MARK: - Set Progress
 
   func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
-    let dateKey = CoreDataManager.dateKey(for: date)
+    let dateKey = DateUtils.dateKey(for: date)
     logger.info("Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
     logger.info("🎯 DEBUG: HabitStore.setProgress called - will create CompletionRecord")
 
@@ -719,7 +719,7 @@ final actor HabitStore {
   /// ✅ PRIORITY 1: This method now uses ProgressEvents as the source of truth
   /// Falls back to completionHistory for backward compatibility (habits without events yet)
   func getProgress(for habit: Habit, date: Date) async -> Int {
-    let dateKey = CoreDataManager.dateKey(for: date)
+    let dateKey = DateUtils.dateKey(for: date)
     let goalAmount = habit.goalAmount(for: date)
     
     // Get legacy progress from completionHistory (fallback)
