@@ -162,10 +162,21 @@ struct MyDevicesView: View {
     VStack(spacing: 0) {
       HStack(spacing: 12) {
         // Device icon
-        Image(systemName: "iphone")
-          .font(.system(size: 20, weight: .medium))
-          .foregroundColor(.appIconColor)
-          .frame(width: 24, height: 24)
+        if iconForDevice(device.deviceModel).hasPrefix("Icon-") {
+          // Custom icon
+          Image(iconForDevice(device.deviceModel))
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 24, height: 24)
+            .foregroundColor(.appIconColor)
+        } else {
+          // System icon (fallback)
+          Image(systemName: iconForDevice(device.deviceModel))
+            .font(.system(size: 20, weight: .medium))
+            .foregroundColor(.appIconColor)
+            .frame(width: 24, height: 24)
+        }
         
         VStack(alignment: .leading, spacing: 4) {
           // Display mode
@@ -180,8 +191,11 @@ struct MyDevicesView: View {
                 editedDeviceName = device.deviceName
                 showingDeviceNameEditSheet = true
               }) {
-                Image(systemName: "pencil")
-                  .font(.system(size: 12, weight: .medium))
+                Image("Icon-Pen_Filled")
+                  .renderingMode(.template)
+                  .resizable()
+                  .aspectRatio(contentMode: .fit)
+                  .frame(width: 12, height: 12)
                   .foregroundColor(.text04)
               }
             }
@@ -307,6 +321,26 @@ struct MyDevicesView: View {
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
+  }
+  
+  // MARK: - Icon Helpers
+  
+  /// Returns the appropriate icon name based on device model
+  private func iconForDevice(_ deviceModel: String) -> String {
+    let model = deviceModel.lowercased()
+    
+    // Check for Mac devices
+    if model.contains("mac") {
+      return "Icon-NotebookMinimal_Filled"
+    }
+    
+    // Check for iPad/tablet devices
+    if model.contains("ipad") {
+      return "Icon-Tablet_Filled"
+    }
+    
+    // Default to phone icon (iPhone or unknown devices)
+    return "Icon-Smartphone_Filled"
   }
   
   // MARK: - Actions
