@@ -101,7 +101,7 @@ struct CustomRatingView: View {
               }
               .padding(.horizontal, 20)
               .padding(.top, 28) // Spacing of 48 total (20 from parent VStack + 28 padding)
-              .padding(.bottom, isCommentFocused ? 300 : 120) // Extra padding when keyboard is visible
+              .padding(.bottom, 120) // Padding to prevent content from being covered by bottom buttons
               .id("commentSection")
             }
           }
@@ -163,7 +163,6 @@ struct CustomRatingView: View {
           }
         }
       }
-      .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     .alert("Open App Store", isPresented: $showingAppStore) {
       Button("Open App Store") {
