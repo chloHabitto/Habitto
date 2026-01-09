@@ -176,8 +176,10 @@ struct ReminderSection: View {
         }
       }
     }
-    .selectionRowStyle()
-    .cornerRadius(16)
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .background(.appSurface01Variant)
+    .cornerRadius(20)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
     .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
@@ -402,7 +404,7 @@ struct FormActionButtons: View {
     }
     .padding(.horizontal, 20)
     .padding(.bottom, 20)
-    .background(.appSurface02)
+    .background(Color("appSurface01Variant02"))
   }
 
   // MARK: Private

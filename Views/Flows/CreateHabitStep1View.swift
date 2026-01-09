@@ -399,7 +399,7 @@ struct CreateHabitStep1View: View {
       .background(.appSurface01)
       .overlay(
         RoundedRectangle(cornerRadius: 12)
-          .stroke(limitReached.wrappedValue && isFocused.wrappedValue ? .warning : .outline3, lineWidth: 1.5))
+          .stroke(limitReached.wrappedValue && isFocused.wrappedValue ? .warning : .outline02, lineWidth: 1.5))
       .cornerRadius(12)
         .onChange(of: text.wrappedValue) { oldValue, newValue in
           // Enforce character limit
