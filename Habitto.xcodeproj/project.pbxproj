@@ -44,6 +44,14 @@
 			membershipExceptions = (
 				.gitignore,
 				"Config/App-Info.plist",
+				Core/Data/CloudKit/Archive/CloudKitConflictResolver.swift,
+				Core/Data/CloudKit/Archive/CloudKitIntegrationService.swift,
+				Core/Data/CloudKit/Archive/CloudKitModels.swift,
+				Core/Data/CloudKit/Archive/CloudKitSchema.swift,
+				Core/Data/CloudKit/Archive/CloudKitSyncManager.swift,
+				Core/Data/CloudKit/Archive/CloudKitTypes.swift,
+				Core/Data/CloudKit/Archive/CloudKitUniquenessManager.swift,
+				Core/Data/CloudKit/Archive/ConflictResolutionPolicy.swift,
 				firebase.json,
 				package.json,
 			);
