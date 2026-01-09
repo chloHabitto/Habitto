@@ -82,9 +82,9 @@ struct CustomRatingView: View {
                       }
 
                     if comment.isEmpty {
-                      Text("Tell us what you think about the app...")
-                        .font(.appBodyMedium)
-                        .foregroundColor(.text03)
+                      Text("What did you like about the app?")
+                        .font(.appBodyLarge)
+                        .foregroundColor(.appText05)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 20)
                         .allowsHitTesting(false)
