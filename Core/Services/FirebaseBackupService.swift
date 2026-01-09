@@ -409,7 +409,7 @@ class FirebaseBackupService {
       return
     }
     
-    var pendingDeletions = UserDefaults.standard.stringArray(forKey: "PendingFirestoreDeletions") ?? []
+    let pendingDeletions = UserDefaults.standard.stringArray(forKey: "PendingFirestoreDeletions") ?? []
     guard !pendingDeletions.isEmpty else {
       return
     }
@@ -419,7 +419,7 @@ class FirebaseBackupService {
     var stillPending: [String] = []
     
     for habitIdString in pendingDeletions {
-      guard let habitId = UUID(uuidString: habitIdString) else {
+      guard UUID(uuidString: habitIdString) != nil else {
         continue
       }
       
