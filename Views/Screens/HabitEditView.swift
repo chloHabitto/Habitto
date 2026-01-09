@@ -161,7 +161,7 @@ struct HabitEditView: View {
         .padding(.vertical, 16)
         .padding(.bottom, 100) // Add bottom padding to account for fixed button
       }
-      .background(.surface2)
+      .background(Color("appSurface01Variant02"))
       .onChange(of: isGoalNumberFocused) { _, newValue in
         guard newValue else { return }
         scrollToField(.goal, with: proxy)
@@ -366,7 +366,7 @@ struct HabitEditView: View {
     NavigationView {
       ZStack {
         mainViewContent
-          .background(.surface2)
+          .background(Color("appSurface01Variant02"))
           .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
               Spacer()
