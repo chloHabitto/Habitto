@@ -114,6 +114,11 @@ struct MoreTabView: View {
       .sheet(isPresented: $showingAccountView) {
         AccountView()
       }
+      .sheet(isPresented: $showingMyDevices) {
+        MyDevicesView()
+          .environmentObject(SubscriptionManager.shared)
+          .environmentObject(authManager)
+      }
       .sheet(isPresented: $showingPreferencesView) {
         PreferencesView()
       }
@@ -196,6 +201,7 @@ struct MoreTabView: View {
   @State private var showingNotificationsView = false
   @State private var showingDataPrivacyView = false
   @State private var showingAccountView = false
+  @State private var showingMyDevices = false
   @State private var showingPreferencesView = false
   @State private var showingFAQView = false
   @State private var showingAboutUsView = false
@@ -271,6 +277,9 @@ struct MoreTabView: View {
             }),
           SettingItem(title: "Account", value: nil, hasChevron: true, action: {
             showingAccountView = true
+          }),
+          SettingItem(title: "My devices", value: nil, hasChevron: true, action: {
+            showingMyDevices = true
           }),
           SettingItem(title: "Preferences", value: nil, hasChevron: true, action: {
             showingPreferencesView = true
@@ -685,6 +694,8 @@ struct MoreTabView: View {
       "Icon-Bell_Filled"
     case "Sync Status":
       "arrow.clockwise"
+    case "My devices":
+      "iphone"
     case "Preferences":
       "Icon-Setting_Filled"
     case "FAQ":
