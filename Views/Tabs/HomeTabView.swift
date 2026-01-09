@@ -1383,35 +1383,19 @@ struct HomeTabView: View {
   private func onHabitUncompleted(_ habit: Habit) {
     let dateKey = Habit.dateKey(for: selectedDate)
     
-    // ✅ ADD DEBUG LOGGING to trace why the condition might fail
     debugLog("🔴 UNCOMPLETE_CHECK: habitId=\(habit.id), dateKey=\(dateKey)")
-    debugLog("🔴 UNCOMPLETE_CHECK: baseHabitsForSelectedDate.count=\(baseHabitsForSelectedDate.count)")
-    
-    // ✅ FIX: Exclude the habit being uncompleted from the check
-    // because meetsStreakCriteria still returns true due to race condition
-    let otherHabits = baseHabitsForSelectedDate.filter { $0.id != habit.id }
-    debugLog("🔴 UNCOMPLETE_CHECK: otherHabits.count=\(otherHabits.count)")
-    
-    let allOthersComplete = otherHabits.allSatisfy { $0.meetsStreakCriteria(for: selectedDate) }
-    debugLog("🔴 UNCOMPLETE_CHECK: allOthersComplete=\(allOthersComplete)")
-    
-    // Day is incomplete if:
-    // - No other habits exist (this was the only habit), OR
-    // - Other habits are not all complete
-    // Since THIS habit is being uncompleted (progress=0), it no longer counts
-    let dayIsNowIncomplete = otherHabits.isEmpty || !allOthersComplete
-    debugLog("🔴 UNCOMPLETE_CHECK: dayIsNowIncomplete=\(dayIsNowIncomplete)")
     debugLog("🔴 UNCOMPLETE_CHECK: awardedDateKeys=\(awardedDateKeys)")
     debugLog("🔴 UNCOMPLETE_CHECK: awardedDateKeys.contains(\(dateKey))=\(awardedDateKeys.contains(dateKey))")
     
-    if dayIsNowIncomplete && awardedDateKeys.contains(dateKey) {
-      // Day became incomplete - reset award tracking so user can re-earn
+    // ✅ SIMPLIFIED FIX: If day was awarded (all habits complete), uncompleting ANY habit
+    // makes the day incomplete. We don't need to check other habits.
+    if awardedDateKeys.contains(dateKey) {
       awardedDateKeys.remove(dateKey)
       lastShownMilestoneStreak = -1
       lastShownMilestoneDateTimestamp = 0
-      debugLog("🔄 UNCOMPLETION: Day became incomplete - reset award tracking and milestone state")
+      debugLog("🔄 UNCOMPLETION: Day was awarded but habit uncompleted - reset award tracking and milestone state")
     } else {
-      debugLog("🔴 UNCOMPLETE_CHECK: Condition failed - dayIsNowIncomplete=\(dayIsNowIncomplete), contains=\(awardedDateKeys.contains(dateKey))")
+      debugLog("🔴 UNCOMPLETE_CHECK: Day was not awarded, nothing to reset")
     }
     
     // ✅ FIX: Update completion status map immediately for this habit
