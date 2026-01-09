@@ -281,6 +281,14 @@ class FirebaseBackupService {
       print("⚠️ [CLOUD_BACKUP] Habit deletion failed: \(error.localizedDescription)")
       print("   Habit ID: \(habitId.uuidString.prefix(8))...")
       logger.warning("⚠️ FirebaseBackupService: Failed to delete habit backup: \(error.localizedDescription)")
+      
+      // ✅ BUG FIX: Mark for retry - store in UserDefaults
+      var pendingDeletions = UserDefaults.standard.stringArray(forKey: "PendingFirestoreDeletions") ?? []
+      if !pendingDeletions.contains(habitId.uuidString) {
+        pendingDeletions.append(habitId.uuidString)
+        UserDefaults.standard.set(pendingDeletions, forKey: "PendingFirestoreDeletions")
+        logger.info("📝 FirebaseBackupService: Marked habit \(habitId.uuidString.prefix(8))... for retry deletion")
+      }
     }
     
     print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - END")
@@ -386,6 +394,57 @@ class FirebaseBackupService {
     }
     
     print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - END")
+  }
+
+  // MARK: - Retry Pending Deletions
+  
+  /// ✅ BUG FIX: Retry pending Firestore deletions that failed previously
+  /// Call this on app launch or during sync to clean up orphaned habits
+  func retryPendingDeletions() async {
+    guard let userId = await getCurrentUserId() else {
+      return
+    }
+    
+    guard FirebaseApp.app() != nil else {
+      return
+    }
+    
+    var pendingDeletions = UserDefaults.standard.stringArray(forKey: "PendingFirestoreDeletions") ?? []
+    guard !pendingDeletions.isEmpty else {
+      return
+    }
+    
+    logger.info("🔄 FirebaseBackupService: Retrying \(pendingDeletions.count) pending Firestore deletions")
+    
+    var stillPending: [String] = []
+    
+    for habitIdString in pendingDeletions {
+      guard let habitId = UUID(uuidString: habitIdString) else {
+        continue
+      }
+      
+      do {
+        let docRef = db.collection("users")
+          .document(userId)
+          .collection("habits")
+          .document(habitIdString)
+        
+        try await docRef.delete()
+        logger.info("✅ FirebaseBackupService: Retry succeeded - Deleted habit \(habitIdString.prefix(8))... from Firestore")
+      } catch {
+        logger.warning("⚠️ FirebaseBackupService: Retry failed for habit \(habitIdString.prefix(8))...: \(error.localizedDescription)")
+        stillPending.append(habitIdString)
+      }
+    }
+    
+    // Update UserDefaults with remaining pending deletions
+    if stillPending.isEmpty {
+      UserDefaults.standard.removeObject(forKey: "PendingFirestoreDeletions")
+      logger.info("✅ FirebaseBackupService: All pending deletions completed")
+    } else {
+      UserDefaults.standard.set(stillPending, forKey: "PendingFirestoreDeletions")
+      logger.info("⚠️ FirebaseBackupService: \(stillPending.count) deletions still pending")
+    }
   }
 
   // MARK: - Helper Methods
