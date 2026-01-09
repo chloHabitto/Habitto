@@ -52,6 +52,18 @@ struct MyDevicesView: View {
               .foregroundColor(.text01)
           }
         }
+        
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Button(action: {
+            loadDevices()
+          }) {
+            Image(systemName: "arrow.clockwise")
+              .font(.system(size: 16, weight: .semibold))
+              .foregroundColor(.text01)
+          }
+          .disabled(isLoading)
+          .opacity(isLoading ? 0.5 : 1.0)
+        }
       }
       .onAppear {
         loadDevices()
