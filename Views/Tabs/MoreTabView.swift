@@ -695,7 +695,7 @@ struct MoreTabView: View {
     case "Sync Status":
       "arrow.clockwise"
     case "My devices":
-      "iphone"
+      "Icon-Smartphone_Filled"
     case "Preferences":
       "Icon-Setting_Filled"
     case "FAQ":
