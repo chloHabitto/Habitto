@@ -868,10 +868,10 @@ class HabitRepository: ObservableObject {
           self.objectWillChange.send()
         }
 
-        // Trigger CloudKit sync if enabled
-        if cloudKitIntegration.isEnabled {
-          await cloudKitIntegration.startSync()
-        }
+        // CloudKit sync is disabled - infrastructure archived
+        // if cloudKitIntegration.isEnabled {
+        //   await cloudKitIntegration.startSync()
+        // }
 
         debugLog("✅ HabitRepository: Successfully saved \(habits.count) habits")
 
@@ -1344,9 +1344,9 @@ class HabitRepository: ObservableObject {
   /// Guest data migration
   private let guestDataMigration = GuestDataMigration()
 
-  // Defer CloudKit initialization to avoid crashes
-  private lazy var cloudKitManager = CloudKitManager.shared
-  private lazy var cloudKitIntegration = CloudKitIntegrationService.shared
+  // CloudKit is disabled - infrastructure archived
+  // private lazy var cloudKitManager = CloudKitManager.shared
+  // private lazy var cloudKitIntegration = CloudKitIntegrationService.shared
 
   // MARK: - Post Launch Warmup
 
@@ -1410,19 +1410,12 @@ class HabitRepository: ObservableObject {
     debugLog("🚀 POST_LAUNCH: All warmup tasks scheduled")
   }
 
-  // MARK: - Safe CloudKit Initialization
+  // MARK: - Safe CloudKit Initialization (DISABLED)
 
   private func initializeCloudKitSafely() async {
-    // Initialize CloudKit integration safely
-    await cloudKitIntegration.initialize()
-    debugLog("✅ HabitRepository: CloudKit integration initialized safely")
-
-    // Initialize CloudKit sync safely
-    if cloudKitManager.isCloudKitAvailable() {
-      cloudKitManager.initializeCloudKitSync()
-    } else {
-      debugLog("ℹ️ HabitRepository: CloudKit not available, skipping sync initialization")
-    }
+    // CloudKit sync is disabled - infrastructure archived
+    // See: Core/Data/CloudKit/Archive/ for archived CloudKit code
+    debugLog("ℹ️ HabitRepository: CloudKit initialization skipped (disabled)")
 
     // Monitor app lifecycle to reload data when app becomes active
     NotificationCenter.default.addObserver(
