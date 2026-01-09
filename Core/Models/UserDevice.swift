@@ -10,7 +10,7 @@ struct UserDevice: Codable, Identifiable {
   
   let id: String                  // Keychain UUID
   var deviceName: String          // User-editable, defaults to deviceModel
-  let deviceModel: String         // UIDevice.current.model
+  let deviceModel: String         // UIDevice.current.modelName (e.g., "iPhone 12 Pro")
   var lastLogin: Date
   let createdAt: Date
   let appVersion: String          // Bundle.main app version
@@ -40,7 +40,7 @@ struct UserDevice: Codable, Identifiable {
   /// Create a new device for the current device
   static func createCurrentDevice() -> UserDevice {
     let deviceId = KeychainManager.shared.getOrCreateDeviceIdentifier()
-    let deviceModel = UIDevice.current.model
+    let deviceModel = UIDevice.current.modelName
     let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
     let now = Date()
     
