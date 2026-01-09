@@ -1016,17 +1016,19 @@ actor SyncEngine {
         setLastSyncTimestamp(userId: actualUserId, timestamp: Date())
         
         // ✅ ISSUE 2 FIX: If we pulled any habits, clear cache and notify UI to reload
-        if summary.habitsPulled > 0 {
+        // ✅ FIX: Capture value before async closure to avoid Swift 6 concurrency warning
+        let habitsPulledCount = summary.habitsPulled
+        if habitsPulledCount > 0 {
             // Clear the storage cache so next load fetches fresh data from SwiftData
             await habitStore.clearStorageCache()
-            logger.info("🔄 Cleared storage cache after pulling \(summary.habitsPulled) habits")
+            logger.info("🔄 Cleared storage cache after pulling \(habitsPulledCount) habits")
             
             // Notify HabitRepository to reload
             await MainActor.run {
                 NotificationCenter.default.post(
                     name: NSNotification.Name("SyncPullCompleted"),
                     object: nil,
-                    userInfo: ["habitsPulled": summary.habitsPulled]
+                    userInfo: ["habitsPulled": habitsPulledCount]
                 )
             }
         }
@@ -1068,7 +1070,8 @@ actor SyncEngine {
             }
             
             // Merge habit into SwiftData
-            try await mergeHabitFromFirestore(data: data, habitId: uuid, userId: userId)
+            // ✅ BUG FIX: Errors are now logged inside mergeHabitFromFirestore, sync continues
+            await mergeHabitFromFirestore(data: data, habitId: uuid, userId: userId)
             pulledCount += 1
         }
         
@@ -1248,7 +1251,8 @@ actor SyncEngine {
     // MARK: - Merge Helpers
     
     /// Merge habit from Firestore into SwiftData
-    private func mergeHabitFromFirestore(data: [String: Any], habitId: UUID, userId: String) async throws {
+    /// ✅ BUG FIX: Changed from silent `try?` to proper error handling with logging
+    private func mergeHabitFromFirestore(data: [String: Any], habitId: UUID, userId: String) async {
         await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
             
@@ -1267,7 +1271,14 @@ actor SyncEngine {
                     // Remote is newer, update local
                     Self.updateHabitData(from: data, to: existingHabit)
                     existingHabit.updatedAt = remoteUpdatedAt
-                    try? modelContext.save()
+                    do {
+                        try modelContext.save()
+                        logger.info("✅ SyncEngine: Updated habit \(habitId.uuidString.prefix(8))... from Firestore")
+                    } catch {
+                        logger.error("❌ SyncEngine: Failed to save updated habit \(habitId.uuidString.prefix(8))...: \(error.localizedDescription)")
+                        logger.error("   Error details: \(error)")
+                        // Don't throw - continue with other habits even if one fails
+                    }
                 }
             } else {
                 // ✅ CRITICAL FIX: Check if habit was recently deleted before recreating
@@ -1299,8 +1310,15 @@ actor SyncEngine {
                     return
                 }
                 modelContext.insert(habitData)
-                try? modelContext.save()
-                logger.info("✅ SyncEngine: Created habit \(habitId.uuidString.prefix(8))... from Firestore")
+                do {
+                    try modelContext.save()
+                    logger.info("✅ SyncEngine: Created habit \(habitId.uuidString.prefix(8))... from Firestore")
+                } catch {
+                    logger.error("❌ SyncEngine: Failed to save new habit \(habitId.uuidString.prefix(8))...: \(error.localizedDescription)")
+                    logger.error("   Error details: \(error)")
+                    // Don't throw - continue with other habits even if one fails
+                    // This allows the sync to continue and pull remaining habits
+                }
             }
         }
     }
