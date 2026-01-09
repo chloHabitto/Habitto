@@ -943,55 +943,6 @@ final actor HabitStore {
     return capper.capHabitHistory(habit, using: retentionMgr.currentPolicy)
   }
 
-  // MARK: - CloudKit Conflict Resolution
-
-  /// Performs CloudKit sync with conflict resolution
-  func performCloudKitSync() async throws -> SyncResult {
-    logger.info("Starting CloudKit sync with conflict resolution")
-
-    // Check if CloudKit is available
-    let syncManager = await cloudKitSyncManager
-    guard syncManager.isCloudKitAvailable() else {
-      logger.warning("CloudKit not available, skipping sync")
-      throw CloudKitError.notConfigured
-    }
-
-    return try await syncManager.performFullSync()
-  }
-
-  /// Resolves conflicts between two habits using field-level resolution
-  func resolveHabitConflict(_ localHabit: Habit, _ remoteHabit: Habit) async -> Habit {
-    logger.info("Resolving conflict between local and remote habit: \(localHabit.name)")
-    let resolver = await conflictResolver
-    return resolver.resolveHabitConflict(localHabit, remoteHabit)
-  }
-
-  /// Gets conflict resolution rules summary
-  func getConflictResolutionRules() async -> String {
-    let resolver = await conflictResolver
-    return resolver.getRulesSummary()
-  }
-
-  /// Adds a custom conflict resolution rule
-  func addConflictResolutionRule(_ rule: FieldConflictRule) async {
-    let resolver = await conflictResolver
-    resolver.addCustomRule(rule)
-    logger.info("Added custom conflict resolution rule for field: \(rule.fieldName)")
-  }
-
-  /// Removes a custom conflict resolution rule
-  func removeConflictResolutionRule(for fieldName: String) async {
-    let resolver = await conflictResolver
-    resolver.removeCustomRule(for: fieldName)
-    logger.info("Removed custom conflict resolution rule for field: \(fieldName)")
-  }
-
-  /// Validates conflict resolution rules
-  func validateConflictResolutionRules() async -> [String] {
-    let resolver = await conflictResolver
-    return resolver.validateRules()
-  }
-
   // MARK: - Account Deletion
 
   /// Clears all habits and associated data (for account deletion)
@@ -1081,17 +1032,19 @@ final actor HabitStore {
     }
   }
 
-  private var cloudKitSyncManager: CloudKitSyncManager {
-    get async {
-      await MainActor.run { CloudKitSyncManager.shared }
-    }
-  }
+  // CloudKit sync is disabled - infrastructure archived
+  // private var cloudKitSyncManager: CloudKitSyncManager {
+  //   get async {
+  //     await MainActor.run { CloudKitSyncManager.shared }
+  //   }
+  // }
 
-  private var conflictResolver: ConflictResolutionManager {
-    get async {
-      await MainActor.run { ConflictResolutionManager.shared }
-    }
-  }
+  // Conflict resolution disabled - infrastructure archived
+  // private var conflictResolver: ConflictResolutionManager {
+  //   get async {
+  //     await MainActor.run { ConflictResolutionManager.shared }
+  //   }
+  // }
 
   private var backupManager: BackupManager {
     get async {

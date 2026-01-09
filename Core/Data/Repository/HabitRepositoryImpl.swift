@@ -12,22 +12,22 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     cloudKitManager: CloudKitManager = CloudKitManager.shared)
   {
     self.storage = storage
-    self.cloudKitManager = cloudKitManager
+    // CloudKit sync is disabled - infrastructure archived
+    // self.cloudKitManager = cloudKitManager
 
-    // Initialize CloudKit sync (feature flag protected)
-    Task {
-      let isEnabled = await MainActor.run {
-        // TODO: Add cloudKitSync feature flag to FeatureFlagProvider
-        // FeatureFlagManager.shared.provider.cloudKitSync
-        false // Temporarily disabled
-      }
-      if isEnabled {
-        cloudKitManager.initializeCloudKitSync()
-        print("🚩 HabitRepositoryImpl: CloudKit sync enabled by feature flag")
-      } else {
-        print("🚩 HabitRepositoryImpl: CloudKit sync disabled by feature flag")
-      }
-    }
+    // CloudKit sync initialization disabled - infrastructure archived
+    // See: Core/Data/CloudKit/Archive/ for archived CloudKit code
+    // Task {
+    //   let isEnabled = await MainActor.run {
+    //     false // CloudKit disabled
+    //   }
+    //   if isEnabled {
+    //     cloudKitManager.initializeCloudKitSync()
+    //     print("🚩 HabitRepositoryImpl: CloudKit sync enabled by feature flag")
+    //   } else {
+    //     print("🚩 HabitRepositoryImpl: CloudKit sync disabled by feature flag")
+    //   }
+    // }
 
     // Load initial data
     Task {
@@ -269,7 +269,8 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
   // MARK: Private
 
   private let storage: any HabitStorageProtocol
-  private let cloudKitManager: CloudKitManager // TODO: Use for CloudKit sync operations
+  // CloudKit sync is disabled - infrastructure archived
+  // private let cloudKitManager: CloudKitManager
 
   // Performance optimization: Cache expensive operations
   private var lastHabitsUpdate = Date()
