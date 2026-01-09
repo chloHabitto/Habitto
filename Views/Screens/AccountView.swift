@@ -289,21 +289,21 @@ struct AccountView: View {
           .clipShape(Circle())
           .overlay(
             Circle()
-              .stroke(Color.primaryContainer, lineWidth: 3))
+              .stroke(Color.appOutline02, lineWidth: 3))
           
           // Edit Icon
-          Image("Icon-pen")
+          Image("Icon-Pen_Filled")
             .renderingMode(.template)
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: 20, height: 20)
-            .foregroundColor(.primary)
+            .foregroundColor(.appPrimary)
             .padding(6)
             .background(Color.primaryContainer)
             .clipShape(Circle())
             .overlay(
               Circle()
-                .stroke(Color.primaryContainer, lineWidth: 2))
+                .stroke(Color.appOutline02, lineWidth: 2))
         }
       }
       .buttonStyle(PlainButtonStyle())
@@ -318,8 +318,11 @@ struct AccountView: View {
             .font(.system(size: 18, weight: .medium))
             .foregroundColor(.text01)
           
-          Image(systemName: "pencil")
-            .font(.system(size: 14, weight: .medium))
+          Image("Icon-Pen_Filled")
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 14, height: 14)
             .foregroundColor(.text01)
         }
       }
@@ -516,7 +519,7 @@ struct AccountView: View {
       Button(action: {
         showingSignOutAlert = true
       }) {
-        Text("Log out")
+        Text("Sign out")
           .font(.system(size: 16, weight: .medium))
           .foregroundColor(.primary)
       }

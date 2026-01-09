@@ -44,165 +44,14 @@ struct BackupRecoveryView: View {
               // Firestore Sync Status Banner
               firestoreSyncBanner
 
-              // iCloud Backup Settings
-              VStack(alignment: .leading, spacing: 12) {
-                Text("iCloud Backup")
-                  .font(.system(size: 18, weight: .semibold))
-                  .foregroundColor(.text01)
-                  .padding(.top, 8)
-                
-                VStack(spacing: 16) {
-                  // iCloud Backup Toggle
-                  HStack {
-                    Image(systemName: "icloud.fill")
-                      .renderingMode(.template)
-                      .resizable()
-                      .aspectRatio(contentMode: .fit)
-                      .frame(width: 24, height: 24)
-                      .foregroundColor(.appIconColor)
+              // iCloud Backup Settings Section
+              iCloudBackupSettingsSection
 
-                    VStack(alignment: .leading, spacing: 2) {
-                      Text("iCloud Backup")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
-                      Text("Create backup snapshots in iCloud Drive")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.text03)
-                    }
-
-                  Spacer()
-
-                  Toggle("", isOn: $isAutomaticBackupEnabled)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .disabled(firestoreSyncStatus != .active)
-                    .onChange(of: isAutomaticBackupEnabled) {
-                      Task {
-                        await saveBackupSettings()
-                      }
-                    }
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(Color("appSurface02Variant"))
-                .cornerRadius(24)
-
-                // Backup Frequency (shown when automatic backup is enabled)
-                if isAutomaticBackupEnabled {
-                  HStack {
-                    Image("Icon-Calendar_Filled")
-                      .renderingMode(.template)
-                      .resizable()
-                      .aspectRatio(contentMode: .fit)
-                      .frame(width: 24, height: 24)
-                      .foregroundColor(.appIconColor)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                      Text("Backup Frequency")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
-                      Text("How often to create iCloud backup snapshots")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.text03)
-                    }
-
-                    Spacer()
-
-                    Picker("Frequency", selection: $backupFrequency) {
-                      ForEach(backupFrequencies, id: \.self) { frequency in
-                        Text(frequency).tag(frequency)
-                      }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    .onChange(of: backupFrequency) {
-                      Task {
-                        await saveBackupSettings()
-                      }
-                    }
-                  }
-                  .padding(.horizontal, 20)
-                  .padding(.vertical, 16)
-                  .background(Color("appSurface02Variant"))
-                  .cornerRadius(24)
-                }
-
-                // WiFi Only Toggle (shown when automatic backup is enabled)
-                if isAutomaticBackupEnabled {
-                  HStack {
-                    Image(systemName: "wifi")
-                      .renderingMode(.template)
-                      .resizable()
-                      .aspectRatio(contentMode: .fit)
-                      .frame(width: 24, height: 24)
-                      .foregroundColor(.appIconColor)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                      Text("WiFi Only")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
-                      Text("Only create iCloud backups when connected to WiFi")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.text03)
-                    }
-
-                    Spacer()
-
-                    Toggle("", isOn: $wifiOnlyBackup)
-                      .fixedSize(horizontal: true, vertical: false)
-                      .onChange(of: wifiOnlyBackup) {
-                        Task {
-                          await saveBackupSettings()
-                      }
-                    }
-                  }
-                  .padding(.horizontal, 20)
-                  .padding(.vertical, 16)
-                  .background(Color("appSurface02Variant"))
-                  .cornerRadius(24)
-                }
-              }
-              }
-
-              // iCloud Backup Status Section
-              VStack(alignment: .leading, spacing: 12) {
-                Text("iCloud Backup History")
-                  .font(.system(size: 18, weight: .semibold))
-                  .foregroundColor(.text01)
-                  .padding(.top, 8)
-                
-                VStack(spacing: 16) {
-                  HStack {
-                    Image(systemName: "clock.fill")
-                      .renderingMode(.template)
-                      .resizable()
-                      .aspectRatio(contentMode: .fit)
-                      .frame(width: 24, height: 24)
-                      .foregroundColor(.appIconColor)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                      Text("Last iCloud Backup")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.text01)
-                      Text(backupManager.lastBackupDate?.formatted() ?? "Never")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.text03)
-                    }
-
-                    Spacer()
-
-                    Button("View All") {
-                      showingBackupList = true
-                    }
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.appIconColor)
-                  }
-                  .padding(.horizontal, 20)
-                  .padding(.vertical, 16)
-                  .background(Color("appSurface02Variant"))
-                  .cornerRadius(24)
-                }
-              }
+              // iCloud Backup History Section
+              iCloudBackupHistorySection
             }
             .padding(.horizontal, 20)
+            .padding(.top, 0)
             .padding(.bottom, 140) // Extra bottom padding for fixed button
           }
           .background(Color("appSurface01Variant02"))
@@ -325,6 +174,173 @@ struct BackupRecoveryView: View {
     }
   }
   
+  // MARK: - iCloud Backup Settings Section
+  
+  private var iCloudBackupSettingsSection: some View {
+    VStack(spacing: 0) {
+      // Section Header
+      HStack {
+        Text("iCloud Backup")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
+      
+      // iCloud Backup Toggle Row
+      HStack(spacing: 12) {
+        Image(systemName: "icloud.fill")
+          .font(.system(size: 20))
+          .foregroundColor(.appIconColor)
+          .frame(width: 24, height: 24)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          Text("iCloud Backup")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          Text("Create backup snapshots in iCloud Drive")
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text04)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        
+        Toggle("", isOn: $isAutomaticBackupEnabled)
+          .fixedSize(horizontal: true, vertical: false)
+          .disabled(firestoreSyncStatus != .active)
+          .onChange(of: isAutomaticBackupEnabled) {
+            Task {
+              await saveBackupSettings()
+            }
+          }
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+      
+      // Backup Frequency Row (shown when automatic backup is enabled)
+      if isAutomaticBackupEnabled {
+        Divider()
+          .padding(.leading, 56)
+        
+        HStack(spacing: 12) {
+          Image("Icon-Calendar_Filled")
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 24, height: 24)
+            .foregroundColor(.appIconColor)
+          
+          VStack(alignment: .leading, spacing: 4) {
+            Text("Backup Frequency")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+            Text("How often to create iCloud backup snapshots")
+              .font(.system(size: 14, weight: .regular))
+              .foregroundColor(.text04)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          
+          Picker("Frequency", selection: $backupFrequency) {
+            ForEach(backupFrequencies, id: \.self) { frequency in
+              Text(frequency).tag(frequency)
+            }
+          }
+          .pickerStyle(MenuPickerStyle())
+          .onChange(of: backupFrequency) {
+            Task {
+              await saveBackupSettings()
+            }
+          }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+      }
+      
+      // WiFi Only Toggle Row (shown when automatic backup is enabled)
+      if isAutomaticBackupEnabled {
+        Divider()
+          .padding(.leading, 56)
+        
+        HStack(spacing: 12) {
+          Image(systemName: "wifi")
+            .font(.system(size: 20))
+            .foregroundColor(.appIconColor)
+            .frame(width: 24, height: 24)
+          
+          VStack(alignment: .leading, spacing: 4) {
+            Text("WiFi Only")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+            Text("Only create iCloud backups when connected to WiFi")
+              .font(.system(size: 14, weight: .regular))
+              .foregroundColor(.text04)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          
+          Toggle("", isOn: $wifiOnlyBackup)
+            .fixedSize(horizontal: true, vertical: false)
+            .onChange(of: wifiOnlyBackup) {
+              Task {
+                await saveBackupSettings()
+              }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+      }
+    }
+    .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+  }
+  
+  // MARK: - iCloud Backup History Section
+  
+  private var iCloudBackupHistorySection: some View {
+    VStack(spacing: 0) {
+      // Section Header
+      HStack {
+        Text("iCloud Backup History")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
+      
+      // Last Backup Row
+      HStack(spacing: 12) {
+        Image(systemName: "clock.fill")
+          .font(.system(size: 20))
+          .foregroundColor(.appIconColor)
+          .frame(width: 24, height: 24)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Last iCloud Backup")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          Text(backupManager.lastBackupDate?.formatted() ?? "Never")
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text04)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        
+        Button("View All") {
+          showingBackupList = true
+        }
+        .font(.system(size: 14, weight: .medium))
+        .foregroundColor(.primary)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+    }
+    .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+  }
+  
   // MARK: - Firestore Sync Status
   
   @MainActor
@@ -342,7 +358,8 @@ struct BackupRecoveryView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(Color("appSurface02Variant"))
-        .cornerRadius(24)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         
       case .active:
         HStack {
@@ -361,7 +378,8 @@ struct BackupRecoveryView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(Color("appSurface02Variant"))
-        .cornerRadius(24)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         
       case .inactive:
         HStack {
@@ -380,7 +398,8 @@ struct BackupRecoveryView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(Color("appSurface02Variant"))
-        .cornerRadius(24)
+        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
       }
     }
   }
