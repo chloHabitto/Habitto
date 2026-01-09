@@ -923,7 +923,27 @@ actor SyncEngine {
             return PullSyncSummary()
         }
         
-        let lastSync = getLastSyncTimestamp(userId: actualUserId) ?? Date.distantPast
+        // ✅ ISSUE 1 FIX: Check if this is a fresh install (empty local SwiftData)
+        // If so, reset lastSync to pull ALL data from Firestore
+        let isFirstSync = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<HabitData> { habit in
+                habit.userId == actualUserId
+            }
+            let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
+            let localHabits = (try? modelContext.fetch(descriptor)) ?? []
+            return localHabits.isEmpty
+        }
+        
+        let lastSync: Date
+        if isFirstSync {
+            // Fresh install or empty database - pull ALL data from Firestore
+            lastSync = Date.distantPast
+            logger.info("🆕 Fresh install detected - pulling all remote data (ignoring stored lastSync)")
+            debugLog("🆕 SYNC: Fresh install - will pull ALL habits from Firestore")
+        } else {
+            lastSync = getLastSyncTimestamp(userId: actualUserId) ?? Date.distantPast
+        }
         
         logger.info("🔄 Starting pull remote changes for user: \(actualUserId)")
         debugLog("🔵 SYNC_PULL_START: userId=\(actualUserId), lastSync=\(lastSync.ISO8601Format())")
@@ -995,12 +1015,30 @@ actor SyncEngine {
         // 5. Update last sync timestamp after successful pull
         setLastSyncTimestamp(userId: actualUserId, timestamp: Date())
         
+        // ✅ ISSUE 2 FIX: If we pulled any habits, clear cache and notify UI to reload
+        if summary.habitsPulled > 0 {
+            // Clear the storage cache so next load fetches fresh data from SwiftData
+            await habitStore.clearStorageCache()
+            logger.info("🔄 Cleared storage cache after pulling \(summary.habitsPulled) habits")
+            
+            // Notify HabitRepository to reload
+            await MainActor.run {
+                NotificationCenter.default.post(
+                    name: NSNotification.Name("SyncPullCompleted"),
+                    object: nil,
+                    userInfo: ["habitsPulled": summary.habitsPulled]
+                )
+            }
+        }
+        
         logger.info("✅ Pull remote changes completed: habits=\(summary.habitsPulled), completions=\(summary.completionsPulled), awards=\(summary.awardsPulled), events=\(summary.eventsPulled)")
         return summary
     }
     
     /// Pull habits updated since the given timestamp
     private func pullHabits(userId: String, since: Date) async throws -> Int {
+        logger.info("📥 Pulling habits updated since: \(since.ISO8601Format())")
+        
         let habitsRef = firestore.collection("users")
             .document(userId)
             .collection("habits")

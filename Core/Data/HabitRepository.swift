@@ -90,6 +90,9 @@ class HabitRepository: ObservableObject {
     
     // Initialize sync status monitoring
     initializeSyncStatusMonitoring()
+    
+    // ✅ ISSUE 2 FIX: Setup observer for sync pull completion notifications
+    setupSyncObserver()
 
     debugLog("✅ HabitRepository: Initialization completed")
   }
@@ -1348,6 +1351,24 @@ class HabitRepository: ObservableObject {
           await self.updateUnsyncedCount()
         }
       }
+  }
+  
+  /// ✅ ISSUE 2 FIX: Setup observer for sync pull completion notifications
+  /// This ensures UI refreshes when habits are pulled from Firestore
+  private func setupSyncObserver() {
+    NotificationCenter.default.addObserver(
+      forName: NSNotification.Name("SyncPullCompleted"),
+      object: nil,
+      queue: .main
+    ) { [weak self] notification in
+      guard let self = self else { return }
+      let habitsPulled = notification.userInfo?["habitsPulled"] as? Int ?? 0
+      print("🔄 HabitRepository: Received SyncPullCompleted notification - \(habitsPulled) habits pulled")
+      
+      Task { @MainActor in
+        await self.loadHabits(force: true)
+      }
+    }
   }
   
   /// Pause sync monitoring (e.g., when create habit sheet is open)
