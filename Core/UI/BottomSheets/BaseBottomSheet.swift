@@ -10,6 +10,7 @@ struct BaseBottomSheet<Content: View>: View {
     description: String,
     onClose: @escaping () -> Void,
     useGlassCloseButton: Bool = false,
+    useSimpleCloseButton: Bool = false,
     confirmButton: (() -> Void)? = nil,
     confirmButtonTitle: String? = nil,
     isConfirmButtonDisabled: Bool = false,
@@ -19,6 +20,7 @@ struct BaseBottomSheet<Content: View>: View {
     self.description = description
     self.onClose = onClose
     self.useGlassCloseButton = useGlassCloseButton
+    self.useSimpleCloseButton = useSimpleCloseButton
     self.confirmButton = confirmButton
     self.confirmButtonTitle = confirmButtonTitle
     self.isConfirmButtonDisabled = isConfirmButtonDisabled
@@ -31,6 +33,7 @@ struct BaseBottomSheet<Content: View>: View {
   let description: String
   let onClose: () -> Void
   let useGlassCloseButton: Bool
+  let useSimpleCloseButton: Bool
   let content: Content
   let confirmButton: (() -> Void)?
   let confirmButtonTitle: String?
@@ -56,39 +59,45 @@ struct BaseBottomSheet<Content: View>: View {
         
         // Close button
         Button(action: onClose) {
-          ZStack {
-            if useGlassCloseButton {
-              Circle()
-                .fill(.ultraThinMaterial)
-              
-              Circle()
-                .stroke(
-                  LinearGradient(
-                    stops: [
-                      .init(color: Color.white.opacity(0.4), location: 0.0),
-                      .init(color: Color.white.opacity(0.1), location: 0.5),
-                      .init(color: Color.white.opacity(0.4), location: 1.0)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                  ),
-                  lineWidth: 1.5
-                )
-              
-              Image(.iconClose)
-                .resizable()
-                .frame(width: 20, height: 20)
-                .foregroundColor(.text04)
-            } else {
-              Circle()
-                .fill(Color.text01.opacity(0.1))
-              
-              Image(systemName: "xmark")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.text01)
+          if useSimpleCloseButton {
+            Image(systemName: "xmark")
+              .font(.system(size: 16, weight: .black))
+              .foregroundColor(.navy200)
+          } else {
+            ZStack {
+              if useGlassCloseButton {
+                Circle()
+                  .fill(.ultraThinMaterial)
+                
+                Circle()
+                  .stroke(
+                    LinearGradient(
+                      stops: [
+                        .init(color: Color.white.opacity(0.4), location: 0.0),
+                        .init(color: Color.white.opacity(0.1), location: 0.5),
+                        .init(color: Color.white.opacity(0.4), location: 1.0)
+                      ],
+                      startPoint: .topLeading,
+                      endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                  )
+                
+                Image(.iconClose)
+                  .resizable()
+                  .frame(width: 20, height: 20)
+                  .foregroundColor(.text04)
+              } else {
+                Circle()
+                  .fill(Color.text01.opacity(0.1))
+                
+                Image(systemName: "xmark")
+                  .font(.system(size: 12, weight: .bold))
+                  .foregroundColor(.text01)
+              }
             }
+            .frame(width: 36, height: 36)
           }
-          .frame(width: 36, height: 36)
         }
         .buttonStyle(PlainButtonStyle())
       }
@@ -127,6 +136,7 @@ extension BaseBottomSheet where Content == AnyView {
     description: String,
     onClose: @escaping () -> Void,
     useGlassCloseButton: Bool = false,
+    useSimpleCloseButton: Bool = false,
     @ViewBuilder content: () -> some View)
   {
     self.init(
@@ -134,6 +144,7 @@ extension BaseBottomSheet where Content == AnyView {
       description: description,
       onClose: onClose,
       useGlassCloseButton: useGlassCloseButton,
+      useSimpleCloseButton: useSimpleCloseButton,
       content: { AnyView(content()) })
   }
 }
