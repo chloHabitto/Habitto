@@ -155,7 +155,7 @@ struct BackupRowView: View {
           .font(.system(size: 16, weight: .medium))
           .foregroundColor(.text01)
 
-        HStack(spacing: 16) {
+        VStack(alignment: .leading, spacing: 4) {
           Text("\(backup.habitCount) habits")
             .font(.system(size: 14, weight: .regular))
             .foregroundColor(.text03)

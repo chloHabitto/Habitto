@@ -914,163 +914,29 @@ struct ExportPreviewView: View {
       VStack(spacing: 0) {
         // Preview Content
         ScrollView {
-          VStack(spacing: 20) {
+          VStack(spacing: 24) {
             // Description text
             Text("Review what will be included in your export")
               .font(.appBodyMedium)
               .foregroundColor(.text05)
               .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.horizontal, 20)
               .padding(.top, 8)
 
-            // Export Overview
-            VStack(spacing: 16) {
-              HStack {
-                Image("Icon-Download_Filled")
-                  .renderingMode(.template)
-                  .resizable()
-                  .aspectRatio(contentMode: .fit)
-                  .frame(width: 24, height: 24)
-                  .foregroundColor(.primary)
+            // Export Overview Section
+            exportOverviewSection
 
-                VStack(alignment: .leading, spacing: 4) {
-                  Text("Export Overview")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.text01)
+            // Data Types Section
+            dataTypesSection
 
-                  Text("\(selectedFormat.displayName) format • \(estimatedSize)")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(.text03)
-                }
+            // Export Settings Section
+            exportSettingsSection
 
-                Spacer()
-              }
-              .padding(.horizontal, 20)
-              .padding(.vertical, 16)
-              .background(Color("appSurface02Variant"))
-              .cornerRadius(24)
-            }
-            .padding(.horizontal, 20)
-
-            // Data Types Preview
-            VStack(spacing: 16) {
-              HStack {
-                Text("Included Data Types")
-                  .font(.system(size: 16, weight: .semibold))
-                  .foregroundColor(.text01)
-
-                Spacer()
-              }
-              .padding(.horizontal, 20)
-
-              ForEach(
-                selectedDataTypes.sorted(by: { $0.displayName < $1.displayName }),
-                id: \.self)
-              { dataType in
-                DataTypePreviewRow(dataType: dataType)
-              }
-            }
-            .padding(.bottom, 20)
-
-            // Date Range Preview
-            VStack(spacing: 16) {
-              HStack {
-                Text("Date Range")
-                  .font(.system(size: 16, weight: .semibold))
-                  .foregroundColor(.text01)
-
-                Spacer()
-              }
-              .padding(.horizontal, 20)
-
-              HStack {
-                Image(systemName: "calendar")
-                  .renderingMode(.template)
-                  .resizable()
-                  .aspectRatio(contentMode: .fit)
-                  .frame(width: 20, height: 20)
-                  .foregroundColor(.navy200)
-
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(selectedDateRange.displayName)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.text01)
-                  Text(selectedDateRange.description)
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(.text03)
-                }
-
-                Spacer()
-              }
-              .padding(.horizontal, 20)
-              .padding(.vertical, 12)
-              .background(Color("appSurface02Variant"))
-              .cornerRadius(24)
-            }
-            .padding(.horizontal, 20)
-
-            // Format Preview
-            VStack(spacing: 16) {
-              HStack {
-                Text("Export Format")
-                  .font(.system(size: 16, weight: .semibold))
-                  .foregroundColor(.text01)
-
-                Spacer()
-              }
-              .padding(.horizontal, 20)
-
-              HStack {
-                Image(selectedFormat.icon)
-                  .renderingMode(.template)
-                  .resizable()
-                  .aspectRatio(contentMode: .fit)
-                  .frame(width: 20, height: 20)
-                  .foregroundColor(.navy200)
-
-                VStack(alignment: .leading, spacing: 2) {
-                  Text(selectedFormat.displayName)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.text01)
-                  Text(selectedFormat.description)
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(.text03)
-                }
-
-                Spacer()
-              }
-              .padding(.horizontal, 20)
-              .padding(.vertical, 12)
-              .background(Color("appSurface02Variant"))
-              .cornerRadius(24)
-            }
-            .padding(.horizontal, 20)
-
-            // Sample Data Preview
-            VStack(spacing: 16) {
-              HStack {
-                Text("Sample Data Structure")
-                  .font(.system(size: 16, weight: .semibold))
-                  .foregroundColor(.text01)
-
-                Spacer()
-              }
-              .padding(.horizontal, 20)
-
-              VStack(alignment: .leading, spacing: 8) {
-                Text(sampleDataPreview)
-                  .font(.system(size: 12, weight: .regular, design: .monospaced))
-                  .foregroundColor(.text03)
-                  .padding(.horizontal, 16)
-                  .padding(.vertical, 12)
-                  .background(Color("appSurface02Variant"))
-                  .cornerRadius(24)
-                  .frame(maxWidth: .infinity, alignment: .leading)
-              }
-              .padding(.horizontal, 20)
-            }
-            .padding(.bottom, 24)
+            // Sample Data Section
+            sampleDataSection
           }
+          .padding(.horizontal, 20)
+          .padding(.top, 0)
+          .padding(.bottom, 24)
         }
         .background(Color("appSurface01Variant02"))
       }
@@ -1095,6 +961,214 @@ struct ExportPreviewView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
+
+  // MARK: - Export Overview Section
+  
+  private var exportOverviewSection: some View {
+    VStack(spacing: 0) {
+      // Section Header
+      HStack {
+        Text("Export Overview")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
+      
+      // Overview Row
+      HStack(spacing: 12) {
+        Image("Icon-Download_Filled")
+          .renderingMode(.template)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 24, height: 24)
+          .foregroundColor(.appIconColor)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Export Format & Size")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          Text("\(selectedFormat.displayName) format • \(estimatedSize)")
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text04)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+    }
+    .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+  }
+  
+  // MARK: - Data Types Section
+  
+  private var dataTypesSection: some View {
+    VStack(spacing: 0) {
+      // Section Header
+      HStack {
+        Text("Included Data Types")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
+      
+      // Data Type Rows
+      ForEach(
+        Array(selectedDataTypes.sorted(by: { $0.displayName < $1.displayName }).enumerated()),
+        id: \.element)
+      { index, dataType in
+        if index > 0 {
+          Divider()
+            .padding(.leading, 56)
+        }
+        
+        HStack(spacing: 12) {
+          Image(dataType.icon)
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 24, height: 24)
+            .foregroundColor(.appIconColor)
+          
+          VStack(alignment: .leading, spacing: 4) {
+            Text(dataType.displayName)
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+            Text(dataType.description)
+              .font(.system(size: 14, weight: .regular))
+              .foregroundColor(.text04)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          
+          HStack(spacing: 8) {
+            Text(dataType.estimatedSize)
+              .font(.system(size: 12, weight: .medium))
+              .foregroundColor(.text04)
+            
+            Image(systemName: "checkmark.circle.fill")
+              .foregroundColor(.green)
+              .font(.system(size: 16))
+          }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+      }
+    }
+    .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+  }
+  
+  // MARK: - Export Settings Section
+  
+  private var exportSettingsSection: some View {
+    VStack(spacing: 0) {
+      // Section Header
+      HStack {
+        Text("Export Settings")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
+      
+      // Date Range Row
+      HStack(spacing: 12) {
+        Image(systemName: "calendar")
+          .font(.system(size: 20))
+          .foregroundColor(.appIconColor)
+          .frame(width: 24, height: 24)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Date Range")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          Text(selectedDateRange.description)
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text04)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        
+        Text(selectedDateRange.displayName)
+          .font(.system(size: 14, weight: .medium))
+          .foregroundColor(.text04)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+      
+      Divider()
+        .padding(.leading, 56)
+      
+      // Format Row
+      HStack(spacing: 12) {
+        Image(selectedFormat.icon)
+          .renderingMode(.template)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .frame(width: 24, height: 24)
+          .foregroundColor(.appIconColor)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Export Format")
+            .font(.system(size: 16, weight: .medium))
+            .foregroundColor(.text01)
+          Text(selectedFormat.description)
+            .font(.system(size: 14, weight: .regular))
+            .foregroundColor(.text04)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        
+        Text(selectedFormat.displayName)
+          .font(.system(size: 14, weight: .medium))
+          .foregroundColor(.text04)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+    }
+    .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+  }
+  
+  // MARK: - Sample Data Section
+  
+  private var sampleDataSection: some View {
+    VStack(spacing: 0) {
+      // Section Header
+      HStack {
+        Text("Sample Data Structure")
+          .font(.system(size: 14, weight: .semibold))
+          .foregroundColor(.text01)
+        Spacer()
+      }
+      .padding(.horizontal, 20)
+      .padding(.top, 20)
+      .padding(.bottom, 8)
+      
+      // Sample Data Content
+      VStack(alignment: .leading, spacing: 8) {
+        Text(sampleDataPreview)
+          .font(.system(size: 12, weight: .regular, design: .monospaced))
+          .foregroundColor(.text03)
+          .padding(.horizontal, 16)
+          .padding(.vertical, 12)
+      }
+      .padding(.horizontal, 20)
+      .padding(.bottom, 16)
+    }
+    .background(Color("appSurface02Variant"))
+    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
+  }
 
   private var sampleDataPreview: String {
     let dataTypesList = selectedDataTypes.map { $0.rawValue }.sorted().joined(separator: ", ")
