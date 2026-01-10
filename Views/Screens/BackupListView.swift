@@ -140,7 +140,7 @@ struct BackupRowView: View {
   let onDelete: () -> Void
 
   var body: some View {
-    HStack(spacing: 16) {
+    HStack(alignment: .center, spacing: 12) {
       // Backup Icon
       Image("Icon-Archive_Filled")
         .renderingMode(.template)
@@ -150,45 +150,45 @@ struct BackupRowView: View {
         .foregroundColor(.navy200)
 
       // Backup Info
-      VStack(alignment: .leading, spacing: 4) {
+      VStack(alignment: .leading, spacing: 6) {
         Text(backup.formattedDate)
           .font(.system(size: 16, weight: .medium))
           .foregroundColor(.text01)
+          .lineLimit(1)
 
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
           Text("\(backup.habitCount) habits")
             .font(.appLabelMedium)
             .foregroundColor(Color("apponBadgeBackground"))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(
-              RoundedRectangle(cornerRadius: 12)
+              RoundedRectangle(cornerRadius: 8)
                 .fill(Color("appBadgeBackground")))
             .fixedSize()
 
           Text(backup.formattedSize)
             .font(.appLabelMedium)
             .foregroundColor(Color("apponBadgeBackground"))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(
-              RoundedRectangle(cornerRadius: 12)
+              RoundedRectangle(cornerRadius: 8)
                 .fill(Color("appBadgeBackground")))
             .fixedSize()
 
           Text("v\(backup.appVersion)")
             .font(.appLabelMedium)
             .foregroundColor(Color("apponBadgeBackground"))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(
-              RoundedRectangle(cornerRadius: 12)
+              RoundedRectangle(cornerRadius: 8)
                 .fill(Color("appBadgeBackground")))
             .fixedSize()
         }
       }
-
-      Spacer()
+      .frame(maxWidth: .infinity, alignment: .leading)
 
       // Action Buttons
       HStack(spacing: 8) {
@@ -201,6 +201,7 @@ struct BackupRowView: View {
             .background(Color.green500.opacity(0.1))
             .cornerRadius(8)
         }
+        .fixedSize(horizontal: true, vertical: false)
 
         Button(action: {
           showingDeleteAlert = true
@@ -215,10 +216,11 @@ struct BackupRowView: View {
             .background(Color.red500.opacity(0.1))
             .cornerRadius(8)
         }
+        .fixedSize()
       }
     }
-    .padding(.horizontal, 20)
-    .padding(.vertical, 16)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 12)
     .background(Color.surface)
     .cornerRadius(12)
     .alert("Delete Backup", isPresented: $showingDeleteAlert) {
