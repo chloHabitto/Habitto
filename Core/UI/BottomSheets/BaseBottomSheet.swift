@@ -87,7 +87,7 @@ struct BaseBottomSheet<Content: View>: View {
                 Image(.iconClose)
                   .resizable()
                   .frame(width: 20, height: 20)
-                  .foregroundColor(.text04)
+                  .foregroundColor(Color("appText07"))
               } else {
                 Circle()
                   .fill(Color.text01.opacity(0.1))
