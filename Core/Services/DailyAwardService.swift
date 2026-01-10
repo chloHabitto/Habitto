@@ -541,10 +541,11 @@ class DailyAwardService: ObservableObject {
             
             // ✅ CRITICAL FIX: Immediately notify XPManager for instant UI updates
             // Since both DailyAwardService and XPManager are @MainActor, we can call directly
+            // Pass fromDirectCall: true to bypass grace period check and ensure immediate update
             // This ensures @Observable properties update synchronously on MainActor, triggering SwiftUI to re-render
             if let newState = xpState {
-                XPManager.shared.applyXPState(newState)
-                print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager directly (immediate UI update)")
+                XPManager.shared.applyXPState(newState, fromDirectCall: true)
+                print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager directly (fromDirectCall: true, immediate UI update)")
             }
             
         } catch {
@@ -560,8 +561,9 @@ class DailyAwardService: ObservableObject {
             
             // ✅ CRITICAL FIX: Notify XPManager even on error to ensure UI shows correct state
             // Since both classes are @MainActor, we can call directly
-            XPManager.shared.applyXPState(defaultState)
-            print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager with default state (error case)")
+            // Pass fromDirectCall: true to bypass grace period check
+            XPManager.shared.applyXPState(defaultState, fromDirectCall: true)
+            print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager with default state (fromDirectCall: true, error case)")
         }
     }
     
@@ -577,14 +579,15 @@ class DailyAwardService: ObservableObject {
         
         // ✅ CRITICAL FIX: Notify XPManager with zero state when resetting
         // This ensures UI updates immediately to show 0 XP
+        // Pass fromDirectCall: true to bypass grace period check
         let zeroState = XPState(
             totalXP: 0,
             level: 1,
             currentLevelXP: 0,
             lastUpdated: Date()
         )
-        XPManager.shared.applyXPState(zeroState)
-        logger.info("✅ DailyAwardService: State reset complete, XPManager notified with zero state")
+        XPManager.shared.applyXPState(zeroState, fromDirectCall: true)
+        logger.info("✅ DailyAwardService: State reset complete, XPManager notified with zero state (fromDirectCall: true)")
     }
     
     // MARK: - CompletionRecord Reconciliation

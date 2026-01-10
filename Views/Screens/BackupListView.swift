@@ -154,7 +154,6 @@ struct BackupRowView: View {
         Text(backup.formattedDate)
           .font(.system(size: 16, weight: .medium))
           .foregroundColor(.text01)
-          .lineLimit(1)
 
         HStack(spacing: 6) {
           Text("\(backup.habitCount) habits")
@@ -222,7 +221,7 @@ struct BackupRowView: View {
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
     .background(Color.surface)
-    .cornerRadius(12)
+    .cornerRadius(16)
     .alert("Delete Backup", isPresented: $showingDeleteAlert) {
       Button("Cancel", role: .cancel) { }
       Button("Delete", role: .destructive) {
