@@ -1554,7 +1554,10 @@ actor SyncEngine {
                         if let createdAt = remoteCreatedAt, Calendar.current.component(.year, from: createdAt) > 1900 {
                             existingRecord.createdAt = createdAt
                         }
-                        existingRecord.updatedAt = remoteTimestamp
+                        // ✅ CRITICAL FIX: Set updatedAt to current time (not remote timestamp)
+                        // This allows DailyAwardService reconciliation to detect recently synced records
+                        // The progress didSet will set updatedAt, but we ensure it's set to current sync time
+                        existingRecord.updatedAt = Date()
                         
                         try modelContext.save()
                         logger.info("✅ SyncEngine: Updated completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
@@ -1564,6 +1567,8 @@ actor SyncEngine {
                             // Values differ, update to remote (resolve conflict by preferring remote)
                             existingRecord.isCompleted = remoteIsCompleted
                             existingRecord.progress = remoteProgress
+                            // ✅ CRITICAL FIX: Set updatedAt to current time when syncing
+                            existingRecord.updatedAt = Date()
                             try modelContext.save()
                             logger.info("✅ SyncEngine: Updated completion (same timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
                         } else {
@@ -1576,6 +1581,8 @@ actor SyncEngine {
                         // Prefer remote to ensure data consistency
                         existingRecord.isCompleted = remoteIsCompleted
                         existingRecord.progress = remoteProgress
+                        // ✅ CRITICAL FIX: Set updatedAt to current time when syncing
+                        existingRecord.updatedAt = Date()
                         try modelContext.save()
                         logger.info("✅ SyncEngine: Updated completion (invalid remote timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
                     } else {
@@ -1601,7 +1608,9 @@ actor SyncEngine {
                     if let createdAt = remoteCreatedAt, Calendar.current.component(.year, from: createdAt) > 1900 {
                         newRecord.createdAt = createdAt
                     }
-                    newRecord.updatedAt = remoteTimestamp
+                    // ✅ CRITICAL FIX: Set updatedAt to current time (not remote timestamp)
+                    // This allows DailyAwardService reconciliation to detect recently synced records
+                    newRecord.updatedAt = Date()
                     
                     modelContext.insert(newRecord)
                     try modelContext.save()

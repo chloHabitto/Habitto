@@ -570,6 +570,56 @@ class DailyAwardService: ObservableObject {
         let errors: Int
     }
     
+    /// Determine if reconciliation should be skipped for a record
+    ///
+    /// ✅ CRITICAL FIX: Prevents overwriting valid synced data with stale local event calculations
+    ///
+    /// Skips reconciliation if:
+    /// 1. Record was recently synced (within 5 minutes) - likely from another device
+    /// 2. Local events appear stale (calculated <= 0 but record > 0) - missing events on this device
+    /// 3. Delta is suspiciously large (> 5) - likely missing events
+    ///
+    /// - Parameters:
+    ///   - record: The CompletionRecord to check
+    ///   - calculatedProgress: Progress calculated from local ProgressEvents
+    ///   - recordProgress: Current progress stored in CompletionRecord
+    ///   - recordIdentifier: String identifier for logging
+    /// - Returns: true if reconciliation should be skipped
+    private func shouldSkipReconciliation(
+        record: CompletionRecord,
+        calculatedProgress: Int,
+        recordProgress: Int,
+        recordIdentifier: String
+    ) -> Bool {
+        // 1. Skip if recently synced (within 5 minutes)
+        if let updatedAt = record.updatedAt {
+            let timeSinceUpdate = Date().timeIntervalSince(updatedAt)
+            let recentSyncThreshold: TimeInterval = 5 * 60 // 5 minutes
+            
+            if timeSinceUpdate < recentSyncThreshold {
+                logger.info("⏭️ DailyAwardService: Skipping reconciliation for \(recordIdentifier) - recently synced (\(Int(timeSinceUpdate))s ago)")
+                return true
+            }
+        }
+        
+        // 2. Skip if local events seem stale (calculated <= 0 but record > 0)
+        // This indicates local events are incomplete - trust the synced record
+        if calculatedProgress <= 0 && recordProgress > 0 {
+            logger.warning("⚠️ DailyAwardService: Skipping reconciliation for \(recordIdentifier) - local events appear stale (calculated=\(calculatedProgress), record=\(recordProgress))")
+            return true
+        }
+        
+        // 3. Skip if the delta is suspiciously large (> 5) - likely missing events
+        let delta = abs(recordProgress - calculatedProgress)
+        if delta > 5 {
+            logger.warning("⚠️ DailyAwardService: Skipping reconciliation for \(recordIdentifier) - delta too large (\(delta)) - likely missing events (calculated=\(calculatedProgress), record=\(recordProgress))")
+            return true
+        }
+        
+        // Reconciliation is safe to proceed
+        return false
+    }
+    
     /// Reconcile all CompletionRecords from ProgressEvents (source of truth)
     ///
     /// ✅ PRIORITY 3: Ensures CompletionRecord.progress matches ProgressEvents.
@@ -677,6 +727,19 @@ class DailyAwardService: ObservableObject {
                 logger.info("   CompletionRecord.progress: \(currentProgress)")
                 logger.info("   Calculated from ProgressEvents: \(calculatedProgress)")
                 logger.info("   Delta: \(calculatedProgress - currentProgress)")
+                
+                // ✅ CRITICAL FIX: Don't overwrite recently synced CompletionRecords
+                // If the record was updated recently (within last 5 minutes), it was likely synced from another device
+                // and the local events are stale. Trust the synced data.
+                if shouldSkipReconciliation(
+                    record: record,
+                    calculatedProgress: calculatedProgress,
+                    recordProgress: currentProgress,
+                    recordIdentifier: recordIdentifier
+                ) {
+                    logger.info("⏭️ DailyAwardService: Skipping reconciliation for \(recordIdentifier) - recently synced or local events appear stale")
+                    continue
+                }
                 
                 // Update CompletionRecord to match ProgressEvents
                 record.progress = calculatedProgress
