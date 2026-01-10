@@ -231,11 +231,8 @@ struct ExportDataView: View {
             }) {
               VStack(spacing: 16) {
                 HStack {
-                  Image("Icon-Info_Filled")
-                    .renderingMode(.template)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 20, height: 20)
+                  Image(systemName: "info.circle.fill")
+                    .font(.system(size: 20))
                     .foregroundColor(.navy200)
 
                   VStack(alignment: .leading, spacing: 4) {
@@ -287,7 +284,7 @@ struct ExportDataView: View {
                   .font(.system(size: 14))
                   .foregroundColor(.navy200)
 
-                Text("You'll be able to share the file after export")
+                Text("Share sheet will appear when export completes")
                   .font(.system(size: 12, weight: .regular))
                   .foregroundColor(.text03)
 
@@ -1453,155 +1450,6 @@ struct ExportFormatPickerView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
-}
-
-// MARK: - ExportCompleteView
-
-struct ExportCompleteView: View {
-  // MARK: Internal
-
-  let fileURL: URL
-  let onDismiss: () -> Void
-
-  var body: some View {
-    NavigationView {
-      VStack(spacing: 24) {
-        Spacer()
-
-        Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 80))
-          .foregroundColor(.green)
-
-        VStack(spacing: 8) {
-          Text("Export Complete!")
-            .font(.system(size: 24, weight: .bold))
-            .foregroundColor(.text01)
-
-          Text("Your data has been exported successfully")
-            .font(.system(size: 16, weight: .regular))
-            .foregroundColor(.text03)
-            .multilineTextAlignment(.center)
-        }
-
-        // File Information Card
-        VStack(spacing: 16) {
-          HStack {
-            Image(systemName: "doc.text")
-              .font(.system(size: 20))
-              .foregroundColor(.navy200)
-
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Exported File")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.text01)
-
-              Text(fileURL.lastPathComponent)
-                .font(.system(size: 14, weight: .regular))
-                .foregroundColor(.text03)
-                .lineLimit(2)
-            }
-
-            Spacer()
-          }
-
-          VStack(alignment: .leading, spacing: 8) {
-            HStack {
-              Text("File Location:")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.text02)
-              Spacer()
-            }
-
-            Button(action: {
-              showingShareSheet = true
-            }) {
-              Text("Documents/Habitto Exports/")
-                .font(.system(size: 12, weight: .regular))
-                .foregroundColor(.primary)
-                .underline()
-            }
-            .buttonStyle(PlainButtonStyle())
-
-            if let fileSize = getFileSize() {
-              HStack {
-                Text("File Size:")
-                  .font(.system(size: 12, weight: .medium))
-                  .foregroundColor(.text02)
-                Spacer()
-                Text(fileSize)
-                  .font(.system(size: 12, weight: .regular))
-                  .foregroundColor(.text03)
-              }
-            }
-          }
-          .padding(.top, 8)
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(Color("appSurface02Variant"))
-        .cornerRadius(24)
-        .padding(.horizontal, 20)
-
-        Spacer()
-
-        // Action Buttons
-        VStack(spacing: 12) {
-          // Share Button
-          Button(action: {
-            showingShareSheet = true
-          }) {
-            HStack {
-              Image(systemName: "square.and.arrow.up")
-                .font(.system(size: 16, weight: .medium))
-              Text("Share File")
-                .font(.system(size: 16, weight: .semibold))
-            }
-            .foregroundColor(.onPrimary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(Color.primary)
-            .cornerRadius(24)
-          }
-
-          // Done Button
-          Button("Done") {
-            onDismiss()
-          }
-          .font(.system(size: 16, weight: .medium))
-          .foregroundColor(.text02)
-          .frame(maxWidth: .infinity)
-          .padding(.vertical, 16)
-          .background(Color("appSurface02Variant"))
-          .cornerRadius(24)
-        }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 24)
-      }
-      .background(Color("appSurface01Variant02"))
-    }
-    .sheet(isPresented: $showingShareSheet) {
-      ShareSheet(activityItems: [fileURL])
-    }
-  }
-
-  // MARK: Private
-
-  @State private var showingShareSheet = false
-
-  private func getFileSize() -> String? {
-    do {
-      let attributes = try FileManager.default.attributesOfItem(atPath: fileURL.path)
-      if let fileSize = attributes[.size] as? Int64 {
-        let formatter = ByteCountFormatter()
-        formatter.allowedUnits = [.useKB, .useMB]
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: fileSize)
-      }
-    } catch {
-      print("Error getting file size: \(error)")
-    }
-    return nil
-  }
 }
 
 // MARK: - ShareSheet
