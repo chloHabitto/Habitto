@@ -99,23 +99,11 @@ struct MoreTabView: View {
       .sheet(isPresented: $showingSecurity) {
         SecurityView()
       }
-      .sheet(isPresented: $showingDataPrivacy) {
-        DataPrivacyView()
-      }
-      .sheet(isPresented: $showingNotifications) {
-        NotificationsView()
-      }
       .sheet(isPresented: $showingLanguageView) {
         LanguageView()
       }
       .sheet(isPresented: $showingThemeView) {
         ThemeView()
-      }
-      .sheet(isPresented: $showingNotificationsView) {
-        NotificationsView()
-      }
-      .sheet(isPresented: $showingDataPrivacyView) {
-        DataPrivacyView()
       }
       .sheet(isPresented: $showingAccountView) {
         AccountView()
@@ -125,8 +113,8 @@ struct MoreTabView: View {
           .environmentObject(SubscriptionManager.shared)
           .environmentObject(authManager)
       }
-      .sheet(isPresented: $showingPreferencesView) {
-        PreferencesView()
+      .sheet(isPresented: $showingSettingsView) {
+        SettingsView()
       }
       .sheet(isPresented: $showingFAQView) {
         FAQView()
@@ -200,15 +188,11 @@ struct MoreTabView: View {
   @State private var showingCustomRating = false
   @State private var showingVacationMode = false
   @State private var showingSecurity = false
-  @State private var showingDataPrivacy = false
-  @State private var showingNotifications = false
   @State private var showingLanguageView = false
   @State private var showingThemeView = false
-  @State private var showingNotificationsView = false
-  @State private var showingDataPrivacyView = false
   @State private var showingAccountView = false
   @State private var showingMyDevices = false
-  @State private var showingPreferencesView = false
+  @State private var showingSettingsView = false
   @State private var showingFAQView = false
   @State private var showingAboutUsView = false
   @State private var showingSignOutAlert = false
@@ -281,23 +265,25 @@ struct MoreTabView: View {
             action: {
               showingVacationMode = true
             }),
+          SettingItem(
+            title: "Language",
+            value: "English",
+            hasChevron: true,
+            action: {
+              showingLanguageView = true
+            }),
+          SettingItem(
+            title: "Appearance",
+            value: themeManager.colorSchemePreference.displayName,
+            hasChevron: true,
+            action: {
+              showingThemeView = true
+            }),
           SettingItem(title: "Account", value: nil, hasChevron: true, action: {
             showingAccountView = true
           }),
-          SettingItem(title: "My devices", value: nil, hasChevron: true, action: {
-            showingMyDevices = true
-          }),
-          SettingItem(title: "Preferences", value: nil, hasChevron: true, action: {
-            showingPreferencesView = true
-          }),
-          // SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
-          //     showingDataPrivacy = true
-          // }),
-          SettingItem(title: "Notifications", value: nil, hasChevron: true, action: {
-            showingNotifications = true
-          }),
-          SettingItem(title: "Data & Privacy", value: nil, hasChevron: true, action: {
-            showingDataPrivacy = true
+          SettingItem(title: "Settings", value: nil, hasChevron: true, action: {
+            showingSettingsView = true
           })
         ])
 
@@ -692,8 +678,14 @@ struct MoreTabView: View {
       "Icon-crown_Filled"
     case "Vacation Mode":
       "Icon-Vacation_Filled"
+    case "Language":
+      "Icon-Language_Filled"
+    case "Appearance":
+      "Icon-Theme_Filled"
     case "Account":
       "Icon-Profile_Filled"
+    case "Settings":
+      "Icon-Setting_Filled"
     case "Data & Privacy":
       "Icon-Cloud_Filled"
     case "Notifications":
