@@ -333,7 +333,10 @@ struct ExportDataView: View {
     .sheet(isPresented: $showingExportComplete) {
       if let fileURL = exportFileURL {
         ExportCompleteView(fileURL: fileURL) {
-          dismiss()
+          showingExportComplete = false  // Dismiss sheet first
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            dismiss()  // Then dismiss parent
+          }
         }
       }
     }
@@ -1504,47 +1507,39 @@ struct ExportCompleteView: View {
             }
 
             Spacer()
-
-            Button(action: {
-              showingFileInfo.toggle()
-            }) {
-              Image(systemName: "info.circle")
-                .font(.system(size: 20))
-                .foregroundColor(.navy200)
-            }
           }
 
-          if showingFileInfo {
-            VStack(alignment: .leading, spacing: 8) {
+          VStack(alignment: .leading, spacing: 8) {
+            HStack {
+              Text("File Location:")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.text02)
+              Spacer()
+            }
+
+            Button(action: {
+              showingShareSheet = true
+            }) {
+              Text("Documents/Habitto Exports/")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundColor(.primary)
+                .underline()
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            if let fileSize = getFileSize() {
               HStack {
-                Text("File Location:")
+                Text("File Size:")
                   .font(.system(size: 12, weight: .medium))
                   .foregroundColor(.text02)
                 Spacer()
-              }
-
-              Text("Documents/Habitto Exports/")
-                .font(.system(size: 12, weight: .regular))
-                .foregroundColor(.text03)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.grey100)
-                .cornerRadius(8)
-
-              if let fileSize = getFileSize() {
-                HStack {
-                  Text("File Size:")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(.text02)
-                  Spacer()
-                  Text(fileSize)
-                    .font(.system(size: 12, weight: .regular))
-                    .foregroundColor(.text03)
-                }
+                Text(fileSize)
+                  .font(.system(size: 12, weight: .regular))
+                  .foregroundColor(.text03)
               }
             }
-            .padding(.top, 8)
           }
+          .padding(.top, 8)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -1597,7 +1592,6 @@ struct ExportCompleteView: View {
   // MARK: Private
 
   @State private var showingShareSheet = false
-  @State private var showingFileInfo = false
 
   private func getFileSize() -> String? {
     do {
