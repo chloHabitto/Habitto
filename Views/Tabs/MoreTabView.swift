@@ -63,6 +63,12 @@ struct MoreTabView: View {
           .padding(.top, 20)
           .padding(.bottom, 20)
         }
+        .refreshable {
+          // ✅ CRITICAL FIX: Allow manual refresh of XP from DailyAwardService
+          // This ensures XP updates even if automatic updates are blocked
+          await DailyAwardService.shared.refreshXPState()
+          print("💰 [XP_REFRESH] MoreTabView: Pull-to-refresh triggered, XP state refreshed")
+        }
         // CRITICAL: Force view to observe isPremium changes by using it in .id()
         .id("moretab-premium-\(subscriptionManager.isPremium)")
       }

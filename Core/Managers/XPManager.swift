@@ -40,7 +40,8 @@ class XPManager {
     loadUserProgress()
     loadRecentTransactions()
     loadDailyAwards()
-    observeXPState()
+    // ✅ REMOVED: Combine observer - we now use direct notification from DailyAwardService
+    // observeXPState()  // Removed to eliminate race condition with direct calls
     
     // ✅ CRITICAL: Always refresh XP from SwiftData first (source of truth)
     // This ensures we show the correct XP even if UserDefaults is stale
@@ -581,13 +582,13 @@ class XPManager {
   private let recentTransactionsKey = "recent_xp_transactions"
   private let dailyAwardsKey = "daily_xp_awards"
   private let awardService: DailyAwardService
-  private var xpStateCancellable: AnyCancellable?
   
   /// Track when publishXP() was last called to prevent observer from overwriting recent calculated values
   private var lastPublishXPTime: Date?
   
   /// Minimum time between publishXP() and applyXPState() to allow overwrite
   /// This prevents observer from immediately overwriting calculated values
+  /// ✅ NOTE: Grace period is bypassed for direct calls from DailyAwardService
   private let publishXPGracePeriod: TimeInterval = 0.5 // 500ms
 
   /// Track which habits have been awarded XP today to prevent duplicates
@@ -824,27 +825,25 @@ class XPManager {
     }
   }
 
-  private func observeXPState() {
-    xpStateCancellable = awardService.$xpState
-      .receive(on: DispatchQueue.main)  // ✅ FIX: Use DispatchQueue.main for better reliability
-      .sink { [weak self] state in
-        guard let self, let state else { return }
-        // ✅ CRITICAL FIX: applyXPState is already @MainActor (class is @MainActor)
-        // Setting properties directly will trigger @Observable UI updates automatically
-        self.applyXPState(state)
-      }
-  }
+  // ✅ REMOVED: Combine observer - eliminated to prevent race conditions with direct calls
+  // We now use direct notification from DailyAwardService which is more reliable
+  // private func observeXPState() { ... }  // REMOVED
   
   // ✅ CRITICAL FIX: Made internal so DailyAwardService can call directly for immediate UI updates
   // This ensures XP updates immediately without relying on Combine observation
   // ✅ NOTE: Method is implicitly @MainActor because class is @MainActor
-  func applyXPState(_ state: XPState) {
+  /// Apply XP state from DailyAwardService (source of truth)
+  /// - Parameters:
+  ///   - state: The XP state to apply
+  ///   - fromDirectCall: If true, bypasses grace period check (used for direct calls from DailyAwardService)
+  func applyXPState(_ state: XPState, fromDirectCall: Bool = false) {
     let timestamp = Date()
     let oldXP = self.totalXP
     let oldLevel = self.currentLevel
     
+    let source = fromDirectCall ? "DailyAwardService (direct call)" : "DailyAwardService.xpState observer"
     print("💰 [XP_TRACE] \(timestamp) applyXPState() - START")
-    print("   Source: DailyAwardService.xpState observer")
+    print("   Source: \(source)")
     print("   Thread: MainActor")
     print("   State: totalXP=\(state.totalXP), level=\(state.level), lastUpdated=\(state.lastUpdated)")
     print("   Current: totalXP=\(oldXP), level=\(oldLevel)")
@@ -863,9 +862,9 @@ class XPManager {
     // DailyAwardService is the source of truth - if it says XP is 0, we must show 0
     // The previous check was blocking legitimate XP revocations when awards were deleted
     
-    // ✅ CRITICAL FIX: Don't overwrite if publishXP() was called recently
-    // This prevents observer from immediately overwriting calculated values
-    if let lastPublish = lastPublishXPTime {
+    // ✅ CRITICAL FIX: Skip grace period check for direct calls from DailyAwardService
+    // Direct calls are authoritative updates that should always be applied immediately
+    if !fromDirectCall, let lastPublish = lastPublishXPTime {
       let timeSincePublish = timestamp.timeIntervalSince(lastPublish)
       if timeSincePublish < publishXPGracePeriod {
         print("⚠️ [XP_TRACE] \(timestamp) applyXPState() - SKIP (publishXP() called \(String(format: "%.2f", timeSincePublish))s ago, within grace period)")
