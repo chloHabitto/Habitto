@@ -19,5 +19,9 @@
 	<array>
 		<string>iCloud.com.chloe-lee.Habitto</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.habitto.widget</string>
+	</array>
 </dict>
 </plist>
