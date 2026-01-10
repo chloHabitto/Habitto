@@ -1525,7 +1525,20 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
             
             do {
-                if let existingRecord = try modelContext.fetch(descriptor).first {
+                let existingRecords = try modelContext.fetch(descriptor)
+                
+                // ✅ FIX: Handle duplicates - keep only one, delete rest
+                if existingRecords.count > 1 {
+                    logger.warning("⚠️ SyncEngine: Found \(existingRecords.count) duplicate records for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - cleaning up")
+                    
+                    // Keep the first, delete the rest
+                    for i in 1..<existingRecords.count {
+                        modelContext.delete(existingRecords[i])
+                    }
+                    try modelContext.save()
+                }
+                
+                if let existingRecord = existingRecords.first {
                     let localTimestamp = existingRecord.updatedAt ?? existingRecord.createdAt
                     
                     // ✅ BUG 2 FIX: Compare timestamps correctly - handle equal timestamps
