@@ -61,8 +61,9 @@ struct BaseBottomSheet<Content: View>: View {
         Button(action: onClose) {
           if useSimpleCloseButton {
             Image(systemName: "xmark")
-              .font(.system(size: 16, weight: .black))
-              .foregroundColor(.navy200)
+              .font(.system(size: 16, weight: .heavy))
+              .foregroundColor(Color("appText07Variant"))
+              .frame(width: 44, height: 44)
           } else {
             ZStack {
               if useGlassCloseButton {

@@ -428,7 +428,8 @@ final actor HabitStore {
 
     // ✅ CRITICAL FIX: Mark habit as deleted FIRST (before any deletion operations)
     // This ensures we can filter it out even if deletion fails
-    markHabitAsDeleted(habit.id)
+    markHabitAsDeleted(habit.id)  // Store in UserDefaults
+    SyncEngine.markHabitAsDeleted(habit.id)  // Store in SyncEngine for sync prevention
 
     // Record user analytics
     print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Recording analytics")

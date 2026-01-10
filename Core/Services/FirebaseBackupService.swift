@@ -94,6 +94,12 @@ class FirebaseBackupService {
   // MARK: - Private Implementation
 
   private func performHabitBackup(_ habit: Habit) async {
+    // ✅ CRITICAL BUG FIX: Check if this habit was recently deleted - don't re-upload it
+    if SyncEngine.isHabitDeleted(habit.id) {
+      logger.info("⏭️ FirebaseBackupService: Skipping backup for deleted habit '\(habit.name)'")
+      return
+    }
+    
     guard let userId = await getCurrentUserId() else {
       logger.debug("⏭️ FirebaseBackupService: Skipping habit backup - no authenticated user")
       return
