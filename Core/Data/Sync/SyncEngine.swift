@@ -1014,6 +1014,21 @@ actor SyncEngine {
             }
             
             summary.completionsPulled = completionsPulled
+            
+            // ✅ CRITICAL FIX: Reload habits after completion sync to reflect new completion states
+            if completionsPulled > 0 {
+                await HabitRepository.shared.loadHabits(force: true)
+                logger.info("✅ SyncEngine: Reloaded habits after completion sync")
+                
+                // ✅ FIX: Notify UI to refresh after sync
+                await MainActor.run {
+                    NotificationCenter.default.post(
+                        name: NSNotification.Name("SyncCompletionsPulled"),
+                        object: nil,
+                        userInfo: ["completionsPulled": completionsPulled]
+                    )
+                }
+            }
         } catch {
             logger.error("❌ Failed to pull completions: \(error.localizedDescription)")
             summary.errors.append("Failed to pull completions: \(error.localizedDescription)")
@@ -1388,7 +1403,7 @@ actor SyncEngine {
         guard let habitIdString = data["habitId"] as? String,
               let habitId = UUID(uuidString: habitIdString),
               let dateKey = data["dateKey"] as? String else {
-            logger.error("❌ Failed to parse completion data from Firestore")
+            logger.error("❌ SyncEngine: Failed to parse completion data from Firestore")
             return
         }
         
@@ -1415,6 +1430,7 @@ actor SyncEngine {
         
         // If there are pending local events for this habit/date, skip remote overwrite
         if await hasPendingLocalEvents(habitId: habitId, dateKey: dateKey) {
+            logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - pending local events")
             return
         }
         
@@ -1438,28 +1454,31 @@ actor SyncEngine {
             
             do {
                 if let existingRecord = try modelContext.fetch(descriptor).first {
-                    let localUpdatedAt = existingRecord.updatedAt ?? existingRecord.createdAt
-                    // Only overwrite if remote data is newer than local
-                    guard remoteTimestamp > localUpdatedAt else {
-                        return
-                    }
+                    let localTimestamp = existingRecord.updatedAt ?? existingRecord.createdAt
                     
-                    existingRecord.isCompleted = remoteIsCompleted
-                    existingRecord.progress = remoteProgress
-                    if let createdAt = remoteCreatedAt {
-                        existingRecord.createdAt = createdAt
+                    // Compare timestamps - remote wins if newer
+                    if remoteTimestamp > localTimestamp {
+                        // Update local with remote data
+                        existingRecord.isCompleted = remoteIsCompleted
+                        existingRecord.progress = remoteProgress
+                        if let createdAt = remoteCreatedAt {
+                            existingRecord.createdAt = createdAt
+                        }
+                        existingRecord.updatedAt = remoteTimestamp
+                        
+                        try modelContext.save()
+                        logger.info("✅ SyncEngine: Updated completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
+                    } else {
+                        logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - local is newer (local: \(localTimestamp), remote: \(remoteTimestamp))")
                     }
-                    existingRecord.updatedAt = remoteTimestamp
-                    
-                    try modelContext.save()
                 } else {
-                    // Create new record
+                    // Create new completion record
                     guard let date = DateUtils.date(from: dateKey) else {
-                        logger.error("❌ Failed to parse dateKey: '\(dateKey)'")
+                        logger.error("❌ SyncEngine: Failed to parse dateKey: '\(dateKey)'")
                         throw NSError(domain: "SyncEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid dateKey format"])
                     }
                     
-                    let record = CompletionRecord(
+                    let newRecord = CompletionRecord(
                         userId: userId,
                         habitId: habitId,
                         date: date,
@@ -1469,15 +1488,16 @@ actor SyncEngine {
                     )
                     
                     if let createdAt = remoteCreatedAt {
-                        record.createdAt = createdAt
+                        newRecord.createdAt = createdAt
                     }
-                    record.updatedAt = remoteTimestamp
+                    newRecord.updatedAt = remoteTimestamp
                     
-                    modelContext.insert(record)
+                    modelContext.insert(newRecord)
                     try modelContext.save()
+                    logger.info("✅ SyncEngine: Created completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
                 }
             } catch {
-                logger.error("❌ Failed to merge completion: \(error.localizedDescription)")
+                logger.error("❌ SyncEngine: Failed to merge completion: \(error.localizedDescription)")
                 throw error
             }
         }
