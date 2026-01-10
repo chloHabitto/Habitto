@@ -1566,11 +1566,11 @@ struct ExportCompleteView: View {
               Text("Share File")
                 .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundColor(.white)
+            .foregroundColor(.onPrimary)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(Color.primary)
-            .cornerRadius(12)
+            .cornerRadius(24)
           }
 
           // Done Button
