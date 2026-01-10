@@ -70,7 +70,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				.gitignore,
-				"Config/App-Info.plist",
+				Config/App-Info.plist,
 				Core/Data/CloudKit/Archive/CloudKitConflictResolver.swift,
 				Core/Data/CloudKit/Archive/CloudKitIntegrationService.swift,
 				Core/Data/CloudKit/Archive/CloudKitModels.swift,
@@ -80,8 +80,7 @@
 				Core/Data/CloudKit/Archive/CloudKitUniquenessManager.swift,
 				Core/Data/CloudKit/Archive/ConflictResolutionPolicy.swift,
 				firebase.json,
-				HabittoWidget/Info.plist,
-				"HabittoWidget/Sources/Extensions/Color+Hex.swift",
+				HabittoWidget,
 				package.json,
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
@@ -90,15 +89,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-			);
-			target = 89AF5CB22F12B2710092F84C /* HabittoWidgetExtension */;
-		};
-		89AF5D0D2F12B9280092F84C /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"HabittoWidget/Sources/Extensions/Color+Hex.swift",
-				Shared/Models/WidgetHabitData.swift,
-				Shared/Services/WidgetDataService.swift,
 			);
 			target = 89AF5CB22F12B2710092F84C /* HabittoWidgetExtension */;
 		};
@@ -113,11 +103,15 @@
 			path = HabittoWidget;
 			sourceTree = "<group>";
 		};
+		89AF5D1E2F12BA000092F84C /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		89C17A392DF73D8A00B2480F /* . */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */,
-				89AF5D0D2F12B9280092F84C /* Exceptions for "." folder in "HabittoWidgetExtension" target */,
 			);
 			path = .;
 			sourceTree = "<group>";
@@ -215,6 +209,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				89AF5CB62F12B2720092F84C /* HabittoWidget */,
+				89AF5D1E2F12BA000092F84C /* Shared */,
 			);
 			name = HabittoWidgetExtension;
 			productName = HabittoWidgetExtension;
