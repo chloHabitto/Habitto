@@ -1950,6 +1950,11 @@ actor SyncEngine {
                 Self.clearDeletedHabit(habitId)
             }
             
+            // ✅ CRITICAL FIX: Reload HabitRepository's in-memory list BEFORE any save operations
+            // This prevents stale data from re-creating deleted habits
+            await HabitRepository.shared.loadHabits(force: true)
+            logger.info("✅ SyncEngine: Reloaded HabitRepository after deleting \(deletedRemotelyButLocal.count) local habits")
+            
             // Clear cache and notify UI to reload
             await habitStore.clearStorageCache()
             await MainActor.run {
