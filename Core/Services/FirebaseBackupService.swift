@@ -317,98 +317,91 @@ class FirebaseBackupService {
       return
     }
 
-    do {
-      let habitIdString = habitId.uuidString
-      let completionsRef = db.collection("users")
-        .document(userId)
-        .collection("completions")
-      
-      // ✅ Generate yearMonth values for the last 2 years (reasonable range for habit completions)
-      // Format: "YYYY-MM" (e.g., "2024-12", "2025-01")
-      let calendar = Calendar.current
-      let now = Date()
-      var yearMonths: [String] = []
-      
-      // Generate yearMonth values for last 24 months
-      for monthOffset in 0..<24 {
-        guard let date = calendar.date(byAdding: .month, value: -monthOffset, to: now) else { continue }
-        let year = calendar.component(.year, from: date)
-        let month = calendar.component(.month, from: date)
-        let yearMonth = String(format: "%04d-%02d", year, month)
-        yearMonths.append(yearMonth)
-      }
-      
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Checking \(yearMonths.count) yearMonth collections")
-      
-      var totalDeleted = 0
-      
-      // ✅ FIX: Check both "completions" (new) and "records" (legacy) subcollections
-      let subcollectionNames = ["completions", "records"]
-      
-      // Check each yearMonth collection
-      for yearMonth in yearMonths {
-        for subcollectionName in subcollectionNames {
-          let recordsRef = completionsRef
-            .document(yearMonth)
-            .collection(subcollectionName)
+    // ✅ FIX: Removed unreachable do-catch block - all operations use try? which doesn't throw
+    let habitIdString = habitId.uuidString
+    let completionsRef = db.collection("users")
+      .document(userId)
+      .collection("completions")
+    
+    // ✅ Generate yearMonth values for the last 2 years (reasonable range for habit completions)
+    // Format: "YYYY-MM" (e.g., "2024-12", "2025-01")
+    let calendar = Calendar.current
+    let now = Date()
+    var yearMonths: [String] = []
+    
+    // Generate yearMonth values for last 24 months
+    for monthOffset in 0..<24 {
+      guard let date = calendar.date(byAdding: .month, value: -monthOffset, to: now) else { continue }
+      let year = calendar.component(.year, from: date)
+      let month = calendar.component(.month, from: date)
+      let yearMonth = String(format: "%04d-%02d", year, month)
+      yearMonths.append(yearMonth)
+    }
+    
+    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Checking \(yearMonths.count) yearMonth collections")
+    
+    var totalDeleted = 0
+    
+    // ✅ FIX: Check both "completions" (new) and "records" (legacy) subcollections
+    let subcollectionNames = ["completions", "records"]
+    
+    // Check each yearMonth collection
+    for yearMonth in yearMonths {
+      for subcollectionName in subcollectionNames {
+        let recordsRef = completionsRef
+          .document(yearMonth)
+          .collection(subcollectionName)
+        
+        // Get all records in this yearMonth/subcollection
+        // Note: This will return empty if the subcollection doesn't exist or has no documents
+        let recordsSnapshot = try? await recordsRef.getDocuments()
+        
+        guard let recordsSnapshot = recordsSnapshot, !recordsSnapshot.documents.isEmpty else {
+          continue // Skip empty collections
+        }
+        
+        print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) records in \(yearMonth)/\(subcollectionName)")
+        
+        // Filter and delete records where document ID matches habitId
+        // OR where the habitId field in the document data matches
+        for recordDoc in recordsSnapshot.documents {
+          let recordId = recordDoc.documentID
+          let recordData = recordDoc.data()
+          let recordHabitId = recordData["habitId"] as? String ?? ""
           
-          // Get all records in this yearMonth/subcollection
-          // Note: This will return empty if the subcollection doesn't exist or has no documents
-          let recordsSnapshot = try? await recordsRef.getDocuments()
+          // ✅ FIX: Check both old and new ID formats:
+          // Old format: "{habitId}_{dateKey}"
+          // New format: "comp_{habitId}_{dateKey}"
+          // Also check the habitId field in document data
+          let oldFormatPrefix = habitIdString + "_"
+          let newFormatPrefix = "comp_" + habitIdString + "_"
+          let matchesOldFormat = recordId.hasPrefix(oldFormatPrefix)
+          let matchesNewFormat = recordId.hasPrefix(newFormatPrefix)
+          let matchesByField = recordHabitId == habitIdString
           
-          guard let recordsSnapshot = recordsSnapshot, !recordsSnapshot.documents.isEmpty else {
-            continue // Skip empty collections
-          }
-          
-          print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) records in \(yearMonth)/\(subcollectionName)")
-          
-          // Filter and delete records where document ID matches habitId
-          // OR where the habitId field in the document data matches
-          for recordDoc in recordsSnapshot.documents {
-            let recordId = recordDoc.documentID
-            let recordData = recordDoc.data()
-            let recordHabitId = recordData["habitId"] as? String ?? ""
-            
-            // ✅ FIX: Check both old and new ID formats:
-            // Old format: "{habitId}_{dateKey}"
-            // New format: "comp_{habitId}_{dateKey}"
-            // Also check the habitId field in document data
-            let oldFormatPrefix = habitIdString + "_"
-            let newFormatPrefix = "comp_" + habitIdString + "_"
-            let matchesOldFormat = recordId.hasPrefix(oldFormatPrefix)
-            let matchesNewFormat = recordId.hasPrefix(newFormatPrefix)
-            let matchesByField = recordHabitId == habitIdString
-            
-            if matchesOldFormat || matchesNewFormat || matchesByField {
-              do {
-                try await recordDoc.reference.delete()
-                totalDeleted += 1
-                let matchType = matchesNewFormat ? "new ID format" : (matchesOldFormat ? "old ID format" : "field")
-                print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId) (matched by: \(matchType))")
-              } catch {
-                print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR deleting record \(recordId): \(error.localizedDescription)")
-                // Continue with other records even if one fails
-              }
-            } else {
-              // Debug logging to understand why records aren't matching
-              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipping record: \(recordId) (habitId in data: \(recordHabitId), expected: \(habitIdString))")
+          if matchesOldFormat || matchesNewFormat || matchesByField {
+            do {
+              try await recordDoc.reference.delete()
+              totalDeleted += 1
+              let matchType = matchesNewFormat ? "new ID format" : (matchesOldFormat ? "old ID format" : "field")
+              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId) (matched by: \(matchType))")
+            } catch {
+              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR deleting record \(recordId): \(error.localizedDescription)")
+              // Continue with other records even if one fails
             }
+          } else {
+            // Debug logging to understand why records aren't matching
+            print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipping record: \(recordId) (habitId in data: \(recordHabitId), expected: \(habitIdString))")
           }
         }
       }
-      
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted \(totalDeleted) completion records total")
-      print("☁️ [CLOUD_BACKUP] Completion records deleted from Firestore")
-      print("   Habit ID: \(habitIdString.prefix(8))...")
-      print("   Total records deleted: \(totalDeleted)")
-      logger.info("✅ FirebaseBackupService: Deleted \(totalDeleted) completion records for habit \(habitIdString.prefix(8))... from Firestore")
-    } catch {
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR: \(error.localizedDescription)")
-      print("⚠️ [CLOUD_BACKUP] Completion records deletion failed: \(error.localizedDescription)")
-      print("   Habit ID: \(habitId.uuidString.prefix(8))...")
-      logger.warning("⚠️ FirebaseBackupService: Failed to delete completion records: \(error.localizedDescription)")
-      // Don't throw - deletion failures shouldn't block habit deletion
     }
+    
+    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted \(totalDeleted) completion records total")
+    print("☁️ [CLOUD_BACKUP] Completion records deleted from Firestore")
+    print("   Habit ID: \(habitIdString.prefix(8))...")
+    print("   Total records deleted: \(totalDeleted)")
+    logger.info("✅ FirebaseBackupService: Deleted \(totalDeleted) completion records for habit \(habitIdString.prefix(8))... from Firestore")
     
     print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - END")
   }
@@ -479,69 +472,65 @@ class FirebaseBackupService {
       return
     }
 
-    do {
-      let completionsRef = db.collection("users")
-        .document(userId)
-        .collection("completions")
+    // ✅ FIX: Removed unreachable do-catch block - all operations use try? which doesn't throw
+    let completionsRef = db.collection("users")
+      .document(userId)
+      .collection("completions")
+    
+    let yearMonthDocs = try? await completionsRef.getDocuments()
+    guard let yearMonthDocs = yearMonthDocs else { return }
+    
+    var totalMigrated = 0
+    
+    for yearMonthDoc in yearMonthDocs.documents {
+      let yearMonth = yearMonthDoc.documentID
       
-      let yearMonthDocs = try? await completionsRef.getDocuments()
-      guard let yearMonthDocs = yearMonthDocs else { return }
+      // Read from old "records" subcollection
+      let oldRecordsRef = completionsRef
+        .document(yearMonth)
+        .collection("records")
+      let oldRecords = try? await oldRecordsRef.getDocuments()
+      guard let oldRecords = oldRecords else { continue }
       
-      var totalMigrated = 0
-      
-      for yearMonthDoc in yearMonthDocs.documents {
-        let yearMonth = yearMonthDoc.documentID
-        
-        // Read from old "records" subcollection
-        let oldRecordsRef = completionsRef
-          .document(yearMonth)
-          .collection("records")
-        let oldRecords = try? await oldRecordsRef.getDocuments()
-        guard let oldRecords = oldRecords else { continue }
-        
-        for oldDoc in oldRecords.documents {
-          let data = oldDoc.data()
-          guard let habitId = data["habitId"] as? String,
-                let dateKey = data["dateKey"] as? String else {
-            continue
-          }
-          
-          // Write to new "completions" subcollection with correct ID format
-          let newCompletionId = "comp_\(habitId)_\(dateKey)"
-          let newRef = completionsRef
-            .document(yearMonth)
-            .collection("completions")
-            .document(newCompletionId)
-          
-          var newData = data
-          newData["completionId"] = newCompletionId
-          newData["userId"] = userId
-          
-          // Add createdAt/updatedAt if missing
-          if data["createdAt"] == nil {
-            newData["createdAt"] = data["syncedAt"] ?? Timestamp(date: Date())
-          }
-          if data["updatedAt"] == nil {
-            newData["updatedAt"] = data["syncedAt"] ?? Timestamp(date: Date())
-          }
-          
-          try? await newRef.setData(newData, merge: true)
-          
-          // Delete old record
-          try? await oldDoc.reference.delete()
-          totalMigrated += 1
+      for oldDoc in oldRecords.documents {
+        let data = oldDoc.data()
+        guard let habitId = data["habitId"] as? String,
+              let dateKey = data["dateKey"] as? String else {
+          continue
         }
+        
+        // Write to new "completions" subcollection with correct ID format
+        let newCompletionId = "comp_\(habitId)_\(dateKey)"
+        let newRef = completionsRef
+          .document(yearMonth)
+          .collection("completions")
+          .document(newCompletionId)
+        
+        var newData = data
+        newData["completionId"] = newCompletionId
+        newData["userId"] = userId
+        
+        // Add createdAt/updatedAt if missing
+        if data["createdAt"] == nil {
+          newData["createdAt"] = data["syncedAt"] ?? Timestamp(date: Date())
+        }
+        if data["updatedAt"] == nil {
+          newData["updatedAt"] = data["syncedAt"] ?? Timestamp(date: Date())
+        }
+        
+        try? await newRef.setData(newData, merge: true)
+        
+        // Delete old record
+        try? await oldDoc.reference.delete()
+        totalMigrated += 1
       }
-      
-      if totalMigrated > 0 {
-        logger.info("✅ FirebaseBackupService: Migrated \(totalMigrated) completion records from old 'records' to new 'completions' subcollection")
-        print("☁️ [MIGRATION] Migrated \(totalMigrated) completion records from old 'records' to new 'completions' subcollection")
-      } else {
-        logger.debug("ℹ️ FirebaseBackupService: No records found to migrate")
-      }
-    } catch {
-      logger.warning("⚠️ FirebaseBackupService: Migration failed: \(error.localizedDescription)")
-      print("⚠️ [MIGRATION] Failed: \(error.localizedDescription)")
+    }
+    
+    if totalMigrated > 0 {
+      logger.info("✅ FirebaseBackupService: Migrated \(totalMigrated) completion records from old 'records' to new 'completions' subcollection")
+      print("☁️ [MIGRATION] Migrated \(totalMigrated) completion records from old 'records' to new 'completions' subcollection")
+    } else {
+      logger.debug("ℹ️ FirebaseBackupService: No records found to migrate")
     }
   }
 
