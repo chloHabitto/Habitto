@@ -310,25 +310,15 @@ struct NotificationsView: View {
   // MARK: - Save Button
 
   private var saveButton: some View {
-    VStack(spacing: 0) {
-      // Gradient overlay to fade content behind button
-      LinearGradient(
-        gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
-        startPoint: .top,
-        endPoint: .bottom)
-        .frame(height: 20)
-
-      // Button container
-      HStack {
-        HabittoButton.largeFillPrimary(
-          text: "Save",
-          state: hasChanges ? .default : .disabled,
-          action: saveChanges)
-      }
-      .padding(.horizontal, 20)
-      .padding(.bottom, 40)
-      .background(Color.surface2)
+    HStack {
+      HabittoButton.largeFillPrimary(
+        text: "Save",
+        state: hasChanges ? .default : .disabled,
+        action: saveChanges)
     }
+    .padding(.horizontal, 20)
+    .padding(.bottom, 40)
+    .background(Color.surface2)
   }
 
   // MARK: - Debug Helper

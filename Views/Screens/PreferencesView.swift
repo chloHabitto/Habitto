@@ -28,6 +28,20 @@ struct PreferencesView: View {
           // App Preferences
           VStack(spacing: 0) {
             AccountOptionRow(
+              icon: "Icon-Language_Filled",
+              title: "Language",
+              subtitle: "Choose your preferred language",
+              hasChevron: true,
+              iconColor: iconColor)
+            {
+              showingLanguage = true
+            }
+            
+            Divider()
+              .background(Color(.systemGray4))
+              .padding(.leading, 56)
+            
+            AccountOptionRow(
               icon: "Icon-Theme_Filled",
               title: "Theme",
               subtitle: "Choose your preferred app theme",

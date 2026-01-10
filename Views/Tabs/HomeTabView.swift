@@ -1205,23 +1205,29 @@ struct HomeTabView: View {
   /// Trigger sync and reload habits from storage
   private func refreshHabits() async {
     debugLog("🔄 HomeTabView: Pull-to-refresh triggered")
+    print("✅ Pull-to-refresh: Starting sync...")
     
-    // Trigger sync if user is authenticated (not guest)
+    // First, pull remote changes
     let userId = await CurrentUser().idOrGuest
     if !CurrentUser.isGuestId(userId) {
       do {
         debugLog("🔄 HomeTabView: Triggering pullRemoteChanges for userId: \(userId.prefix(8))...")
-        try await SyncEngine.shared.pullRemoteChanges(userId: userId)
+        print("✅ Pull-to-refresh: Triggering sync for userId: \(userId.prefix(8))...")
+        _ = try await SyncEngine.shared.pullRemoteChanges(userId: userId)
         debugLog("✅ HomeTabView: Pull remote changes completed")
+        print("✅ Pull-to-refresh: Sync completed")
       } catch {
         debugLog("❌ HomeTabView: Pull remote changes failed: \(error.localizedDescription)")
+        print("❌ Pull-to-refresh: Sync failed: \(error.localizedDescription)")
       }
     } else {
       debugLog("⏭️ HomeTabView: Skipping sync - user is in guest mode")
+      print("⏭️ Pull-to-refresh: Skipping sync - user is in guest mode")
     }
     
-    // Refresh habits data from storage (will pick up synced changes)
+    // Then reload habits from storage (will pick up synced changes)
     await HabitRepository.shared.loadHabits(force: true)
+    print("✅ Pull-to-refresh: Habits reloaded")
 
     // ✅ PHASE 5: Refetch completion status after refresh
     await prefetchCompletionStatus()

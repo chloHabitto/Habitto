@@ -1052,9 +1052,12 @@ actor SyncEngine {
         // 5. Update last sync timestamp after successful pull
         setLastSyncTimestamp(userId: actualUserId, timestamp: Date())
         
-        // ✅ ISSUE 2 FIX: If we pulled any habits, clear cache and notify UI to reload
+        // ✅ ISSUE 2 FIX: Clear cache and notify UI if we pulled habits OR if reconciliation happened
         // ✅ FIX: Capture value before async closure to avoid Swift 6 concurrency warning
         let habitsPulledCount = summary.habitsPulled
+        
+        // Note: Reconciliation already handles cache clearing and notifications when it deletes locally
+        // We only need to handle cache clearing here if habits were pulled (but not deleted)
         if habitsPulledCount > 0 {
             // Clear the storage cache so next load fetches fresh data from SwiftData
             await habitStore.clearStorageCache()
@@ -1075,6 +1078,7 @@ actor SyncEngine {
     }
     
     /// Pull habits updated since the given timestamp
+    /// ✅ CRITICAL BUG FIX: Get ALL remote habit IDs separately for reconciliation, not just filtered ones
     private func pullHabits(userId: String, since: Date) async throws -> Int {
         logger.info("📥 Pulling habits updated since: \(since.ISO8601Format())")
         
@@ -1082,20 +1086,25 @@ actor SyncEngine {
             .document(userId)
             .collection("habits")
         
-        // Query habits where updatedAt > lastSyncTimestamp
-        // Note: Firestore doesn't support updatedAt directly, so we'll query all and filter
-        // In production, you'd want to add an updatedAt field to habits
-        let snapshot = try await habitsRef.getDocuments()
-        var pulledCount = 0
+        // STEP 1: Get ALL habit IDs from Firestore (for reconciliation)
+        let allHabitsSnapshot = try await habitsRef.getDocuments()
         var remoteHabitIds: Set<UUID> = []
         
-        for document in snapshot.documents {
-            // Track all remote habit IDs (even if we don't pull them due to timestamp)
-            let habitIdString = document.documentID
-            guard let uuid = UUID(uuidString: habitIdString) else {
+        for document in allHabitsSnapshot.documents {
+            if let uuid = UUID(uuidString: document.documentID) {
+                remoteHabitIds.insert(uuid)
+            }
+        }
+        
+        logger.info("📊 SyncEngine: Found \(remoteHabitIds.count) total habits in Firestore")
+        
+        // STEP 2: Pull habits updated since lastSync (filter by timestamp)
+        var pulledCount = 0
+        
+        for document in allHabitsSnapshot.documents {
+            guard let uuid = UUID(uuidString: document.documentID) else {
                 continue
             }
-            remoteHabitIds.insert(uuid)
             
             let data = document.data()
             
@@ -1104,6 +1113,7 @@ actor SyncEngine {
             let lastSyncedAt = (data["lastSyncedAt"] as? Timestamp)?.dateValue()
             let updatedAt = lastSyncedAt ?? (data["createdAt"] as? Timestamp)?.dateValue() ?? Date()
             
+            // Only merge if updated since last sync
             guard updatedAt > since else {
                 continue
             }
@@ -1114,7 +1124,10 @@ actor SyncEngine {
             pulledCount += 1
         }
         
-        // ✅ BUG FIX: Reconcile deletions - Delete from Firestore any habits that were deleted locally
+        logger.info("📥 SyncEngine: Pulled \(pulledCount) habits updated since \(since.ISO8601Format())")
+        
+        // STEP 3: Reconcile deletions using ALL remote habit IDs (not just pulled ones)
+        logger.info("🔄 SyncEngine: Starting reconciliation with \(remoteHabitIds.count) remote habits")
         await reconcileDeletedHabits(userId: userId, remoteHabitIds: remoteHabitIds)
         
         return pulledCount
@@ -1845,6 +1858,8 @@ actor SyncEngine {
     /// 2. Delete from Local: habits that exist locally but not remotely (deleted on another device)
     /// Call this after pullHabits() completes to clean up orphaned habits
     private func reconcileDeletedHabits(userId: String, remoteHabitIds: Set<UUID>) async {
+        logger.info("🔄 RECONCILE: Starting with \(remoteHabitIds.count) remote habit IDs")
+        
         // Get local habit IDs
         let localHabitIds: Set<UUID> = await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
@@ -1855,6 +1870,10 @@ actor SyncEngine {
             let localHabits = (try? modelContext.fetch(descriptor)) ?? []
             return Set(localHabits.map { $0.id })
         }
+        
+        logger.info("🔄 RECONCILE: Found \(localHabitIds.count) local habit IDs")
+        logger.info("🔄 RECONCILE: Remote IDs: \(remoteHabitIds.map { String($0.uuidString.prefix(8)) }.sorted())")
+        logger.info("🔄 RECONCILE: Local IDs: \(localHabitIds.map { String($0.uuidString.prefix(8)) }.sorted())")
         
         // DIRECTION 1: Delete from Firestore habits that were deleted locally
         // (exist in Firestore but not locally)
