@@ -909,11 +909,51 @@ actor SyncEngine {
                 let remoteProgress = remoteData["progress"] as? Int
                 let remoteCompleted = remoteData["isCompleted"] as? Bool
                 
+                // Check if values match
                 if remoteProgress == completion.progress && remoteCompleted == completion.isCompleted {
                     // Remote already matches local state, skip write
                     alreadySyncedCount += 1
                     shouldWriteRemote = false
+                    continue
                 }
+                
+                // ✅ CRITICAL FIX: Compare timestamps before overwriting
+                // Only write if local is ACTUALLY newer than remote
+                let remoteUpdatedAt = (remoteData["updatedAt"] as? Timestamp)?.dateValue()
+                let remoteCreatedAt = (remoteData["createdAt"] as? Timestamp)?.dateValue()
+                
+                // Get remote timestamp (prefer updatedAt, fallback to createdAt)
+                let remoteTimestamp: Date?
+                if let updated = remoteUpdatedAt, Calendar.current.component(.year, from: updated) > 1900 {
+                    remoteTimestamp = updated
+                } else if let created = remoteCreatedAt, Calendar.current.component(.year, from: created) > 1900 {
+                    remoteTimestamp = created
+                } else {
+                    remoteTimestamp = nil // Invalid remote timestamp
+                }
+                
+                // Get local timestamp
+                let localTimestamp = completion.updatedAt
+                let localYear = Calendar.current.component(.year, from: localTimestamp)
+                let localIsValid = localYear > 1900
+                
+                if let remoteTs = remoteTimestamp, localIsValid {
+                    // Both timestamps valid - compare them
+                    if localTimestamp <= remoteTs {
+                        // Remote is newer or equal, skip write
+                        logger.info("⏭️ SyncEngine: Skipping push for \(completion.habitId.prefix(8))... dateKey=\(completion.dateKey) - remote is newer (local: \(localTimestamp), remote: \(remoteTs))")
+                        alreadySyncedCount += 1
+                        shouldWriteRemote = false
+                        continue
+                    }
+                } else if remoteTimestamp != nil && !localIsValid {
+                    // Remote has valid timestamp but local doesn't - prefer remote
+                    logger.info("⏭️ SyncEngine: Skipping push for \(completion.habitId.prefix(8))... dateKey=\(completion.dateKey) - local timestamp invalid")
+                    alreadySyncedCount += 1
+                    shouldWriteRemote = false
+                    continue
+                }
+                // If both invalid or only local valid, proceed with write
             }
             
             guard shouldWriteRemote else {
@@ -935,6 +975,7 @@ actor SyncEngine {
             
             batch.setData(completionData, forDocument: completionRef, merge: true)
             syncedCount += 1
+            logger.info("📤 SyncEngine: Pushing completion for \(completion.habitId.prefix(8))... dateKey=\(completion.dateKey) progress=\(completion.progress)")
         }
         
         // Only commit if there are completions to sync
@@ -1510,6 +1551,15 @@ actor SyncEngine {
                         } else {
                             logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - already in sync")
                         }
+                    } else if remoteTimestamp == Date(timeIntervalSince1970: 0) &&
+                              (existingRecord.isCompleted != remoteIsCompleted || existingRecord.progress != remoteProgress) {
+                        // ✅ FIX: Remote has invalid timestamp BUT different values
+                        // This likely means remote was updated by another device with old code
+                        // Prefer remote to ensure data consistency
+                        existingRecord.isCompleted = remoteIsCompleted
+                        existingRecord.progress = remoteProgress
+                        try modelContext.save()
+                        logger.info("✅ SyncEngine: Updated completion (invalid remote timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
                     } else {
                         logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - local is newer (local: \(localTimestamp), remote: \(remoteTimestamp))")
                     }
