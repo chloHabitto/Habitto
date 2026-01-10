@@ -1077,6 +1077,11 @@ actor SyncEngine {
             
             // ✅ CRITICAL FIX: Reload habits after completion sync to reflect new completion states
             if completionsPulled > 0 {
+                // ✅ CRITICAL FIX: Clear UserAwareStorage cache before reloading
+                // This ensures fresh data is loaded from SwiftData instead of returning stale cached habits
+                await habitStore.clearStorageCache()
+                logger.info("🔄 SyncEngine: Cleared storage cache before reloading habits after completion sync")
+                
                 await HabitRepository.shared.loadHabits(force: true)
                 logger.info("✅ SyncEngine: Reloaded habits after completion sync")
                 

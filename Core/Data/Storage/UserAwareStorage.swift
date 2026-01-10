@@ -30,14 +30,20 @@ class UserAwareStorage: HabitStorageProtocol {
     print("🗑️ DELETE_FLOW: UserAwareStorage.saveHabits() - Cache updated")
   }
 
-  func loadHabits() async throws -> [Habit] {
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
     // ✅ CRITICAL FIX: Always clear cache on user change to prevent stale data
     clearCacheIfUserChanged()
     
     // ✅ CRITICAL FIX: Get current userId to verify filtering
     let currentUserId = await getCurrentUserId()
     let userIdForLogging = currentUserId.isEmpty ? "EMPTY (guest)" : String(currentUserId.prefix(8)) + "..."
-    print("🔄 [USER_AWARE_STORAGE] Loading habits for userId: '\(userIdForLogging)'")
+    print("🔄 [USER_AWARE_STORAGE] Loading habits for userId: '\(userIdForLogging)' (force: \(force))")
+
+    // ✅ CRITICAL FIX: Clear cache if force is true
+    if force {
+      print("🔄 [USER_AWARE_STORAGE] Force=true - clearing cache")
+      cachedHabits = nil
+    }
 
     // ✅ CRITICAL FIX: Clear cache if userId changed
     if let cachedUserId = self.currentUserId, cachedUserId != currentUserId {
@@ -46,15 +52,9 @@ class UserAwareStorage: HabitStorageProtocol {
       self.currentUserId = currentUserId
     }
 
-    // ✅ CRITICAL FIX: Don't use cache when force loading (e.g., after migration)
-    // The cache might have stale data even if userId hasn't changed
-    // This ensures fresh data is loaded after migration completes
-    // Note: We can't pass a "force" parameter here, so we'll rely on the caller
-    // to clear the cache explicitly via clearCache() before calling loadHabits()
-    
-    // Return cached data if available AND userId matches
-    // ✅ CRITICAL FIX: Only use cache if userId hasn't changed
-    if let cached = cachedHabits,
+    // Return cached data if available AND userId matches AND not forcing
+    if !force,
+       let cached = cachedHabits,
        let cachedUserId = self.currentUserId,
        cachedUserId == currentUserId {
       print("🔄 [USER_AWARE_STORAGE] Returning cached habits (count: \(cached.count)) for userId: '\(userIdForLogging)'")
@@ -63,7 +63,7 @@ class UserAwareStorage: HabitStorageProtocol {
 
     // Use the specific loadHabits method from base storage instead of generic load
     // This avoids the "Generic load called" warning
-    let habits = try await baseStorage.loadHabits()
+    let habits = try await baseStorage.loadHabits(force: force)
     
     // ✅ CRITICAL FIX: Log results to verify filtering
     print("🔄 [USER_AWARE_STORAGE] Base storage returned \(habits.count) habits for userId: '\(userIdForLogging)'")

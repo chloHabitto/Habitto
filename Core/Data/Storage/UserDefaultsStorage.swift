@@ -98,11 +98,16 @@ class UserDefaultsStorage: HabitStorageProtocol {
     cachedHabits = habits
   }
 
-  func loadHabits() async throws -> [Habit] {
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
     // Migration is handled by HabitStore, not here
 
-    // Performance optimization: Return cached result if available
-    if let cached = cachedHabits {
+    // ✅ CRITICAL FIX: Clear cache if force is true
+    if force {
+      cachedHabits = nil
+    }
+
+    // Performance optimization: Return cached result if available (only if not forcing)
+    if !force, let cached = cachedHabits {
       return cached
     }
 

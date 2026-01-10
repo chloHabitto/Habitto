@@ -153,14 +153,19 @@ final class FirestoreStorage: HabitStorageProtocol {
     }
   }
 
-  func loadHabits() async throws -> [Habit] {
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
     guard let userId = getCurrentUserId() else {
       logger.warning("⚠️ User not authenticated, returning empty habits")
       return []
     }
     
-    // Return cached result if available
-    if let cached = cachedHabits {
+    // ✅ CRITICAL FIX: Clear cache if force is true
+    if force {
+      cachedHabits = nil
+    }
+    
+    // Return cached result if available (only if not forcing)
+    if !force, let cached = cachedHabits {
       return cached
     }
     

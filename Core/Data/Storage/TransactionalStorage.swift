@@ -230,8 +230,9 @@ final class AtomicStorageWrapper<T: HabitStorageProtocol>: HabitStorageProtocol,
     }
   }
 
-  func loadHabits() async throws -> [Habit] {
-    logger.debug("Loading habits atomically")
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
+    // ✅ Note: TransactionalStorage doesn't cache, so force parameter is ignored
+    logger.debug("Loading habits atomically (force: \(force), ignored - no cache)")
 
     do {
       let fileURL = getFileURL(for: "habits")

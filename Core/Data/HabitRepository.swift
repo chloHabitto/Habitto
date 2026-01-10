@@ -531,7 +531,8 @@ class HabitRepository: ObservableObject {
 
     do {
       // Use the HabitStore actor for data operations
-      let loadedHabits = try await habitStore.loadHabits()
+      // ✅ CRITICAL FIX: Pass force parameter to HabitStore to propagate cache invalidation
+      let loadedHabits = try await habitStore.loadHabits(force: force)
       
       if !hasLoggedStartupState {
         let todayKey = Habit.dateKey(for: Date())

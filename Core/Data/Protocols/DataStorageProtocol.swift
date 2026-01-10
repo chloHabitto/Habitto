@@ -44,8 +44,9 @@ protocol HabitStorageProtocol: DataStorageProtocol where DataType == Habit {
   func saveHabits(_ habits: [Habit], immediate: Bool) async throws
 
   /// Load habits from storage
+  /// - Parameter force: If true, bypass cache and reload from storage
   /// - Returns: Array of loaded habits
-  func loadHabits() async throws -> [Habit]
+  func loadHabits(force: Bool) async throws -> [Habit]
 
   /// Save a single habit
   /// - Parameters:
@@ -64,6 +65,15 @@ protocol HabitStorageProtocol: DataStorageProtocol where DataType == Habit {
 
   /// Clear all habit data
   func clearAllHabits() async throws
+}
+
+// MARK: - Backward Compatibility Extension
+
+extension HabitStorageProtocol {
+  /// Load habits from storage (backward compatibility - defaults to force: false)
+  func loadHabits() async throws -> [Habit] {
+    return try await loadHabits(force: false)
+  }
 }
 
 // MARK: - RepositoryProtocol
