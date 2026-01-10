@@ -167,13 +167,6 @@ struct VacationModeView: View {
 
   private var vacationActionButton: some View {
     VStack(spacing: 0) {
-      // Gradient overlay to fade content behind button
-      LinearGradient(
-        gradient: Gradient(colors: [Color.surface2.opacity(0), Color.surface2]),
-        startPoint: .top,
-        endPoint: .bottom)
-        .frame(height: 20)
-
       // Button container
       HStack {
         if vacationManager.isActive {

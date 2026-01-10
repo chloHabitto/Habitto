@@ -92,6 +92,23 @@ actor SyncEngine {
         fflush(stdout)
     }
     
+    // MARK: - Helper Methods
+    
+    /// Helper function to safely create Timestamp from Date
+    /// Prevents crash from invalid dates (e.g., Date.distantPast) that are out of Firestore's valid range
+    private func safeTimestamp(from date: Date?) -> Timestamp {
+        guard let date = date else {
+            return Timestamp(date: Date())
+        }
+        // Check if date is valid for Firestore (year 1-9999)
+        let year = Calendar.current.component(.year, from: date)
+        if year < 1 || year > 9999 {
+            logger.warning("⚠️ SyncEngine: Invalid date year \(year) - using current date as fallback")
+            return Timestamp(date: Date()) // Use current date as fallback
+        }
+        return Timestamp(date: date)
+    }
+    
     // MARK: - Event Sync
     
     /// Sync all unsynced events to Firestore
@@ -701,12 +718,13 @@ actor SyncEngine {
                 }
                 
                 // Create award document
+                // ✅ BUG 1 FIX: Use safeTimestamp to prevent crash from invalid dates
                 let awardData: [String: Any] = [
                     "userId": userId,
                     "dateKey": award.dateKey,
                     "xpGranted": award.xpGranted,
                     "allHabitsCompleted": award.allHabitsCompleted,
-                    "createdAt": Timestamp(date: award.createdAt),
+                    "createdAt": self.safeTimestamp(from: award.createdAt),
                     "userIdDateKey": award.userIdDateKey
                 ]
                 
@@ -903,14 +921,15 @@ actor SyncEngine {
             }
             
             // Create/overwrite completion document
+            // ✅ BUG 1 FIX: Use safeTimestamp to prevent crash from invalid dates
             let completionData: [String: Any] = [
                 "userId": userId,
                 "habitId": completion.habitId,
                 "dateKey": completion.dateKey,
                 "isCompleted": completion.isCompleted,
                 "progress": completion.progress,
-                "createdAt": Timestamp(date: completion.createdAt),
-                "updatedAt": Timestamp(date: completion.updatedAt),
+                "createdAt": safeTimestamp(from: completion.createdAt),
+                "updatedAt": safeTimestamp(from: completion.updatedAt),
                 "completionId": completion.completionId
             ]
             
@@ -1020,12 +1039,13 @@ actor SyncEngine {
                 await HabitRepository.shared.loadHabits(force: true)
                 logger.info("✅ SyncEngine: Reloaded habits after completion sync")
                 
-                // ✅ FIX: Notify UI to refresh after sync
+                // ✅ BUG 4 FIX: Capture value before MainActor.run to avoid Swift 6 concurrency warning
+                let pulledCount = completionsPulled
                 await MainActor.run {
                     NotificationCenter.default.post(
                         name: NSNotification.Name("SyncCompletionsPulled"),
                         object: nil,
-                        userInfo: ["completionsPulled": completionsPulled]
+                        userInfo: ["completionsPulled": pulledCount]
                     )
                 }
             }
@@ -1438,7 +1458,18 @@ actor SyncEngine {
         let remoteProgress = data["progress"] as? Int ?? 0
         let remoteCreatedAt = (data["createdAt"] as? Timestamp)?.dateValue()
         let remoteUpdatedAt = (data["updatedAt"] as? Timestamp)?.dateValue()
-        let remoteTimestamp = remoteUpdatedAt ?? remoteCreatedAt ?? .distantPast
+        
+        // ✅ BUG 3 FIX: Guard against invalid timestamps (e.g., Date.distantPast)
+        let remoteTimestamp: Date
+        if let updated = remoteUpdatedAt, Calendar.current.component(.year, from: updated) > 1900 {
+            remoteTimestamp = updated
+        } else if let created = remoteCreatedAt, Calendar.current.component(.year, from: created) > 1900 {
+            remoteTimestamp = created
+        } else {
+            // Invalid remote timestamp - treat as very old so local wins, unless local is also invalid
+            remoteTimestamp = Date(timeIntervalSince1970: 0) // Jan 1, 1970
+            logger.warning("⚠️ SyncEngine: Invalid remote timestamp for habit \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - using fallback date")
+        }
         
         // Merge into SwiftData on MainActor
         try await MainActor.run {
@@ -1456,18 +1487,29 @@ actor SyncEngine {
                 if let existingRecord = try modelContext.fetch(descriptor).first {
                     let localTimestamp = existingRecord.updatedAt ?? existingRecord.createdAt
                     
-                    // Compare timestamps - remote wins if newer
+                    // ✅ BUG 2 FIX: Compare timestamps correctly - handle equal timestamps
                     if remoteTimestamp > localTimestamp {
-                        // Update local with remote data
+                        // Remote is newer, update local
                         existingRecord.isCompleted = remoteIsCompleted
                         existingRecord.progress = remoteProgress
-                        if let createdAt = remoteCreatedAt {
+                        if let createdAt = remoteCreatedAt, Calendar.current.component(.year, from: createdAt) > 1900 {
                             existingRecord.createdAt = createdAt
                         }
                         existingRecord.updatedAt = remoteTimestamp
                         
                         try modelContext.save()
                         logger.info("✅ SyncEngine: Updated completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
+                    } else if remoteTimestamp == localTimestamp {
+                        // Timestamps equal - check if values differ
+                        if existingRecord.isCompleted != remoteIsCompleted || existingRecord.progress != remoteProgress {
+                            // Values differ, update to remote (resolve conflict by preferring remote)
+                            existingRecord.isCompleted = remoteIsCompleted
+                            existingRecord.progress = remoteProgress
+                            try modelContext.save()
+                            logger.info("✅ SyncEngine: Updated completion (same timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
+                        } else {
+                            logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - already in sync")
+                        }
                     } else {
                         logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - local is newer (local: \(localTimestamp), remote: \(remoteTimestamp))")
                     }
@@ -1487,7 +1529,8 @@ actor SyncEngine {
                         progress: remoteProgress
                     )
                     
-                    if let createdAt = remoteCreatedAt {
+                    // ✅ BUG 3 FIX: Only set createdAt if it's valid
+                    if let createdAt = remoteCreatedAt, Calendar.current.component(.year, from: createdAt) > 1900 {
                         newRecord.createdAt = createdAt
                     }
                     newRecord.updatedAt = remoteTimestamp
