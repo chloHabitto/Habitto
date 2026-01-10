@@ -71,7 +71,7 @@ struct MediumWidgetView: View {
                 
                 // Show up to 3 habits
                 ForEach(Array(entry.habits.prefix(3))) { habit in
-                    HabitRowView(habit: habit)
+                    WidgetHabitRowView(habit: habit)
                 }
                 
                 // Show count if more habits exist
@@ -86,9 +86,9 @@ struct MediumWidgetView: View {
     }
 }
 
-// MARK: - Habit Row Component
+// MARK: - Widget Habit Row Component
 
-struct HabitRowView: View {
+struct WidgetHabitRowView: View {
     let habit: HabitItem
     
     var body: some View {
