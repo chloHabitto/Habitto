@@ -76,11 +76,11 @@ struct MonthPickerModal: View {
         VStack(spacing: 8) {
           Text("Selected Month")
             .font(.appBodyMedium)
-            .foregroundColor(.surface)
+            .foregroundColor(.appSurface)
 
           Text(monthText(from: tempSelectedMonth))
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(.surface)
+            .foregroundColor(.appSurface)
         }
         .frame(maxWidth: .infinity)
         .padding()
