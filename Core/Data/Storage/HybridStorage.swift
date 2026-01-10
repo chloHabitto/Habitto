@@ -158,12 +158,12 @@ final class HybridStorage: HabitStorageProtocol {
     }
   }
 
-  func loadHabits() async throws -> [Habit] {
-    logger.info("🔄 HybridStorage: Loading habits")
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
+    logger.info("🔄 HybridStorage: Loading habits (force: \(force))")
     
     // Try local storage first
     do {
-      let localHabits = try await localStorage.loadHabits()
+      let localHabits = try await localStorage.loadHabits(force: force)
       if !localHabits.isEmpty {
         logger.info("✅ HybridStorage: Loaded \(localHabits.count) habits from local storage")
         return localHabits
@@ -174,7 +174,7 @@ final class HybridStorage: HabitStorageProtocol {
     
     // Fall back to cloud storage
     do {
-      let cloudHabits = try await cloudStorage.loadHabits()
+      let cloudHabits = try await cloudStorage.loadHabits(force: force)
       logger.info("✅ HybridStorage: Loaded \(cloudHabits.count) habits from cloud storage")
       
       // Cache cloud habits locally

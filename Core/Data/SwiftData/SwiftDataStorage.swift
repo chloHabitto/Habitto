@@ -359,7 +359,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
     return (rawValue, nil)
   }
 
-  func loadHabits() async throws -> [Habit] {
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
     // ✅ CRITICAL FIX: Always get fresh userId - never cache it
     // When userId changes (e.g., guest to authenticated), we need the current value
     // This ensures predicates use the correct userId after migration

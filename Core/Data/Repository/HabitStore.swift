@@ -41,9 +41,9 @@ final actor HabitStore {
 
   // MARK: - Load Habits
 
-  func loadHabits() async throws -> [Habit] {
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
     let startTime = CFAbsoluteTimeGetCurrent()
-    logger.info("Loading habits from storage")
+    logger.info("Loading habits from storage (force: \(force))")
 
     // Check if migration is needed
     let migrationMgr = await migrationManager
@@ -68,16 +68,16 @@ final actor HabitStore {
     }
 
     // Use active storage (SwiftData or DualWrite based on feature flags)
-    logger.info("HabitStore: Loading habits from active storage...")
+    logger.info("HabitStore: Loading habits from active storage (force: \(force))...")
     
     // ✅ CRITICAL FIX: Log current userId before loading to verify filtering
     let currentUserId = await CurrentUser().idOrGuest
     let userIdForLogging = currentUserId.isEmpty ? "EMPTY (guest)" : String(currentUserId.prefix(8)) + "..."
-    logger.info("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)'")
-    print("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)'")
+    logger.info("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)' (force: \(force))")
+    print("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)' (force: \(force))")
     print("🔄 [HABIT_STORE] CurrentUser().idOrGuest = '\(currentUserId.isEmpty ? "EMPTY" : currentUserId)'")
     
-    var habits = try await activeStorage.loadHabits()
+    var habits = try await activeStorage.loadHabits(force: force)
     
     // ✅ CRITICAL FIX: Log results to verify filtering worked
     logger.info("🔄 [HABIT_STORE] Loaded \(habits.count) habits for userId: '\(userIdForLogging)'")

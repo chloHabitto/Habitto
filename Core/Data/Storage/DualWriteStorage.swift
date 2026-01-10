@@ -161,15 +161,15 @@ final class DualWriteStorage: HabitStorageProtocol {
     dualWriteLogger.info("📤 DualWriteStorage: Background sync complete (synced=\(syncedCount), failed=\(failedCount))")
   }
   
-  func loadHabits() async throws -> [Habit] {
+  func loadHabits(force: Bool = false) async throws -> [Habit] {
     // ✅ CRITICAL FIX: LOCAL-FIRST ARCHITECTURE
     // Always load from SwiftData (fast, reliable, local)
     // Firestore is for background sync only, NOT the source of truth
-    dualWriteLogger.info("DualWriteStorage: Loading habits from local storage (local-first)")
-    print("📂 LOAD: Using local-first strategy - loading from SwiftData")
+    dualWriteLogger.info("DualWriteStorage: Loading habits from local storage (local-first, force: \(force))")
+    print("📂 LOAD: Using local-first strategy - loading from SwiftData (force: \(force))")
     
     do {
-      let habits = try await secondaryStorage.loadHabits()
+      let habits = try await secondaryStorage.loadHabits(force: force)
       let filtered = filterCorruptedHabits(habits)
       
       // ✅ NEW: If local storage is empty, try to sync down from Firestore

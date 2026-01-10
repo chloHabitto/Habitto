@@ -203,7 +203,8 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     }
 
     do {
-      let loadedHabits = try await storage.loadHabits()
+      // ✅ CRITICAL FIX: Pass force parameter to storage to propagate cache invalidation
+      let loadedHabits = try await storage.loadHabits(force: force)
 
       await MainActor.run {
         self.habitList = loadedHabits
