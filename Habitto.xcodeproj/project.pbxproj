@@ -80,6 +80,7 @@
 				Core/Data/CloudKit/Archive/CloudKitUniquenessManager.swift,
 				Core/Data/CloudKit/Archive/ConflictResolutionPolicy.swift,
 				firebase.json,
+				HabittoWidget/Info.plist,
 				package.json,
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
@@ -88,6 +89,14 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+			);
+			target = 89AF5CB22F12B2710092F84C /* HabittoWidgetExtension */;
+		};
+		89AF5D0D2F12B9280092F84C /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/Models/WidgetHabitData.swift,
+				Shared/Services/WidgetDataService.swift,
 			);
 			target = 89AF5CB22F12B2710092F84C /* HabittoWidgetExtension */;
 		};
@@ -106,6 +115,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */,
+				89AF5D0D2F12B9280092F84C /* Exceptions for "." folder in "HabittoWidgetExtension" target */,
 			);
 			path = .;
 			sourceTree = "<group>";
