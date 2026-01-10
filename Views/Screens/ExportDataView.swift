@@ -330,14 +330,9 @@ struct ExportDataView: View {
         }
       }
     }
-    .sheet(isPresented: $showingExportComplete) {
+    .sheet(isPresented: $showingShareSheet) {
       if let fileURL = exportFileURL {
-        ExportCompleteView(fileURL: fileURL) {
-          showingExportComplete = false  // Dismiss sheet first
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            dismiss()  // Then dismiss parent
-          }
-        }
+        ShareSheet(activityItems: [fileURL])
       }
     }
     .sheet(isPresented: $showingPreview) {
@@ -388,10 +383,10 @@ struct ExportDataView: View {
   @State private var selectedDateRange = DateRange.allTime
   @State private var selectedFormat = ExportFormat.json
   @State private var isExporting = false
-  @State private var showingExportComplete = false
   @State private var exportFileURL: URL?
   @State private var exportError: String?
   @State private var showingPreview = false
+  @State private var showingShareSheet = false
   @State private var showingDataTypePicker = false
   @State private var showingDateRangePicker = false
   @State private var showingFormatPicker = false
@@ -491,8 +486,8 @@ struct ExportDataView: View {
       // Update UI on main thread
       await MainActor.run {
         exportFileURL = fileURL
-        showingExportComplete = true
         isExporting = false
+        showingShareSheet = true  // Show share sheet directly
       }
 
     } catch {
