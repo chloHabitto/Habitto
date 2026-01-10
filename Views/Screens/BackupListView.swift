@@ -155,18 +155,33 @@ struct BackupRowView: View {
           .font(.system(size: 16, weight: .medium))
           .foregroundColor(.text01)
 
-        VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 8) {
           Text("\(backup.habitCount) habits")
-            .font(.system(size: 14, weight: .regular))
-            .foregroundColor(.text03)
+            .font(.appLabelMedium)
+            .foregroundColor(Color("apponBadgeBackground"))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+              RoundedRectangle(cornerRadius: 12)
+                .fill(Color("appBadgeBackground")))
 
           Text(backup.formattedSize)
-            .font(.system(size: 14, weight: .regular))
-            .foregroundColor(.text03)
+            .font(.appLabelMedium)
+            .foregroundColor(Color("apponBadgeBackground"))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+              RoundedRectangle(cornerRadius: 12)
+                .fill(Color("appBadgeBackground")))
 
           Text("v\(backup.appVersion)")
-            .font(.system(size: 14, weight: .regular))
-            .foregroundColor(.text03)
+            .font(.appLabelMedium)
+            .foregroundColor(Color("apponBadgeBackground"))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+              RoundedRectangle(cornerRadius: 12)
+                .fill(Color("appBadgeBackground")))
         }
       }
 

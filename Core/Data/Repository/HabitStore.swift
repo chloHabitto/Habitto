@@ -293,9 +293,15 @@ final actor HabitStore {
     
     // ✅ CLOUD BACKUP: Backup habits to Firestore (non-blocking)
     // Only backup if user is authenticated (anonymous or otherwise)
+    // ✅ CRITICAL BUG FIX: Filter out deleted habits before backing up
     await MainActor.run {
       for habit in sanitizedHabits {
-        FirebaseBackupService.shared.backupHabit(habit)
+        // Skip backup for deleted habits to prevent resurrection
+        if !SyncEngine.isHabitDeleted(habit.id) {
+          FirebaseBackupService.shared.backupHabit(habit)
+        } else {
+          logger.info("⏭️ HabitStore: Skipping backup for deleted habit '\(habit.name)'")
+        }
       }
     }
 
