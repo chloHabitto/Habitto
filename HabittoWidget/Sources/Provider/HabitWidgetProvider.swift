@@ -56,11 +56,25 @@ struct HabitWidgetProvider: TimelineProvider {
     
     // MARK: - Private Helpers
     
-    /// Retrieves habit data (placeholder implementation)
-    /// TODO: Replace with App Groups data access when shared data is set up
+    /// Retrieves habit data from App Group UserDefaults
+    /// Falls back to sample data if no real data is available
     private func getHabitData() -> [HabitItem] {
-        // For now, return sample data
-        // Later: Read from UserDefaults/App Groups shared container
-        return HabitItem.sampleHabits
+        guard let snapshot = WidgetDataService.shared.loadSnapshot() else {
+            // Fallback to samples if no data available (first launch or error)
+            return HabitItem.sampleHabits
+        }
+        
+        // Convert WidgetHabitData to HabitItem for widget views
+        return snapshot.habits.map { habit in
+            HabitItem(
+                id: habit.id,
+                name: habit.name,
+                icon: habit.icon,
+                color: habit.colorHex, // Store as hex string, convert in view
+                isCompleted: habit.isCompletedToday,
+                streak: habit.currentStreak,
+                goal: "\(habit.todayGoal) \(habit.todayGoal == 1 ? "time" : "times")"
+            )
+        }
     }
 }

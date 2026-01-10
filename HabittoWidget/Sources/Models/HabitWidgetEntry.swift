@@ -29,7 +29,7 @@ struct HabitItem: Identifiable {
     let id: UUID
     let name: String
     let icon: String // SF Symbol name
-    let color: String // Color name (will map to Color later)
+    let color: String // Hex color string (e.g., "#FF5733") or color name for samples
     let isCompleted: Bool
     let streak: Int
     let goal: String // e.g., "1 time", "2 times per day"
