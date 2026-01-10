@@ -74,16 +74,26 @@ final class SwiftDataStorage: HabitStorageProtocol {
     isSaving = true
     defer { isSaving = false }
     
+    // ✅ CRITICAL FIX: Filter out deleted habits before saving
+    // This prevents deleted habits from being re-created
+    let habitsToSave = habits.filter { habit in
+      !SyncEngine.isHabitDeleted(habit.id)
+    }
+    
+    if habitsToSave.count < habits.count {
+      logger.info("⏭️ SwiftDataStorage: Filtered out \(habits.count - habitsToSave.count) deleted habits before saving")
+    }
+    
     #if DEBUG
     logger.info("🎯 [8/8] SwiftDataStorage.saveHabits: writing to SwiftData")
-    logger.info("  → Count: \(habits.count)")
+    logger.info("  → Count: \(habitsToSave.count) (filtered from \(habits.count))")
     #endif
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
     do {
       #if DEBUG
-      for (i, habit) in habits.enumerated() {
+      for (i, habit) in habitsToSave.enumerated() {
         logger.info("  → [\(i)] '\(habit.name)' (ID: \(habit.id))")
       }
       #endif
@@ -107,7 +117,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
         existingHabitIds = []
       }
 
-      for habit in habits {
+      for habit in habitsToSave {
         var existingHabitData: HabitData? = nil
 
         // ✅ CRITICAL FIX: Safely check for existing habit with fallback
@@ -268,9 +278,9 @@ final class SwiftDataStorage: HabitStorageProtocol {
         #if DEBUG
         logger
           .info(
-            "  ✅ SUCCESS! Saved \(habits.count) habits in \(String(format: "%.3f", timeElapsed))s")
+            "  ✅ SUCCESS! Saved \(habitsToSave.count) habits in \(String(format: "%.3f", timeElapsed))s")
         #endif
-        print("        ✅ SWIFTDATA_SUCCESS: Saved \(habits.count) habits to database")
+        print("        ✅ SWIFTDATA_SUCCESS: Saved \(habitsToSave.count) habits to database")
       } catch {
         let errorDesc = error.localizedDescription
         print("        ❌ SWIFTDATA_SAVE_FAILED: modelContext.save() threw error")
@@ -302,10 +312,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
         // Fallback: Save to UserDefaults as emergency backup
         let encoder = JSONEncoder()
-        let data = try encoder.encode(habits)
+        let data = try encoder.encode(habitsToSave)
         UserDefaults.standard.set(data, forKey: "SavedHabits")
         #if DEBUG
-        logger.info("✅ Saved \(habits.count) habits to UserDefaults as fallback")
+        logger.info("✅ Saved \(habitsToSave.count) habits to UserDefaults as fallback")
         #endif
 
         // Success via fallback - don't throw error
@@ -320,10 +330,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
       // Last resort fallback for any error
       do {
         let encoder = JSONEncoder()
-        let data = try encoder.encode(habits)
+        let data = try encoder.encode(habitsToSave)
         UserDefaults.standard.set(data, forKey: "SavedHabits")
         #if DEBUG
-        logger.info("✅ LAST RESORT: Saved \(habits.count) habits to UserDefaults")
+        logger.info("✅ LAST RESORT: Saved \(habitsToSave.count) habits to UserDefaults")
         #endif
         return // Success via last resort fallback
       } catch {

@@ -595,13 +595,14 @@ struct HomeTabView: View {
       .padding(.horizontal, 20)
       .padding(.top, 18)
       .padding(.bottom, 20)
+    }
     .refreshable {
       // ✅ BUG FIX: Refresh habits data and trigger sync when user pulls down
       // refreshHabits() now handles both sync and reload internally
+      print("🔄 Pull-to-refresh triggered")
       await refreshHabits()
     }
     .scrollIndicators(.hidden) // Hide scroll indicators for cleaner look
-    }
   }
 
   @ViewBuilder
@@ -1204,25 +1205,19 @@ struct HomeTabView: View {
   /// ✅ BUG FIX: Refresh habits data when user pulls down
   /// Trigger sync and reload habits from storage
   private func refreshHabits() async {
-    debugLog("🔄 HomeTabView: Pull-to-refresh triggered")
-    print("✅ Pull-to-refresh: Starting sync...")
+    print("🔄 Pull-to-refresh: Starting...")
     
     // First, pull remote changes
     let userId = await CurrentUser().idOrGuest
     if !CurrentUser.isGuestId(userId) {
       do {
-        debugLog("🔄 HomeTabView: Triggering pullRemoteChanges for userId: \(userId.prefix(8))...")
-        print("✅ Pull-to-refresh: Triggering sync for userId: \(userId.prefix(8))...")
         _ = try await SyncEngine.shared.pullRemoteChanges(userId: userId)
-        debugLog("✅ HomeTabView: Pull remote changes completed")
         print("✅ Pull-to-refresh: Sync completed")
       } catch {
-        debugLog("❌ HomeTabView: Pull remote changes failed: \(error.localizedDescription)")
-        print("❌ Pull-to-refresh: Sync failed: \(error.localizedDescription)")
+        print("❌ Pull-to-refresh: Sync failed: \(error)")
       }
     } else {
-      debugLog("⏭️ HomeTabView: Skipping sync - user is in guest mode")
-      print("⏭️ Pull-to-refresh: Skipping sync - user is in guest mode")
+      print("⚠️ Pull-to-refresh: No authenticated user")
     }
     
     // Then reload habits from storage (will pick up synced changes)
