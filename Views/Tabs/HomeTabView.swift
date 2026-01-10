@@ -596,18 +596,9 @@ struct HomeTabView: View {
       .padding(.top, 18)
       .padding(.bottom, 20)
     .refreshable {
-      // Refresh habits data and trigger manual sync when user pulls down
+      // ✅ BUG FIX: Refresh habits data and trigger sync when user pulls down
+      // refreshHabits() now handles both sync and reload internally
       await refreshHabits()
-      
-      // Trigger manual sync if user is authenticated
-      if AuthenticationManager.shared.currentUser != nil {
-        do {
-          try await HabitRepository.shared.triggerManualSync()
-        } catch {
-          // Error will be handled by HabitRepository and shown via sync status
-            debugLog("❌ HomeTabView: Manual sync failed: \(error.localizedDescription)")
-        }
-      }
     }
     .scrollIndicators(.hidden) // Hide scroll indicators for cleaner look
     }
@@ -1210,13 +1201,27 @@ struct HomeTabView: View {
     debugLog("✅ HomeTabView: Prefetched completion status for \(statusMap.count) habits from local data")
   }
 
-  /// Refresh habits data when user pulls down
+  /// ✅ BUG FIX: Refresh habits data when user pulls down
+  /// Trigger sync and reload habits from storage
   private func refreshHabits() async {
-    // Add a small delay to make the refresh feel more responsive
-    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-
-    // Refresh habits data from Core Data (debounced inside repository)
-    await HabitRepository.shared.loadHabits()
+    debugLog("🔄 HomeTabView: Pull-to-refresh triggered")
+    
+    // Trigger sync if user is authenticated (not guest)
+    let userId = await CurrentUser().idOrGuest
+    if !CurrentUser.isGuestId(userId) {
+      do {
+        debugLog("🔄 HomeTabView: Triggering pullRemoteChanges for userId: \(userId.prefix(8))...")
+        try await SyncEngine.shared.pullRemoteChanges(userId: userId)
+        debugLog("✅ HomeTabView: Pull remote changes completed")
+      } catch {
+        debugLog("❌ HomeTabView: Pull remote changes failed: \(error.localizedDescription)")
+      }
+    } else {
+      debugLog("⏭️ HomeTabView: Skipping sync - user is in guest mode")
+    }
+    
+    // Refresh habits data from storage (will pick up synced changes)
+    await HabitRepository.shared.loadHabits(force: true)
 
     // ✅ PHASE 5: Refetch completion status after refresh
     await prefetchCompletionStatus()

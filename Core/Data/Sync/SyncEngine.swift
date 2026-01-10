@@ -47,6 +47,35 @@ actor SyncEngine {
     private var isSyncing: Bool = false
     private let logger = Logger(subsystem: "com.habitto.app", category: "SyncEngine")
     
+    // ✅ CRITICAL BUG FIX: Track recently deleted habits to prevent resurrection
+    private static var recentlyDeletedHabitIds: Set<UUID> = []
+    private static let deletedHabitsLock = NSLock()
+    
+    // MARK: - Deleted Habit Tracking
+    
+    /// Mark a habit as deleted to prevent resurrection
+    static func markHabitAsDeleted(_ habitId: UUID) {
+        deletedHabitsLock.lock()
+        recentlyDeletedHabitIds.insert(habitId)
+        deletedHabitsLock.unlock()
+        Logger(subsystem: "com.habitto.app", category: "SyncEngine").info("🗑️ SyncEngine: Marked habit \(habitId.uuidString.prefix(8))... as deleted")
+    }
+    
+    /// Check if a habit was recently deleted
+    static func isHabitDeleted(_ habitId: UUID) -> Bool {
+        deletedHabitsLock.lock()
+        defer { deletedHabitsLock.unlock() }
+        return recentlyDeletedHabitIds.contains(habitId)
+    }
+    
+    /// Clear the deleted marker for a habit (after cleanup is complete)
+    static func clearDeletedHabit(_ habitId: UUID) {
+        deletedHabitsLock.lock()
+        recentlyDeletedHabitIds.remove(habitId)
+        deletedHabitsLock.unlock()
+        Logger(subsystem: "com.habitto.app", category: "SyncEngine").info("✅ SyncEngine: Cleared deleted marker for habit \(habitId.uuidString.prefix(8))...")
+    }
+    
     // Background sync scheduler
     private var syncTask: Task<Void, Never>?
     private let syncInterval: TimeInterval = 300 // 5 minutes
@@ -1294,10 +1323,14 @@ actor SyncEngine {
                     }
                 }
             } else {
-                // ✅ CRITICAL FIX: Check if habit was recently deleted before recreating
+                // ✅ CRITICAL BUG FIX: Check if habit was recently deleted before recreating
                 // If a habit was deleted but still exists in Firestore (deletion didn't complete),
                 // we should NOT recreate it on sync - this causes deleted habits to reappear
-                // 
+                if Self.isHabitDeleted(habitId) {
+                    logger.info("⏭️ SyncEngine: Skipping creation of deleted habit \(habitId.uuidString.prefix(8))... from Firestore")
+                    return
+                }
+                
                 // Check if there are any completion records for this habit that would indicate
                 // it was recently active. If no completion records exist, the habit might be orphaned
                 // and we should skip it to prevent resurrection.
@@ -1343,6 +1376,27 @@ actor SyncEngine {
               let habitId = UUID(uuidString: habitIdString),
               let dateKey = data["dateKey"] as? String else {
             logger.error("❌ Failed to parse completion data from Firestore")
+            return
+        }
+        
+        // ✅ CRITICAL BUG FIX: Skip if this habit was deleted - prevents resurrection
+        if Self.isHabitDeleted(habitId) {
+            logger.info("⏭️ SyncEngine: Skipping completion for deleted habit \(habitId.uuidString.prefix(8))...")
+            return
+        }
+        
+        // ✅ CRITICAL BUG FIX: Check if habit exists locally - if not, skip (don't create orphaned completions)
+        let habitExists = await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            let predicate = #Predicate<HabitData> { habit in
+                habit.id == habitId && habit.userId == userId
+            }
+            let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
+            return (try? modelContext.fetch(descriptor).first) != nil
+        }
+        
+        guard habitExists else {
+            logger.info("⏭️ SyncEngine: Skipping completion for non-existent habit \(habitId.uuidString.prefix(8))...")
             return
         }
         
@@ -1810,6 +1864,9 @@ actor SyncEngine {
             logger.info("🗑️ SyncEngine: Found \(deletedLocallyButInFirestore.count) habits deleted locally but still in Firestore - cleaning up Firestore")
             
             for habitId in deletedLocallyButInFirestore {
+                // ✅ CRITICAL BUG FIX: Mark as deleted to prevent resurrection
+                Self.markHabitAsDeleted(habitId)
+                
                 do {
                     let docRef = firestore.collection("users")
                         .document(userId)
@@ -1818,8 +1875,15 @@ actor SyncEngine {
                     
                     try await docRef.delete()
                     logger.info("✅ SyncEngine: Deleted orphaned habit \(habitId.uuidString.prefix(8))... from Firestore")
+                    
+                    // Also delete orphaned completion records
+                    await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habitId)
+                    
+                    // Clear the deleted marker after cleanup is complete
+                    Self.clearDeletedHabit(habitId)
                 } catch {
                     logger.error("❌ SyncEngine: Failed to delete orphaned habit \(habitId.uuidString.prefix(8))... from Firestore: \(error.localizedDescription)")
+                    // Keep marker if deletion failed so it can be retried
                 }
             }
         }
@@ -1830,6 +1894,11 @@ actor SyncEngine {
         
         if !deletedRemotelyButLocal.isEmpty {
             logger.info("🗑️ SyncEngine: Found \(deletedRemotelyButLocal.count) habits deleted remotely but still local - cleaning up local SwiftData")
+            
+            // ✅ CRITICAL BUG FIX: Mark as deleted to prevent resurrection before deleting
+            for habitId in deletedRemotelyButLocal {
+                Self.markHabitAsDeleted(habitId)
+            }
             
             await MainActor.run {
                 let modelContext = SwiftDataContainer.shared.modelContext
@@ -1853,6 +1922,13 @@ actor SyncEngine {
                 } catch {
                     logger.error("❌ SyncEngine: Failed to save after deleting local orphaned habits: \(error.localizedDescription)")
                 }
+            }
+            
+            // After deleting locally orphaned habits, also delete their completion records from Firestore
+            for habitId in deletedRemotelyButLocal {
+                await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habitId)
+                // Clear the deleted marker after cleanup is complete
+                Self.clearDeletedHabit(habitId)
             }
             
             // Clear cache and notify UI to reload

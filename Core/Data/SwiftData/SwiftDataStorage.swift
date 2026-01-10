@@ -648,6 +648,12 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   func saveHabit(_ habit: Habit, immediate _: Bool = false) async throws {
+    // ✅ CRITICAL BUG FIX: Before creating a new habit, check if it was recently deleted
+    if SyncEngine.isHabitDeleted(habit.id) {
+      logger.info("⏭️ SwiftDataStorage: Skipping save for deleted habit '\(habit.name)'")
+      return
+    }
+    
     logger.info("Saving single habit: \(habit.name)")
 
     do {

@@ -15,7 +15,7 @@ struct EmojiKeyboardBottomSheet: View {
       title: "Choose Icon",
       description: "Select an emoji for your habit",
       onClose: onClose,
-      useGlassCloseButton: true,
+      useSimpleCloseButton: true,
       confirmButton: {
         onSave(selectedEmoji)
       },
