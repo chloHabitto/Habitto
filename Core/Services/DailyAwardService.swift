@@ -192,8 +192,11 @@ class DailyAwardService: ObservableObject {
             // ✅ STEP 3: Update xpState for UI reactivity
             await refreshXPState()
             
+            // ✅ CRITICAL FIX: XPManager is already notified in refreshXPState()
+            // But we log here for debugging
             if let state = xpState {
                 logger.info("✅ DailyAwardService: XP awarded - Total: \(state.totalXP), Level: \(state.level)")
+                print("💰 [XP_TRACE] \(Date()) awardXP() - XP awarded successfully, XPManager notified")
             }
             
         } catch {
@@ -534,17 +537,31 @@ class DailyAwardService: ObservableObject {
             )
             
             logger.info("✅ DailyAwardService: XP state refreshed - Total: \(totalXP), Level: \(level)")
-            print("💰 [XP_TRACE] \(Date()) refreshXPState() - xpState updated (will trigger observer)")
+            print("💰 [XP_TRACE] \(Date()) refreshXPState() - xpState updated")
+            
+            // ✅ CRITICAL FIX: Immediately notify XPManager for instant UI updates
+            // Since both DailyAwardService and XPManager are @MainActor, we can call directly
+            // This ensures @Observable properties update synchronously on MainActor, triggering SwiftUI to re-render
+            if let newState = xpState {
+                XPManager.shared.applyXPState(newState)
+                print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager directly (immediate UI update)")
+            }
             
         } catch {
             logger.error("❌ DailyAwardService: Failed to refresh XP state: \(error.localizedDescription)")
             // Initialize with default state if error
-            xpState = XPState(
+            let defaultState = XPState(
                 totalXP: 0,
                 level: 1,
                 currentLevelXP: 0,
                 lastUpdated: Date()
             )
+            xpState = defaultState
+            
+            // ✅ CRITICAL FIX: Notify XPManager even on error to ensure UI shows correct state
+            // Since both classes are @MainActor, we can call directly
+            XPManager.shared.applyXPState(defaultState)
+            print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager with default state (error case)")
         }
     }
     
@@ -557,7 +574,17 @@ class DailyAwardService: ObservableObject {
     func resetState() {
         logger.info("🔄 DailyAwardService: Resetting state")
         xpState = nil
-        logger.info("✅ DailyAwardService: State reset complete")
+        
+        // ✅ CRITICAL FIX: Notify XPManager with zero state when resetting
+        // This ensures UI updates immediately to show 0 XP
+        let zeroState = XPState(
+            totalXP: 0,
+            level: 1,
+            currentLevelXP: 0,
+            lastUpdated: Date()
+        )
+        XPManager.shared.applyXPState(zeroState)
+        logger.info("✅ DailyAwardService: State reset complete, XPManager notified with zero state")
     }
     
     // MARK: - CompletionRecord Reconciliation

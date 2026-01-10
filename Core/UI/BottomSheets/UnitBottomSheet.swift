@@ -12,7 +12,7 @@ struct UnitBottomSheet: View {
       title: "Select Unit",
       description: "Choose a unit for your goal",
       onClose: onClose,
-      useGlassCloseButton: true,
+      useSimpleCloseButton: true,
       confirmButton: {
         if showingCustomUnitInput, !customUnit.isEmpty {
           onUnitSelected(customUnit)

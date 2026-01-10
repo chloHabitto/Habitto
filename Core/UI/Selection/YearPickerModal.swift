@@ -77,11 +77,11 @@ struct YearPickerModal: View {
         VStack(spacing: 8) {
           Text("Selected Year")
             .font(.appBodyMedium)
-            .foregroundColor(.surface)
+            .foregroundColor(.appOnPrimary)
 
           Text(String(tempSelectedYear))
             .font(Font.appTitleMediumEmphasised)
-            .foregroundColor(.surface)
+            .foregroundColor(.appOnPrimary)
         }
         .frame(maxWidth: .infinity)
         .padding()
@@ -235,7 +235,7 @@ struct YearButton: View {
     Button(action: onTap) {
       Text(String(year))
         .font(Font.appBodyMedium)
-        .foregroundColor(isSelected ? .white : .text01)
+        .foregroundColor(isSelected ? .appOnPrimary : .text01)
         .frame(maxWidth: .infinity)
         .frame(height: 44)
         .background(isSelected ? .primary : .surfaceContainer)

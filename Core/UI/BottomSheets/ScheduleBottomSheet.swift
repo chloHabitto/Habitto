@@ -24,7 +24,7 @@ struct ScheduleBottomSheet: View {
       title: "Schedule",
       description: "Set which day(s) you'd like to do this habit",
       onClose: onClose,
-      useGlassCloseButton: true,
+      useSimpleCloseButton: true,
       confirmButton: {
         onScheduleSelected(selectedScheduleText)
         onClose()

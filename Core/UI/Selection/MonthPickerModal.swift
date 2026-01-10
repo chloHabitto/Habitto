@@ -76,11 +76,11 @@ struct MonthPickerModal: View {
         VStack(spacing: 8) {
           Text("Selected Month")
             .font(.appBodyMedium)
-            .foregroundColor(.appSurface)
+            .foregroundColor(.appOnPrimary)
 
           Text(monthText(from: tempSelectedMonth))
             .font(.appTitleMediumEmphasised)
-            .foregroundColor(.appSurface)
+            .foregroundColor(.appOnPrimary)
         }
         .frame(maxWidth: .infinity)
         .padding()
@@ -235,7 +235,7 @@ struct MonthButton: View {
     Button(action: onTap) {
       Text(monthName)
         .font(.appBodyMedium)
-        .foregroundColor(isSelected ? .white : .text01)
+        .foregroundColor(isSelected ? .appOnPrimary : .text01)
         .frame(maxWidth: .infinity)
         .frame(height: 44)
         .background(isSelected ? .primary : .surfaceContainer)

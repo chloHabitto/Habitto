@@ -835,8 +835,10 @@ class XPManager {
       }
   }
   
+  // ✅ CRITICAL FIX: Made internal so DailyAwardService can call directly for immediate UI updates
+  // This ensures XP updates immediately without relying on Combine observation
   // ✅ NOTE: Method is implicitly @MainActor because class is @MainActor
-  private func applyXPState(_ state: XPState) {
+  func applyXPState(_ state: XPState) {
     let timestamp = Date()
     let oldXP = self.totalXP
     let oldLevel = self.currentLevel
