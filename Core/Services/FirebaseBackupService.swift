@@ -169,24 +169,33 @@ class FirebaseBackupService {
       let month = calendar.component(.month, from: date)
       let yearMonth = String(format: "%04d-%02d", year, month)
       
-      // Use dateKey as document ID for uniqueness
-      let recordId = "\(habitId.uuidString)_\(dateKey)"
+      // ✅ FIX: Use deterministic completionId format to match SyncEngine
+      // Format: "comp_{habitId}_{dateKey}" - matches what SyncEngine expects
+      let completionId = "comp_\(habitId.uuidString)_\(dateKey)"
 
+      // ✅ FIX: Write createdAt and updatedAt fields (not just syncedAt)
+      // These are the fields SyncEngine reads for timestamp comparison
+      let now = Date()
       let completionData: [String: Any] = [
+        "userId": userId,
         "habitId": habitId.uuidString,
         "date": Timestamp(date: date),
         "dateKey": dateKey,
         "isCompleted": isCompleted,
         "progress": progress,
-        "syncedAt": Timestamp(date: Date())
+        "createdAt": Timestamp(date: now),
+        "updatedAt": Timestamp(date: now),
+        "completionId": completionId
       ]
 
+      // ✅ FIX: Use "completions" subcollection (not "records") to match SyncEngine
+      // ✅ FIX: Use deterministic completionId as document ID to match SyncEngine
       let docRef = db.collection("users")
         .document(userId)
         .collection("completions")
         .document(yearMonth)
         .collection("completions")
-        .document(recordId)
+        .document(completionId)
 
       try await docRef.setData(completionData, merge: true)
       
@@ -341,47 +350,57 @@ class FirebaseBackupService {
       
       var totalDeleted = 0
       
+      // ✅ FIX: Check both "completions" (new) and "records" (legacy) subcollections
+      let subcollectionNames = ["completions", "records"]
+      
       // Check each yearMonth collection
       for yearMonth in yearMonths {
-        let recordsRef = completionsRef
-          .document(yearMonth)
-          .collection("completions")
-        
-        // Get all records in this yearMonth
-        // Note: This will return empty if the subcollection doesn't exist or has no documents
-        let recordsSnapshot = try await recordsRef.getDocuments()
-        
-        if recordsSnapshot.documents.isEmpty {
-          continue // Skip empty collections
-        }
-        
-        print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) records in \(yearMonth)")
-        
-        // Filter and delete records where document ID starts with habitId prefix
-        // OR where the habitId field in the document data matches
-        for recordDoc in recordsSnapshot.documents {
-          let recordId = recordDoc.documentID
-          let recordData = recordDoc.data()
-          let recordHabitId = recordData["habitId"] as? String ?? ""
+        for subcollectionName in subcollectionNames {
+          let recordsRef = completionsRef
+            .document(yearMonth)
+            .collection(subcollectionName)
           
-          // ✅ CRITICAL FIX: Check both document ID prefix AND habitId field
-          // Document ID format: "{habitId}_{dateKey}"
-          // Some records might have different ID formats, so also check the habitId field
-          let matchesById = recordId.hasPrefix(habitIdString + "_")
-          let matchesByField = recordHabitId == habitIdString
+          // Get all records in this yearMonth/subcollection
+          // Note: This will return empty if the subcollection doesn't exist or has no documents
+          let recordsSnapshot = try? await recordsRef.getDocuments()
           
-          if matchesById || matchesByField {
-            do {
-              try await recordDoc.reference.delete()
-              totalDeleted += 1
-              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId) (matched by: \(matchesById ? "ID" : "field"))")
-            } catch {
-              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR deleting record \(recordId): \(error.localizedDescription)")
-              // Continue with other records even if one fails
+          guard let recordsSnapshot = recordsSnapshot, !recordsSnapshot.documents.isEmpty else {
+            continue // Skip empty collections
+          }
+          
+          print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) records in \(yearMonth)/\(subcollectionName)")
+          
+          // Filter and delete records where document ID matches habitId
+          // OR where the habitId field in the document data matches
+          for recordDoc in recordsSnapshot.documents {
+            let recordId = recordDoc.documentID
+            let recordData = recordDoc.data()
+            let recordHabitId = recordData["habitId"] as? String ?? ""
+            
+            // ✅ FIX: Check both old and new ID formats:
+            // Old format: "{habitId}_{dateKey}"
+            // New format: "comp_{habitId}_{dateKey}"
+            // Also check the habitId field in document data
+            let oldFormatPrefix = habitIdString + "_"
+            let newFormatPrefix = "comp_" + habitIdString + "_"
+            let matchesOldFormat = recordId.hasPrefix(oldFormatPrefix)
+            let matchesNewFormat = recordId.hasPrefix(newFormatPrefix)
+            let matchesByField = recordHabitId == habitIdString
+            
+            if matchesOldFormat || matchesNewFormat || matchesByField {
+              do {
+                try await recordDoc.reference.delete()
+                totalDeleted += 1
+                let matchType = matchesNewFormat ? "new ID format" : (matchesOldFormat ? "old ID format" : "field")
+                print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId) (matched by: \(matchType))")
+              } catch {
+                print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR deleting record \(recordId): \(error.localizedDescription)")
+                // Continue with other records even if one fails
+              }
+            } else {
+              // Debug logging to understand why records aren't matching
+              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipping record: \(recordId) (habitId in data: \(recordHabitId), expected: \(habitIdString))")
             }
-          } else {
-            // Debug logging to understand why records aren't matching
-            print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipping record: \(recordId) (habitId in data: \(recordHabitId), expected: \(habitIdString))")
           }
         }
       }
