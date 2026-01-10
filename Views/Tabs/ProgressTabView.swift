@@ -812,7 +812,7 @@ struct ProgressTabView: View {
       }) {
         Image(systemName: "xmark")
           .font(.system(size: 16, weight: .heavy))
-          .foregroundColor(Color("appText07Variant"))
+          .foregroundColor(Color("appText07"))
       }
       .frame(width: 44, height: 44)
       .buttonStyle(PlainButtonStyle())

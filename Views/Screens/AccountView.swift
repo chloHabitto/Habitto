@@ -892,7 +892,7 @@ struct BirthdayBottomSheet: View {
       title: "Birthday",
       description: "",
       onClose: onClose,
-      useGlassCloseButton: true,
+      useSimpleCloseButton: true,
       confirmButton: {
         updateSelectedDate()
         onSave()
