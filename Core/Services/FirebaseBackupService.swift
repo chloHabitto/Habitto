@@ -154,28 +154,21 @@ class FirebaseBackupService {
     isCompleted: Bool,
     progress: Int) async
   {
-    guard let userId = await getCurrentUserId() else {
-      return
-    }
-
-    guard FirebaseApp.app() != nil else {
-      return
-    }
+    guard let userId = await getCurrentUserId() else { return }
+    guard FirebaseApp.app() != nil else { return }
 
     do {
-      // Organize by year-month for efficient queries
       let calendar = Calendar.current
       let year = calendar.component(.year, from: date)
       let month = calendar.component(.month, from: date)
       let yearMonth = String(format: "%04d-%02d", year, month)
       
-      // ✅ FIX: Use deterministic completionId format to match SyncEngine
-      // Format: "comp_{habitId}_{dateKey}" - matches what SyncEngine expects
+      // ✅ FIX 1: Use SAME document ID format as SyncEngine
       let completionId = "comp_\(habitId.uuidString)_\(dateKey)"
-
-      // ✅ FIX: Write createdAt and updatedAt fields (not just syncedAt)
-      // These are the fields SyncEngine reads for timestamp comparison
+      
       let now = Date()
+      
+      // ✅ FIX 2: Include ALL fields that SyncEngine expects
       let completionData: [String: Any] = [
         "userId": userId,
         "habitId": habitId.uuidString,
@@ -183,19 +176,18 @@ class FirebaseBackupService {
         "dateKey": dateKey,
         "isCompleted": isCompleted,
         "progress": progress,
-        "createdAt": Timestamp(date: now),
-        "updatedAt": Timestamp(date: now),
+        "createdAt": Timestamp(date: now),    // ✅ SyncEngine reads this
+        "updatedAt": Timestamp(date: now),    // ✅ SyncEngine reads this
         "completionId": completionId
       ]
 
-      // ✅ FIX: Use "completions" subcollection (not "records") to match SyncEngine
-      // ✅ FIX: Use deterministic completionId as document ID to match SyncEngine
+      // ✅ FIX 3: Use SAME path as SyncEngine
       let docRef = db.collection("users")
         .document(userId)
         .collection("completions")
         .document(yearMonth)
-        .collection("completions")
-        .document(completionId)
+        .collection("completions")  // ✅ Not "records"!
+        .document(completionId)     // ✅ Use completionId format
 
       try await docRef.setData(completionData, merge: true)
       
@@ -469,6 +461,87 @@ class FirebaseBackupService {
     } else {
       UserDefaults.standard.set(stillPending, forKey: "PendingFirestoreDeletions")
       logger.info("⚠️ FirebaseBackupService: \(stillPending.count) deletions still pending")
+    }
+  }
+
+  // MARK: - Migration Methods
+  
+  /// Migrate records from old "records" subcollection to new "completions" subcollection
+  /// This is a one-time migration to clean up orphaned data
+  func migrateOldCompletionRecords() async {
+    guard let userId = await getCurrentUserId() else {
+      logger.debug("⏭️ FirebaseBackupService: Skipping migration - no authenticated user")
+      return
+    }
+
+    guard FirebaseApp.app() != nil else {
+      logger.debug("⏭️ FirebaseBackupService: Skipping migration - Firebase not configured")
+      return
+    }
+
+    do {
+      let completionsRef = db.collection("users")
+        .document(userId)
+        .collection("completions")
+      
+      let yearMonthDocs = try? await completionsRef.getDocuments()
+      guard let yearMonthDocs = yearMonthDocs else { return }
+      
+      var totalMigrated = 0
+      
+      for yearMonthDoc in yearMonthDocs.documents {
+        let yearMonth = yearMonthDoc.documentID
+        
+        // Read from old "records" subcollection
+        let oldRecordsRef = completionsRef
+          .document(yearMonth)
+          .collection("records")
+        let oldRecords = try? await oldRecordsRef.getDocuments()
+        guard let oldRecords = oldRecords else { continue }
+        
+        for oldDoc in oldRecords.documents {
+          let data = oldDoc.data()
+          guard let habitId = data["habitId"] as? String,
+                let dateKey = data["dateKey"] as? String else {
+            continue
+          }
+          
+          // Write to new "completions" subcollection with correct ID format
+          let newCompletionId = "comp_\(habitId)_\(dateKey)"
+          let newRef = completionsRef
+            .document(yearMonth)
+            .collection("completions")
+            .document(newCompletionId)
+          
+          var newData = data
+          newData["completionId"] = newCompletionId
+          newData["userId"] = userId
+          
+          // Add createdAt/updatedAt if missing
+          if data["createdAt"] == nil {
+            newData["createdAt"] = data["syncedAt"] ?? Timestamp(date: Date())
+          }
+          if data["updatedAt"] == nil {
+            newData["updatedAt"] = data["syncedAt"] ?? Timestamp(date: Date())
+          }
+          
+          try? await newRef.setData(newData, merge: true)
+          
+          // Delete old record
+          try? await oldDoc.reference.delete()
+          totalMigrated += 1
+        }
+      }
+      
+      if totalMigrated > 0 {
+        logger.info("✅ FirebaseBackupService: Migrated \(totalMigrated) completion records from old 'records' to new 'completions' subcollection")
+        print("☁️ [MIGRATION] Migrated \(totalMigrated) completion records from old 'records' to new 'completions' subcollection")
+      } else {
+        logger.debug("ℹ️ FirebaseBackupService: No records found to migrate")
+      }
+    } catch {
+      logger.warning("⚠️ FirebaseBackupService: Migration failed: \(error.localizedDescription)")
+      print("⚠️ [MIGRATION] Failed: \(error.localizedDescription)")
     }
   }
 

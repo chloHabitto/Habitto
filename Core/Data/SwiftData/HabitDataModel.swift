@@ -578,12 +578,18 @@ final class HabitData {
     // ✅ CRITICAL FIX: Use DateUtils.dateKey format ("yyyy-MM-dd") to match UI queries
     
     // ✅ CRITICAL FIX: Use actual progress count from CompletionRecord instead of just 1/0
-    // ✅ DEDUP: If multiple records exist for same dateKey, keep the latest by createdAt
+    // ✅ DEDUP: If multiple records exist for same dateKey, keep the latest by updatedAt
     let reducedProgressByDate: [String: CompletionRecord] = filteredRecords
       .reduce(into: [String: CompletionRecord]()) { acc, record in
         let key = DateUtils.dateKey(for: record.date)
         if let existing = acc[key] {
-          if record.createdAt > existing.createdAt { acc[key] = record }
+          // ✅ FIX: Use updatedAt for comparison (this is what sync updates)
+          let existingTimestamp = existing.updatedAt ?? existing.createdAt
+          let recordTimestamp = record.updatedAt ?? record.createdAt
+          
+          if recordTimestamp > existingTimestamp {
+            acc[key] = record
+          }
         } else {
           acc[key] = record
         }
