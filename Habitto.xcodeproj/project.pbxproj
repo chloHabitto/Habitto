@@ -81,6 +81,7 @@
 				Core/Data/CloudKit/Archive/ConflictResolutionPolicy.swift,
 				firebase.json,
 				HabittoWidget/Info.plist,
+				"HabittoWidget/Sources/Extensions/Color+Hex.swift",
 				package.json,
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
@@ -95,6 +96,7 @@
 		89AF5D0D2F12B9280092F84C /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				"HabittoWidget/Sources/Extensions/Color+Hex.swift",
 				Shared/Models/WidgetHabitData.swift,
 				Shared/Services/WidgetDataService.swift,
 			);
