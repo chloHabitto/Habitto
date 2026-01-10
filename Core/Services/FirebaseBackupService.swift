@@ -86,7 +86,7 @@ class FirebaseBackupService {
   
   /// Delete all completion records for a habit from Firestore backup (blocking/awaited)
   /// ✅ CRITICAL FIX: This prevents orphaned completion records from recreating the habit
-  /// Completion records are stored at: users/{userId}/completions/{yearMonth}/records/{habitId}_{dateKey}
+  /// Completion records are stored at: users/{userId}/completions/{yearMonth}/completions/{habitId}_{dateKey}
   func deleteCompletionRecordsForHabitAwait(habitId: UUID) async {
     await performCompletionRecordsDeletion(habitId: habitId)
   }
@@ -185,7 +185,7 @@ class FirebaseBackupService {
         .document(userId)
         .collection("completions")
         .document(yearMonth)
-        .collection("records")
+        .collection("completions")
         .document(recordId)
 
       try await docRef.setData(completionData, merge: true)
@@ -301,7 +301,7 @@ class FirebaseBackupService {
   }
   
   /// Delete all completion records for a habit from Firestore
-  /// Completion records are stored at: users/{userId}/completions/{yearMonth}/records/{habitId}_{dateKey}
+  /// Completion records are stored at: users/{userId}/completions/{yearMonth}/completions/{habitId}_{dateKey}
   /// Checks yearMonth collections for the last 2 years and deletes records matching the habitId prefix
   private func performCompletionRecordsDeletion(habitId: UUID) async {
     print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - START for habit ID: \(habitId)")
@@ -345,7 +345,7 @@ class FirebaseBackupService {
       for yearMonth in yearMonths {
         let recordsRef = completionsRef
           .document(yearMonth)
-          .collection("records")
+          .collection("completions")
         
         // Get all records in this yearMonth
         // Note: This will return empty if the subcollection doesn't exist or has no documents
