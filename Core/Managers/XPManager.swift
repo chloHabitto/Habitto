@@ -826,13 +826,16 @@ class XPManager {
 
   private func observeXPState() {
     xpStateCancellable = awardService.$xpState
-      .receive(on: RunLoop.main)
+      .receive(on: DispatchQueue.main)  // ✅ FIX: Use DispatchQueue.main for better reliability
       .sink { [weak self] state in
         guard let self, let state else { return }
+        // ✅ CRITICAL FIX: applyXPState is already @MainActor (class is @MainActor)
+        // Setting properties directly will trigger @Observable UI updates automatically
         self.applyXPState(state)
       }
   }
   
+  // ✅ NOTE: Method is implicitly @MainActor because class is @MainActor
   private func applyXPState(_ state: XPState) {
     let timestamp = Date()
     let oldXP = self.totalXP
