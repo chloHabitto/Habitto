@@ -164,6 +164,7 @@ struct BackupRowView: View {
             .background(
               RoundedRectangle(cornerRadius: 12)
                 .fill(Color("appBadgeBackground")))
+            .fixedSize()
 
           Text(backup.formattedSize)
             .font(.appLabelMedium)
@@ -173,6 +174,7 @@ struct BackupRowView: View {
             .background(
               RoundedRectangle(cornerRadius: 12)
                 .fill(Color("appBadgeBackground")))
+            .fixedSize()
 
           Text("v\(backup.appVersion)")
             .font(.appLabelMedium)
@@ -182,6 +184,7 @@ struct BackupRowView: View {
             .background(
               RoundedRectangle(cornerRadius: 12)
                 .fill(Color("appBadgeBackground")))
+            .fixedSize()
         }
       }
 
