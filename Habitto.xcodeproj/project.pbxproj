@@ -11,17 +11,24 @@
 		8935E78C2E7C2260004BF684 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E78B2E7C2260004BF684 /* FirebaseAuth */; };
 		8935E78E2E7C2260004BF684 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E78D2E7C2260004BF684 /* FirebaseCore */; };
 		8935E7932E7C2278004BF684 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 8935E7922E7C2278004BF684 /* GoogleSignIn */; };
+		893628BA2F13964E006C927E /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 890C9EDC2E4E05B7006E28C7 /* WidgetKit.framework */; };
+		893628BB2F13964E006C927E /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */; };
+		893628C62F139650006C927E /* HabittoWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 893628B92F13964E006C927E /* HabittoWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		89383AAB2E919C8800AF39E5 /* MijickPopups in Frameworks */ = {isa = PBXBuildFile; productRef = 89383AAA2E919C8800AF39E5 /* MijickPopups */; };
 		8980C1512E9AA91C00E491FB /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C1502E9AA91C00E491FB /* FirebaseCrashlytics */; };
 		8980C1532E9AA92400E491FB /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C1522E9AA92400E491FB /* FirebaseRemoteConfig */; };
 		8980C2172E9F880500E491FB /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 8980C2162E9F880500E491FB /* FirebaseFirestore */; };
-		89AF5CB42F12B2720092F84C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 890C9EDC2E4E05B7006E28C7 /* WidgetKit.framework */; };
-		89AF5CB52F12B2720092F84C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */; };
-		89AF5CC42F12B2740092F84C /* HabittoWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 89AF5CB32F12B2710092F84C /* HabittoWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		89F196022ECF79D10034041F /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89F196012ECF79D10034041F /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		893628C42F139650006C927E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 89C17A2F2DF73D8A00B2480F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 893628B82F13964E006C927E;
+			remoteInfo = HabittoWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,15 +40,28 @@
 			);
 			name = "Embed Foundation Extensions";
 		};
+		893628C72F139650006C927E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				893628C62F139650006C927E /* HabittoWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		890C9EDC2E4E05B7006E28C7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		893624CF2F1393AF006C927E /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		893628B92F13964E006C927E /* HabittoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabittoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		893628D52F139670006C927E /* HabittoWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HabittoWidgetExtension.entitlements; sourceTree = "<group>"; };
 		8958E9BA2E93AEC900AC3DB8 /* HabittoAppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = HabittoAppIcon.icon; sourceTree = "<group>"; };
 		897A76092F13907D004338E4 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AF58C92F114EBF0092F84C /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AF5CB32F12B2710092F84C /* HabittoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabittoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		89BA65E62F139B2100FD46B4 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89BECE4E2F1125CA00A8DFE9 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89C17A372DF73D8A00B2480F /* Habitto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Habitto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		89C6A44E2F1017A600B0ABCE /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -50,6 +70,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		893628D82F139860006C927E /* Exceptions for "HabittoWidget" folder in "HabittoWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 893628B82F13964E006C927E /* HabittoWidgetExtension */;
+		};
 		8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -64,6 +91,9 @@
 				Core/Data/CloudKit/Archive/CloudKitUniquenessManager.swift,
 				Core/Data/CloudKit/Archive/ConflictResolutionPolicy.swift,
 				firebase.json,
+				HabittoWidget/HabittoWidget.swift,
+				HabittoWidget/HabittoWidgetBundle.swift,
+				HabittoWidget/Info.plist,
 				package.json,
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
@@ -71,6 +101,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		893628BC2F13964E006C927E /* HabittoWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				893628D82F139860006C927E /* Exceptions for "HabittoWidget" folder in "HabittoWidgetExtension" target */,
+			);
+			path = HabittoWidget;
+			sourceTree = "<group>";
+		};
 		89C17A392DF73D8A00B2480F /* . */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -82,11 +120,11 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		89AF5CB02F12B2710092F84C /* Frameworks */ = {
+		893628B62F13964E006C927E /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
-				89AF5CB52F12B2720092F84C /* SwiftUI.framework in Frameworks */,
-				89AF5CB42F12B2720092F84C /* WidgetKit.framework in Frameworks */,
+				893628BB2F13964E006C927E /* SwiftUI.framework in Frameworks */,
+				893628BA2F13964E006C927E /* WidgetKit.framework in Frameworks */,
 			);
 		};
 		89C17A342DF73D8A00B2480F /* Frameworks */ = {
@@ -116,12 +154,22 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		893624E72F1393AF006C927E /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		897A76222F13907D004338E4 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
 		};
 		89AF58DF2F114EBF0092F84C /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		89BA65FF2F139B2100FD46B4 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -134,11 +182,12 @@
 		89C17A2E2DF73D8A00B2480F = {
 			isa = PBXGroup;
 			children = (
+				893628D52F139670006C927E /* HabittoWidgetExtension.entitlements */,
 				89C17A392DF73D8A00B2480F /* . */,
+				893628BC2F13964E006C927E /* HabittoWidget */,
 				890C9EDB2E4E05B7006E28C7 /* Frameworks */,
 				89C17A382DF73D8A00B2480F /* Products */,
 				8958E9BA2E93AEC900AC3DB8 /* HabittoAppIcon.icon */,
-				897A71D62F13907D004338E4 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -147,6 +196,7 @@
 			children = (
 				89C17A372DF73D8A00B2480F /* Habitto.app */,
 				89AF5CB32F12B2710092F84C /* HabittoWidgetExtension.appex */,
+				893628B92F13964E006C927E /* HabittoWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -164,6 +214,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		893628B82F13964E006C927E /* HabittoWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 893628CA2F139650006C927E /* Build configuration list for PBXNativeTarget "HabittoWidgetExtension" */;
+			buildPhases = (
+				893628B52F13964E006C927E /* Sources */,
+				893628B62F13964E006C927E /* Frameworks */,
+				893628B72F13964E006C927E /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				893628BC2F13964E006C927E /* HabittoWidget */,
+			);
+			name = HabittoWidgetExtension;
+			productName = HabittoWidgetExtension;
+			productReference = 893628B92F13964E006C927E /* HabittoWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		89C17A362DF73D8A00B2480F /* Habitto */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 89C17A422DF73D8C00B2480F /* Build configuration list for PBXNativeTarget "Habitto" */;
@@ -172,8 +240,12 @@
 				89C17A342DF73D8A00B2480F /* Frameworks */,
 				89C17A352DF73D8A00B2480F /* Resources */,
 				890C9EF52E4E05BA006E28C7 /* Embed Foundation Extensions */,
+				893628C72F139650006C927E /* Embed Foundation Extensions */,
 			);
 			buildRules = (
+			);
+			dependencies = (
+				893628C52F139650006C927E /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				89C17A392DF73D8A00B2480F /* . */,
@@ -202,11 +274,14 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
-			TargetAttributes = {
-				89C17A362DF73D8A00B2480F = {
-					CreatedOnToolsVersion = 16.3;
+				TargetAttributes = {
+					893628B82F13964E006C927E = {
+						CreatedOnToolsVersion = 26.1.1;
+					};
+					89C17A362DF73D8A00B2480F = {
+						CreatedOnToolsVersion = 16.3;
+					};
 				};
-			};
 			};
 			buildConfigurationList = 89C17A322DF73D8A00B2480F /* Build configuration list for PBXProject "Habitto" */;
 			developmentRegion = en;
@@ -228,6 +303,10 @@
 			projectDirPath = "";
 			projectReferences = (
 				{
+					ProductGroup = 893624E72F1393AF006C927E /* Products */;
+					ProjectRef = 893624CF2F1393AF006C927E /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 89C6A4642F1017A600B0ABCE /* Products */;
 					ProjectRef = 89C6A44E2F1017A600B0ABCE /* Habitto.xcodeproj */;
 				},
@@ -244,6 +323,10 @@
 					ProjectRef = 89EF149A2F1122FB00C61B7E /* Habitto.xcodeproj */;
 				},
 				{
+					ProductGroup = 89BA65FF2F139B2100FD46B4 /* Products */;
+					ProjectRef = 89BA65E62F139B2100FD46B4 /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 89BECE642F1125CA00A8DFE9 /* Products */;
 					ProjectRef = 89BECE4E2F1125CA00A8DFE9 /* Habitto.xcodeproj */;
 				},
@@ -251,12 +334,13 @@
 			projectRoot = "";
 			targets = (
 				89C17A362DF73D8A00B2480F /* Habitto */,
+				893628B82F13964E006C927E /* HabittoWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		89AF5CB12F12B2710092F84C /* Resources */ = {
+		893628B72F13964E006C927E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -269,7 +353,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		89AF5CAF2F12B2710092F84C /* Sources */ = {
+		893628B52F13964E006C927E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
@@ -282,9 +366,81 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		893628C52F139650006C927E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 893628B82F13964E006C927E /* HabittoWidgetExtension */;
+			targetProxy = 893628C42F139650006C927E /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		893628C82F139650006C927E /* Debug configuration for PBXNativeTarget "HabittoWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = HabittoWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = GVG7JYM6M8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabittoWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HabittoWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto.HabittoWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		893628C92F139650006C927E /* Release configuration for PBXNativeTarget "HabittoWidgetExtension" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = HabittoWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = GVG7JYM6M8;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabittoWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = HabittoWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto.HabittoWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		89C17A402DF73D8C00B2480F /* Debug configuration for PBXProject "Habitto" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -423,7 +579,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
@@ -444,7 +600,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -475,7 +631,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = GVG7JYM6M8;
 				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
@@ -496,7 +652,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -520,6 +676,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		893628CA2F139650006C927E /* Build configuration list for PBXNativeTarget "HabittoWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				893628C82F139650006C927E /* Debug configuration for PBXNativeTarget "HabittoWidgetExtension" */,
+				893628C92F139650006C927E /* Release configuration for PBXNativeTarget "HabittoWidgetExtension" */,
+			);
+			defaultConfigurationName = Release;
+		};
 		89C17A322DF73D8A00B2480F /* Build configuration list for PBXProject "Habitto" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
