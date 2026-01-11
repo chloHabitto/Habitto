@@ -99,7 +99,7 @@
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
 		};
-		89BA7A0A2F13A5B200FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
+		89BA7A132F13B18700FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Assets/Icons.xcassets,
@@ -122,7 +122,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */,
-				89BA7A0A2F13A5B200FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */,
+				89BA7A132F13B18700FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */,
 			);
 			path = .;
 			sourceTree = "<group>";
