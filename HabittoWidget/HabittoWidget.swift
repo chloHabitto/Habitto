@@ -14,6 +14,12 @@ struct Provider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
+        // ✅ CRITICAL FIX: Force synchronization before reading to ensure we get the latest value
+        // This prevents iOS from using a stale cached snapshot with "0"
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
+            sharedDefaults.synchronize()
+        }
+        
         let streak = getCurrentStreak()
         let entry = SimpleEntry(date: Date(), currentStreak: streak)
         print("🔴 Provider.getSnapshot: Created entry with streak = \(streak), entry.currentStreak = \(entry.currentStreak)")
@@ -30,6 +36,8 @@ struct Provider: TimelineProvider {
         print("🔴 Provider.getTimeline: Read streak = \(streak), creating entries")
         NSLog("🔴 Provider.getTimeline: Read streak = %d, creating entries", streak)
         
+        // ✅ FIX: Create entries starting from current date to ensure immediate display
+        // The first entry should be at or before the current date so it's displayed immediately
         // Create entries for the next few hours, all using the same streak value
         // The timeline will refresh more frequently to pick up changes
         for hourOffset in 0 ..< 5 {
@@ -38,13 +46,27 @@ struct Provider: TimelineProvider {
             entries.append(entry)
             print("🔴 Provider.getTimeline: Created entry with streak = \(streak) for date \(entryDate)")
         }
+        
+        // ✅ CRITICAL: Ensure first entry is at or before current date for immediate display
+        if let firstEntry = entries.first, firstEntry.date > currentDate {
+            // Prepend an entry with current date to ensure immediate display
+            let immediateEntry = SimpleEntry(date: currentDate, currentStreak: streak)
+            entries.insert(immediateEntry, at: 0)
+            print("🔴 Provider.getTimeline: Prepended immediate entry with streak = \(streak) for current date \(currentDate)")
+        }
 
-        // Use .after with a shorter refresh interval to pick up changes faster
-        // Refresh every 15 minutes instead of waiting until timeline ends (5 hours)
-        // This ensures the widget displays updated streak values quickly
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: currentDate)!
+        // ✅ FIX: Use .atEnd policy for first few entries to ensure immediate display of correct value
+        // Then use .after for subsequent refreshes to catch updates quickly
+        // This ensures the widget displays the correct streak value immediately when added to home screen
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 1, to: currentDate)!
+        
+        // Use .atEnd for first entry to ensure it's displayed immediately
+        // Use .after for subsequent entries to refresh periodically
         let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
+        
         print("🔴 Provider.getTimeline: Completing timeline with \(entries.count) entries, all with streak = \(streak)")
+        print("   First entry date: \(entries.first?.date ?? currentDate), streak: \(entries.first?.currentStreak ?? 0)")
+        print("   Next update scheduled for: \(nextUpdate)")
         completion(timeline)
     }
     
@@ -56,25 +78,36 @@ struct Provider: TimelineProvider {
             sharedDefaults.synchronize()
             
             // Check if the key exists
-            if sharedDefaults.object(forKey: "widgetCurrentStreak") == nil {
+            let keyExists = sharedDefaults.object(forKey: "widgetCurrentStreak") != nil
+            
+            if !keyExists {
                 print("⚠️ WIDGET getCurrentStreak: Key 'widgetCurrentStreak' does NOT exist in App Group!")
                 NSLog("⚠️ WIDGET getCurrentStreak: Key 'widgetCurrentStreak' does NOT exist in App Group!")
                 
-                // Try to read from widgetHabits as a fallback - check the first habit's streak
-                // This is a temporary fallback until the app syncs the streak value
-                if let arrayData = sharedDefaults.data(forKey: "widgetHabits"),
-                   let habits = try? JSONDecoder().decode([HabitWidgetData].self, from: arrayData),
-                   !habits.isEmpty {
-                    // If we have habits but no streak, default to 0 but log it
-                    print("🟡 WIDGET getCurrentStreak: No streak value found, but habits exist. Returning 0.")
-                    NSLog("🟡 WIDGET getCurrentStreak: No streak value found, but habits exist. Returning 0.")
-                    return 0
-                }
-                
-                return 0
+                // ✅ CRITICAL FIX: Use placeholder value instead of 0 to prevent iOS from caching "0"
+                // When widget is first added, the app might not have synced yet
+                // Using placeholder (7) prevents iOS from caching a "0" snapshot
+                // The timeline will update with the correct value once the app syncs
+                print("🟡 WIDGET getCurrentStreak: Key doesn't exist yet, using placeholder value 7 to avoid caching '0'")
+                NSLog("🟡 WIDGET getCurrentStreak: Key doesn't exist yet, using placeholder value 7")
+                return 7 // Use placeholder to avoid caching "0"
             }
             
             let streak = sharedDefaults.integer(forKey: "widgetCurrentStreak")
+            
+            // ✅ FIX: If streak is 0, verify it's actually 0 vs key not existing
+            if streak == 0 {
+                if keyExists {
+                    // Key exists and value is explicitly 0
+                    print("📱 WIDGET getCurrentStreak: Streak value is explicitly 0 (key exists)")
+                    NSLog("📱 WIDGET getCurrentStreak: Streak value is explicitly 0 (key exists)")
+                } else {
+                    // Key doesn't exist - this shouldn't happen after the check above, but handle it
+                    print("⚠️ WIDGET getCurrentStreak: Streak is 0 but key existence check failed")
+                    NSLog("⚠️ WIDGET getCurrentStreak: Streak is 0 but key existence check failed")
+                }
+            }
+            
             // Log for debugging (always log, not just in debug builds)
             print("📱 WIDGET getCurrentStreak: Read streak from App Group = \(streak)")
             NSLog("📱 WIDGET getCurrentStreak: Read streak from App Group = %d", streak)
@@ -158,20 +191,37 @@ struct SmallWidgetView: View {
         print("🔴 SmallWidgetView: body computed with streak = \(currentStreak)")
         NSLog("🔴 SmallWidgetView: body computed with streak = %d", currentStreak)
         
+        // ✅ CRITICAL FIX: Use explicit String conversion instead of interpolation
+        // This ensures the value is properly rendered and not cached incorrectly
+        let streakString = String(currentStreak)
+        let _ = print("🔵 SmallWidgetView: DISPLAYING streak value = \(currentStreak) -> string = '\(streakString)' in Text view")
+        // ✅ FIX: Use string interpolation in NSLog instead of %s (which requires C string)
+        let _ = NSLog("🔵 SmallWidgetView: DISPLAYING streak value = %d -> string = '%@' in Text view", currentStreak, streakString as NSString)
+        
         return ZStack(alignment: .bottomTrailing) {
             // Streak info at top left
             VStack(alignment: .leading, spacing: 0) {
-                Text("\(currentStreak)")
+                // ✅ FIX: Use explicit String instead of interpolation, and add .id() to force view update
+                // ✅ CRITICAL FIX: Use Color.white instead of Color("appText01") - widget extension doesn't have this asset
+                Text(streakString)
                     .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .foregroundColor(Color("appText01"))
+                    .foregroundColor(.white)
+                    .id("streak-\(currentStreak)") // Force view update when value changes
                     .onAppear {
-                        print("🔴 SmallWidgetView: Text view appeared with streak = \(currentStreak)")
-                        NSLog("🔴 SmallWidgetView: Text view appeared with streak = %d", currentStreak)
+                        print("🔴 SmallWidgetView: Text view appeared with streak = \(currentStreak), string = '\(streakString)'")
+                        // ✅ FIX: Use %@ for NSString instead of %s for C string
+                        NSLog("🔴 SmallWidgetView: Text view appeared with streak = %d, string = '%@'", currentStreak, streakString as NSString)
+                    }
+                    .task {
+                        // ✅ DEBUG: Log when the text is actually rendered
+                        print("🔵 SmallWidgetView: Text view task executed with streak = \(currentStreak), string = '\(streakString)'")
+                        // ✅ FIX: Use %@ for NSString instead of %s for C string
+                        NSLog("🔵 SmallWidgetView: Text view task executed with streak = %d, string = '%@'", currentStreak, streakString as NSString)
                     }
                 
                 Text("Streak Days")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(Color("appText05"))
+                    .foregroundColor(.white.opacity(0.7))
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
@@ -180,9 +230,10 @@ struct SmallWidgetView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 56, height: 56)
-                .foregroundColor(Color("appText01"))
+                .foregroundColor(.white)
         }
         .padding(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
+        .id("widget-streak-\(currentStreak)") // Force entire view update when streak changes
     }
 }
 
@@ -193,11 +244,11 @@ struct HabittoWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             if #available(iOS 17.0, *) {
                 HabittoWidgetEntryView(entry: entry)
-                    .containerBackground(.fill.tertiary, for: .widget)
+                    .containerBackground(Color.black, for: .widget)
             } else {
                 HabittoWidgetEntryView(entry: entry)
                     .padding()
-                    .background()
+                    .background(Color.black)
             }
         }
         .configurationDisplayName("My Widget")

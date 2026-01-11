@@ -41,6 +41,16 @@ class HomeViewState: ObservableObject {
     self.isLoadingHabits = habits.isEmpty
     
     // ✅ CRASH FIX: Calculate initial streak
+    // ✅ WIDGET SYNC: Ensure streak is synced early on app launch
+    // First try to read any existing streak from UserDefaults as a fallback
+    if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
+      let existingStreak = sharedDefaults.integer(forKey: "widgetCurrentStreak")
+      if existingStreak > 0 {
+        // Keep existing value until we calculate the real one
+        self.currentStreak = existingStreak
+        debugLog("📱 WIDGET_SYNC: Preserved existing streak value from UserDefaults: \(existingStreak)")
+      }
+    }
     self.updateStreak()
 
     // Subscribe to HabitRepository changes
@@ -164,7 +174,8 @@ class HomeViewState: ObservableObject {
           debugLog("🔍 UI_STREAK: updateStreak() will display streak = \(loadedStreak)")
           currentStreak = loadedStreak
           
-          // ✅ WIDGET SYNC: Update UserDefaults for widget extension
+          // ✅ WIDGET SYNC: Update UserDefaults for widget extension IMMEDIATELY
+          // This ensures the widget can read the value even if the app is not running
           syncStreakToWidget(loadedStreak)
           
           print("💰 [STREAK_TRACE] \(Date()) updateStreak() - COMPLETE")
@@ -184,11 +195,13 @@ class HomeViewState: ObservableObject {
         } else {
           debugLog("🔍 UI_STREAK: updateStreak() found no GlobalStreakModel, defaulting to 0")
           currentStreak = 0
+          // ✅ CRITICAL: Still sync 0 to UserDefaults so widget knows the value is valid
           syncStreakToWidget(0)
         }
       } catch {
         debugLog("🔍 UI_STREAK: updateStreak() failed to load streak, defaulting to 0 (\(error.localizedDescription))")
         currentStreak = 0
+        // ✅ CRITICAL: Still sync 0 to UserDefaults so widget knows the value is valid
         syncStreakToWidget(0)
       }
     }
@@ -627,8 +640,9 @@ class HomeViewState: ObservableObject {
           completionChecksum: StreakCalculator.checksum(for: filteredCompletionRecords))
         StreakIntegrityChecker.shared.handleSnapshot(snapshot)
 
-        // Reload the UI streak
-        updateStreak()
+        // ✅ FIX: Update UI streak from the value we just saved (no need to read from DB again)
+        // This avoids a race condition where updateStreak() might read a stale value before SwiftData save completes
+        currentStreak = computation.currentStreak
         
       } catch {
         TelemetryService.shared.logError("streak.update.failed", error: error)
@@ -645,9 +659,10 @@ class HomeViewState: ObservableObject {
   private func syncStreakToWidget(_ streak: Int) {
     // Use App Group UserDefaults to share data with widget extension
     if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
+      // ✅ FIX: Always sync, even if streak is 0, so widget knows the value is valid
       sharedDefaults.set(streak, forKey: "widgetCurrentStreak")
       sharedDefaults.synchronize()
-      debugLog("📱 WIDGET_SYNC: Updated widget streak to \(streak)")
+      debugLog("📱 WIDGET_SYNC: Updated widget streak to \(streak) (key now exists in UserDefaults)")
       
       // ✅ CRITICAL FIX: Reload widget timeline immediately to show updated streak
       // This ensures the widget displays the latest streak value right away
@@ -657,6 +672,7 @@ class HomeViewState: ObservableObject {
       #endif
     } else {
       debugLog("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
+      print("⚠️ WIDGET_SYNC: App Group 'group.com.habitto.widget' is not accessible - check entitlements")
     }
   }
   
