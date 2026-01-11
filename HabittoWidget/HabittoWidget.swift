@@ -204,7 +204,7 @@ struct SmallWidgetView: View {
                 // ✅ FIX: Use explicit String instead of interpolation, and add .id() to force view update
                 // ✅ CRITICAL FIX: Use Color.white instead of Color("appText01") - widget extension doesn't have this asset
                 Text(streakString)
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: 36, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .id("streak-\(currentStreak)") // Force view update when value changes
                     .onAppear {
@@ -229,10 +229,11 @@ struct SmallWidgetView: View {
             Image("Widget-Icon-Fire")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 56, height: 56)
+                .frame(width: 44, height: 44)
                 .foregroundColor(.white)
+                .offset(x: 4, y: 4)
         }
-        .padding(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
+        .padding(EdgeInsets(top: 4, leading: 16, bottom: 16, trailing: 16))
         .id("widget-streak-\(currentStreak)") // Force entire view update when streak changes
     }
 }
