@@ -104,6 +104,31 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
         let habitData = loadHabitData(for: configuration.habit?.id)
         let completions = getMonthlyCompletions(for: habitData)
         
+        print("🟢 WIDGET: Loading data for habit '\(habitData.name)'")
+        print("   Habit ID: \(habitData.id)")
+        print("   completionHistory: \(habitData.completionHistory.count) entries")
+        print("   completionStatus: \(habitData.completionStatus.count) entries")
+        print("   monthlyCompletions: \(completions.count) entries")
+        
+        // Print recent completion data
+        let recentKeys = habitData.completionStatus.keys.sorted().suffix(7)
+        for key in recentKeys {
+            let status = habitData.completionStatus[key] ?? false
+            print("   \(key): \(status ? "✅ completed" : "❌ not completed")")
+        }
+        
+        // Also log what's in UserDefaults
+        if let defaults = UserDefaults(suiteName: "group.com.habitto.widget") {
+            let keys = defaults.dictionaryRepresentation().keys.filter { $0.contains("widget") }
+            print("🟢 WIDGET: App Group keys: \(Array(keys).sorted())")
+            
+            if let savedData = defaults.data(forKey: "widgetHabit_\(habitData.id.uuidString)") {
+                print("🟢 WIDGET: Found saved data for this habit (\(savedData.count) bytes)")
+            } else {
+                print("⚠️ WIDGET: No saved data found for habit ID: \(habitData.id.uuidString)")
+            }
+        }
+        
         let entry = MonthlyProgressEntry(
             date: Date(),
             habitData: habitData,
@@ -116,11 +141,8 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
     }
     
     private func loadHabitData(for habitId: UUID?) -> HabitWidgetData {
-        guard let habitId = habitId,
-              let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget"),
-              let data = sharedDefaults.data(forKey: "widgetHabit_\(habitId.uuidString)"),
-              let habitData = try? JSONDecoder().decode(HabitWidgetData.self, from: data) else {
-            // Return placeholder if no habit selected or data not found
+        guard let habitId = habitId else {
+            print("🟡 WIDGET: No habit ID provided, returning placeholder")
             return HabitWidgetData(
                 id: UUID(),
                 name: "Select a habit",
@@ -130,6 +152,53 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
                 completionStatus: [:]
             )
         }
+        
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") else {
+            print("⚠️ WIDGET: Failed to access App Group UserDefaults")
+            return HabitWidgetData(
+                id: habitId,
+                name: "Select a habit",
+                icon: "circle.fill",
+                colorHex: nil,
+                completionHistory: [:],
+                completionStatus: [:]
+            )
+        }
+        
+        let key = "widgetHabit_\(habitId.uuidString)"
+        guard let data = sharedDefaults.data(forKey: key) else {
+            print("⚠️ WIDGET: No data found for key '\(key)'")
+            // Check if widgetHabits array exists as fallback
+            if let arrayData = sharedDefaults.data(forKey: "widgetHabits"),
+               let habits = try? JSONDecoder().decode([HabitWidgetData].self, from: arrayData),
+               let foundHabit = habits.first(where: { $0.id == habitId }) {
+                print("🟢 WIDGET: Found habit in widgetHabits array: '\(foundHabit.name)'")
+                return foundHabit
+            }
+            print("⚠️ WIDGET: Habit not found in widgetHabits array either")
+            return HabitWidgetData(
+                id: habitId,
+                name: "Select a habit",
+                icon: "circle.fill",
+                colorHex: nil,
+                completionHistory: [:],
+                completionStatus: [:]
+            )
+        }
+        
+        guard let habitData = try? JSONDecoder().decode(HabitWidgetData.self, from: data) else {
+            print("⚠️ WIDGET: Failed to decode habit data from key '\(key)'")
+            return HabitWidgetData(
+                id: habitId,
+                name: "Select a habit",
+                icon: "circle.fill",
+                colorHex: nil,
+                completionHistory: [:],
+                completionStatus: [:]
+            )
+        }
+        
+        print("🟢 WIDGET: Successfully loaded habit '\(habitData.name)' from key '\(key)' (\(data.count) bytes)")
         return habitData
     }
     
@@ -434,19 +503,32 @@ struct MonthlyProgressMediumView: View {
         // Sunday = 1 -> 6, Monday = 2 -> 0, Tuesday = 3 -> 1, etc.
         let daysFromMonday = (weekday + 5) % 7
         guard let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) else {
+            print("⚠️ WIDGET: Failed to calculate week start")
             return Array(repeating: false, count: 7)
         }
         
         var weeklyProgress: [Bool] = Array(repeating: false, count: 7)
+        let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
         
         // Fill in the current week (Monday to Sunday)
         for i in 0..<7 {
             if let date = calendar.date(byAdding: .day, value: i, to: weekStart) {
-                let dateKey = formatDateKey(for: date)
-                let isCompleted = habitData.completionStatus[dateKey] ?? ((habitData.completionHistory[dateKey] ?? 0) > 0)
+                // Normalize to start of day to ensure correct date key matching
+                let normalizedDate = calendar.startOfDay(for: date)
+                let dateKey = formatDateKey(for: normalizedDate)
+                let statusCompleted = habitData.completionStatus[dateKey] ?? false
+                let historyCompleted = (habitData.completionHistory[dateKey] ?? 0) > 0
+                let isCompleted = statusCompleted || historyCompleted
                 weeklyProgress[i] = isCompleted
+                
+                if isCompleted {
+                    print("   🟢 WIDGET: \(dayLabels[i]) (\(dateKey)): ✅ completed (status: \(statusCompleted), history: \(historyCompleted))")
+                }
             }
         }
+        
+        let completedCount = weeklyProgress.filter { $0 }.count
+        print("🟢 WIDGET: Weekly progress: \(completedCount)/7 days completed")
         
         return weeklyProgress
     }
