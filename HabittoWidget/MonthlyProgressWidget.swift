@@ -82,6 +82,7 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
                 id: UUID(),
                 name: "Wim hof brathing",
                 icon: "cloud.fill",
+                colorHex: nil,
                 completionHistory: [:],
                 completionStatus: [:]
             ),
@@ -124,6 +125,7 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
                 id: UUID(),
                 name: "Select a habit",
                 icon: "circle.fill",
+                colorHex: nil,
                 completionHistory: [:],
                 completionStatus: [:]
             )
@@ -202,8 +204,50 @@ struct MonthlyProgressWidgetView: View {
         switch widgetFamily {
         case .systemSmall:
             MonthlyProgressSmallView(entry: entry)
+        case .systemMedium:
+            MonthlyProgressMediumView(entry: entry)
         default:
             MonthlyProgressSmallView(entry: entry)
+        }
+    }
+}
+
+// MARK: - Habit Icon Inline View (Widget)
+@available(iOS 17.0, *)
+struct HabitIconInlineWidgetView: View {
+    let icon: String
+    
+    var body: some View {
+        Group {
+            if icon.hasPrefix("Icon-") {
+                // Asset icon
+                Image(icon)
+                    .resizable()
+                    .frame(width: 14, height: 14)
+                    .foregroundColor(Color("appText01"))
+            } else if icon == "None" {
+                // No icon selected - show small colored circle
+                Circle()
+                    .fill(Color("appText01").opacity(0.3))
+                    .frame(width: 14, height: 14)
+            } else if isEmoji(icon) {
+                // Emoji
+                Text(icon)
+                    .font(.system(size: 14))
+            } else {
+                // System icon
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(Color("appText01"))
+            }
+        }
+        .frame(width: 18, height: 18)
+    }
+    
+    private func isEmoji(_ string: String) -> Bool {
+        // Check if the string contains emoji characters
+        return string.unicodeScalars.contains { scalar in
+            scalar.properties.isEmoji || scalar.properties.isEmojiPresentation
         }
     }
 }
@@ -216,14 +260,11 @@ struct MonthlyProgressSmallView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Header with icon and name
-            HStack(spacing: 8) {
-                Image(systemName: entry.habitData.icon)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(Color("appText01"))
-                    .frame(width: 20, height: 20)
+            HStack(spacing: 6) {
+                HabitIconInlineWidgetView(icon: entry.habitData.icon)
                 
                 Text(entry.habitData.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(Color("appText01"))
                     .lineLimit(1)
                 
@@ -231,19 +272,190 @@ struct MonthlyProgressSmallView: View {
             }
             
             // Days of week labels
-            HStack(spacing: 4) {
-                ForEach(["M", "T", "W", "T", "F", "S", "S"], id: \.self) { day in
+            HStack(spacing: 2) {
+                ForEach(Array(["M", "T", "W", "T", "F", "S", "S"].enumerated()), id: \.offset) { index, day in
                     Text(day)
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 9, weight: .medium))
                         .foregroundColor(Color("appText05"))
                         .frame(maxWidth: .infinity)
                 }
             }
             
             // Calendar grid
-            CalendarGridView(completions: entry.monthlyCompletions)
+            CalendarGridView(
+                completions: entry.monthlyCompletions,
+                color: habitColor(from: entry.habitData.colorHex)
+            )
         }
-        .padding(12)
+        .padding(6)
+    }
+    
+    private func habitColor(from hex: String?) -> Color {
+        guard let hex = hex, !hex.isEmpty else {
+            return Color.blue // Default fallback
+        }
+        return colorFromHex(hex)
+    }
+    
+    private func colorFromHex(_ hex: String) -> Color {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3:
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6:
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (255, 0, 0, 0)
+        }
+        return Color(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue: Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
+// MARK: - Monthly Progress Medium View
+@available(iOS 17.0, *)
+struct MonthlyProgressMediumView: View {
+    let entry: MonthlyProgressEntry
+    private let dayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
+    
+    private var streakCount: Int {
+        calculateStreak(from: entry.habitData)
+    }
+    
+    private var weeklyProgress: [Bool] {
+        getWeeklyProgress(from: entry.habitData)
+    }
+    
+    private var todayDayIndex: Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let weekday = calendar.component(.weekday, from: today)
+        // Convert to Monday = 0, Sunday = 6
+        return (weekday + 5) % 7
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Streak section at top
+            HStack(spacing: 8) {
+                Text("\(streakCount) day streak")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(Color("appText03"))
+                
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(Color("appText01"))
+                
+                Spacer()
+            }
+            
+            // Weekly progress tracker
+            HStack(spacing: 4) {
+                ForEach(0..<7, id: \.self) { index in
+                    VStack(spacing: 12) {
+                        // Day label
+                        Text(dayLabels[index])
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundColor(Color("appText05"))
+                        
+                        // Completion circle
+                        ZStack {
+                            if weeklyProgress[index] {
+                                // Filled circle with lightning bolt icon
+                                Circle()
+                                    .fill(Color.primary)
+                                    .frame(width: 24, height: 24)
+                                
+                                Image("Icon-Bolt_Filled")
+                                    .resizable()
+                                    .renderingMode(.template)
+                                    .foregroundColor(.white)
+                                    .frame(width: 14, height: 14)
+                            } else {
+                                // Empty circle with stroke
+                                Circle()
+                                    .stroke(Color("appText07"), lineWidth: 2)
+                                    .frame(width: 24, height: 24)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(4)
+                    .background(index == todayDayIndex ? Color("appPrimaryOpacity10") : Color.clear)
+                    .cornerRadius(12)
+                }
+            }
+        }
+        .padding(16)
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func calculateStreak(from habitData: HabitWidgetData) -> Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var streak = 0
+        var checkDate = today
+        
+        // Check completionStatus first, then fall back to completionHistory
+        while true {
+            let dateKey = formatDateKey(for: checkDate)
+            let isCompleted = habitData.completionStatus[dateKey] ?? ((habitData.completionHistory[dateKey] ?? 0) > 0)
+            
+            if isCompleted {
+                streak += 1
+                guard let previousDate = calendar.date(byAdding: .day, value: -1, to: checkDate) else { break }
+                checkDate = previousDate
+            } else {
+                break
+            }
+        }
+        
+        return streak
+    }
+    
+    private func getWeeklyProgress(from habitData: HabitWidgetData) -> [Bool] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        
+        // Get the start of the current week (Monday)
+        let weekday = calendar.component(.weekday, from: today)
+        // Convert to Monday = 0, Sunday = 6
+        // Sunday = 1 -> 6, Monday = 2 -> 0, Tuesday = 3 -> 1, etc.
+        let daysFromMonday = (weekday + 5) % 7
+        guard let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) else {
+            return Array(repeating: false, count: 7)
+        }
+        
+        var weeklyProgress: [Bool] = Array(repeating: false, count: 7)
+        
+        // Fill in the current week (Monday to Sunday)
+        for i in 0..<7 {
+            if let date = calendar.date(byAdding: .day, value: i, to: weekStart) {
+                let dateKey = formatDateKey(for: date)
+                let isCompleted = habitData.completionStatus[dateKey] ?? ((habitData.completionHistory[dateKey] ?? 0) > 0)
+                weeklyProgress[i] = isCompleted
+            }
+        }
+        
+        return weeklyProgress
+    }
+    
+    private func formatDateKey(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.string(from: date)
     }
 }
 
@@ -251,6 +463,7 @@ struct MonthlyProgressSmallView: View {
 @available(iOS 17.0, *)
 struct CalendarGridView: View {
     let completions: [Date: Bool]
+    let color: Color
     
     private let calendar = Calendar.current
     
@@ -262,11 +475,13 @@ struct CalendarGridView: View {
                 HStack(spacing: 4) {
                     ForEach(0..<7, id: \.self) { dayIndex in
                         if weekIndex < gridItems.count && dayIndex < gridItems[weekIndex].count {
-                            DayCircle(isCompleted: gridItems[weekIndex][dayIndex])
+                            DayCircle(isCompleted: gridItems[weekIndex][dayIndex], color: color)
+                                .frame(maxWidth: .infinity)
                         } else {
                             Circle()
                                 .fill(Color.clear)
-                                .frame(width: 8, height: 8)
+                                .frame(width: 12, height: 12)
+                                .frame(maxWidth: .infinity)
                         }
                     }
                 }
@@ -323,11 +538,12 @@ struct CalendarGridView: View {
 @available(iOS 17.0, *)
 struct DayCircle: View {
     let isCompleted: Bool
+    let color: Color
     
     var body: some View {
         Circle()
-            .fill(isCompleted ? Color.blue.opacity(0.7) : Color.gray.opacity(0.2))
-            .frame(width: 8, height: 8)
+            .fill(isCompleted ? color.opacity(0.7) : Color("appOutline02"))
+            .frame(width: 12, height: 12)
     }
 }
 
@@ -343,6 +559,6 @@ struct MonthlyProgressWidget: Widget {
         }
         .configurationDisplayName("Monthly Progress")
         .description("Display monthly progress for a selected habit")
-        .supportedFamilies([.systemSmall])
+        .supportedFamilies([.systemSmall, .systemMedium])
     }
 }

@@ -396,7 +396,7 @@ fileprivate struct WeekDayButton: View {
     if isSelected {
       return Color.primary
     } else if isToday {
-      return Color("appPrimaryOpacity10")
+      return Color("appFixedPrimaryOpacity10")
     } else {
       return Color.clear
     }

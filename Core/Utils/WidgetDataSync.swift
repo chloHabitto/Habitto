@@ -29,6 +29,7 @@ class WidgetDataSync {
                 id: habit.id,
                 name: habit.name,
                 icon: habit.icon,
+                colorHex: habit.color.color.toHex(),
                 completionHistory: habit.completionHistory,
                 completionStatus: habit.completionStatus
             )
@@ -45,6 +46,7 @@ class WidgetDataSync {
                 id: habit.id,
                 name: habit.name,
                 icon: habit.icon,
+                colorHex: habit.color.color.toHex(),
                 completionHistory: habit.completionHistory,
                 completionStatus: habit.completionStatus
             )
@@ -69,6 +71,7 @@ class WidgetDataSync {
             id: habit.id,
             name: habit.name,
             icon: habit.icon,
+            colorHex: habit.color.color.toHex(),
             completionHistory: habit.completionHistory,
             completionStatus: habit.completionStatus
         )

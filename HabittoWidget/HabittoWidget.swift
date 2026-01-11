@@ -22,17 +22,23 @@ struct Provider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> ()) {
         var entries: [SimpleEntry] = []
 
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
+        // Read the latest streak value
         let currentDate = Date()
         let streak = getCurrentStreak()
         
+        // Create entries for the next few hours, all using the same streak value
+        // The timeline will refresh more frequently to pick up changes
         for hourOffset in 0 ..< 5 {
             let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
             let entry = SimpleEntry(date: entryDate, currentStreak: streak)
             entries.append(entry)
         }
 
-        let timeline = Timeline(entries: entries, policy: .atEnd)
+        // Use .after with a shorter refresh interval to pick up changes faster
+        // Refresh every 15 minutes instead of waiting until timeline ends (5 hours)
+        // This ensures the widget displays updated streak values quickly
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: currentDate)!
+        let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
         completion(timeline)
     }
     
@@ -40,9 +46,21 @@ struct Provider: TimelineProvider {
         // Read streak from App Group UserDefaults (shared with main app)
         // Use App Group to access data shared between app and widget extension
         if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
-            return sharedDefaults.integer(forKey: "widgetCurrentStreak")
+            // Force synchronize to ensure we read the latest value
+            sharedDefaults.synchronize()
+            let streak = sharedDefaults.integer(forKey: "widgetCurrentStreak")
+            // Log for debugging (only in debug builds)
+            #if DEBUG
+            print("📱 WIDGET: Read streak from App Group: \(streak)")
+            #endif
+            return streak
         } else {
             // Fallback to standard UserDefaults if App Group is not available
+            // This should not happen if entitlements are configured correctly
+            #if DEBUG
+            print("⚠️ WIDGET: App Group not available, using standard UserDefaults")
+            #endif
+            UserDefaults.standard.synchronize()
             return UserDefaults.standard.integer(forKey: "widgetCurrentStreak")
         }
     }
@@ -95,13 +113,12 @@ struct SmallWidgetView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
             // Fire icon at bottom right
-            // Using Icon-fire from Assets/Icons.xcassets/Icons_Colored/
-            // Matching the streak button in HeaderView.swift (Image(.iconFire))
-            Image("Icon-fire")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 48, height: 48)
+            // Using SF Symbol instead of large PNG image for widget compatibility
+            Image(systemName: "flame.fill")
+                .font(.system(size: 56, weight: .medium))
+                .foregroundColor(Color("appText01"))
         }
+        .padding(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))
     }
 }
 
@@ -121,6 +138,7 @@ struct HabittoWidget: Widget {
         }
         .configurationDisplayName("My Widget")
         .description("This is an example widget.")
+        .supportedFamilies([.systemSmall])
     }
 }
 

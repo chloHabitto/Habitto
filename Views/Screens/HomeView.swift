@@ -7,6 +7,11 @@ import UIKit
 // Import for streak calculations
 import Foundation
 
+// Import for widget updates
+#if canImport(WidgetKit)
+import WidgetKit
+#endif
+
 // MARK: - Tab
 
 enum Tab: Hashable {
@@ -621,6 +626,13 @@ class HomeViewState: ObservableObject {
       sharedDefaults.set(streak, forKey: "widgetCurrentStreak")
       sharedDefaults.synchronize()
       debugLog("📱 WIDGET_SYNC: Updated widget streak to \(streak)")
+      
+      // ✅ CRITICAL FIX: Reload widget timeline immediately to show updated streak
+      // This ensures the widget displays the latest streak value right away
+      #if canImport(WidgetKit)
+      WidgetCenter.shared.reloadAllTimelines()
+      debugLog("📱 WIDGET_SYNC: Triggered widget timeline reload")
+      #endif
     } else {
       debugLog("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
     }
