@@ -102,9 +102,30 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: SelectHabitIntent, in context: Context) async -> Timeline<MonthlyProgressEntry> {
+        // ✅ BUG FIX 1: Check configuration.habit?.id exists before loading
         let habitId = getHabitId(from: configuration)
+        
+        // ✅ CRITICAL: Verify habit ID was found
+        if let habitId = habitId {
+            print("🟢 WIDGET timeline: Found habit ID: \(habitId.uuidString)")
+        } else {
+            print("⚠️ WIDGET timeline: No habit ID found in configuration or UserDefaults")
+            if let configHabitId = configuration.habit?.id {
+                print("   configuration.habit?.id: \(configHabitId.uuidString)")
+            } else {
+                print("   configuration.habit?.id: nil")
+            }
+        }
+        
         let habitData = loadHabitData(for: habitId)
         let completions = getMonthlyCompletions(for: habitData)
+        
+        // ✅ CRITICAL: Verify we loaded the correct habit, not placeholder
+        if habitData.name == "Wim hof brathing" || habitData.name == "Select a habit" {
+            print("⚠️ WIDGET timeline: WARNING - Loaded placeholder habit '\(habitData.name)' instead of user's habit!")
+            print("   This means the widget couldn't find the selected habit in UserDefaults")
+            print("   Check that WidgetDataSync.syncHabitsToWidget() is being called from the main app")
+        }
         
         print("🟢 WIDGET: Loading data for habit '\(habitData.name)'")
         print("   Habit ID: \(habitData.id)")
@@ -195,7 +216,16 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
     
     private func loadHabitData(for habitId: UUID?) -> HabitWidgetData {
         guard let habitId = habitId else {
-            print("🟡 WIDGET: No habit ID provided, returning placeholder")
+            print("⚠️ WIDGET: No habit ID provided, attempting to load first available habit")
+            // Try to load first available habit instead of returning placeholder
+            if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget"),
+               let arrayData = sharedDefaults.data(forKey: "widgetHabits"),
+               let habits = try? JSONDecoder().decode([HabitWidgetData].self, from: arrayData),
+               let firstHabit = habits.first {
+                print("🟢 WIDGET: Loaded first available habit: '\(firstHabit.name)' (ID: \(firstHabit.id))")
+                return firstHabit
+            }
+            print("🟡 WIDGET: No habit ID provided and no habits available, returning placeholder")
             return HabitWidgetData(
                 id: UUID(),
                 name: "Select a habit",
@@ -283,8 +313,12 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
     private func formatDateKey(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
+        // ✅ CRITICAL FIX: Use UTC timezone to match app's date key format
+        // The app saves date keys in UTC, so widget must also use UTC to avoid off-by-1-day errors
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        let key = formatter.string(from: date)
+        print("      formatDateKey: date=\(date) -> key='\(key)' (UTC timezone)")
+        return key
     }
     
     private func generatePlaceholderCompletions() -> [Date: Bool] {
@@ -635,11 +669,13 @@ struct MonthlyProgressMediumView: View {
     private func formatDateKey(for date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = TimeZone.current
+        // ✅ BUG FIX 2: Use UTC timezone to match app's date key format
+        // The app saves date keys in UTC, so widget must also use UTC to avoid off-by-1-day errors
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
         let key = formatter.string(from: date)
         // Debug logging for date key generation
         #if DEBUG
-        print("      formatDateKey: date=\(date) -> key='\(key)' (timezone: \(TimeZone.current.identifier))")
+        print("      formatDateKey: date=\(date) -> key='\(key)' (UTC timezone)")
         #endif
         return key
     }

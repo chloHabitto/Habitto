@@ -233,7 +233,7 @@ struct SmallWidgetView: View {
                 .foregroundColor(.white)
                 .offset(x: 4, y: 4)
         }
-        .padding(EdgeInsets(top: 4, leading: 16, bottom: 16, trailing: 16))
+        .padding(EdgeInsets(top: 4, leading: 12, bottom: 16, trailing: 12))
         .id("widget-streak-\(currentStreak)") // Force entire view update when streak changes
     }
 }
