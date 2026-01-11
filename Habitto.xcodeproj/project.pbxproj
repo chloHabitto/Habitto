@@ -22,13 +22,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		89AF5CC22F12B2740092F84C /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 89C17A2F2DF73D8A00B2480F /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 89AF5CB22F12B2710092F84C;
-			remoteInfo = HabittoWidgetExtension;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -40,21 +33,13 @@
 			);
 			name = "Embed Foundation Extensions";
 		};
-		89AF5CC92F12B2740092F84C /* Embed Foundation Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			dstPath = "";
-			dstSubfolder = PlugIns;
-			files = (
-				89AF5CC42F12B2740092F84C /* HabittoWidgetExtension.appex in Embed Foundation Extensions */,
-			);
-			name = "Embed Foundation Extensions";
-		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		890C9EDC2E4E05B7006E28C7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8958E9BA2E93AEC900AC3DB8 /* HabittoAppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = HabittoAppIcon.icon; sourceTree = "<group>"; };
+		897A76092F13907D004338E4 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AF58C92F114EBF0092F84C /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AF5CB32F12B2710092F84C /* HabittoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabittoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		89AF5CE72F12B34B0092F84C /* HabittoWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HabittoWidgetExtension.entitlements; sourceTree = "<group>"; };
@@ -70,7 +55,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				.gitignore,
-				Config/App-Info.plist,
+				"Config/App-Info.plist",
 				Core/Data/CloudKit/Archive/CloudKitConflictResolver.swift,
 				Core/Data/CloudKit/Archive/CloudKitIntegrationService.swift,
 				Core/Data/CloudKit/Archive/CloudKitModels.swift,
@@ -80,34 +65,13 @@
 				Core/Data/CloudKit/Archive/CloudKitUniquenessManager.swift,
 				Core/Data/CloudKit/Archive/ConflictResolutionPolicy.swift,
 				firebase.json,
-				HabittoWidget,
 				package.json,
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
 		};
-		89AF5CC82F12B2740092F84C /* Exceptions for "HabittoWidget" folder in "HabittoWidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 89AF5CB22F12B2710092F84C /* HabittoWidgetExtension */;
-		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		89AF5CB62F12B2720092F84C /* HabittoWidget */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				89AF5CC82F12B2740092F84C /* Exceptions for "HabittoWidget" folder in "HabittoWidgetExtension" target */,
-			);
-			path = HabittoWidget;
-			sourceTree = "<group>";
-		};
-		89AF5D1E2F12BA000092F84C /* Shared */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = Shared;
-			sourceTree = "<group>";
-		};
 		89C17A392DF73D8A00B2480F /* . */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -153,6 +117,11 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		897A76222F13907D004338E4 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		89AF58DF2F114EBF0092F84C /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
@@ -172,6 +141,7 @@
 				890C9EDB2E4E05B7006E28C7 /* Frameworks */,
 				89C17A382DF73D8A00B2480F /* Products */,
 				8958E9BA2E93AEC900AC3DB8 /* HabittoAppIcon.icon */,
+				897A71D62F13907D004338E4 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -224,12 +194,8 @@
 				89C17A342DF73D8A00B2480F /* Frameworks */,
 				89C17A352DF73D8A00B2480F /* Resources */,
 				890C9EF52E4E05BA006E28C7 /* Embed Foundation Extensions */,
-				89AF5CC92F12B2740092F84C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
-			);
-			dependencies = (
-				89AF5CC32F12B2740092F84C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				89C17A392DF73D8A00B2480F /* . */,
@@ -258,14 +224,11 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
-				TargetAttributes = {
-					89AF5CB22F12B2710092F84C = {
-						CreatedOnToolsVersion = 26.1.1;
-					};
-					89C17A362DF73D8A00B2480F = {
-						CreatedOnToolsVersion = 16.3;
-					};
+			TargetAttributes = {
+				89C17A362DF73D8A00B2480F = {
+					CreatedOnToolsVersion = 16.3;
 				};
+			};
 			};
 			buildConfigurationList = 89C17A322DF73D8A00B2480F /* Build configuration list for PBXProject "Habitto" */;
 			developmentRegion = en;
@@ -295,6 +258,10 @@
 					ProjectRef = 89AF58C92F114EBF0092F84C /* Habitto.xcodeproj */;
 				},
 				{
+					ProductGroup = 897A76222F13907D004338E4 /* Products */;
+					ProjectRef = 897A76092F13907D004338E4 /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 89EF14B02F1122FB00C61B7E /* Products */;
 					ProjectRef = 89EF149A2F1122FB00C61B7E /* Habitto.xcodeproj */;
 				},
@@ -306,7 +273,6 @@
 			projectRoot = "";
 			targets = (
 				89C17A362DF73D8A00B2480F /* Habitto */,
-				89AF5CB22F12B2710092F84C /* HabittoWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -338,11 +304,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		89AF5CC32F12B2740092F84C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 89AF5CB22F12B2710092F84C /* HabittoWidgetExtension */;
-			targetProxy = 89AF5CC22F12B2740092F84C /* PBXContainerItemProxy */;
-		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
