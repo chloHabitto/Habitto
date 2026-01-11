@@ -522,7 +522,7 @@ struct MonthlyProgressMediumView: View {
                     .frame(maxWidth: .infinity)
                     .padding(4)
                     .background(index == todayDayIndex ? Color("appPrimaryOpacity10") : Color.clear)
-                    .cornerRadius(12)
+                    .cornerRadius(24)
                 }
             }
         }
