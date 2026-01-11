@@ -12,5 +12,8 @@ import SwiftUI
 struct HabittoWidgetBundle: WidgetBundle {
     var body: some Widget {
         HabittoWidget()
+        if #available(iOS 17.0, *) {
+            MonthlyProgressWidget()
+        }
     }
 }

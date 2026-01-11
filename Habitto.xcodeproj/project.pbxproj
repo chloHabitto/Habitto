@@ -104,6 +104,7 @@
 			membershipExceptions = (
 				Assets/Icons.xcassets,
 				Assets/SemanticColors.xcassets,
+				Shared/HabitWidgetData.swift,
 			);
 			target = 893628B82F13964E006C927E /* HabittoWidgetExtension */;
 		};
