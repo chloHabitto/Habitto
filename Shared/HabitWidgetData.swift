@@ -15,6 +15,7 @@ struct HabitWidgetData: Codable {
     let id: UUID
     let name: String
     let icon: String
+    let colorHex: String?
     let completionHistory: [String: Int]
     let completionStatus: [String: Bool]
 }
