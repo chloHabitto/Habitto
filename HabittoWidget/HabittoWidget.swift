@@ -90,12 +90,13 @@ struct SmallWidgetView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
             // Fire icon at bottom right
+            // Using Icon-fire from Assets/Icons.xcassets/Icons_Colored/
+            // Matching the streak button in HeaderView.swift (Image(.iconFire))
             Image("Icon-fire")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 32, height: 32)
+                .frame(width: 48, height: 48)
         }
-        .padding()
     }
 }
 
