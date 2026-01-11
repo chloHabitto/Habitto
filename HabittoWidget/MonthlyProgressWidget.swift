@@ -86,7 +86,9 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
                 completionHistory: [:],
                 completionStatus: [:]
             ),
-            monthlyCompletions: generatePlaceholderCompletions()
+            monthlyCompletions: generatePlaceholderCompletions(),
+            globalStreak: 7,  // ✅ MEDIUM WIDGET: Global streak
+            weeklyProgress: [true, true, true, true, true, true, true]  // ✅ MEDIUM WIDGET: Weekly progress (placeholder)
         )
     }
     
@@ -94,10 +96,15 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
         let habitId = getHabitId(from: configuration)
         let habitData = loadHabitData(for: habitId)
         let completions = getMonthlyCompletions(for: habitData)
+        // ✅ MEDIUM WIDGET: Load global streak and calculate weekly progress from all habits
+        let globalStreak = loadGlobalStreak()
+        let weeklyProgress = calculateWeeklyProgressFromAllHabits()
         return MonthlyProgressEntry(
             date: Date(),
             habitData: habitData,
-            monthlyCompletions: completions
+            monthlyCompletions: completions,
+            globalStreak: globalStreak,
+            weeklyProgress: weeklyProgress
         )
     }
     
@@ -161,16 +168,27 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
         print("   completionStatus sample keys: \(Array(habitData.completionStatus.keys).sorted().prefix(5))")
         print("   completionHistory sample keys: \(Array(habitData.completionHistory.keys).sorted().prefix(5))")
         
+        // ✅ MEDIUM WIDGET: Load global streak and calculate weekly progress from all habits
+        let globalStreak = loadGlobalStreak()
+        let weeklyProgress = calculateWeeklyProgressFromAllHabits()
+        
+        print("🟢 WIDGET timeline: Global streak = \(globalStreak)")
+        print("🟢 WIDGET timeline: Weekly progress = \(weeklyProgress)")
+        
         let entry = MonthlyProgressEntry(
             date: Date(),
             habitData: habitData,
-            monthlyCompletions: completions
+            monthlyCompletions: completions,
+            globalStreak: globalStreak,
+            weeklyProgress: weeklyProgress
         )
         
         // 🔍 CRITICAL DEBUG: Verify entry after creation
         print("🔍 WIDGET timeline: Entry created, verifying entry.habitData:")
         print("   entry.habitData.completionStatus.count: \(entry.habitData.completionStatus.count)")
         print("   entry.habitData.completionHistory.count: \(entry.habitData.completionHistory.count)")
+        print("   entry.globalStreak: \(entry.globalStreak)")
+        print("   entry.weeklyProgress: \(entry.weeklyProgress)")
         
         // Update every 6 hours
         let nextUpdate = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date()
@@ -340,14 +358,83 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
         
         return completions
     }
+    
+    // ✅ MEDIUM WIDGET: Load global streak from UserDefaults (same as small widget)
+    private func loadGlobalStreak() -> Int {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") else {
+            print("⚠️ WIDGET: Failed to access App Group UserDefaults for global streak")
+            return 0
+        }
+        
+        sharedDefaults.synchronize()
+        let streak = sharedDefaults.integer(forKey: "widgetCurrentStreak")
+        print("🟢 WIDGET: Loaded global streak = \(streak)")
+        return streak
+    }
+    
+    // ✅ MEDIUM WIDGET: Calculate weekly progress from ALL habits
+    // Returns array of 7 booleans (Monday to Sunday) indicating if ALL habits were completed each day
+    private func calculateWeeklyProgressFromAllHabits() -> [Bool] {
+        guard let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget"),
+              let arrayData = sharedDefaults.data(forKey: "widgetHabits"),
+              let allHabits = try? JSONDecoder().decode([HabitWidgetData].self, from: arrayData) else {
+            print("⚠️ WIDGET: Failed to load all habits for weekly progress calculation")
+            return Array(repeating: false, count: 7)
+        }
+        
+        print("🟢 WIDGET: Calculating weekly progress from \(allHabits.count) habits")
+        
+        let calendar = Calendar.current
+        let today = Date()
+        let todayStart = calendar.startOfDay(for: today)
+        
+        // Get the start of the current week (Monday)
+        let weekday = calendar.component(.weekday, from: today)
+        let daysFromMonday = (weekday + 5) % 7
+        
+        guard let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: todayStart) else {
+            print("⚠️ WIDGET: Failed to calculate week start")
+            return Array(repeating: false, count: 7)
+        }
+        
+        var weeklyProgress: [Bool] = Array(repeating: false, count: 7)
+        
+        // For each day of the week (Monday to Sunday)
+        for i in 0..<7 {
+            guard let date = calendar.date(byAdding: .day, value: i, to: weekStart) else { continue }
+            let dateKey = formatDateKey(for: date)
+            
+            // Check if ALL habits were completed on this day
+            // A day is complete if ALL habits have either completionStatus=true OR completionHistory > 0
+            let allComplete = allHabits.allSatisfy { habit in
+                let statusCompleted = habit.completionStatus[dateKey] ?? false
+                let historyValue = habit.completionHistory[dateKey] ?? 0
+                let historyCompleted = historyValue > 0
+                return statusCompleted || historyCompleted
+            }
+            
+            weeklyProgress[i] = allComplete
+            
+            let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+            print("   \(dayLabels[i]) (\(dateKey)): \(allComplete ? "✅ all habits completed" : "❌ incomplete")")
+        }
+        
+        let completedCount = weeklyProgress.filter { $0 }.count
+        print("🟢 WIDGET: Weekly progress: \(completedCount)/7 days with all habits completed")
+        
+        return weeklyProgress
+    }
 }
 
 // MARK: - Monthly Progress Entry
 @available(iOS 17.0, *)
 struct MonthlyProgressEntry: TimelineEntry {
     let date: Date
-    let habitData: HabitWidgetData
-    let monthlyCompletions: [Date: Bool]
+    let habitData: HabitWidgetData  // For small widget (monthly calendar view)
+    let monthlyCompletions: [Date: Bool]  // For small widget
+    // ✅ MEDIUM WIDGET: Global streak and weekly progress
+    let globalStreak: Int  // Global streak (same as small widget)
+    let weeklyProgress: [Bool]  // Weekly progress (all habits completed each day)
 }
 
 // MARK: - Monthly Progress Widget View
@@ -484,19 +571,8 @@ struct MonthlyProgressMediumView: View {
     let entry: MonthlyProgressEntry
     private let dayLabels = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
     
-    private var streakCount: Int {
-        calculateStreak(from: entry.habitData)
-    }
-    
-    private var weeklyProgress: [Bool] {
-        // 🔍 CRITICAL DEBUG: Log entry data when accessing weeklyProgress
-        print("🔍 WIDGET weeklyProgress computed: Accessing entry.habitData")
-        print("   entry.habitData.name: '\(entry.habitData.name)'")
-        print("   entry.habitData.id: \(entry.habitData.id)")
-        print("   entry.habitData.completionStatus.count: \(entry.habitData.completionStatus.count)")
-        print("   entry.habitData.completionHistory.count: \(entry.habitData.completionHistory.count)")
-        return getWeeklyProgress(from: entry.habitData)
-    }
+    // ✅ MEDIUM WIDGET: Use global streak and weekly progress from entry
+    // No need to calculate from habitData anymore - it's already calculated from all habits
     
     private var todayDayIndex: Int {
         let calendar = Calendar.current
@@ -510,7 +586,7 @@ struct MonthlyProgressMediumView: View {
         VStack(spacing: 16) {
             // Streak section at top
             HStack(spacing: 8) {
-                Text("\(streakCount) day streak")
+                Text("\(entry.globalStreak) day streak")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Color("appText03"))
                 
@@ -534,7 +610,7 @@ struct MonthlyProgressMediumView: View {
                         
                         // Completion circle
                         ZStack {
-                            if weeklyProgress[index] {
+                            if entry.weeklyProgress[index] {
                                 // Filled circle with lightning bolt icon
                                 Circle()
                                     .fill(Color("appPrimary"))

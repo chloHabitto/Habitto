@@ -231,7 +231,7 @@ struct SmallWidgetView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 44, height: 44)
                 .foregroundColor(.white)
-                .offset(x: 4, y: 4)
+                .offset(x: 4, y: 6)
         }
         .padding(EdgeInsets(top: 4, leading: 12, bottom: 16, trailing: 12))
         .id("widget-streak-\(currentStreak)") // Force entire view update when streak changes
