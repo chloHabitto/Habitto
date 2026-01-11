@@ -16,6 +16,8 @@ struct Provider: TimelineProvider {
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> ()) {
         let streak = getCurrentStreak()
         let entry = SimpleEntry(date: Date(), currentStreak: streak)
+        print("🔴 Provider.getSnapshot: Created entry with streak = \(streak), entry.currentStreak = \(entry.currentStreak)")
+        NSLog("🔴 Provider.getSnapshot: Created entry with streak = %d, entry.currentStreak = %d", streak, entry.currentStreak)
         completion(entry)
     }
 
@@ -25,6 +27,8 @@ struct Provider: TimelineProvider {
         // Read the latest streak value
         let currentDate = Date()
         let streak = getCurrentStreak()
+        print("🔴 Provider.getTimeline: Read streak = \(streak), creating entries")
+        NSLog("🔴 Provider.getTimeline: Read streak = %d, creating entries", streak)
         
         // Create entries for the next few hours, all using the same streak value
         // The timeline will refresh more frequently to pick up changes
@@ -32,6 +36,7 @@ struct Provider: TimelineProvider {
             let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
             let entry = SimpleEntry(date: entryDate, currentStreak: streak)
             entries.append(entry)
+            print("🔴 Provider.getTimeline: Created entry with streak = \(streak) for date \(entryDate)")
         }
 
         // Use .after with a shorter refresh interval to pick up changes faster
@@ -39,6 +44,7 @@ struct Provider: TimelineProvider {
         // This ensures the widget displays updated streak values quickly
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 15, to: currentDate)!
         let timeline = Timeline(entries: entries, policy: .after(nextUpdate))
+        print("🔴 Provider.getTimeline: Completing timeline with \(entries.count) entries, all with streak = \(streak)")
         completion(timeline)
     }
     
@@ -48,11 +54,24 @@ struct Provider: TimelineProvider {
         if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
             // Force synchronize to ensure we read the latest value
             sharedDefaults.synchronize()
+            
+            // Verify the key exists
+            if sharedDefaults.object(forKey: "widgetCurrentStreak") == nil {
+                print("⚠️ WIDGET getCurrentStreak: Key 'widgetCurrentStreak' does NOT exist in App Group!")
+                NSLog("⚠️ WIDGET getCurrentStreak: Key 'widgetCurrentStreak' does NOT exist in App Group!")
+                return 0
+            }
+            
             let streak = sharedDefaults.integer(forKey: "widgetCurrentStreak")
-            // Log for debugging (only in debug builds)
-            #if DEBUG
-            print("📱 WIDGET: Read streak from App Group: \(streak)")
-            #endif
+            // Log for debugging (always log, not just in debug builds)
+            print("📱 WIDGET getCurrentStreak: Read streak from App Group = \(streak)")
+            NSLog("📱 WIDGET getCurrentStreak: Read streak from App Group = %d", streak)
+            
+            // Also print raw value to verify
+            if let rawValue = sharedDefaults.object(forKey: "widgetCurrentStreak") {
+                print("📱 WIDGET getCurrentStreak: Raw value type = \(type(of: rawValue)), value = \(rawValue)")
+            }
+            
             return streak
         } else {
             // Fallback to standard UserDefaults if App Group is not available
@@ -73,23 +92,42 @@ struct Provider: TimelineProvider {
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let currentStreak: Int
+    
+    init(date: Date, currentStreak: Int) {
+        self.date = date
+        self.currentStreak = currentStreak
+        print("🔴 SimpleEntry: INIT with date = \(date), currentStreak = \(currentStreak)")
+        NSLog("🔴 SimpleEntry: INIT with currentStreak = %d", currentStreak)
+    }
 }
 
 struct HabittoWidgetEntryView : View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) var widgetFamily
 
+    init(entry: Provider.Entry) {
+        self.entry = entry
+        print("🔴 HabittoWidgetEntryView: INIT with entry streak = \(entry.currentStreak)")
+        NSLog("🔴 HabittoWidgetEntryView: INIT with entry streak = %d", entry.currentStreak)
+    }
+
     var body: some View {
-        switch widgetFamily {
-        case .systemSmall:
-            SmallWidgetView(currentStreak: entry.currentStreak)
-        default:
-            VStack {
-                Text("Time:")
-                Text(entry.date, style: .time)
-                
-                Text("Streak:")
-                Text("\(entry.currentStreak)")
+        // Log every time body is computed
+        print("🔴 HabittoWidgetEntryView: body computed with entry streak = \(entry.currentStreak)")
+        NSLog("🔴 HabittoWidgetEntryView: body computed with entry streak = %d", entry.currentStreak)
+        
+        return Group {
+            switch widgetFamily {
+            case .systemSmall:
+                SmallWidgetView(currentStreak: entry.currentStreak)
+            default:
+                VStack {
+                    Text("Time:")
+                    Text(entry.date, style: .time)
+                    
+                    Text("Streak:")
+                    Text("\(entry.currentStreak)")
+                }
             }
         }
     }
@@ -98,13 +136,27 @@ struct HabittoWidgetEntryView : View {
 struct SmallWidgetView: View {
     let currentStreak: Int
     
+    init(currentStreak: Int) {
+        self.currentStreak = currentStreak
+        print("🔴 SmallWidgetView: INIT with streak = \(currentStreak)")
+        NSLog("🔴 SmallWidgetView: INIT with streak = %d", currentStreak)
+    }
+    
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
+        // Log every time body is computed
+        print("🔴 SmallWidgetView: body computed with streak = \(currentStreak)")
+        NSLog("🔴 SmallWidgetView: body computed with streak = %d", currentStreak)
+        
+        return ZStack(alignment: .bottomTrailing) {
             // Streak info at top left
             VStack(alignment: .leading, spacing: 0) {
                 Text("\(currentStreak)")
                     .font(.system(size: 48, weight: .bold, design: .rounded))
                     .foregroundColor(Color("appText01"))
+                    .onAppear {
+                        print("🔴 SmallWidgetView: Text view appeared with streak = \(currentStreak)")
+                        NSLog("🔴 SmallWidgetView: Text view appeared with streak = %d", currentStreak)
+                    }
                 
                 Text("Streak Days")
                     .font(.system(size: 14, weight: .semibold))
@@ -113,9 +165,10 @@ struct SmallWidgetView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
             // Fire icon at bottom right
-            // Using SF Symbol instead of large PNG image for widget compatibility
-            Image(systemName: "flame.fill")
-                .font(.system(size: 56, weight: .medium))
+            Image("Widget-Icon-Fire")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 56, height: 56)
                 .foregroundColor(Color("appText01"))
         }
         .padding(EdgeInsets(top: 8, leading: 16, bottom: 16, trailing: 16))

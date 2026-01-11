@@ -229,6 +229,17 @@ class HomeViewState: ObservableObject {
     do {
       try await habitRepository.toggleHabitCompletion(habit, for: targetDate)
       debugLog("✅ GUARANTEED: Completion toggled and persisted")
+      
+      // ✅ WIDGET SYNC: Sync updated habit to widget storage immediately after completion toggle
+      // Get the updated habit from the repository (it should have the latest completionStatus/completionHistory)
+      if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {
+        WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
+        debugLog("📱 WIDGET_SYNC: Synced updated habit '\(updatedHabit.name)' to widget storage")
+      } else {
+        debugLog("⚠️ WIDGET_SYNC: Could not find updated habit in repository, syncing original habit")
+        WidgetDataSync.shared.syncHabitToWidget(habit)
+      }
+      
       requestStreakRecalculation(reason: "Persistence completed for \(opContext)")
     } catch {
       debugLog("❌ Failed to toggle completion: \(error.localizedDescription)")

@@ -22,6 +22,7 @@ class WidgetDataSync {
     /// This allows widgets to access habit information for display
     func syncHabitsToWidget(_ habits: [Habit]) {
         print("🔵 WIDGET SYNC: Syncing \(habits.count) habits to widget")
+        NSLog("🔵 WIDGET SYNC: Syncing %d habits to widget", habits.count)
         
         guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
             print("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
@@ -101,6 +102,7 @@ class WidgetDataSync {
     /// Sync a single habit to widget storage
     func syncHabitToWidget(_ habit: Habit) {
         print("🔵 WIDGET SYNC: Syncing single habit '\(habit.name)' to widget")
+        NSLog("🔵 WIDGET SYNC: Syncing single habit '%@' to widget", habit.name)
         
         guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
             print("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
@@ -142,5 +144,40 @@ class WidgetDataSync {
         } else {
             print("❌ WIDGET SYNC: Failed to encode habit '\(habit.name)'")
         }
+    }
+    
+    /// Update the selected habit ID for the monthly progress widget
+    /// This is used as a fallback when the widget configuration doesn't have a habit selected
+    func updateSelectedMonthlyWidgetHabit(id: UUID) {
+        guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
+            print("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
+            return
+        }
+        
+        sharedDefaults.set(id.uuidString, forKey: "selectedMonthlyWidgetHabitId")
+        sharedDefaults.synchronize()
+        print("✅ WIDGET SYNC: Updated selected monthly widget habit ID to: \(id.uuidString)")
+        
+        // Reload widget timelines to force immediate update
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "MonthlyProgressWidget")
+        #endif
+    }
+    
+    /// Remove the selected habit ID for the monthly progress widget
+    func removeSelectedMonthlyWidgetHabit() {
+        guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
+            print("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
+            return
+        }
+        
+        sharedDefaults.removeObject(forKey: "selectedMonthlyWidgetHabitId")
+        sharedDefaults.synchronize()
+        print("✅ WIDGET SYNC: Removed selected monthly widget habit ID")
+        
+        // Reload widget timelines to force immediate update
+        #if canImport(WidgetKit)
+        WidgetCenter.shared.reloadTimelines(ofKind: "MonthlyProgressWidget")
+        #endif
     }
 }

@@ -91,7 +91,8 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
     }
     
     func snapshot(for configuration: SelectHabitIntent, in context: Context) async -> MonthlyProgressEntry {
-        let habitData = loadHabitData(for: configuration.habit?.id)
+        let habitId = getHabitId(from: configuration)
+        let habitData = loadHabitData(for: habitId)
         let completions = getMonthlyCompletions(for: habitData)
         return MonthlyProgressEntry(
             date: Date(),
@@ -101,7 +102,8 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: SelectHabitIntent, in context: Context) async -> Timeline<MonthlyProgressEntry> {
-        let habitData = loadHabitData(for: configuration.habit?.id)
+        let habitId = getHabitId(from: configuration)
+        let habitData = loadHabitData(for: habitId)
         let completions = getMonthlyCompletions(for: habitData)
         
         print("🟢 WIDGET: Loading data for habit '\(habitData.name)'")
@@ -129,15 +131,66 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
             }
         }
         
+        // 🔍 CRITICAL DEBUG: Verify data before creating entry
+        print("🔍 WIDGET timeline: Creating entry with habitData:")
+        print("   Habit ID: \(habitData.id)")
+        print("   Habit name: '\(habitData.name)'")
+        print("   completionStatus.count: \(habitData.completionStatus.count)")
+        print("   completionHistory.count: \(habitData.completionHistory.count)")
+        print("   completionStatus sample keys: \(Array(habitData.completionStatus.keys).sorted().prefix(5))")
+        print("   completionHistory sample keys: \(Array(habitData.completionHistory.keys).sorted().prefix(5))")
+        
         let entry = MonthlyProgressEntry(
             date: Date(),
             habitData: habitData,
             monthlyCompletions: completions
         )
         
+        // 🔍 CRITICAL DEBUG: Verify entry after creation
+        print("🔍 WIDGET timeline: Entry created, verifying entry.habitData:")
+        print("   entry.habitData.completionStatus.count: \(entry.habitData.completionStatus.count)")
+        print("   entry.habitData.completionHistory.count: \(entry.habitData.completionHistory.count)")
+        
         // Update every 6 hours
         let nextUpdate = Calendar.current.date(byAdding: .hour, value: 6, to: Date()) ?? Date()
         return Timeline(entries: [entry], policy: .after(nextUpdate))
+    }
+    
+    /// Get habit ID from configuration, falling back to stored UserDefaults value if nil
+    private func getHabitId(from configuration: SelectHabitIntent) -> UUID? {
+        if let configHabitId = configuration.habit?.id {
+            print("🟢 WIDGET timeline/snapshot: Configuration has habit ID: \(configHabitId)")
+            // Store this as the selected habit for future fallback
+            if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
+                sharedDefaults.set(configHabitId.uuidString, forKey: "selectedMonthlyWidgetHabitId")
+                sharedDefaults.synchronize()
+            }
+            return configHabitId
+        } else {
+            print("🟡 WIDGET timeline/snapshot: No habit ID in configuration, attempting to load from UserDefaults fallback")
+            // Try to load from UserDefaults fallback
+            if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget"),
+               let storedIdString = sharedDefaults.string(forKey: "selectedMonthlyWidgetHabitId"),
+               let storedId = UUID(uuidString: storedIdString) {
+                print("🟢 WIDGET timeline/snapshot: Found stored habit ID in UserDefaults: \(storedId)")
+                return storedId
+            } else {
+                print("🟡 WIDGET timeline/snapshot: No stored habit ID found, attempting to load first available habit")
+                // Last resort: try to load the first available habit from widgetHabits array
+                if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget"),
+                   let arrayData = sharedDefaults.data(forKey: "widgetHabits"),
+                   let habits = try? JSONDecoder().decode([HabitWidgetData].self, from: arrayData),
+                   let firstHabit = habits.first {
+                    print("🟢 WIDGET timeline/snapshot: Using first available habit: '\(firstHabit.name)' (ID: \(firstHabit.id))")
+                    // Store this as the selected habit for future use
+                    sharedDefaults.set(firstHabit.id.uuidString, forKey: "selectedMonthlyWidgetHabitId")
+                    sharedDefaults.synchronize()
+                    return firstHabit.id
+                }
+                print("⚠️ WIDGET timeline/snapshot: No habit ID available from any source")
+                return nil
+            }
+        }
     }
     
     private func loadHabitData(for habitId: UUID?) -> HabitWidgetData {
@@ -402,7 +455,13 @@ struct MonthlyProgressMediumView: View {
     }
     
     private var weeklyProgress: [Bool] {
-        getWeeklyProgress(from: entry.habitData)
+        // 🔍 CRITICAL DEBUG: Log entry data when accessing weeklyProgress
+        print("🔍 WIDGET weeklyProgress computed: Accessing entry.habitData")
+        print("   entry.habitData.name: '\(entry.habitData.name)'")
+        print("   entry.habitData.id: \(entry.habitData.id)")
+        print("   entry.habitData.completionStatus.count: \(entry.habitData.completionStatus.count)")
+        print("   entry.habitData.completionHistory.count: \(entry.habitData.completionHistory.count)")
+        return getWeeklyProgress(from: entry.habitData)
     }
     
     private var todayDayIndex: Int {
@@ -421,8 +480,10 @@ struct MonthlyProgressMediumView: View {
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(Color("appText03"))
                 
-                Image(systemName: "flame.fill")
-                    .font(.system(size: 24, weight: .medium))
+                Image("Widget-Icon-Fire")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 24, height: 24)
                     .foregroundColor(Color("appText01"))
                 
                 Spacer()
@@ -442,13 +503,13 @@ struct MonthlyProgressMediumView: View {
                             if weeklyProgress[index] {
                                 // Filled circle with lightning bolt icon
                                 Circle()
-                                    .fill(Color.primary)
+                                    .fill(Color("appPrimary"))
                                     .frame(width: 24, height: 24)
                                 
                                 Image("Icon-Bolt_Filled")
                                     .resizable()
                                     .renderingMode(.template)
-                                    .foregroundColor(.white)
+                                    .foregroundColor(Color("appOnPrimary"))
                                     .frame(width: 14, height: 14)
                             } else {
                                 // Empty circle with stroke
@@ -495,17 +556,47 @@ struct MonthlyProgressMediumView: View {
     
     private func getWeeklyProgress(from habitData: HabitWidgetData) -> [Bool] {
         let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+        let today = Date()
+        let todayStart = calendar.startOfDay(for: today)
+        
+        print("🟡 WIDGET getWeeklyProgress: Starting weekly progress calculation")
+        NSLog("🟡 WIDGET getWeeklyProgress: Starting weekly progress calculation")
+        
+        // 🔍 CRITICAL DEBUG: Log the habitData being passed in
+        print("🔍 WIDGET getWeeklyProgress: Received habitData:")
+        print("   Habit ID: \(habitData.id)")
+        print("   Habit name: '\(habitData.name)'")
+        print("   completionStatus.count: \(habitData.completionStatus.count)")
+        print("   completionHistory.count: \(habitData.completionHistory.count)")
+        print("   completionStatus keys: \(Array(habitData.completionStatus.keys).sorted())")
+        print("   completionHistory keys: \(Array(habitData.completionHistory.keys).sorted())")
+        
+        print("   Today: \(today)")
+        NSLog("   Today: \(today)")
+        print("   Today (start of day): \(todayStart)")
+        NSLog("   Today (start of day): \(todayStart)")
+        print("   TimeZone: \(TimeZone.current.identifier)")
+        NSLog("   TimeZone: \(TimeZone.current.identifier)")
         
         // Get the start of the current week (Monday)
         let weekday = calendar.component(.weekday, from: today)
+        print("   Weekday (1=Sun, 2=Mon, etc.): \(weekday)")
+        
         // Convert to Monday = 0, Sunday = 6
         // Sunday = 1 -> 6, Monday = 2 -> 0, Tuesday = 3 -> 1, etc.
         let daysFromMonday = (weekday + 5) % 7
-        guard let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: today) else {
+        print("   Days from Monday: \(daysFromMonday)")
+        
+        guard let weekStart = calendar.date(byAdding: .day, value: -daysFromMonday, to: todayStart) else {
             print("⚠️ WIDGET: Failed to calculate week start")
             return Array(repeating: false, count: 7)
         }
+        
+        print("   Week start (Monday): \(weekStart)")
+        
+        // Print all available date keys in completionStatus and completionHistory
+        print("   Available completionStatus keys: \(habitData.completionStatus.keys.sorted())")
+        print("   Available completionHistory keys: \(habitData.completionHistory.keys.sorted())")
         
         var weeklyProgress: [Bool] = Array(repeating: false, count: 7)
         let dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -516,19 +607,27 @@ struct MonthlyProgressMediumView: View {
                 // Normalize to start of day to ensure correct date key matching
                 let normalizedDate = calendar.startOfDay(for: date)
                 let dateKey = formatDateKey(for: normalizedDate)
+                
+                // Check if key exists in dictionaries
+                let statusExists = habitData.completionStatus[dateKey] != nil
+                let historyExists = habitData.completionHistory[dateKey] != nil
                 let statusCompleted = habitData.completionStatus[dateKey] ?? false
-                let historyCompleted = (habitData.completionHistory[dateKey] ?? 0) > 0
+                let historyValue = habitData.completionHistory[dateKey] ?? 0
+                let historyCompleted = historyValue > 0
                 let isCompleted = statusCompleted || historyCompleted
+                
                 weeklyProgress[i] = isCompleted
                 
-                if isCompleted {
-                    print("   🟢 WIDGET: \(dayLabels[i]) (\(dateKey)): ✅ completed (status: \(statusCompleted), history: \(historyCompleted))")
-                }
+                // Always print for debugging
+                print("   \(dayLabels[i]) (day \(i)): date=\(date), normalized=\(normalizedDate), dateKey='\(dateKey)'")
+                print("      statusExists=\(statusExists), statusValue=\(statusCompleted)")
+                print("      historyExists=\(historyExists), historyValue=\(historyValue)")
+                print("      isCompleted=\(isCompleted) \(isCompleted ? "✅" : "❌")")
             }
         }
         
         let completedCount = weeklyProgress.filter { $0 }.count
-        print("🟢 WIDGET: Weekly progress: \(completedCount)/7 days completed")
+        print("🟢 WIDGET: Weekly progress result: \(completedCount)/7 days completed")
         
         return weeklyProgress
     }
@@ -537,7 +636,12 @@ struct MonthlyProgressMediumView: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
+        let key = formatter.string(from: date)
+        // Debug logging for date key generation
+        #if DEBUG
+        print("      formatDateKey: date=\(date) -> key='\(key)' (timezone: \(TimeZone.current.identifier))")
+        #endif
+        return key
     }
 }
 
