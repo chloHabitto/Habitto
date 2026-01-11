@@ -37,9 +37,14 @@ struct Provider: TimelineProvider {
     }
     
     private func getCurrentStreak() -> Int {
-        // Read streak from UserDefaults
-        // Key should match what the app writes to
-        return UserDefaults.standard.integer(forKey: "widgetCurrentStreak")
+        // Read streak from App Group UserDefaults (shared with main app)
+        // Use App Group to access data shared between app and widget extension
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
+            return sharedDefaults.integer(forKey: "widgetCurrentStreak")
+        } else {
+            // Fallback to standard UserDefaults if App Group is not available
+            return UserDefaults.standard.integer(forKey: "widgetCurrentStreak")
+        }
     }
 
 //    func relevances() async -> WidgetRelevances<Void> {

@@ -46,6 +46,8 @@ class HomeViewState: ObservableObject {
         self?.isLoadingHabits = false
         // ✅ CRASH FIX: Update streak when habits change
         self?.updateStreak()
+        // ✅ WIDGET SYNC: Sync habits to widget storage
+        WidgetDataSync.shared.syncHabitsToWidget(habits)
         self?.objectWillChange.send()
       }
       .store(in: &cancellables)
@@ -157,6 +159,9 @@ class HomeViewState: ObservableObject {
           debugLog("🔍 UI_STREAK: updateStreak() will display streak = \(loadedStreak)")
           currentStreak = loadedStreak
           
+          // ✅ WIDGET SYNC: Update UserDefaults for widget extension
+          syncStreakToWidget(loadedStreak)
+          
           print("💰 [STREAK_TRACE] \(Date()) updateStreak() - COMPLETE")
           print("   Final: currentStreak=\(self.currentStreak)")
           
@@ -174,10 +179,12 @@ class HomeViewState: ObservableObject {
         } else {
           debugLog("🔍 UI_STREAK: updateStreak() found no GlobalStreakModel, defaulting to 0")
           currentStreak = 0
+          syncStreakToWidget(0)
         }
       } catch {
         debugLog("🔍 UI_STREAK: updateStreak() failed to load streak, defaulting to 0 (\(error.localizedDescription))")
         currentStreak = 0
+        syncStreakToWidget(0)
       }
     }
   }
@@ -259,6 +266,8 @@ class HomeViewState: ObservableObject {
     do {
       try await habitRepository.updateHabit(updatedHabit)
       debugLog("✅ GUARANTEED: Habit updated and persisted")
+      // ✅ WIDGET SYNC: Sync updated habit to widget storage
+      WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
     } catch {
       debugLog("❌ Failed to update habit: \(error.localizedDescription)")
     }
@@ -493,6 +502,7 @@ class HomeViewState: ObservableObject {
           streak.currentStreak = 0
           streak.lastCompleteDate = nil
           try modelContext.save()
+          syncStreakToWidget(0)
           updateStreak()
           return
         }
@@ -546,6 +556,9 @@ class HomeViewState: ObservableObject {
         streak.lastUpdated = Date()
 
         try modelContext.save()
+        
+        // ✅ WIDGET SYNC: Update UserDefaults for widget extension
+        syncStreakToWidget(computation.currentStreak)
 
         debugLog("")
         debugLog(String(repeating: "=", count: 60))
@@ -599,6 +612,20 @@ class HomeViewState: ObservableObject {
   
   /// One-time backfill to calculate and restore historical longestStreak for existing users
   /// This runs once per user to restore their historical best streak that was never persisted before
+  // MARK: - Widget Sync Helper
+  
+  /// Syncs the current streak to UserDefaults for widget extension
+  private func syncStreakToWidget(_ streak: Int) {
+    // Use App Group UserDefaults to share data with widget extension
+    if let sharedDefaults = UserDefaults(suiteName: "group.com.habitto.widget") {
+      sharedDefaults.set(streak, forKey: "widgetCurrentStreak")
+      sharedDefaults.synchronize()
+      debugLog("📱 WIDGET_SYNC: Updated widget streak to \(streak)")
+    } else {
+      debugLog("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
+    }
+  }
+  
   @MainActor
   private func backfillHistoricalLongestStreak(userId: String, modelContext: ModelContext) async {
     debugLog("🔄 STREAK_BACKFILL: Starting historical longestStreak backfill for user '\(userId.isEmpty ? "guest" : userId)'")
