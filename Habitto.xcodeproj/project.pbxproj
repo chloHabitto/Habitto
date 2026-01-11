@@ -62,6 +62,7 @@
 		89AF58C92F114EBF0092F84C /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AF5CB32F12B2710092F84C /* HabittoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabittoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		89BA65E62F139B2100FD46B4 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		89BA76162F139F8100FD46B4 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89BECE4E2F1125CA00A8DFE9 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89C17A372DF73D8A00B2480F /* Habitto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Habitto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		89C6A44E2F1017A600B0ABCE /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -98,6 +99,14 @@
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
 		};
+		89BA7A0A2F13A5B200FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Assets/Icons.xcassets,
+				Assets/SemanticColors.xcassets,
+			);
+			target = 893628B82F13964E006C927E /* HabittoWidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -113,6 +122,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */,
+				89BA7A0A2F13A5B200FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */,
 			);
 			path = .;
 			sourceTree = "<group>";
@@ -170,6 +180,11 @@
 			sourceTree = "<group>";
 		};
 		89BA65FF2F139B2100FD46B4 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		89BA762F2F139F8100FD46B4 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -325,6 +340,10 @@
 				{
 					ProductGroup = 89BA65FF2F139B2100FD46B4 /* Products */;
 					ProjectRef = 89BA65E62F139B2100FD46B4 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 89BA762F2F139F8100FD46B4 /* Products */;
+					ProjectRef = 89BA76162F139F8100FD46B4 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89BECE642F1125CA00A8DFE9 /* Products */;
