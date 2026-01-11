@@ -55,10 +55,22 @@ struct Provider: TimelineProvider {
             // Force synchronize to ensure we read the latest value
             sharedDefaults.synchronize()
             
-            // Verify the key exists
+            // Check if the key exists
             if sharedDefaults.object(forKey: "widgetCurrentStreak") == nil {
                 print("⚠️ WIDGET getCurrentStreak: Key 'widgetCurrentStreak' does NOT exist in App Group!")
                 NSLog("⚠️ WIDGET getCurrentStreak: Key 'widgetCurrentStreak' does NOT exist in App Group!")
+                
+                // Try to read from widgetHabits as a fallback - check the first habit's streak
+                // This is a temporary fallback until the app syncs the streak value
+                if let arrayData = sharedDefaults.data(forKey: "widgetHabits"),
+                   let habits = try? JSONDecoder().decode([HabitWidgetData].self, from: arrayData),
+                   !habits.isEmpty {
+                    // If we have habits but no streak, default to 0 but log it
+                    print("🟡 WIDGET getCurrentStreak: No streak value found, but habits exist. Returning 0.")
+                    NSLog("🟡 WIDGET getCurrentStreak: No streak value found, but habits exist. Returning 0.")
+                    return 0
+                }
+                
                 return 0
             }
             
@@ -76,9 +88,8 @@ struct Provider: TimelineProvider {
         } else {
             // Fallback to standard UserDefaults if App Group is not available
             // This should not happen if entitlements are configured correctly
-            #if DEBUG
             print("⚠️ WIDGET: App Group not available, using standard UserDefaults")
-            #endif
+            NSLog("⚠️ WIDGET: App Group not available, using standard UserDefaults")
             UserDefaults.standard.synchronize()
             return UserDefaults.standard.integer(forKey: "widgetCurrentStreak")
         }
