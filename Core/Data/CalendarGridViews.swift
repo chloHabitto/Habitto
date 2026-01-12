@@ -304,7 +304,7 @@ struct MonthlyCalendarGridView: View {
           // Combined summary statistics row
           summaryStatisticsViewCombined()
             .padding(.horizontal, 16)
-            .padding(.top, 12)
+            .padding(.top, 16)
             .padding(.bottom, 16)
         }
         .background(
@@ -1113,7 +1113,7 @@ struct YearlyCalendarGridView: View {
               // Summary statistics row
               summaryStatisticsView(for: habit)
                 .padding(.horizontal, 16)
-              .padding(.top, 12)
+              .padding(.top, 16)
               .padding(.bottom, 16)
             }
             .frame(maxWidth: .infinity)
@@ -2344,7 +2344,8 @@ struct IndividualHabitMonthlyProgressView: View {
               intensity: heatmapData.intensity,
               isScheduled: heatmapData.isScheduled,
               completionPercentage: heatmapData.completionPercentage,
-              cellSize: calculatedCellSize)
+              cellSize: calculatedCellSize,
+              isInMonth: heatmapData.isInMonth)
           }
         }
       }
@@ -2368,7 +2369,7 @@ struct IndividualHabitMonthlyProgressView: View {
   private func getMonthlyHeatmapDataForHabit(
     habit: Habit,
     weekIndex: Int,
-    dayIndex: Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double)
+    dayIndex: Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double, isInMonth: Bool)
   {
     let calendar = AppDateFormatter.shared.getUserCalendar()
     let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
@@ -2389,13 +2390,14 @@ struct IndividualHabitMonthlyProgressView: View {
 
     // Check if the target date is within the selected month
     let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
-    if targetDate >= monthEnd {
-      return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+    // Check if targetDate is OUTSIDE the selected month (before OR after)
+    if targetDate < monthStart || targetDate >= monthEnd {
+      return (intensity: 0, isScheduled: false, completionPercentage: 0.0, isInMonth: false)
     }
 
     let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: targetDate)
     if !isScheduled {
-      return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+      return (intensity: 0, isScheduled: false, completionPercentage: 0.0, isInMonth: true)
     }
 
     let completionPercentage = StreakDataCalculator.calculateCompletionPercentage(
@@ -2411,7 +2413,7 @@ struct IndividualHabitMonthlyProgressView: View {
       3
     }
 
-    return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
+    return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage, isInMonth: true)
   }
 }
 
@@ -2575,19 +2577,22 @@ struct IndividualHabitHeatmapCellView: View {
   let isScheduled: Bool
   let completionPercentage: Double
   let cellSize: CGFloat
+  let isInMonth: Bool
 
   init(
     habit: Habit,
     intensity: Int,
     isScheduled: Bool,
     completionPercentage: Double,
-    cellSize: CGFloat = 20)
+    cellSize: CGFloat = 20,
+    isInMonth: Bool = true)
   {
     self.habit = habit
     self.intensity = intensity
     self.isScheduled = isScheduled
     self.completionPercentage = completionPercentage
     self.cellSize = cellSize
+    self.isInMonth = isInMonth
   }
 
   var body: some View {
@@ -2600,13 +2605,17 @@ struct IndividualHabitHeatmapCellView: View {
         .fill(.clear)
         .frame(width: size, height: size)
 
-      if isScheduled {
+      if !isInMonth {
+        // Days outside month: completely invisible
+        Color.clear
+          .frame(width: innerSize, height: innerSize)
+      } else if isScheduled {
         // Show heatmap when scheduled using habit color
         RoundedRectangle(cornerRadius: 6)
           .fill(heatmapColor(for: completionPercentage, habitColor: habit.color.color))
           .frame(width: innerSize, height: innerSize)
       } else {
-        // Show empty outline when not scheduled
+        // Show empty outline when not scheduled but in month
         RoundedRectangle(cornerRadius: 6)
           .stroke(Color("appOutline03"), lineWidth: 1)
           .frame(width: innerSize, height: innerSize)
