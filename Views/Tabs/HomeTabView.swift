@@ -840,12 +840,17 @@ struct HomeTabView: View {
           debugLog("🔍 MILESTONE_DEBUG: After setting - showStreakMilestone=\(showStreakMilestone)")
         }
       } else {
-        // For other milestones, show milestone sheet AFTER celebration
+        // For other milestones (streak 3+), show milestone sheet AFTER celebration
         debugLog("🔍 MILESTONE_DEBUG: Streak \(newStreak) - storing as pendingMilestone for after celebration")
         debugLog("🎉 MILESTONE_CHECK: Streak \(newStreak) - will show milestone sheet after celebration")
-        // Store the milestone to show after celebration is dismissed
         pendingMilestone = newStreak
         debugLog("🔍 MILESTONE_DEBUG: Set pendingMilestone=\(pendingMilestone ?? -1)")
+        
+        // ✅ FIX: Actually trigger the celebration!
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+          debugLog("🎉 MILESTONE_DEBUG: Triggering celebration for milestone streak \(newStreak)")
+          showCelebration = true
+        }
       }
     } else {
       // Streak is NOT a milestone
