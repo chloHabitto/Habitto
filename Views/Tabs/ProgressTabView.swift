@@ -704,7 +704,7 @@ struct ProgressTabView: View {
                 Color.clear
                   .preference(
                     key: ScrollOffsetPreferenceKey.self,
-                    value: geometry.frame(in: .named("scroll")).minY
+                    value: geometry.frame(in: .named("progressScroll")).minY
                   )
               }
               .frame(height: 0)
@@ -714,6 +714,7 @@ struct ProgressTabView: View {
                 .padding(.bottom, 20) // Padding for content spacing
             }
           }
+          .coordinateSpace(name: "progressScroll")
           .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
         }
       
