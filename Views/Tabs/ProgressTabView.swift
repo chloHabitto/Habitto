@@ -3003,7 +3003,7 @@ struct ProgressTabView: View {
   // MARK: - Difficulty Explanation Sheet
   
   private var difficultyExplanationSheet: some View {
-    VStack(spacing: 24) {
+    VStack(spacing: 0) {
       // Header
       HStack {
         Text("Difficulty Stat")
@@ -3011,55 +3011,44 @@ struct ProgressTabView: View {
           .foregroundColor(.text01)
         
         Spacer()
-        
-        Button(action: {
-          activeSheet = nil
-        }) {
-          Image(systemName: "xmark")
-            .font(.system(size: 16, weight: .medium))
-            .foregroundColor(.text02)
-            .frame(width: 32, height: 32)
-            .background(Color.surface2)
-            .clipShape(Circle())
-        }
       }
       .padding(.horizontal, 24)
       .padding(.top, 24)
+      .padding(.bottom, 20)
       
-      // Content
-      VStack(alignment: .leading, spacing: 16) {
-        Text("What is Difficulty?")
-          .font(.appTitleSmallEmphasised)
-          .foregroundColor(.text01)
-        
-        Text("Difficulty measures how challenging your habits felt when you completed them. After completing a habit, you rate it from Very Easy (1) to Very Hard (5).")
-          .font(.appBodyMedium)
-          .foregroundColor(.text02)
-          .fixedSize(horizontal: false, vertical: true)
-        
-        Text("The stat shown here is the average difficulty of all your scheduled habits for this day.")
-          .font(.appBodyMedium)
-          .foregroundColor(.text02)
-          .fixedSize(horizontal: false, vertical: true)
-        
-        VStack(alignment: .leading, spacing: 12) {
+      // Scrollable content
+      ScrollView {
+        VStack(alignment: .leading, spacing: 16) {
+          Text("What is Difficulty?")
+            .font(.appTitleSmallEmphasised)
+            .foregroundColor(.text01)
+          
+          Text("Difficulty measures how challenging your habits felt when you completed them. After completing a habit, you rate it from Very Easy (1) to Very Hard (5). The stat shown here is the average difficulty of all your scheduled habits for this day.")
+            .font(.appBodyMedium)
+            .foregroundColor(.text02)
+            .fixedSize(horizontal: false, vertical: true)
+          
           Text("Difficulty Levels:")
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text01)
             .padding(.top, 8)
           
-          difficultyLevelRow(level: "Very Easy", color: .green, description: "Effortless to complete")
-          difficultyLevelRow(level: "Easy", color: .mint, description: "Slightly challenging")
-          difficultyLevelRow(level: "Medium", color: .orange, description: "Moderately challenging")
-          difficultyLevelRow(level: "Hard", color: .red, description: "Quite difficult")
-          difficultyLevelRow(level: "Very Hard", color: .purple, description: "Extremely challenging")
+          // Horizontal compact layout for difficulty levels
+          ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+              difficultyLevelCompact(level: "Very Easy", color: .green)
+              difficultyLevelCompact(level: "Easy", color: .mint)
+              difficultyLevelCompact(level: "Medium", color: .orange)
+              difficultyLevelCompact(level: "Hard", color: .red)
+              difficultyLevelCompact(level: "Very Hard", color: .purple)
+            }
+            .padding(.vertical, 4)
+          }
         }
+        .padding(.horizontal, 24)
       }
-      .padding(.horizontal, 24)
       
-      Spacer()
-      
-      // Close button
+      // "Got it" button - fixed at bottom, outside ScrollView
       Button(action: {
         activeSheet = nil
       }) {
@@ -3072,32 +3061,30 @@ struct ProgressTabView: View {
           .cornerRadius(30)
       }
       .padding(.horizontal, 24)
+      .padding(.top, 16)
       .padding(.bottom, 24)
+      .background(Color.surface)
     }
     .background(Color.surface)
-    .presentationDetents([.medium, .large])
+    .presentationDetents([.height(320)])
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(32)
   }
   
-  private func difficultyLevelRow(level: String, color: Color, description: String) -> some View {
-    HStack(spacing: 12) {
+  private func difficultyLevelCompact(level: String, color: Color) -> some View {
+    HStack(spacing: 6) {
       Circle()
         .fill(color)
-        .frame(width: 12, height: 12)
+        .frame(width: 10, height: 10)
       
-      VStack(alignment: .leading, spacing: 2) {
-        Text(level)
-          .font(.appBodyMedium)
-          .foregroundColor(.text01)
-        
-        Text(description)
-          .font(.appBodySmall)
-          .foregroundColor(.text02)
-      }
-      
-      Spacer()
+      Text(level)
+        .font(.appBodySmall)
+        .foregroundColor(.text01)
     }
+    .padding(.horizontal, 10)
+    .padding(.vertical, 6)
+    .background(Color.surface2)
+    .cornerRadius(12)
   }
 
   // MARK: - Individual Habit Difficulty Data
