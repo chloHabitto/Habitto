@@ -152,13 +152,13 @@ struct HabitEditView: View {
   private var mainContent: some View {
     ScrollViewReader { proxy in
       ScrollView {
-        VStack(spacing: 16) {
+        VStack(spacing: 12) {
           basicInfoSection
           goalSection
           reminderAndPeriodSection
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 20)
+        .padding(.top, 0)
         .padding(.bottom, 100) // Add bottom padding to account for fixed button
       }
       .background(Color("appSurface01Variant02"))
@@ -179,42 +179,138 @@ struct HabitEditView: View {
 
   @ViewBuilder
   private var basicInfoSection: some View {
-    VStack(spacing: 16) {
-      // Habit Name
-      CustomTextField(
-        placeholder: "Name",
-        text: $form.habitName,
-        isFocused: $isNameFieldFocused)
+    VStack(spacing: 12) {
+      // Name field - container with surface background and stroke (matching CreateHabitStep1View)
+      VStack(alignment: .leading, spacing: 12) {
+        FormInputComponents.FormSectionHeader(title: "Name")
+        
+        CustomTextField(
+          placeholder: "Habit name",
+          text: $form.habitName,
+          isFocused: $isNameFieldFocused)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+      .background(.appSurface01Variant)
+      .cornerRadius(20)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
 
-      // Description
-      CustomTextField(
-        placeholder: "Description (Optional)",
-        text: $form.habitDescription,
-        isFocused: $isDescriptionFieldFocused)
+      // Description field - container with surface background and stroke (matching CreateHabitStep1View)
+      VStack(alignment: .leading, spacing: 12) {
+        FormInputComponents.FormSectionHeader(title: "Description")
+        
+        CustomTextField(
+          placeholder: "Description (Optional)",
+          text: $form.habitDescription,
+          isFocused: $isDescriptionFieldFocused)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 16)
+      .background(.appSurface01Variant)
+      .cornerRadius(20)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
 
-      // Color Selection (moved before Icon to match creation flow)
-      VisualSelectionRow(
-        title: "Colour",
-        color: form.selectedColor,
-        value: getColorDisplayName(form.selectedColor),
-        action: { showingColorSheet = true })
+      // Colour selection (matching CreateHabitStep1View)
+      HStack(spacing: 12) {
+        Text("Colour")
+          .font(.appTitleMedium)
+          .foregroundColor(.text02)
+          .frame(maxWidth: .infinity, alignment: .leading)
 
-      // Icon Selection (moved after Color to match creation flow)
-      VisualSelectionRow(
-        title: "Icon",
-        color: form.selectedColor,
-        icon: form.selectedIcon,
-        value: getIconDisplayName(form.selectedIcon),
-        action: { showingEmojiPicker = true })
+        HStack(spacing: 8) {
+          RoundedRectangle(cornerRadius: 12)
+            .fill(form.selectedColor)
+            .frame(width: 24, height: 24)
+          Text(getColorDisplayName(form.selectedColor))
+            .font(.appBodyMedium)
+            .foregroundColor(.appText04)
+        }
 
-      // Habit Type
+        Image(systemName: "chevron.right")
+          .font(.system(size: 12, weight: .heavy))
+          .foregroundColor(.appOutline03)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 12)
+      .background(.appSurface01Variant)
+      .cornerRadius(16)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
+      .onTapGesture {
+        showingColorSheet = true
+      }
+
+      // Icon selection (matching CreateHabitStep1View)
+      HStack(spacing: 12) {
+        Text("Icon")
+          .font(.appTitleMedium)
+          .foregroundColor(.text01)
+          .frame(maxWidth: .infinity, alignment: .leading)
+
+        HStack(spacing: 8) {
+          if form.selectedIcon != "None" {
+            ZStack {
+              RoundedRectangle(cornerRadius: 12)
+                .fill(form.selectedColor.opacity(0.15))
+                .frame(width: 24, height: 24)
+
+              if form.selectedIcon.hasPrefix("Icon-") {
+                Image(form.selectedIcon)
+                  .resizable()
+                  .frame(width: 14, height: 14)
+                  .foregroundColor(form.selectedColor)
+              } else {
+                Text(form.selectedIcon)
+                  .font(.system(size: 14))
+              }
+            }
+          } else {
+            // Placeholder rectangle to maintain consistent height
+            RoundedRectangle(cornerRadius: 12)
+              .fill(.clear)
+              .frame(width: 24, height: 24)
+          }
+          Text(getIconDisplayName(form.selectedIcon))
+            .font(.appBodyMedium)
+            .foregroundColor(.appText04)
+        }
+
+        Image(systemName: "chevron.right")
+          .font(.system(size: 12, weight: .heavy))
+          .foregroundColor(.appOutline03)
+      }
+      .padding(.horizontal, 20)
+      .padding(.vertical, 12)
+      .background(.appSurface01Variant)
+      .cornerRadius(16)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+      .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
+      .onTapGesture {
+        showingEmojiPicker = true
+      }
+
+      // Habit Type (matching CreateHabitStep1View)
       habitTypeSection
     }
   }
 
   @ViewBuilder
   private var goalSection: some View {
-    // Goal - NEW UNIFIED APPROACH
+    // Goal - NEW UNIFIED APPROACH (matching CreateHabitStep2View spacing)
     if form.selectedHabitType == .formation {
       UnifiedInputElement(
         title: "Goal",
@@ -229,8 +325,8 @@ struct HabitEditView: View {
         isFocused: $isGoalNumberFocused)
       .id(ScrollTarget.goal)
     } else {
-      // Habit Breaking Form
-      VStack(spacing: 16) {
+      // Habit Breaking Form (matching CreateHabitStep2View spacing)
+      VStack(spacing: 12) {
         // Baseline - NEW UNIFIED APPROACH
         UnifiedInputElement(
           title: "Current",
@@ -264,12 +360,18 @@ struct HabitEditView: View {
 
   @ViewBuilder
   private var reminderAndPeriodSection: some View {
-    VStack(spacing: 16) {
-      // Reminder Section
-      reminderSection
+    VStack(spacing: 12) {
+      // Reminder Section (using same component as CreateHabitStep2View)
+      ReminderSection(
+        reminders: form.reminders,
+        onTap: { showingReminderSheet = true })
 
-      // Period Section
-      periodSection
+      // Period Section (using same component as CreateHabitStep2View)
+      PeriodSection(
+        startDate: form.startDate,
+        endDate: form.endDate,
+        onStartDateTap: { showingStartDateSheet = true },
+        onEndDateTap: { showingEndDateSheet = true })
     }
   }
 
@@ -431,11 +533,21 @@ struct HabitEditView: View {
         .sheet(isPresented: $showingReminderSheet) {
           ReminderBottomSheet(
             onClose: { showingReminderSheet = false },
-            onReminderSelected: { reminder in
-              form.selectedReminder = reminder
+            onReminderSelected: { _ in
+              // Keep for backward compatibility
               showingReminderSheet = false
             },
-            onRemindersUpdated: { _ in })
+            initialReminders: form.reminders,
+            onRemindersUpdated: { updatedReminders in
+              form.reminders = updatedReminders
+              let activeReminders = updatedReminders.filter { $0.isActive }
+              if !activeReminders.isEmpty {
+                form.selectedReminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
+              } else {
+                form.selectedReminder = "No reminder"
+              }
+              showingReminderSheet = false
+            })
         }
         .sheet(isPresented: $showingStartDateSheet) {
           PeriodBottomSheet(
@@ -560,192 +672,34 @@ struct HabitEditView: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Habit Type")
         .font(.appTitleMedium)
-        .foregroundColor(.text01)
+        .foregroundColor(.text02)
 
       HStack(spacing: 12) {
         // Habit Building button
-        Button(action: {
-          form.selectedHabitType = .formation
-        }) {
-          HStack(spacing: 8) {
-            if form.selectedHabitType == .formation {
-              Image(systemName: "checkmark")
-                .font(.appLabelSmallEmphasised)
-                .foregroundColor(.onPrimary)
-            }
-            Text("Habit Building")
-              .font(form.selectedHabitType == .formation ? .appLabelLargeEmphasised : .appLabelLarge)
-              .foregroundColor(form.selectedHabitType == .formation ? .onPrimary : .onPrimaryContainer)
-              .lineLimit(1)
-              .minimumScaleFactor(0.8)
-          }
-          .frame(maxWidth: .infinity)
-          .padding(.horizontal, 16)
-          .padding(.vertical, 12)
-          .background(form.selectedHabitType == .formation ? .primary : .primaryContainer)
-          .overlay(
-            RoundedRectangle(cornerRadius: 12)
-              .stroke(.outline3, lineWidth: 1.5))
-          .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .frame(maxWidth: .infinity)
+        FormInputComponents.HabitTypeButton(
+          title: "Habit Building",
+          isSelected: form.selectedHabitType == .formation,
+          action: { form.selectedHabitType = .formation })
 
         // Habit Breaking button
-        Button(action: {
-          form.selectedHabitType = .breaking
-        }) {
-          HStack(spacing: 8) {
-            if form.selectedHabitType == .breaking {
-              Image(systemName: "checkmark")
-                .font(.appLabelSmallEmphasised)
-                .foregroundColor(.onPrimary)
-            }
-            Text("Habit Breaking")
-              .font(form.selectedHabitType == .breaking ? .appLabelLargeEmphasised : .appLabelLarge)
-              .foregroundColor(form.selectedHabitType == .breaking ? .onPrimary : .onPrimaryContainer)
-              .lineLimit(1)
-              .minimumScaleFactor(0.8)
-          }
-          .frame(maxWidth: .infinity)
-          .padding(.horizontal, 16)
-          .padding(.vertical, 12)
-          .background(form.selectedHabitType == .breaking ? .primary : .primaryContainer)
-          .overlay(
-            RoundedRectangle(cornerRadius: 12)
-              .stroke(.outline3, lineWidth: 1.5))
-          .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .frame(maxWidth: .infinity)
+        FormInputComponents.HabitTypeButton(
+          title: "Habit Breaking",
+          isSelected: form.selectedHabitType == .breaking,
+          action: { form.selectedHabitType = .breaking })
       }
       .frame(maxWidth: .infinity)
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 12)
-    .background(.surface)
-    .overlay(
-      RoundedRectangle(cornerRadius: 12)
-        .stroke(.outline3, lineWidth: 1.5))
-    .cornerRadius(12)
+    .padding(.horizontal, 20)
+    .padding(.vertical, 16)
+    .background(.appSurface01Variant)
+    .cornerRadius(20)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 1, x: 0, y: 1)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.04), radius: 2, x: 0, y: 4)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.02), radius: 2.5, x: 0, y: 9)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0.01), radius: 2, x: 0, y: 16)
+    .shadow(color: Color(red: 0.62, green: 0.62, blue: 0.64).opacity(0), radius: 3.5, x: 0, y: 25)
   }
 
-  // MARK: - Reminder Section
-
-  private var reminderSection: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      HStack {
-        Text("Reminder")
-          .font(.appTitleMedium)
-          .foregroundColor(.text01)
-        Spacer()
-        Text(form.reminders.isEmpty
-          ? "Add"
-          :
-          "\(form.reminders.filter { $0.isActive }.count) reminder\(form.reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
-          .font(.appBodyLarge)
-          .foregroundColor(.text04)
-        Image(systemName: "chevron.right")
-          .font(.appLabelMedium)
-          .foregroundColor(.primaryDim)
-      }
-      .contentShape(Rectangle())
-      .onTapGesture {
-        showingReminderSheet = true
-      }
-
-      if !form.reminders.isEmpty {
-        Divider()
-          .background(.outline3)
-          .padding(.vertical, 4)
-
-        VStack(spacing: 4) {
-          ForEach(form.reminders.filter { $0.isActive }) { reminder in
-            HStack {
-              Text(formatTime(reminder.time))
-                .font(.appBodyMedium)
-                .foregroundColor(.text01)
-              Spacer()
-              Text("Active")
-                .font(.appLabelSmall)
-                .foregroundColor(.primary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(.secondaryContainer)
-            .cornerRadius(6)
-          }
-        }
-      }
-    }
-    .selectionRowStyle()
-    .sheet(isPresented: $showingReminderSheet) {
-      ReminderBottomSheet(
-        onClose: { showingReminderSheet = false },
-        onReminderSelected: { _ in
-          // Keep for backward compatibility
-          showingReminderSheet = false
-        },
-        initialReminders: form.reminders,
-        onRemindersUpdated: { updatedReminders in
-          form.reminders = updatedReminders
-          let activeReminders = updatedReminders.filter { $0.isActive }
-          if !activeReminders.isEmpty {
-            form.selectedReminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
-          } else {
-            form.selectedReminder = "No reminder"
-          }
-          showingReminderSheet = false
-        })
-    }
-  }
-
-  // MARK: - Period Section
-
-  private var periodSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
-      Text("Period")
-        .font(.appTitleMedium)
-        .foregroundColor(.primary)
-
-      HStack(spacing: 12) {
-        // Start Date
-        Button(action: {
-          showingStartDateSheet = true
-        }) {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("Start Date")
-              .font(.appBodyMedium)
-              .foregroundColor(.text05)
-            Text(isToday(form.startDate) ? "Today" : formatDate(form.startDate))
-              .font(.appBodyLarge)
-              .foregroundColor(.text04)
-              .frame(maxWidth: .infinity, alignment: .center)
-              .inputFieldStyle()
-          }
-        }
-        .frame(maxWidth: .infinity)
-
-        // End Date
-        Button(action: {
-          showingEndDateSheet = true
-        }) {
-          VStack(alignment: .leading, spacing: 4) {
-            Text("End Date")
-              .font(.appBodyMedium)
-              .foregroundColor(.text05)
-            Text(form.endDate == nil
-              ? "Not Selected"
-              : (isToday(form.endDate!) ? "Today" : formatDate(form.endDate!)))
-              .font(.appBodyLarge)
-              .foregroundColor(.text04)
-              .frame(maxWidth: .infinity, alignment: .center)
-              .inputFieldStyle()
-          }
-        }
-        .frame(maxWidth: .infinity)
-      }
-    }
-    .selectionRowStyle()
-  }
 
   // MARK: - Save Button
 
@@ -759,7 +713,7 @@ struct HabitEditView: View {
       .background(.surface2)
   }
 
-  // MARK: - Custom TextField Component (same as CreateHabitStep1View)
+  // MARK: - Custom TextField Component (matching CreateHabitStep1View LimitedTextField styling)
 
   @ViewBuilder
   private func CustomTextField(
@@ -767,62 +721,32 @@ struct HabitEditView: View {
     text: Binding<String>,
     isFocused: FocusState<Bool>.Binding) -> some View
   {
-    TextField(placeholder, text: text)
-      .font(.appBodyLarge)
-      .foregroundColor(.text01)
-      .textFieldStyle(PlainTextFieldStyle())
-      .submitLabel(.done)
-      .frame(minHeight: 48)
-      .padding(.horizontal, 16)
-      .background(.surface)
-      .overlay(
-        RoundedRectangle(cornerRadius: 12)
-          .stroke(.outline3, lineWidth: 1.5))
-      .cornerRadius(12)
-      .fixedSize(horizontal: false, vertical: true)
-      .focused(isFocused)
+    ZStack(alignment: .leading) {
+      // Placeholder text
+      if text.wrappedValue.isEmpty {
+        Text(placeholder)
+          .font(.appBodyLarge)
+          .foregroundColor(.text05)
+      }
+      // Actual text field
+      TextField("", text: text)
+        .font(.appBodyLarge)
+        .foregroundColor(.text01)
+        .textFieldStyle(PlainTextFieldStyle())
+        .submitLabel(.done)
+        .focused(isFocused)
+    }
+    .frame(maxWidth: .infinity, minHeight: 48)
+    .padding(.horizontal, 16)
+    .background(.appSurface01)
+    .overlay(
+      RoundedRectangle(cornerRadius: 12)
+        .stroke(.outline02, lineWidth: 1.5))
+    .cornerRadius(12)
   }
 
-  /// Helper function for selection rows with visual elements (matching create habit step 1)
-  @ViewBuilder
-  private func VisualSelectionRow(
-    title: String,
-    color: Color,
-    icon: String? = nil,
-    value: String,
-    action: @escaping () -> Void) -> some View
-  {
-    if let icon {
-      SelectionRowWithVisual(
-        title: title,
-        icon: icon,
-        color: color,
-        value: value,
-        action: action)
-    } else {
-      SelectionRowWithVisual(
-        title: title,
-        color: color,
-        value: value,
-        action: action)
-    }
-  }
 
   // MARK: - Helper Functions
-
-  private func formatTime(_ date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.timeStyle = .short
-    return formatter.string(from: date)
-  }
-
-  private func formatDate(_ date: Date) -> String {
-    AppDateFormatter.shared.formatCreateHabitDate(date)
-  }
-
-  private func isToday(_ date: Date) -> Bool {
-    Calendar.current.isDateInToday(date)
-  }
 
   /// Helper function to handle pluralization for units
   private func pluralizedUnit(_ count: Int, unit: String) -> String {
