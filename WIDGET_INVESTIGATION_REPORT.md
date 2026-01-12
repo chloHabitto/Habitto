@@ -1,323 +1,186 @@
-# Widget Extension Investigation Report
+# Widget Date Key Timezone Mismatch Investigation
 
-## 🔍 INVESTIGATION SUMMARY
+## Summary
 
-### ✅ GOOD NEWS: Only ONE HabittoWidget Folder
+**CRITICAL ISSUE FOUND**: The widget uses **UTC timezone** to generate date keys, but the app uses **local timezone** (`TimeZone.current`). This causes off-by-one-day errors when the widget tries to look up completion data.
 
-There is **NO duplicate folder**. Only a single `HabittoWidget/` folder exists at the project root.
+## How Date Keys Are Generated
 
-### ❌ BAD NEWS: Duplicate File References in Xcode Project
-
-The build errors are caused by **incorrect file references in `project.pbxproj`**, not duplicate folders.
-
----
-
-## 📁 ACTUAL FILE STRUCTURE
-
-### Single HabittoWidget Folder Structure:
-
-```
-/Users/chloe/Desktop/Habitto/HabittoWidget/
-├── Assets.xcassets/
-│   ├── AccentColor.colorset/
-│   ├── AppIcon.appiconset/
-│   ├── WidgetBackground.colorset/
-│   └── Contents.json
-├── Info.plist
-├── COLOR_EXTENSION_FIX.md (documentation)
-│
-├── [ROOT LEVEL - Legacy files, not in organized structure]
-├── HabittoWidgetControl.swift          ← At root (commented out in bundle)
-├── HabittoWidgetLiveActivity.swift     ← At root (commented out in bundle)
-│
-└── Sources/                            ← Organized structure (CORRECT)
-    ├── HabittoWidgetBundle.swift       ← @main entry point
-    ├── HabittoWidget.swift             ← Widget configuration
-    │
-    ├── Extensions/
-    │   └── Color+Hex.swift             ← Single Color extension ✅
-    │
-    ├── Models/
-    │   └── HabitWidgetEntry.swift      ← Timeline entry model
-    │
-    ├── Provider/
-    │   └── HabitWidgetProvider.swift   ← Timeline provider
-    │
-    └── Views/
-        ├── HabitWidgetEntryView.swift  ← Main router view
-        ├── SmallWidgetView.swift       ← Small widget
-        └── MediumWidgetView.swift      ← Medium widget
-```
-
----
-
-## ❌ PROBLEMS FOUND IN XCODE PROJECT FILE
-
-### 1. Duplicate File References in `project.pbxproj`
-
-**Lines 84-85 (WRONG - Habitto target):**
+### App (Main Habitto App)
+- **Location**: `Core/Utils/DateUtils.swift`
+- **Function**: `DateUtils.dateKey(for:)`
+- **Timezone**: `TimeZone.current` (device's local timezone)
+- **Code**:
 ```swift
-"HabittoWidget/Sources/Extensions/Color+Hex.swift",      // ❌ WRONG TARGET
-HabittoWidget/Sources/HabittoWidgetBundle.swift,         // ❌ WRONG TARGET
+private static let dateFormatter: DateFormatter = {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    formatter.timeZone = TimeZone.current  // ✅ Uses LOCAL timezone
+    return formatter
+}()
 ```
-- These files are incorrectly assigned to the **Habitto** target
-- Should NOT be in main app target
 
-**Lines 94-95 (WRONG - Wrong path, HabittoWidgetExtension target):**
+### Widget (HabittoWidgetExtension)
+- **Location**: `HabittoWidget/MonthlyProgressWidget.swift`
+- **Function**: `formatDateKey(for:)` (appears twice: lines 331 and 745)
+- **Timezone**: `TimeZone(secondsFromGMT: 0)` (UTC)
+- **Code**:
 ```swift
-"Sources/Extensions/Color+Hex.swift",                     // ❌ WRONG PATH (missing HabittoWidget/)
+private func formatDateKey(for date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    formatter.timeZone = TimeZone(secondsFromGMT: 0)  // ❌ Uses UTC
+    let key = formatter.string(from: date)
+    return key
+}
 ```
-- Path is missing `HabittoWidget/` prefix
-- This causes Xcode to look in wrong location
-- This is in HabittoWidgetExtension target but with wrong path
 
-**Lines 101-102 (CORRECT - HabittoWidgetExtension target):**
+## Data Flow
+
+1. **App saves completion data**:
+   - Uses `Habit.dateKey(for: Date())` → calls `DateUtils.dateKey(for:)`
+   - Generates key like `"2026-01-12"` using **local timezone**
+   - Stores in `habit.completionStatus["2026-01-12"] = true`
+
+2. **App syncs to widget**:
+   - `WidgetDataSync.syncHabitsToWidget()` copies dictionaries directly:
+   ```swift
+   completionHistory: habit.completionHistory,  // Direct copy
+   completionStatus: habit.completionStatus      // Direct copy
+   ```
+   - Date keys are preserved as-is (e.g., `"2026-01-12"`)
+
+3. **Widget looks up completion data**:
+   - Uses `formatDateKey(for: date)` with **UTC timezone**
+   - Generates key like `"2026-01-11"` or `"2026-01-12"` depending on UTC time
+   - Tries to find `habitData.completionStatus["2026-01-11"]` → **NOT FOUND** ❌
+
+## Example Scenario
+
+**User in Amsterdam (UTC+1) at 12:30 AM on Jan 13, 2026:**
+
+| Component | Time | Date Key Generated | Stored/Looked Up |
+|-----------|------|-------------------|------------------|
+| **App** | 12:30 AM (local) = 11:30 PM UTC (Jan 12) | `"2026-01-13"` | ✅ Stored in `completionStatus["2026-01-13"]` |
+| **Widget** | 12:30 AM (local) = 11:30 PM UTC (Jan 12) | `"2026-01-12"` | ❌ Looks for `completionStatus["2026-01-12"]` → **MISSING** |
+
+**Result**: Widget shows incomplete day even though app marked it complete!
+
+## What to Look For in Console Logs
+
+### From Widget Extension Logs
+
+Look for these log lines in Xcode Console (filter by "HabittoWidgetExtension"):
+
+1. **Stored date keys** (from app):
+```
+🔍 WIDGET getWeeklyProgress: Received habitData:
+   completionStatus keys: ["2026-01-11", "2026-01-12", "2026-01-13"]
+   completionHistory keys: ["2026-01-11", "2026-01-12", "2026-01-13"]
+```
+
+2. **Generated date keys** (by widget):
+```
+   Mon (day 0): date=2026-01-13 00:00:00 +0000, normalized=2026-01-13 00:00:00 +0000, dateKey='2026-01-12'
+      formatDateKey: date=2026-01-13 00:00:00 +0000 -> key='2026-01-12' (UTC timezone)
+      statusExists=false, statusValue=false
+      historyExists=false, historyValue=0
+      isCompleted=false ❌
+```
+
+### Comparison Pattern
+
+**If keys match**: ✅ Widget will find completion data
+```
+Stored:  ["2026-01-12"]
+Generated: "2026-01-12"
+Result: ✅ Found!
+```
+
+**If keys don't match**: ❌ Widget won't find completion data
+```
+Stored:  ["2026-01-13"]  (app saved in local timezone)
+Generated: "2026-01-12"  (widget generated in UTC)
+Result: ❌ Not found!
+```
+
+## How to Capture Logs
+
+1. **Open Xcode Console**:
+   - View → Debug Area → Activate Console (⇧⌘C)
+   - Filter by "HabittoWidgetExtension"
+
+2. **Trigger widget update**:
+   - Add widget to home screen
+   - Or wait for automatic refresh
+   - Or manually refresh widget
+
+3. **Look for these specific log lines**:
+   - `completionStatus keys:` - Shows what keys are STORED (from app)
+   - `formatDateKey: date=` - Shows what keys are GENERATED (by widget)
+   - `dateKey='...'` - The actual key being looked up
+
+4. **Compare**:
+   - If stored keys are `["2026-01-13"]` but widget generates `"2026-01-12"` → **MISMATCH** ❌
+   - If stored keys are `["2026-01-12"]` and widget generates `"2026-01-12"` → **MATCH** ✅
+
+## Fix Required
+
+The widget's `formatDateKey(for:)` function should use `TimeZone.current` instead of UTC:
+
 ```swift
-"HabittoWidget/Sources/Extensions/Color+Hex.swift",      // ✅ CORRECT
-HabittoWidget/Sources/HabittoWidgetBundle.swift,         // ✅ CORRECT
+// ❌ CURRENT (WRONG):
+formatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+// ✅ SHOULD BE:
+formatter.timeZone = TimeZone.current
 ```
-- These are correctly assigned to HabittoWidgetExtension target
-- Paths are correct
 
-### 2. File Reference Summary
+This will ensure the widget generates date keys in the same timezone as the app, preventing off-by-one-day errors.
 
-| File | Physical Location | Correct Target | Current Status |
-|------|------------------|----------------|----------------|
-| `Color+Hex.swift` | `HabittoWidget/Sources/Extensions/Color+Hex.swift` | HabittoWidgetExtension ONLY | ❌ Also in Habitto target<br>❌ Wrong path reference exists |
-| `HabittoWidgetBundle.swift` | `HabittoWidget/Sources/HabittoWidgetBundle.swift` | HabittoWidgetExtension ONLY | ❌ Also in Habitto target |
-| `HabittoWidget.swift` | `HabittoWidget/Sources/HabittoWidget.swift` | HabittoWidgetExtension ONLY | ✅ (not shown in errors) |
-| All other widget files | `HabittoWidget/Sources/...` | HabittoWidgetExtension ONLY | Need to verify |
+## Testing the Timezone Mismatch
 
----
+### Automatic Test in Widget
 
-## 🔍 DETAILED FINDINGS
+A test function has been added to the widget that automatically runs when calculating weekly progress. It will log:
 
-### A. File System Check Results:
+```
+🔍 TIMEZONE MISMATCH TEST
+   Testing date: 2026-01-12 18:30:00 +0000
+   
+   📱 APP (TimeZone.current):
+      Timezone: Europe/Amsterdam
+      Date Key: '2026-01-12'
+   
+   📦 WIDGET (UTC):
+      Timezone: UTC
+      Date Key: '2026-01-12'
+   
+   ⚠️  MISMATCH DETECTED! (if keys differ)
+```
 
-✅ **No duplicate Swift files found:**
+### Manual Test Script
+
+Run the test script to see examples:
 ```bash
-find /Users/chloe/Desktop/Habitto -name "*.swift" | xargs basename | sort | uniq -d
-# Result: (empty) - No duplicate file names
+# Run the Swift test
+swift Tests/WidgetTimezoneTest.swift
+
+# Or analyze console logs
+./Scripts/analyze_widget_timezone.sh <console_log.txt>
 ```
 
-✅ **Single HabittoWidget folder:**
-```bash
-find /Users/chloe/Desktop/Habitto -type d -name "*Widget*"
-# Result: /Users/chloe/Desktop/Habitto/HabittoWidget
-#         /Users/chloe/Desktop/Habitto/HabittoWidget/Assets.xcassets/WidgetBackground.colorset
-```
+### What to Look For
 
-✅ **All widget Swift files exist once:**
-- `HabittoWidgetBundle.swift` → Found once at `HabittoWidget/Sources/HabittoWidgetBundle.swift`
-- `Color+Hex.swift` → Found once at `HabittoWidget/Sources/Extensions/Color+Hex.swift`
-- `HabittoWidget.swift` → Found once at `HabittoWidget/Sources/HabittoWidget.swift`
+When the widget runs, check the console logs for:
+1. The "TIMEZONE MISMATCH TEST" section showing both date keys
+2. Compare the keys - if they differ, that's the bug
+3. Look at the actual stored keys vs generated keys in the weekly progress calculation
 
-### B. Xcode Project File Issues:
+## Additional Notes
 
-**Issue 1: Files in Wrong Target**
-- `Color+Hex.swift` is referenced in **Habitto** target (line 84)
-- `HabittoWidgetBundle.swift` is referenced in **Habitto** target (line 85)
-- These should ONLY be in HabittoWidgetExtension target
-
-**Issue 2: Wrong Path Reference**
-- Line 94: `"Sources/Extensions/Color+Hex.swift"` (missing `HabittoWidget/` prefix)
-- This reference exists in HabittoWidgetExtension target but with wrong path
-
-**Issue 3: Duplicate References**
-- `Color+Hex.swift` appears 3 times:
-  1. Line 84: In Habitto target (WRONG)
-  2. Line 94: In HabittoWidgetExtension with wrong path (WRONG)
-  3. Line 101: In HabittoWidgetExtension with correct path (CORRECT)
-
-### C. Root-Level Files (Not in Sources/)
-
-These files exist at the root of `HabittoWidget/` but are not in the organized structure:
-- `HabittoWidgetControl.swift` (commented out in bundle, OK to keep)
-- `HabittoWidgetLiveActivity.swift` (commented out in bundle, OK to keep)
-
-These are legacy/template files from Xcode's widget extension creation and are currently not used (commented out in `HabittoWidgetBundle.swift`).
-
----
-
-## 🎯 ROOT CAUSE ANALYSIS
-
-### Why Build Errors Occur:
-
-1. **@main Attribute Conflict:**
-   - `HabittoWidgetBundle.swift` is in BOTH targets
-   - Habitto target already has `HabittoApp.swift` with `@main`
-   - Result: "main attribute can only apply to one type" error
-
-2. **Ambiguous init(hex:) Error:**
-   - `ColorSystem.swift` (main app) defines `Color(hex:)` 
-   - `Color+Hex.swift` (widget) defines `Color(hex:)`
-   - `Color+Hex.swift` is incorrectly in Habitto target (line 84)
-   - Result: Both extensions compiled into same target = ambiguity
-
-3. **Invalid Redeclaration:**
-   - Duplicate references cause Xcode to try compiling same file multiple times
-   - Result: "Invalid redeclaration" errors
-
----
-
-## ✅ RECOMMENDED FIXES
-
-### Fix 1: Remove Wrong Target Memberships (Xcode)
-
-**In Xcode project.pbxproj, REMOVE from Habitto target (lines 84-85):**
-```swift
-// DELETE THESE LINES (84-85):
-"HabittoWidget/Sources/Extensions/Color+Hex.swift",
-HabittoWidget/Sources/HabittoWidgetBundle.swift,
-```
-
-**Keep only in HabittoWidgetExtension target (lines 101-102):**
-```swift
-// KEEP THESE (101-102):
-"HabittoWidget/Sources/Extensions/Color+Hex.swift",
-HabittoWidget/Sources/HabittoWidgetBundle.swift,
-```
-
-### Fix 2: Remove Wrong Path Reference (Xcode)
-
-**In project.pbxproj, REMOVE wrong path reference (line 94):**
-```swift
-// DELETE THIS LINE (94):
-"Sources/Extensions/Color+Hex.swift",  // Wrong path!
-```
-
-**Keep only the correct path reference (line 101):**
-```swift
-// KEEP THIS (101):
-"HabittoWidget/Sources/Extensions/Color+Hex.swift",  // Correct path!
-```
-
-### Fix 3: Verify All Widget Files Target Membership
-
-**Check these files in Xcode File Inspector → Target Membership:**
-
-| File | Should be in | Should NOT be in |
-|------|--------------|------------------|
-| `HabittoWidget/Sources/HabittoWidgetBundle.swift` | HabittoWidgetExtension | Habitto |
-| `HabittoWidget/Sources/HabittoWidget.swift` | HabittoWidgetExtension | Habitto |
-| `HabittoWidget/Sources/Extensions/Color+Hex.swift` | HabittoWidgetExtension | Habitto |
-| All files in `HabittoWidget/Sources/Models/` | HabittoWidgetExtension | Habitto |
-| All files in `HabittoWidget/Sources/Provider/` | HabittoWidgetExtension | Habitto |
-| All files in `HabittoWidget/Sources/Views/` | HabittoWidgetExtension | Habitto |
-| `HabittoWidget/HabittoWidgetControl.swift` | HabittoWidgetExtension (optional) | Habitto |
-| `HabittoWidget/HabittoWidgetLiveActivity.swift` | HabittoWidgetExtension (optional) | Habitto |
-
-### Fix 4: Verify Shared Files (Both Targets)
-
-| File | Should be in | Should NOT be in |
-|------|--------------|------------------|
-| `Shared/Models/WidgetHabitData.swift` | **BOTH** Habitto ✅ AND HabittoWidgetExtension ✅ | - |
-| `Shared/Services/WidgetDataService.swift` | **BOTH** Habitto ✅ AND HabittoWidgetExtension ✅ | - |
-
-### Fix 5: Verify Main App Files (Main App Only)
-
-| File | Should be in | Should NOT be in |
-|------|--------------|------------------|
-| `Core/Utils/Design/ColorSystem.swift` | Habitto | HabittoWidgetExtension |
-| `Core/Services/WidgetUpdateService.swift` | Habitto | HabittoWidgetExtension |
-| `App/HabittoApp.swift` | Habitto | HabittoWidgetExtension |
-| All files in `Core/` | Habitto | HabittoWidgetExtension |
-| All files in `Views/` | Habitto | HabittoWidgetExtension |
-
----
-
-## 📋 STEP-BY-STEP FIX INSTRUCTIONS
-
-### Option A: Fix via Xcode UI (Recommended)
-
-1. **Open Xcode project**
-2. **Select `HabittoWidget/Sources/Extensions/Color+Hex.swift`**
-   - File Inspector (⌘⌥1)
-   - Target Membership section
-   - ❌ **UNCHECK** `Habitto`
-   - ✅ **CHECK** `HabittoWidgetExtension` only
-
-3. **Select `HabittoWidget/Sources/HabittoWidgetBundle.swift`**
-   - File Inspector (⌘⌥1)
-   - Target Membership section
-   - ❌ **UNCHECK** `Habitto`
-   - ✅ **CHECK** `HabittoWidgetExtension` only
-
-4. **Select entire `HabittoWidget/Sources/` folder**
-   - File Inspector (⌘⌥1)
-   - Target Membership section
-   - Verify only `HabittoWidgetExtension` is checked
-   - Uncheck `Habitto` if present
-
-5. **Verify `Core/Utils/Design/ColorSystem.swift`**
-   - File Inspector (⌘⌥1)
-   - Target Membership section
-   - ✅ **CHECK** `Habitto` only
-   - ❌ **UNCHECK** `HabittoWidgetExtension`
-
-6. **Clean and Build:**
-   ```
-   Product → Clean Build Folder (⌘K)
-   Product → Build (⌘B)
-   ```
-
-### Option B: Fix via project.pbxproj (Advanced)
-
-**WARNING:** Only edit if comfortable with Xcode project file format.
-
-1. **Backup project.pbxproj:**
-   ```bash
-   cp Habitto.xcodeproj/project.pbxproj Habitto.xcodeproj/project.pbxproj.backup
-   ```
-
-2. **Remove wrong references:**
-   - Delete lines 84-85 (files in Habitto target)
-   - Delete line 94 (wrong path reference)
-
-3. **Open in Xcode to refresh:**
-   - Xcode will regenerate project file structure
-   - Verify in File Inspector that target memberships are correct
-
----
-
-## ✅ VERIFICATION CHECKLIST
-
-After fixes, verify:
-
-- [ ] `HabittoWidgetBundle.swift` is ONLY in HabittoWidgetExtension
-- [ ] `Color+Hex.swift` is ONLY in HabittoWidgetExtension
-- [ ] `ColorSystem.swift` is ONLY in Habitto
-- [ ] No duplicate file references in Build Phases
-- [ ] Clean build succeeds (⌘K, then ⌘B)
-- [ ] Widget compiles without errors
-- [ ] Main app compiles without errors
-- [ ] No ambiguity errors
-- [ ] No redeclaration errors
-
----
-
-## 📝 SUMMARY
-
-### What We Found:
-- ✅ Only ONE `HabittoWidget/` folder (no duplicates)
-- ✅ All files exist once physically
-- ❌ Duplicate/wrong file references in Xcode project file
-- ❌ Files incorrectly assigned to wrong targets
-
-### What Needs Fixing:
-1. Remove widget files from Habitto target
-2. Remove duplicate/wrong path references
-3. Ensure target membership is correct for all files
-4. Verify shared files are in both targets
-
-### Expected Result:
-- Widget extension compiles cleanly
-- Main app compiles cleanly
-- No ambiguity or redeclaration errors
-- Clean separation between targets
-
----
-
-**Status:** Investigation Complete ✅
-**Action Required:** Fix target membership in Xcode (see Fix Instructions above)
-**No File Deletions Needed:** All files are in correct locations, just wrong target assignments
+- The widget comments incorrectly state: "The app saves date keys in UTC" - this is **false**
+- The app actually saves date keys using `TimeZone.current` (local timezone)
+- This mismatch affects users in timezones far from UTC more severely
+- Users near UTC (e.g., London in winter) may not notice the issue during certain hours
+- The test function will automatically show the mismatch when the widget calculates weekly progress
