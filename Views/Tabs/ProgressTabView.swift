@@ -252,39 +252,45 @@ struct ProgressTabView: View {
         // Weekly Progress Card
         weeklyProgressCard
 
-        // Weekly Calendar Grid and Stats Container
-        VStack(spacing: 0) {
-          // Weekly Calendar Grid
-          WeeklyCalendarGridView(
-            userHabits: getActiveHabits(),
-            selectedWeekStartDate: selectedWeekStartDate)
+        // Weekly Calendar Grid and Stats Container - Hidden when All habits is selected
+        // VStack(spacing: 0) {
+        //   // Weekly Calendar Grid
+        //   WeeklyCalendarGridView(
+        //     userHabits: getActiveHabits(),
+        //     selectedWeekStartDate: selectedWeekStartDate)
+        //
+        //   // Summary Statistics
+        //   WeeklySummaryStatsView(
+        //     completionRate: 0,
+        //     bestStreak: streakStatistics.longestStreak,
+        //     consistencyRate: 0)
+        //     .padding(.horizontal, 16)
+        //     .padding(.top, 12)
+        //     .padding(.bottom, 16)
+        // }
+        // .background(
+        //   RoundedRectangle(cornerRadius: 24)
+        //     .fill(.appSurface01)
+        //     .overlay(
+        //       LinearGradient(
+        //         stops: [
+        //           Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+        //           Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+        //         ],
+        //         startPoint: UnitPoint(x: 0.08, y: 0.09),
+        //         endPoint: UnitPoint(x: 0.88, y: 1)
+        //       )
+        //       .clipShape(RoundedRectangle(cornerRadius: 24))
+        //     ))
+        // .overlay(
+        //   RoundedRectangle(cornerRadius: 24)
+        //     .stroke(Color("appOutline1Variant"), lineWidth: 2))
 
-          // Summary Statistics
-          WeeklySummaryStatsView(
-            completionRate: 0,
-            bestStreak: streakStatistics.longestStreak,
-            consistencyRate: 0)
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 16)
-        }
-        .background(
-          RoundedRectangle(cornerRadius: 24)
-            .fill(.appSurface01)
-            .overlay(
-              LinearGradient(
-                stops: [
-                  Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
-                  Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
-                ],
-                startPoint: UnitPoint(x: 0.08, y: 0.09),
-                endPoint: UnitPoint(x: 0.88, y: 1)
-              )
-              .clipShape(RoundedRectangle(cornerRadius: 24))
-            ))
-        .overlay(
-          RoundedRectangle(cornerRadius: 24)
-            .stroke(Color("appOutline1Variant"), lineWidth: 2))
+        // All Habits Weekly Progress (Total)
+        AllHabitsWeeklyProgressView(
+          habits: getActiveHabits(),
+          selectedWeekStartDate: selectedWeekStartDate)
+          .padding(.top, 8)
 
         // Individual Habits Weekly Progress
         IndividualHabitsWeeklyProgressContainer(
@@ -301,14 +307,30 @@ struct ProgressTabView: View {
 
   @ViewBuilder
   private var weeklyIndividualHabitContent: some View {
-    VStack(spacing: 20) {
-      // Weekly Difficulty Graph
-      weeklyDifficultyGraph
+    if let selectedHabit = selectedHabit {
+      VStack(spacing: 20) {
+        // Individual Habit Weekly Progress (New Style)
+        IndividualHabitWeeklyProgressViewNew(
+          habit: selectedHabit,
+          selectedWeekStartDate: selectedWeekStartDate)
 
-      // Time Base Completion Chart
-      timeBaseCompletionChart
+        // Weekly Difficulty Graph
+        weeklyDifficultyGraph
+
+        // Time Base Completion Chart
+        timeBaseCompletionChart
+      }
+      .padding(.horizontal, 20)
+    } else {
+      VStack(spacing: 20) {
+        // Weekly Difficulty Graph
+        weeklyDifficultyGraph
+
+        // Time Base Completion Chart
+        timeBaseCompletionChart
+      }
+      .padding(.horizontal, 20)
     }
-    .padding(.horizontal, 20)
   }
 
   // MARK: - Monthly Content Views
@@ -1271,7 +1293,7 @@ struct ProgressTabView: View {
             .padding(.vertical, 8)
             .background(
               RoundedRectangle(cornerRadius: 20)
-                .fill(Color.appPrimaryContainer))
+                .fill(Color.appOutline1Variant))
           }
           .buttonStyle(PlainButtonStyle())
           .contentShape(Rectangle())
