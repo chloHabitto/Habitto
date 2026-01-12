@@ -117,28 +117,38 @@ struct StreakMilestoneSheet: View {
   }
 
   private var completedDaysInWeek: [Bool] {
-    // Calculate which days of the week are completed based on streak
-    // For now, show all days as completed if streak >= 7, otherwise show partial
     let calendar = Calendar.current
-    let today = Date()
+    let today = calendar.startOfDay(for: Date())
+    
+    // Get the start of this week (Monday)
+    // weekday: 1=Sunday, 2=Monday, ..., 7=Saturday
     let weekday = calendar.component(.weekday, from: today)
-    // Adjust for Monday = 0
-    let mondayOffset = (weekday + 5) % 7
+    // Days since Monday: Sunday=6, Monday=0, Tuesday=1, etc.
+    let daysSinceMonday = (weekday + 5) % 7
+    guard let weekStart = calendar.date(byAdding: .day, value: -daysSinceMonday, to: today) else {
+      return Array(repeating: false, count: 7)
+    }
+    
     var days: [Bool] = Array(repeating: false, count: 7)
-
-    if streakCount >= 7 {
-      // All days completed
-      days = Array(repeating: true, count: 7)
-    } else {
-      // Show completed days up to streak count, starting from today going backwards
-      for i in 0 ..< min(streakCount, 7) {
-        let dayIndex = (mondayOffset - i + 7) % 7
-        if dayIndex >= 0 && dayIndex < 7 {
-          days[dayIndex] = true
-        }
+    
+    // For each day of THIS week, check if it's part of the streak
+    for dayIndex in 0..<7 {
+      guard let dayDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) else {
+        continue
+      }
+      
+      // Only check days up to today (not future days)
+      guard dayDate <= today else {
+        continue
+      }
+      
+      // Check if this day is within the streak (going backwards from today)
+      let daysAgo = calendar.dateComponents([.day], from: dayDate, to: today).day ?? 0
+      if daysAgo < streakCount {
+        days[dayIndex] = true
       }
     }
-
+    
     return days
   }
 
