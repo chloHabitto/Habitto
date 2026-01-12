@@ -361,6 +361,11 @@ struct ProgressTabView: View {
           singleHabit: selectedHabit)
           .id("monthly-individual-\(refreshID)")
 
+        // Individual Habit Monthly Calendar Progress
+        IndividualHabitsMonthlyCalendarProgressContainer(
+          habits: [selectedHabit],
+          selectedMonth: selectedProgressDate)
+
         // Monthly Difficulty Graph
         monthlyDifficultyGraph
       }
