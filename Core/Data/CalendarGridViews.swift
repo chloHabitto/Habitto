@@ -160,7 +160,6 @@ struct WeeklyCalendarGridView: View {
               .foregroundColor(.text05)
               .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
               .frame(height: 32)
-              .padding(.leading, 16)
               .clipShape(
                 UnevenRoundedRectangle(
                   topLeadingRadius: 0,
@@ -244,6 +243,7 @@ struct MonthlyCalendarGridView: View {
 
   let userHabits: [Habit]
   let selectedMonth: Date
+  let singleHabit: Habit? // Optional: when provided, show only this habit; when nil, show combined view for all habits
 
   var body: some View {
     VStack(spacing: 12) {
@@ -252,56 +252,94 @@ struct MonthlyCalendarGridView: View {
           title: "No habits yet",
           subtitle: "Create habits to see your monthly progress")
           .frame(maxWidth: .infinity, alignment: .center)
-      } else {
-        // Individual habit tables with monthly heatmaps
-        LazyVStack(spacing: 16) {
-          ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
-            VStack(spacing: 0) {
-              // Habit header
-              HStack(spacing: 8) {
-                HabitIconInlineView(habit: habit)
+      } else if let singleHabit = singleHabit {
+        // Single habit mode: show calendar grid and stats for one habit
+        VStack(spacing: 0) {
+          // Habit header
+          HStack(spacing: 8) {
+            HabitIconInlineView(habit: singleHabit)
 
-                Text(habit.name)
-                  .font(.appBodyMedium)
-                  .foregroundColor(.text01)
-                  .lineLimit(1)
-                  .truncationMode(.tail)
-                  .frame(maxWidth: .infinity, alignment: .leading)
-              }
+            Text(singleHabit.name)
+              .font(.appBodyMedium)
+              .foregroundColor(.text01)
+              .lineLimit(1)
+              .truncationMode(.tail)
               .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.horizontal, 16)
-              .padding(.top, 16)
-              .padding(.bottom, 12)
-
-              // Weekly heatmap table for this habit
-              monthlyHeatmapTable(for: habit)
-
-              // Summary statistics row
-              summaryStatisticsView(for: habit)
-                .padding(.horizontal, 16)
-              .padding(.top, 12)
-              .padding(.bottom, 16)
-            }
-            .background(
-              RoundedRectangle(cornerRadius: 24)
-                .fill(.appSurface01)
-                .overlay(
-                  LinearGradient(
-                    stops: [
-                      Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
-                      Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
-                    ],
-                    startPoint: UnitPoint(x: 0.08, y: 0.09),
-                    endPoint: UnitPoint(x: 0.88, y: 1)
-                  )
-                  .clipShape(RoundedRectangle(cornerRadius: 24))
-                ))
-            .overlay(
-              RoundedRectangle(cornerRadius: 24)
-                .stroke(Color("appOutline1Variant"), lineWidth: 2))
-            .id("month-habit-\(habit.id)-\(index)")
           }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 16)
+          .padding(.top, 16)
+          .padding(.bottom, 12)
+
+          // Weekly heatmap table for this habit
+          monthlyHeatmapTable(for: singleHabit, isCombined: false)
+
+          // Summary statistics row
+          summaryStatisticsView(for: singleHabit)
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
         }
+        .background(
+          RoundedRectangle(cornerRadius: 24)
+            .fill(.appSurface01)
+            .overlay(
+              LinearGradient(
+                stops: [
+                  Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                  Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                ],
+                startPoint: UnitPoint(x: 0.08, y: 0.09),
+                endPoint: UnitPoint(x: 0.88, y: 1)
+              )
+              .clipShape(RoundedRectangle(cornerRadius: 24))
+            ))
+        .overlay(
+          RoundedRectangle(cornerRadius: 24)
+            .stroke(Color("appOutline1Variant"), lineWidth: 2))
+      } else {
+        // Combined mode: show one combined calendar grid and stats for all habits
+        VStack(spacing: 0) {
+          // Combined header
+          HStack(spacing: 8) {
+            Text("All habits")
+              .font(.appBodyMedium)
+              .foregroundColor(.text01)
+              .lineLimit(1)
+              .truncationMode(.tail)
+              .frame(maxWidth: .infinity, alignment: .leading)
+          }
+          .frame(maxWidth: .infinity, alignment: .leading)
+          .padding(.horizontal, 16)
+          .padding(.top, 16)
+          .padding(.bottom, 12)
+
+          // Combined weekly heatmap table
+          monthlyHeatmapTableCombined()
+
+          // Combined summary statistics row
+          summaryStatisticsViewCombined()
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 16)
+        }
+        .background(
+          RoundedRectangle(cornerRadius: 24)
+            .fill(.appSurface01)
+            .overlay(
+              LinearGradient(
+                stops: [
+                  Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                  Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                ],
+                startPoint: UnitPoint(x: 0.08, y: 0.09),
+                endPoint: UnitPoint(x: 0.88, y: 1)
+              )
+              .clipShape(RoundedRectangle(cornerRadius: 24))
+            ))
+        .overlay(
+          RoundedRectangle(cornerRadius: 24)
+            .stroke(Color("appOutline1Variant"), lineWidth: 2))
       }
     }
 //        .padding(.horizontal, 16)
@@ -340,7 +378,7 @@ struct MonthlyCalendarGridView: View {
   // MARK: - Weekly Heatmap Table
 
   @ViewBuilder
-  private func monthlyHeatmapTable(for habit: Habit) -> some View {
+  private func monthlyHeatmapTable(for habit: Habit, isCombined: Bool) -> some View {
     VStack(spacing: 0) {
       // Header row with day labels
       HStack(spacing: 0) {
@@ -366,8 +404,136 @@ struct MonthlyCalendarGridView: View {
         // Day headers - must match heatmap cells exactly
         ForEach(Array(dayHeaders.enumerated()), id: \.offset) { index, day in
           Text(day)
-            .font(.appBodyMediumEmphasised)
-            .foregroundColor(.text02)
+            .font(.appLabelMediumEmphasised)
+            .foregroundColor(.text05)
+            .frame(width: 24, height: 24)
+            .clipShape(
+              UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: index == 6 ? 12 : 0))
+            .overlay(
+              UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: index == 6 ? 12 : 0)
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      // Week rows with heatmap cells - calculate actual weeks in the selected month
+      ForEach(0 ..< numberOfWeeksInMonth, id: \.self) { weekIndex in
+        HStack(spacing: 0) {
+          // Week label cell - must match empty corner cell exactly
+          Text("Week \(weekIndex + 1)")
+            .font(.appLabelMediumEmphasised)
+            .foregroundColor(.text05)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
+            .frame(height: 36)
+            .overlay(
+              Rectangle()
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
+
+          // Week heatmap cells - must match day headers exactly
+          ForEach(0 ..< 7, id: \.self) { dayIndex in
+            let heatmapData = getMonthlyHeatmapDataForHabit(
+              habit: habit,
+              weekIndex: weekIndex,
+              dayIndex: dayIndex)
+            HeatmapCellView(
+              intensity: heatmapData.intensity,
+              isScheduled: heatmapData.isScheduled,
+              completionPercentage: heatmapData.completionPercentage)
+              .frame(width: 24, height: 36)
+              .overlay(
+                Rectangle()
+                  .stroke(Color("appOutline02Variant"), lineWidth: 1))
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
+
+      // Total row with rounded bottom corners
+      HStack(spacing: 0) {
+        Text("Total")
+          .font(.appLabelMediumEmphasised)
+          .foregroundColor(.text05)
+          .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
+          .frame(height: 32)
+          .clipShape(
+            UnevenRoundedRectangle(
+              topLeadingRadius: 0,
+              bottomLeadingRadius: 12,
+              bottomTrailingRadius: 0,
+              topTrailingRadius: 0))
+          .overlay(
+            UnevenRoundedRectangle(
+              topLeadingRadius: 0,
+              bottomLeadingRadius: 12,
+              bottomTrailingRadius: 0,
+              topTrailingRadius: 0)
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
+
+        ForEach(0 ..< 7, id: \.self) { dayIndex in
+          MonthlyTotalEmojiCell(
+            habit: habit,
+            dayIndex: dayIndex,
+            numberOfWeeks: numberOfWeeksInMonth,
+            selectedMonth: selectedMonth,
+            getMonthlyHeatmapDataForHabit: getMonthlyHeatmapDataForHabit)
+            .frame(width: 24, height: 32)
+            .clipShape(
+              UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                topTrailingRadius: 0))
+            .overlay(
+              UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                topTrailingRadius: 0)
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .padding(.horizontal, 16)
+  }
+
+  @ViewBuilder
+  private func monthlyHeatmapTableCombined() -> some View {
+    VStack(spacing: 0) {
+      // Header row with day labels
+      HStack(spacing: 0) {
+        // Empty cell for top-left corner - must match week label cell exactly
+        Rectangle()
+          .fill(.clear)
+          .frame(minWidth: 0, maxWidth: .infinity)
+          .frame(height: 24)
+          .clipShape(
+            UnevenRoundedRectangle(
+              topLeadingRadius: 12,
+              bottomLeadingRadius: 0,
+              bottomTrailingRadius: 0,
+              topTrailingRadius: 0))
+          .overlay(
+            UnevenRoundedRectangle(
+              topLeadingRadius: 12,
+              bottomLeadingRadius: 0,
+              bottomTrailingRadius: 0,
+              topTrailingRadius: 0)
+                        .stroke(Color("appOutline02Variant"), lineWidth: 1))
+
+        // Day headers - must match heatmap cells exactly
+        ForEach(Array(dayHeaders.enumerated()), id: \.offset) { index, day in
+          Text(day)
+            .font(.appLabelMediumEmphasised)
+            .foregroundColor(.text05)
             .frame(width: 24, height: 24)
             .clipShape(
               UnevenRoundedRectangle(
@@ -401,8 +567,7 @@ struct MonthlyCalendarGridView: View {
 
           // Week heatmap cells - must match day headers exactly
           ForEach(0 ..< 7, id: \.self) { dayIndex in
-            let heatmapData = getMonthlyHeatmapDataForHabit(
-              habit: habit,
+            let heatmapData = getMonthlyHeatmapDataCombined(
               weekIndex: weekIndex,
               dayIndex: dayIndex)
             HeatmapCellView(
@@ -421,8 +586,8 @@ struct MonthlyCalendarGridView: View {
       // Total row with rounded bottom corners
       HStack(spacing: 0) {
         Text("Total")
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(.text01)
+          .font(.appLabelMediumEmphasised)
+          .foregroundColor(.text05)
           .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
           .frame(height: 32)
           .clipShape(
@@ -440,12 +605,11 @@ struct MonthlyCalendarGridView: View {
                         .stroke(Color("appOutline02Variant"), lineWidth: 1))
 
         ForEach(0 ..< 7, id: \.self) { dayIndex in
-          MonthlyTotalEmojiCell(
-            habit: habit,
+          MonthlyTotalEmojiCellCombined(
             dayIndex: dayIndex,
             numberOfWeeks: numberOfWeeksInMonth,
             selectedMonth: selectedMonth,
-            getMonthlyHeatmapDataForHabit: getMonthlyHeatmapDataForHabit)
+            getMonthlyHeatmapDataCombined: getMonthlyHeatmapDataCombined)
             .frame(width: 24, height: 32)
             .clipShape(
               UnevenRoundedRectangle(
@@ -507,6 +671,57 @@ struct MonthlyCalendarGridView: View {
       // Consistency percentage
       VStack(spacing: 4) {
         Text("\(Int(calculateHabitConsistency(for: habit)))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Consistency")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+    }
+    .padding(.vertical, 16)
+    .background(Color("appSecondaryContainer03"))
+    .cornerRadius(16)
+  }
+
+  @ViewBuilder
+  private func summaryStatisticsViewCombined() -> some View {
+    HStack(spacing: 0) {
+      // Completion percentage
+      VStack(spacing: 4) {
+        Text("\(Int(calculateCombinedCompletionPercentage()))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Completion")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Best streak
+      VStack(spacing: 4) {
+        Text(pluralizeDay(calculateCombinedBestStreak()))
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Best Streak")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Consistency percentage
+      VStack(spacing: 4) {
+        Text("\(Int(calculateCombinedConsistency()))%")
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         Text("Consistency")
@@ -584,6 +799,64 @@ struct MonthlyCalendarGridView: View {
     }
 
     return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
+  }
+
+  /// Calculate combined heatmap data for all habits, week, and day in the selected month
+  private func getMonthlyHeatmapDataCombined(
+    weekIndex: Int,
+    dayIndex: Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double)
+  {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+
+    // Calculate the first day of the week that contains the month start
+    let monthStartWeekday = calendar.component(.weekday, from: monthStart)
+    let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
+    let firstWeekdayOfMonth = calendar.date(
+      byAdding: .day,
+      value: -daysFromFirstWeekday,
+      to: monthStart) ?? monthStart
+
+    // Calculate the target date based on week and day indices
+    let targetDate = calendar.date(
+      byAdding: .day,
+      value: (weekIndex * 7) + dayIndex,
+      to: firstWeekdayOfMonth) ?? monthStart
+
+    // Check if the target date is within the selected month
+    let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
+    if targetDate >= monthEnd {
+      return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+    }
+
+    // Check if any habit is scheduled for this day
+    let scheduledHabits = userHabits.filter { StreakDataCalculator.shouldShowHabitOnDate($0, date: targetDate) }
+    let isScheduled = !scheduledHabits.isEmpty
+
+    if !isScheduled {
+      return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+    }
+
+    // Calculate average completion percentage from scheduled habits
+    let totalCompletion = scheduledHabits.reduce(0.0) { total, habit in
+      total + StreakDataCalculator.calculateCompletionPercentage(for: habit, date: targetDate)
+    }
+    let averageCompletion = scheduledHabits.isEmpty
+      ? 0.0
+      : totalCompletion / Double(scheduledHabits.count)
+
+    // Map completion percentage to intensity
+    let intensity = if averageCompletion == 0 {
+      0
+    } else if averageCompletion < 25 {
+      1
+    } else if averageCompletion < 50 {
+      2
+    } else {
+      3
+    }
+
+    return (intensity: intensity, isScheduled: true, completionPercentage: averageCompletion)
   }
 
   // MARK: - Helper Functions for Summary Statistics
@@ -722,6 +995,88 @@ struct MonthlyCalendarGridView: View {
     } catch {
       return nil
     }
+  }
+
+  // MARK: - Combined Statistics Helper Functions
+
+  private func calculateCombinedCompletionPercentage() -> Double {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+
+    // Use selected month range
+    let startDate = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+    let endDate = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
+
+    var totalGoal = 0
+    var totalCompleted = 0
+
+    // Calculate for all habits in the selected month range
+    var currentDate = startDate
+    while currentDate <= endDate, currentDate <= today {
+      for habit in userHabits {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+          totalGoal += goalAmount
+          totalCompleted += progress
+        }
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+
+    if totalGoal == 0 {
+      return 0.0
+    }
+
+    return min(100.0, (Double(totalCompleted) / Double(totalGoal)) * 100.0)
+  }
+
+  private func calculateCombinedConsistency() -> Double {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+
+    // Use selected month range
+    let startDate = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+    let endDate = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
+
+    var totalScheduledDays = 0
+    var totalCompletedDays = 0
+    var currentDate = startDate
+
+    while currentDate <= endDate, currentDate <= today {
+      var dayScheduled = false
+      var dayCompleted = false
+
+      for habit in userHabits {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          dayScheduled = true
+          if habit.isCompleted(for: currentDate) {
+            dayCompleted = true
+            break // At least one habit completed on this day
+          }
+        }
+      }
+
+      if dayScheduled {
+        totalScheduledDays += 1
+        if dayCompleted {
+          totalCompletedDays += 1
+        }
+      }
+
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+
+    if totalScheduledDays == 0 {
+      return 0.0
+    }
+
+    return (Double(totalCompletedDays) / Double(totalScheduledDays)) * 100.0
+  }
+
+  private func calculateCombinedBestStreak() -> Int {
+    // Return the maximum best streak across all habits
+    return userHabits.map { calculateHabitBestStreak(for: $0) }.max() ?? 0
   }
 }
 
@@ -1141,6 +1496,107 @@ struct MonthlyTotalEmojiCell: View {
   }
 }
 
+// MARK: - MonthlyTotalEmojiCellCombined
+
+struct MonthlyTotalEmojiCellCombined: View {
+  // MARK: Internal
+
+  let dayIndex: Int
+  let numberOfWeeks: Int
+  let selectedMonth: Date
+  let getMonthlyHeatmapDataCombined: (Int, Int) -> (
+    intensity: Int,
+    isScheduled: Bool,
+    completionPercentage: Double)
+
+  var body: some View {
+    // Calculate total completion for this day across completed weeks only
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let today = calendar.startOfDay(for: Date())
+
+    // Check if ALL weeks have passed for this day column
+    let allWeeksPassedForThisDay = (0 ..< numberOfWeeks).allSatisfy { weekIndex in
+      // Calculate the date for this week and day using the same logic as the monthly heatmap
+      let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+      let monthStartWeekday = calendar.component(.weekday, from: monthStart)
+      let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
+      let firstWeekdayOfMonth = calendar.date(
+        byAdding: .day,
+        value: -daysFromFirstWeekday,
+        to: monthStart) ?? monthStart
+      let targetDate = calendar.date(
+        byAdding: .day,
+        value: (weekIndex * 7) + dayIndex,
+        to: firstWeekdayOfMonth) ?? monthStart
+
+      // Check if this date is in the past or today
+      return targetDate <= today
+    }
+
+    // If any week is still upcoming, show upcoming emoji
+    if !allWeeksPassedForThisDay {
+      Image("022-emoji@4x") // Upcoming day emoji
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: 20, height: 20)
+        .opacity(0.2) // Same opacity as upcoming days
+    } else {
+      // All weeks have passed, calculate average completion
+      let completedWeeks = (0 ..< numberOfWeeks).filter { weekIndex in
+        // Calculate the date for this week and day using the same logic
+        let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?
+          .start ?? selectedMonth
+        let monthStartWeekday = calendar.component(.weekday, from: monthStart)
+        let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
+        let firstWeekdayOfMonth = calendar.date(
+          byAdding: .day,
+          value: -daysFromFirstWeekday,
+          to: monthStart) ?? monthStart
+        let targetDate = calendar.date(
+          byAdding: .day,
+          value: (weekIndex * 7) + dayIndex,
+          to: firstWeekdayOfMonth) ?? monthStart
+
+        // Check if this date is in the past or today
+        return targetDate <= today
+      }
+
+      // Calculate average completion only for completed weeks
+      let totalCompletion = completedWeeks.reduce(0.0) { total, weekIndex in
+        let heatmapData = getMonthlyHeatmapDataCombined(weekIndex, dayIndex)
+        return total + heatmapData.completionPercentage
+      }
+      let averageCompletion = completedWeeks.isEmpty
+        ? 0.0
+        : totalCompletion / Double(completedWeeks.count)
+
+      // Show emoji based on average completion
+      let emojiImageName = emojiImageName(for: averageCompletion)
+
+      Image(emojiImageName)
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: 20, height: 20)
+    }
+  }
+
+  // MARK: Private
+
+  private func emojiImageName(for completionPercentage: Double) -> String {
+    if completionPercentage >= 75.0 {
+      "004-emoji@4x"
+    } else if completionPercentage >= 55.0 {
+      "021-emoji@4x"
+    } else if completionPercentage >= 35.0 {
+      "001-emoji@4x"
+    } else if completionPercentage >= 10.0 {
+      "024-emoji@4x"
+    } else {
+      "008-emoji@4x"
+    }
+  }
+}
+
 // MARK: - WeeklyTotalEmojiCell
 
 struct WeeklyTotalEmojiCell: View {
@@ -1211,6 +1667,352 @@ struct WeeklyTotalEmojiCell: View {
       return "024-emoji@4x" // 10-34% completion
     } else {
       return "008-emoji@4x" // 0-9% completion
+    }
+  }
+}
+
+// MARK: - IndividualHabitWeeklyProgressView
+
+struct IndividualHabitWeeklyProgressView: View {
+  // MARK: Internal
+
+  let habit: Habit
+  let selectedWeekStartDate: Date
+
+  var body: some View {
+    VStack(spacing: 16) {
+      // Habit header: Icon + Name | Goal
+      HStack {
+        // Habit icon + name
+        HStack(spacing: 8) {
+          HabitIconInlineView(habit: habit)
+          
+          Text(habit.name)
+            .font(.appTitleMediumEmphasised)
+            .foregroundColor(.appText03)
+            .lineLimit(1)
+        }
+        
+        Spacer()
+        
+        // Goal text
+        Text(habit.goal)
+          .font(.appTitleSmall)
+          .foregroundColor(.appText05)
+          .lineLimit(1)
+      }
+      .padding(.horizontal, 16)
+      .padding(.top, 16)
+
+      // Weekly stat: Day labels and date rectangles
+      VStack(spacing: 8) {
+        // Day labels row
+        HStack(spacing: 0) {
+          ForEach(Array(weeklyDayLabels.enumerated()), id: \.offset) { index, day in
+            Text(day)
+              .font(.appLabelSmallEmphasised)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity)
+          }
+        }
+        .padding(.horizontal, 16)
+
+        // Date rectangles row
+        HStack(spacing: 0) {
+          ForEach(0 ..< 7, id: \.self) { dayIndex in
+            let date = getDateForDayIndex(dayIndex)
+            let dayNumber = getDayNumber(for: date)
+            let isCompleted = habit.isCompleted(for: date)
+            let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+            
+            ZStack {
+              // Rectangle background
+              RoundedRectangle(cornerRadius: 8)
+                .fill(isCompleted && isScheduled ? habit.color.color : Color("appOutline02"))
+                .frame(width: 32, height: 32)
+              
+              // Date number
+              Text("\(dayNumber)")
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(isCompleted && isScheduled ? Color("appTextDarkFixed") : Color("appOutline06"))
+            }
+            .frame(maxWidth: .infinity)
+          }
+        }
+        .padding(.horizontal, 16)
+      }
+      .padding(.bottom, 16)
+    }
+  }
+
+  // MARK: Private
+
+  private var weeklyDayLabels: [String] {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    if calendar.firstWeekday == 1 { // Sunday
+      return ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+    } else { // Monday
+      return ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    }
+  }
+
+  private func getDateForDayIndex(_ dayIndex: Int) -> Date {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+    return calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+  }
+
+  private func getDayNumber(for date: Date) -> Int {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    return calendar.component(.day, from: date)
+  }
+}
+
+// MARK: - IndividualHabitsWeeklyProgressContainer
+
+struct IndividualHabitsWeeklyProgressContainer: View {
+  // MARK: Internal
+
+  let habits: [Habit]
+  let selectedWeekStartDate: Date
+
+  var body: some View {
+    VStack(spacing: 16) {
+      ForEach(habits, id: \.id) { habit in
+        IndividualHabitWeeklyProgressView(
+          habit: habit,
+          selectedWeekStartDate: selectedWeekStartDate)
+          .background(
+            RoundedRectangle(cornerRadius: 24)
+              .fill(.appSurface01)
+              .overlay(
+                LinearGradient(
+                  stops: [
+                    Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                    Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                  ],
+                  startPoint: UnitPoint(x: 0.08, y: 0.09),
+                  endPoint: UnitPoint(x: 0.88, y: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+              ))
+          .overlay(
+            RoundedRectangle(cornerRadius: 24)
+              .stroke(Color("appOutline1Variant"), lineWidth: 2))
+      }
+    }
+  }
+}
+
+// MARK: - IndividualHabitMonthlyProgressView
+
+struct IndividualHabitMonthlyProgressView: View {
+  // MARK: Internal
+
+  let habit: Habit
+  let selectedMonth: Date
+
+  var body: some View {
+    VStack(spacing: 12) {
+      // Habit header: Icon + Name
+      HStack(spacing: 8) {
+        HabitIconInlineView(habit: habit)
+
+        Text(habit.name)
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.appText03)
+          .lineLimit(1)
+          .truncationMode(.tail)
+
+        Spacer()
+      }
+      .padding(.horizontal, 16)
+      .padding(.top, 16)
+
+      // Monthly heatmap without date numbers and day headers
+      monthlyHeatmapSimple
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+    }
+    .background(
+      RoundedRectangle(cornerRadius: 24)
+        .fill(.appSurface01)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
+    .overlay(
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
+  }
+
+  // MARK: Private
+
+  private var numberOfWeeksInMonth: Int {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let monthInterval = calendar.dateInterval(of: .month, for: selectedMonth)
+    let startDate = monthInterval?.start ?? selectedMonth
+    let endDate = monthInterval?.end ?? selectedMonth
+
+    var currentDate = startDate
+    var weekCount = 0
+
+    while currentDate < endDate {
+      weekCount += 1
+      currentDate = calendar.date(byAdding: .weekOfYear, value: 1, to: currentDate) ?? currentDate
+    }
+
+    return max(1, weekCount)
+  }
+
+  private var monthlyHeatmapSimple: some View {
+    VStack(spacing: 4) {
+      // Week rows with heatmap cells
+      ForEach(0 ..< numberOfWeeksInMonth, id: \.self) { weekIndex in
+        HStack(spacing: 4) {
+          ForEach(0 ..< 7, id: \.self) { dayIndex in
+            let heatmapData = getMonthlyHeatmapDataForHabit(
+              habit: habit,
+              weekIndex: weekIndex,
+              dayIndex: dayIndex)
+            IndividualHabitHeatmapCellView(
+              habit: habit,
+              intensity: heatmapData.intensity,
+              isScheduled: heatmapData.isScheduled,
+              completionPercentage: heatmapData.completionPercentage)
+          }
+        }
+      }
+    }
+  }
+
+  private func getMonthlyHeatmapDataForHabit(
+    habit: Habit,
+    weekIndex: Int,
+    dayIndex: Int) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double)
+  {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+
+    // Calculate the first day of the week that contains the month start
+    let monthStartWeekday = calendar.component(.weekday, from: monthStart)
+    let daysFromFirstWeekday = (monthStartWeekday - calendar.firstWeekday + 7) % 7
+    let firstWeekdayOfMonth = calendar.date(
+      byAdding: .day,
+      value: -daysFromFirstWeekday,
+      to: monthStart) ?? monthStart
+
+    // Calculate the target date based on week and day indices
+    let targetDate = calendar.date(
+      byAdding: .day,
+      value: (weekIndex * 7) + dayIndex,
+      to: firstWeekdayOfMonth) ?? monthStart
+
+    // Check if the target date is within the selected month
+    let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
+    if targetDate >= monthEnd {
+      return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+    }
+
+    let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: targetDate)
+    if !isScheduled {
+      return (intensity: 0, isScheduled: false, completionPercentage: 0.0)
+    }
+
+    let completionPercentage = StreakDataCalculator.calculateCompletionPercentage(
+      for: habit,
+      date: targetDate)
+    let intensity = if completionPercentage == 0 {
+      0
+    } else if completionPercentage < 25 {
+      1
+    } else if completionPercentage < 50 {
+      2
+    } else {
+      3
+    }
+
+    return (intensity: intensity, isScheduled: true, completionPercentage: completionPercentage)
+  }
+}
+
+// MARK: - IndividualHabitHeatmapCellView
+
+struct IndividualHabitHeatmapCellView: View {
+  let habit: Habit
+  let intensity: Int
+  let isScheduled: Bool
+  let completionPercentage: Double
+
+  var body: some View {
+    let size: CGFloat = 20
+    let cellSize = size * 0.8
+
+    ZStack {
+      // Background
+      RoundedRectangle(cornerRadius: 6)
+        .fill(.clear)
+        .frame(width: size, height: size)
+
+      if isScheduled {
+        // Show heatmap when scheduled using habit color
+        RoundedRectangle(cornerRadius: 6)
+          .fill(heatmapColor(for: completionPercentage, habitColor: habit.color.color))
+          .frame(width: cellSize, height: cellSize)
+      } else {
+        // Show empty outline when not scheduled
+        RoundedRectangle(cornerRadius: 6)
+          .stroke(Color("appOutline03"), lineWidth: 1)
+          .frame(width: cellSize, height: cellSize)
+      }
+    }
+    .frame(width: size, height: size)
+  }
+
+  private func heatmapColor(for completionPercentage: Double, habitColor: Color) -> Color {
+    let clampedPercentage = max(0.0, min(100.0, completionPercentage))
+
+    if clampedPercentage == 0.0 {
+      return Color("appOutline02")
+    } else {
+      // Use habit color for any completion, with intensity based on percentage
+      // Higher completion = more intense color
+      if clampedPercentage >= 100.0 {
+        return habitColor
+      } else {
+        // Use habit color with opacity based on completion
+        let opacity = 0.5 + (clampedPercentage / 100.0) * 0.5
+        return habitColor.opacity(opacity)
+      }
+    }
+  }
+}
+
+// MARK: - IndividualHabitsMonthlyProgressContainer
+
+struct IndividualHabitsMonthlyProgressContainer: View {
+  // MARK: Internal
+
+  let habits: [Habit]
+  let selectedMonth: Date
+
+  var body: some View {
+    LazyVGrid(columns: [
+      GridItem(.flexible(), spacing: 12),
+      GridItem(.flexible(), spacing: 12),
+    ], spacing: 12) {
+      ForEach(habits, id: \.id) { habit in
+        IndividualHabitMonthlyProgressView(
+          habit: habit,
+          selectedMonth: selectedMonth)
+      }
     }
   }
 }

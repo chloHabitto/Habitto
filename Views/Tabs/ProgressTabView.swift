@@ -286,6 +286,12 @@ struct ProgressTabView: View {
           RoundedRectangle(cornerRadius: 24)
             .stroke(Color("appOutline1Variant"), lineWidth: 2))
 
+        // Individual Habits Weekly Progress
+        IndividualHabitsWeeklyProgressContainer(
+          habits: getActiveHabits(),
+          selectedWeekStartDate: selectedWeekStartDate)
+          .padding(.top, 8)
+
         // Weekly Analysis Card
         // weeklyAnalysisCard // Hidden
       }
@@ -328,11 +334,17 @@ struct ProgressTabView: View {
         // Monthly Progress Card
         monthlyProgressCard
 
-        // Monthly Calendar Grid
+        // Monthly Calendar Grid - Combined view for all habits
         MonthlyCalendarGridView(
           userHabits: getActiveHabitsForSelectedMonth(),
-          selectedMonth: selectedProgressDate)
+          selectedMonth: selectedProgressDate,
+          singleHabit: nil)
           .id("monthly-\(refreshID)")
+
+        // Individual Habits Monthly Progress
+        IndividualHabitsMonthlyProgressContainer(
+          habits: getActiveHabitsForSelectedMonth(),
+          selectedMonth: selectedProgressDate)
       }
       .padding(.horizontal, 20)
     }
@@ -340,11 +352,26 @@ struct ProgressTabView: View {
 
   @ViewBuilder
   private var monthlyIndividualHabitContent: some View {
-    VStack(spacing: 20) {
-      // Monthly Difficulty Graph
-      monthlyDifficultyGraph
+    if let selectedHabit = selectedHabit {
+      VStack(spacing: 20) {
+        // Monthly Calendar Grid - Single habit view
+        MonthlyCalendarGridView(
+          userHabits: [selectedHabit],
+          selectedMonth: selectedProgressDate,
+          singleHabit: selectedHabit)
+          .id("monthly-individual-\(refreshID)")
+
+        // Monthly Difficulty Graph
+        monthlyDifficultyGraph
+      }
+      .padding(.horizontal, 20)
+    } else {
+      VStack(spacing: 20) {
+        // Monthly Difficulty Graph
+        monthlyDifficultyGraph
+      }
+      .padding(.horizontal, 20)
     }
-    .padding(.horizontal, 20)
   }
 
   // MARK: - Yearly Content Views
