@@ -67,6 +67,7 @@
 		89BECE4E2F1125CA00A8DFE9 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89C17A372DF73D8A00B2480F /* Habitto.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Habitto.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		89C6A44E2F1017A600B0ABCE /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		89E1895D2F1560F900DCDDC0 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89E311912F151D2D0069BD8F /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89EF149A2F1122FB00C61B7E /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89F196012ECF79D10034041F /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
@@ -230,6 +231,11 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		89E1897D2F1560F900DCDDC0 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
 		89E311B12F151D2D0069BD8F /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
@@ -350,6 +356,10 @@
 				{
 					ProductGroup = 89BA762F2F139F8100FD46B4 /* Products */;
 					ProjectRef = 89BA76162F139F8100FD46B4 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 89E1897D2F1560F900DCDDC0 /* Products */;
+					ProjectRef = 89E1895D2F1560F900DCDDC0 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89BECE642F1125CA00A8DFE9 /* Products */;
@@ -641,7 +651,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -693,7 +703,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
 				PRODUCT_NAME = "$(TARGET_NAME)";
