@@ -2601,7 +2601,7 @@ struct IndividualHabitHeatmapCellView: View {
 
     ZStack {
       // Background
-      RoundedRectangle(cornerRadius: 6)
+      RoundedRectangle(cornerRadius: 2)
         .fill(.clear)
         .frame(width: size, height: size)
 
@@ -2611,12 +2611,12 @@ struct IndividualHabitHeatmapCellView: View {
           .frame(width: innerSize, height: innerSize)
       } else if isScheduled {
         // Show heatmap when scheduled using habit color
-        RoundedRectangle(cornerRadius: 6)
+        RoundedRectangle(cornerRadius: 2)
           .fill(heatmapColor(for: completionPercentage, habitColor: habit.color.color))
           .frame(width: innerSize, height: innerSize)
       } else {
         // Show empty outline when not scheduled but in month
-        RoundedRectangle(cornerRadius: 6)
+        RoundedRectangle(cornerRadius: 2)
           .stroke(Color("appOutline03"), lineWidth: 1)
           .frame(width: innerSize, height: innerSize)
       }
