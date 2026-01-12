@@ -1687,31 +1687,34 @@ struct IndividualHabitWeeklyProgressView: View {
 
   let habit: Habit
   let selectedWeekStartDate: Date
+  var hideHeader: Bool = false
 
   var body: some View {
     VStack(spacing: 16) {
-      // Habit header: Icon + Name | Goal
-      HStack {
-        // Habit icon + name
-        HStack(spacing: 8) {
-          HabitIconInlineView(habit: habit)
+      // Habit header: Icon + Name | Goal (only show if not hidden)
+      if !hideHeader {
+        HStack {
+          // Habit icon + name
+          HStack(spacing: 8) {
+            HabitIconInlineView(habit: habit)
+            
+            Text(habit.name)
+              .font(.appTitleMediumEmphasised)
+              .foregroundColor(.appText03)
+              .lineLimit(1)
+          }
           
-          Text(habit.name)
-            .font(.appTitleMediumEmphasised)
-            .foregroundColor(.appText03)
+          Spacer()
+          
+          // Goal text
+          Text(habit.goal)
+            .font(.appTitleSmall)
+            .foregroundColor(.appText05)
             .lineLimit(1)
         }
-        
-        Spacer()
-        
-        // Goal text
-        Text(habit.goal)
-          .font(.appTitleSmall)
-          .foregroundColor(.appText05)
-          .lineLimit(1)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
       }
-      .padding(.horizontal, 16)
-      .padding(.top, 16)
 
       // Weekly stat: Day labels and date rectangles
       VStack(spacing: 8) {
@@ -1725,6 +1728,7 @@ struct IndividualHabitWeeklyProgressView: View {
           }
         }
         .padding(.horizontal, 16)
+        .padding(.top, hideHeader ? 16 : 0)
 
         // Date rectangles row
         HStack(spacing: 0) {
@@ -1784,13 +1788,15 @@ struct IndividualHabitsWeeklyProgressContainer: View {
 
   let habits: [Habit]
   let selectedWeekStartDate: Date
+  var selectedHabit: Habit? = nil
 
   var body: some View {
     VStack(spacing: 16) {
       ForEach(habits, id: \.id) { habit in
         IndividualHabitWeeklyProgressView(
           habit: habit,
-          selectedWeekStartDate: selectedWeekStartDate)
+          selectedWeekStartDate: selectedWeekStartDate,
+          hideHeader: selectedHabit?.id == habit.id)
           .background(
             RoundedRectangle(cornerRadius: 24)
               .fill(.appSurface01)
