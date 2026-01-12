@@ -801,7 +801,7 @@ struct SubscriptionView: View {
   
   /// Open Privacy Policy in Safari
   private func openPrivacyPolicy() {
-    let privacyURL = "https://habittoapp.netlify.app/privacy"
+    let privacyURL = "https://habitto.nl/privacy"
     
     guard let url = URL(string: privacyURL) else {
       print("❌ SubscriptionView: Failed to create Privacy Policy URL")
