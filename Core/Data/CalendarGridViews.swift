@@ -1965,6 +1965,158 @@ struct IndividualHabitMonthlyProgressView: View {
   }
 }
 
+// MARK: - IndividualHabitMonthlyCalendarProgressView
+
+struct IndividualHabitMonthlyCalendarProgressView: View {
+  // MARK: Internal
+
+  let habit: Habit
+  let selectedMonth: Date
+
+  var body: some View {
+    VStack(spacing: 16) {
+      // Habit header: Icon + Name | Goal
+      HStack {
+        // Habit icon + name
+        HStack(spacing: 8) {
+          HabitIconInlineView(habit: habit)
+          
+          Text(habit.name)
+            .font(.appTitleMediumEmphasised)
+            .foregroundColor(.appText03)
+            .lineLimit(1)
+        }
+        
+        Spacer()
+        
+        // Goal text
+        Text(habit.goal)
+          .font(.appTitleSmall)
+          .foregroundColor(.appText05)
+          .lineLimit(1)
+      }
+      .padding(.horizontal, 16)
+      .padding(.top, 16)
+
+      // Monthly calendar grid: Day labels and date rectangles
+      VStack(spacing: 8) {
+        // Day labels row
+        HStack(spacing: 0) {
+          ForEach(Array(monthlyDayLabels.enumerated()), id: \.offset) { index, day in
+            Text(day)
+              .font(.appLabelSmallEmphasised)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity)
+          }
+        }
+        .padding(.horizontal, 16)
+
+        // Calendar grid with dates
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
+          // Empty cells for days before month starts
+          ForEach(0 ..< firstDayOfMonth, id: \.self) { _ in
+            Color.clear
+              .frame(width: 32, height: 32)
+          }
+
+          // Date cells for the month
+          ForEach(1 ... daysInMonth, id: \.self) { day in
+            let date = getDateForDay(day)
+            let isCompleted = habit.isCompleted(for: date)
+            let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+            
+            ZStack {
+              // Rectangle background
+              RoundedRectangle(cornerRadius: 8)
+                .fill(isCompleted && isScheduled ? habit.color.color : Color("appOutline02"))
+                .frame(width: 32, height: 32)
+              
+              // Date number
+              Text("\(day)")
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(isCompleted && isScheduled ? Color("appTextDarkFixed") : Color("appOutline06"))
+            }
+          }
+        }
+        .padding(.horizontal, 16)
+      }
+      .padding(.bottom, 16)
+    }
+  }
+
+  // MARK: Private
+
+  private var monthlyDayLabels: [String] {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    if calendar.firstWeekday == 1 { // Sunday
+      return ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+    } else { // Monday
+      return ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    }
+  }
+
+  private var firstDayOfMonth: Int {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+    let weekday = calendar.component(.weekday, from: monthStart)
+    
+    // Convert to 0-based index where 0 = first day of week
+    if calendar.firstWeekday == 1 { // Sunday
+      return (weekday - 1) % 7
+    } else { // Monday
+      return (weekday - 2 + 7) % 7
+    }
+  }
+
+  private var daysInMonth: Int {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let range = calendar.range(of: .day, in: .month, for: selectedMonth)
+    return range?.count ?? 30
+  }
+
+  private func getDateForDay(_ day: Int) -> Date {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let monthStart = calendar.dateInterval(of: .month, for: selectedMonth)?.start ?? selectedMonth
+    return calendar.date(byAdding: .day, value: day - 1, to: monthStart) ?? monthStart
+  }
+}
+
+// MARK: - IndividualHabitsMonthlyCalendarProgressContainer
+
+struct IndividualHabitsMonthlyCalendarProgressContainer: View {
+  // MARK: Internal
+
+  let habits: [Habit]
+  let selectedMonth: Date
+
+  var body: some View {
+    VStack(spacing: 16) {
+      ForEach(habits, id: \.id) { habit in
+        IndividualHabitMonthlyCalendarProgressView(
+          habit: habit,
+          selectedMonth: selectedMonth)
+          .background(
+            RoundedRectangle(cornerRadius: 24)
+              .fill(.appSurface01)
+              .overlay(
+                LinearGradient(
+                  stops: [
+                    Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+                    Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+                  ],
+                  startPoint: UnitPoint(x: 0.08, y: 0.09),
+                  endPoint: UnitPoint(x: 0.88, y: 1)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 24))
+              ))
+          .overlay(
+            RoundedRectangle(cornerRadius: 24)
+              .stroke(Color("appOutline1Variant"), lineWidth: 2))
+      }
+    }
+  }
+}
+
 // MARK: - IndividualHabitHeatmapCellView
 
 struct IndividualHabitHeatmapCellView: View {
@@ -2040,6 +2192,12 @@ struct IndividualHabitsMonthlyProgressContainer: View {
   let habits: [Habit]
   let selectedMonth: Date
 
+  // MARK: State
+
+  @State private var availableWidth: CGFloat = 0
+
+  // MARK: Constants
+
   // Minimum card width based on heatmap requirements:
   // - 7 columns × 20pt cells = 140pt
   // - 6 gaps × 4pt spacing = 24pt
@@ -2047,34 +2205,29 @@ struct IndividualHabitsMonthlyProgressContainer: View {
   // - Total: ~196pt, rounded to 160pt minimum for comfortable spacing
   private let minCardWidth: CGFloat = 160
   private let gridSpacing: CGFloat = 12
+  // Estimated card height: header (~60pt) + heatmap (~100pt for 5 weeks) + padding (~20pt)
+  private let estimatedCardHeight: CGFloat = 180
 
-  var body: some View {
-    // Use GeometryReader to measure available width
-    // Parent has 20pt padding on each side, so we account for that
-    GeometryReader { geometry in
-      let availableWidth = geometry.size.width
-      // Check if we can fit two columns: need space for 2 cards + spacing
-      let canFitTwoColumns = availableWidth >= (minCardWidth * 2 + gridSpacing)
+  // MARK: Computed Properties
 
-      LazyVGrid(
-        columns: gridColumns(for: canFitTwoColumns),
-        spacing: gridSpacing
-      ) {
-        ForEach(habits, id: \.id) { habit in
-          IndividualHabitMonthlyProgressView(
-            habit: habit,
-            selectedMonth: selectedMonth,
-            cardWidth: cardWidth(for: availableWidth, twoColumns: canFitTwoColumns))
-        }
-      }
-    }
-    .frame(height: nil) // Let LazyVGrid determine height based on content
+  private var columnCount: Int {
+    // Use a default width if not yet measured (e.g., 375pt for iPhone)
+    let width = availableWidth > 0 ? availableWidth : 375
+    return width >= (minCardWidth * 2 + gridSpacing) ? 2 : 1
   }
 
-  // MARK: Private
+  private var rowCount: Int {
+    guard !habits.isEmpty else { return 0 }
+    return Int(ceil(Double(habits.count) / Double(columnCount)))
+  }
 
-  private func gridColumns(for twoColumns: Bool) -> [GridItem] {
-    if twoColumns {
+  private var totalHeight: CGFloat {
+    guard rowCount > 0 else { return 0 }
+    return CGFloat(rowCount) * estimatedCardHeight + CGFloat(max(0, rowCount - 1)) * gridSpacing
+  }
+
+  private var gridColumns: [GridItem] {
+    if columnCount == 2 {
       return [
         GridItem(.flexible(minimum: minCardWidth), spacing: gridSpacing),
         GridItem(.flexible(minimum: minCardWidth), spacing: gridSpacing),
@@ -2084,13 +2237,48 @@ struct IndividualHabitsMonthlyProgressContainer: View {
     }
   }
 
-  private func cardWidth(for availableWidth: CGFloat, twoColumns: Bool) -> CGFloat {
-    if twoColumns {
+  // MARK: Body
+
+  var body: some View {
+    LazyVGrid(columns: gridColumns, spacing: gridSpacing) {
+      ForEach(habits, id: \.id) { habit in
+        IndividualHabitMonthlyProgressView(
+          habit: habit,
+          selectedMonth: selectedMonth,
+          cardWidth: cardWidth)
+      }
+    }
+    .frame(minHeight: totalHeight) // Ensure minimum height for ScrollView
+    .background(
+      GeometryReader { geometry in
+        Color.clear
+          .preference(key: WidthPreferenceKey.self, value: geometry.size.width)
+      }
+    )
+    .onPreferenceChange(WidthPreferenceKey.self) { width in
+      availableWidth = width
+    }
+  }
+
+  // MARK: Private
+
+  private var cardWidth: CGFloat? {
+    guard availableWidth > 0 else { return nil }
+    if columnCount == 2 {
       // Two columns: (availableWidth - spacing) / 2
       return (availableWidth - gridSpacing) / 2
     } else {
       // Single column: use full width
       return availableWidth
     }
+  }
+}
+
+// MARK: - WidthPreferenceKey
+
+private struct WidthPreferenceKey: PreferenceKey {
+  static var defaultValue: CGFloat = 0
+  static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+    value = nextValue()
   }
 }
