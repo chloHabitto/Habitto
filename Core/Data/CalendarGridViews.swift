@@ -78,8 +78,8 @@ struct WeeklyCalendarGridView: View {
 
             ForEach(Array(weeklyDayHeaders.enumerated()), id: \.offset) { index, day in
               Text(day)
-                .font(.appLabelSmallEmphasised)
-                .foregroundColor(.text02)
+                .font(.appLabelMediumEmphasised)
+                .foregroundColor(.text05)
                 .frame(width: 24, height: 24)
                 .clipShape(
                   UnevenRoundedRectangle(
@@ -103,12 +103,12 @@ struct WeeklyCalendarGridView: View {
             ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
               HStack(spacing: 0) {
                 // Habit name cell with modern styling
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                   HabitIconInlineView(habit: habit)
 
                   Text(habit.name)
-                    .font(.appBodyMedium)
-                    .foregroundColor(.text01)
+                    .font(.appLabelLargeEmphasised)
+                    .foregroundColor(.text02)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -156,9 +156,9 @@ struct WeeklyCalendarGridView: View {
           // Total row with modern styling
           HStack(spacing: 0) {
             Text("Total")
-              .font(.appBodyMediumEmphasised)
-              .foregroundColor(.text01)
-              .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+              .font(.appLabelMediumEmphasised)
+              .foregroundColor(.text05)
+              .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
               .frame(height: 32)
               .padding(.leading, 16)
               .clipShape(
