@@ -315,7 +315,7 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
         var completions: [Date: Bool] = [:]
         
         while date <= endOfMonth {
-            let dateKey = formatDateKey(for: date)
+            let dateKey = DateKeyUtils.dateKey(for: date)
             let normalizedDate = calendar.startOfDay(for: date)
             // Check completionStatus first, then fall back to completionHistory
             let isCompleted = habitData.completionStatus[dateKey] ?? ((habitData.completionHistory[dateKey] ?? 0) > 0)
@@ -326,56 +326,6 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
         }
         
         return completions
-    }
-    
-    /// Test to demonstrate timezone mismatch between app (TimeZone.current) and widget (UTC)
-    private func testTimezoneMismatch(for date: Date) {
-        print()
-        print("🔍 TIMEZONE MISMATCH TEST")
-        print("   Testing date: \(date)")
-        print()
-        
-        // Generate date key using APP's method (TimeZone.current)
-        let appFormatter = DateFormatter()
-        appFormatter.dateFormat = "yyyy-MM-dd"
-        appFormatter.timeZone = TimeZone.current
-        let appDateKey = appFormatter.string(from: date)
-        
-        // Generate date key using WIDGET's method (UTC)
-        let widgetFormatter = DateFormatter()
-        widgetFormatter.dateFormat = "yyyy-MM-dd"
-        widgetFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-        let widgetDateKey = widgetFormatter.string(from: date)
-        
-        print("   📱 APP (TimeZone.current):")
-        print("      Timezone: \(TimeZone.current.identifier)")
-        print("      Date Key: '\(appDateKey)'")
-        print()
-        
-        print("   📦 WIDGET (UTC):")
-        print("      Timezone: UTC")
-        print("      Date Key: '\(widgetDateKey)'")
-        print()
-        
-        if appDateKey != widgetDateKey {
-            print("   ⚠️  MISMATCH DETECTED!")
-            print("      App would store:    completionStatus['\(appDateKey)'] = true")
-            print("      Widget would look:  completionStatus['\(widgetDateKey)'] → NOT FOUND ❌")
-            print("      Result: Widget will show incomplete day even though app marked it complete!")
-        } else {
-            print("   ✅ Keys match for this timestamp")
-        }
-        print()
-    }
-    
-    private func formatDateKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        // ✅ FIX: Use local timezone to match app's date key format (DateUtils.dateKey uses TimeZone.current)
-        formatter.timeZone = TimeZone.current
-        let key = formatter.string(from: date)
-        print("      formatDateKey: date=\(date) -> key='\(key)' (local timezone)")
-        return key
     }
     
     private func generatePlaceholderCompletions() -> [Date: Bool] {
@@ -441,7 +391,7 @@ struct MonthlyProgressProvider: AppIntentTimelineProvider {
         // For each day of the week (Monday to Sunday)
         for i in 0..<7 {
             guard let date = calendar.date(byAdding: .day, value: i, to: weekStart) else { continue }
-            let dateKey = formatDateKey(for: date)
+            let dateKey = DateKeyUtils.dateKey(for: date)
             
             // Check if ALL habits were completed on this day
             // A day is complete if ALL habits have either completionStatus=true OR completionHistory > 0
@@ -688,7 +638,7 @@ struct MonthlyProgressMediumView: View {
         
         // Check completionStatus first, then fall back to completionHistory
         while true {
-            let dateKey = formatDateKey(for: checkDate)
+            let dateKey = DateKeyUtils.dateKey(for: checkDate)
             let isCompleted = habitData.completionStatus[dateKey] ?? ((habitData.completionHistory[dateKey] ?? 0) > 0)
             
             if isCompleted {
@@ -755,7 +705,7 @@ struct MonthlyProgressMediumView: View {
             if let date = calendar.date(byAdding: .day, value: i, to: weekStart) {
                 // Normalize to start of day to ensure correct date key matching
                 let normalizedDate = calendar.startOfDay(for: date)
-                let dateKey = formatDateKey(for: normalizedDate)
+                let dateKey = DateKeyUtils.dateKey(for: normalizedDate)
                 
                 // Check if key exists in dictionaries
                 let statusExists = habitData.completionStatus[dateKey] != nil
@@ -779,19 +729,6 @@ struct MonthlyProgressMediumView: View {
         print("🟢 WIDGET: Weekly progress result: \(completedCount)/7 days completed")
         
         return weeklyProgress
-    }
-    
-    private func formatDateKey(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        // ✅ FIX: Use local timezone to match app's date key format (DateUtils.dateKey uses TimeZone.current)
-        formatter.timeZone = TimeZone.current
-        let key = formatter.string(from: date)
-        // Debug logging for date key generation
-        #if DEBUG
-        print("      formatDateKey: date=\(date) -> key='\(key)' (local timezone)")
-        #endif
-        return key
     }
 }
 
