@@ -694,11 +694,25 @@ struct ProgressTabView: View {
           AnyView(headerContent)
         },
         headerBackground: .surface01,
-        contentBackground: .surface01) {
+        contentBackground: .surface01,
+        scrollResponsive: true,
+        headerCollapseThreshold: 50) {
           ScrollView {
-            mainContentView
-              .padding(.top, 20)
-              .padding(.bottom, 20) // Padding for content spacing
+            VStack(spacing: 0) {
+              // Tracking view at the top of scroll content
+              GeometryReader { geometry in
+                Color.clear
+                  .preference(
+                    key: ScrollOffsetPreferenceKey.self,
+                    value: geometry.frame(in: .named("scroll")).minY
+                  )
+              }
+              .frame(height: 0)
+              
+              mainContentView
+                .padding(.top, 20)
+                .padding(.bottom, 20) // Padding for content spacing
+            }
           }
           .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
         }

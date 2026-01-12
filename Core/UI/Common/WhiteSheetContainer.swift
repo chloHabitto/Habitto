@@ -13,6 +13,8 @@ struct WhiteSheetContainer<Content: View>: View {
     showGrabber: Bool = false,
     headerBackground: Color = .surface,
     contentBackground: Color = .surface,
+    scrollResponsive: Bool = false,
+    headerCollapseThreshold: CGFloat = 50,
     @ViewBuilder content: () -> Content)
   {
     self.title = title
@@ -22,6 +24,8 @@ struct WhiteSheetContainer<Content: View>: View {
     self.showGrabber = showGrabber
     self.headerBackground = headerBackground
     self.contentBackground = contentBackground
+    self.scrollResponsive = scrollResponsive
+    self.headerCollapseThreshold = headerCollapseThreshold
     self.content = content()
   }
 
@@ -34,19 +38,32 @@ struct WhiteSheetContainer<Content: View>: View {
   let showGrabber: Bool
   let headerBackground: Color
   let contentBackground: Color
+  let scrollResponsive: Bool
+  let headerCollapseThreshold: CGFloat
   let content: Content
+  
+  @State private var scrollOffset: CGFloat = 0
 
   var body: some View {
     VStack(spacing: 0) {
       // Header section with custom background
       headerSection
         .background(headerBackground)
+        .offset(y: scrollResponsive ? calculateHeaderOffset() : 0)
+        .opacity(scrollResponsive ? calculateHeaderOpacity() : 1)
+        .animation(.easeOut(duration: 0.2), value: scrollOffset)
 
       // Content area with custom background
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
+        .modifier(ScrollOffsetModifier(
+          scrollResponsive: scrollResponsive,
+          onOffsetChange: { offset in
+            scrollOffset = offset
+          }))
     }
+    .coordinateSpace(name: "scroll")
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
     .ignoresSafeArea(.container, edges: .bottom)
@@ -102,13 +119,66 @@ struct WhiteSheetContainer<Content: View>: View {
     .padding(.bottom, 0)
     .frame(maxWidth: .infinity, minHeight: showGrabber ? 20 : 0, alignment: .top)
   }
+  
+  // MARK: - Scroll-Responsive Calculations
+  
+  private func calculateHeaderOffset() -> CGFloat {
+    // Header height is approximately 100pt (90pt + buffer)
+    let headerHeight: CGFloat = 100
+    // Negative offset to move header up (hide it)
+    let offset = -min(scrollOffset, headerHeight)
+    return offset
+  }
+  
+  private func calculateHeaderOpacity() -> Double {
+    // Start fading when scroll exceeds threshold
+    let fadeStart = headerCollapseThreshold
+    let fadeEnd: CGFloat = 100 // Full header height
+    
+    if scrollOffset < fadeStart {
+      return 1.0
+    } else if scrollOffset >= fadeEnd {
+      return 0.0
+    } else {
+      // Linear fade between threshold and full height
+      let progress = (scrollOffset - fadeStart) / (fadeEnd - fadeStart)
+      return Double(1.0 - progress)
+    }
+  }
+}
+
+// MARK: - ScrollOffsetModifier
+
+struct ScrollOffsetModifier: ViewModifier {
+  let scrollResponsive: Bool
+  let onOffsetChange: (CGFloat) -> Void
+  
+  func body(content: Content) -> some View {
+    if scrollResponsive {
+      content
+        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
+          // Convert to positive value (scroll down = positive offset)
+          // When content scrolls down, minY becomes negative, so we negate it
+          let positiveOffset = max(0, -offset)
+          onOffsetChange(positiveOffset)
+        }
+    } else {
+      content
+    }
+  }
 }
 
 // MARK: - Convenience Initializers
 
 extension WhiteSheetContainer {
   /// Creates a white sheet container with just a title
-  init(title: String, headerBackground: Color = .surface, contentBackground: Color = .white, @ViewBuilder content: () -> Content) {
+  init(
+    title: String,
+    headerBackground: Color = .surface,
+    contentBackground: Color = .white,
+    scrollResponsive: Bool = false,
+    @ViewBuilder content: () -> Content)
+  {
     self.init(
       title: title,
       subtitle: nil,
@@ -117,6 +187,8 @@ extension WhiteSheetContainer {
       showGrabber: false,
       headerBackground: headerBackground,
       contentBackground: contentBackground,
+      scrollResponsive: scrollResponsive,
+      headerCollapseThreshold: 50,
       content: content)
   }
 
@@ -126,6 +198,7 @@ extension WhiteSheetContainer {
     subtitle: String,
     headerBackground: Color = .surface,
     contentBackground: Color = .surface,
+    scrollResponsive: Bool = false,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -136,6 +209,8 @@ extension WhiteSheetContainer {
       showGrabber: false,
       headerBackground: headerBackground,
       contentBackground: contentBackground,
+      scrollResponsive: scrollResponsive,
+      headerCollapseThreshold: 50,
       content: content)
   }
 
@@ -145,6 +220,8 @@ extension WhiteSheetContainer {
     headerContent: @escaping () -> AnyView,
     headerBackground: Color = .surface,
     contentBackground: Color = .surface,
+    scrollResponsive: Bool = false,
+    headerCollapseThreshold: CGFloat = 50,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -155,6 +232,8 @@ extension WhiteSheetContainer {
       showGrabber: false,
       headerBackground: headerBackground,
       contentBackground: contentBackground,
+      scrollResponsive: scrollResponsive,
+      headerCollapseThreshold: headerCollapseThreshold,
       content: content)
   }
 
@@ -163,6 +242,8 @@ extension WhiteSheetContainer {
     headerContent: @escaping () -> AnyView,
     headerBackground: Color = .surface,
     contentBackground: Color = .surface,
+    scrollResponsive: Bool = false,
+    headerCollapseThreshold: CGFloat = 50,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -173,6 +254,8 @@ extension WhiteSheetContainer {
       showGrabber: false,
       headerBackground: headerBackground,
       contentBackground: contentBackground,
+      scrollResponsive: scrollResponsive,
+      headerCollapseThreshold: headerCollapseThreshold,
       content: content)
   }
 
@@ -182,6 +265,7 @@ extension WhiteSheetContainer {
     rightButton: @escaping () -> AnyView,
     headerBackground: Color = .surface,
     contentBackground: Color = .surface,
+    scrollResponsive: Bool = false,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -192,6 +276,8 @@ extension WhiteSheetContainer {
       showGrabber: false,
       headerBackground: headerBackground,
       contentBackground: contentBackground,
+      scrollResponsive: scrollResponsive,
+      headerCollapseThreshold: 50,
       content: content)
   }
 }
