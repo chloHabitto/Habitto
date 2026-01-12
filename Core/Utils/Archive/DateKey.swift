@@ -3,6 +3,23 @@ import Foundation
 // MARK: - DateKey
 
 /// Utility for generating date keys in Europe/Amsterdam timezone
+///
+/// ⚠️ **IMPORTANT TIMEZONE NOTE:**
+/// This utility intentionally uses "Europe/Amsterdam" timezone for consistency with:
+/// - Historical XP data stored in SwiftData
+/// - Existing completion records and streak calculations
+/// - Backward compatibility with existing data
+///
+/// **DO NOT change this timezone without:**
+/// 1. Creating a comprehensive data migration plan
+/// 2. Migrating all existing date keys in SwiftData/Firestore
+/// 3. Testing thoroughly with users in different timezones
+/// 4. Updating all dependent code (XPManager, HabitComputed, etc.)
+///
+/// For new code that needs date keys matching the main app's completion data,
+/// use `DateUtils.dateKey(for:)` which uses `TimeZone.current`.
+///
+/// See TIMEZONE_AUDIT_REPORT.md for full analysis of timezone usage across the codebase.
 public enum DateKey {
   // MARK: Public
 
