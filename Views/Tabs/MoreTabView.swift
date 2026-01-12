@@ -265,13 +265,14 @@ struct MoreTabView: View {
             action: {
               showingVacationMode = true
             }),
-          SettingItem(
-            title: "Language",
-            value: "English",
-            hasChevron: true,
-            action: {
-              showingLanguageView = true
-            }),
+          // TODO: Temporarily hidden - will work on it later
+          // SettingItem(
+          //   title: "Language",
+          //   value: "English",
+          //   hasChevron: true,
+          //   action: {
+          //     showingLanguageView = true
+          //   }),
           SettingItem(
             title: "Appearance",
             value: themeManager.colorSchemePreference.displayName,
