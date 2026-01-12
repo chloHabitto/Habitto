@@ -497,7 +497,7 @@ struct MonthlyCalendarGridView: View {
         // Empty cell for top-left corner - must match week label cell exactly
         Rectangle()
           .fill(.clear)
-          .frame(minWidth: 0, maxWidth: .infinity)
+          .frame(width: 100)
           .frame(height: 24)
           .clipShape(
             UnevenRoundedRectangle(
@@ -518,7 +518,8 @@ struct MonthlyCalendarGridView: View {
           Text(day)
             .font(.appLabelMediumEmphasised)
             .foregroundColor(.text05)
-            .frame(width: 24, height: 24)
+            .frame(minWidth: 0, maxWidth: .infinity)
+            .frame(height: 24)
             .clipShape(
               UnevenRoundedRectangle(
                 topLeadingRadius: 0,
@@ -534,7 +535,7 @@ struct MonthlyCalendarGridView: View {
                         .stroke(Color("appOutline02Variant"), lineWidth: 1))
         }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: .infinity)
 
       // Week rows with heatmap cells - calculate actual weeks in the selected month
       ForEach(0 ..< numberOfWeeksInMonth, id: \.self) { weekIndex in
@@ -543,7 +544,7 @@ struct MonthlyCalendarGridView: View {
           Text("Week \(weekIndex + 1)")
             .font(.appLabelMediumEmphasised)
             .foregroundColor(.appText05)
-            .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
+            .frame(width: 100, alignment: .center)
             .frame(height: 36)
             .overlay(
               Rectangle()
@@ -558,13 +559,14 @@ struct MonthlyCalendarGridView: View {
               intensity: heatmapData.intensity,
               isScheduled: heatmapData.isScheduled,
               completionPercentage: heatmapData.completionPercentage)
-              .frame(width: 24, height: 36)
+              .frame(minWidth: 0, maxWidth: .infinity)
+              .frame(height: 36)
               .overlay(
                 Rectangle()
                   .stroke(Color("appOutline02Variant"), lineWidth: 1))
           }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity)
       }
 
       // Total row with rounded bottom corners
@@ -572,7 +574,7 @@ struct MonthlyCalendarGridView: View {
         Text("Total")
           .font(.appLabelMediumEmphasised)
           .foregroundColor(.text05)
-          .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
+          .frame(width: 100, alignment: .center)
           .frame(height: 32)
           .clipShape(
             UnevenRoundedRectangle(
@@ -594,7 +596,8 @@ struct MonthlyCalendarGridView: View {
             numberOfWeeks: numberOfWeeksInMonth,
             selectedMonth: selectedMonth,
             getMonthlyHeatmapDataCombined: getMonthlyHeatmapDataCombined)
-            .frame(width: 24, height: 32)
+            .frame(minWidth: 0, maxWidth: .infinity)
+            .frame(height: 32)
             .clipShape(
               UnevenRoundedRectangle(
                 topLeadingRadius: 0,
@@ -610,7 +613,7 @@ struct MonthlyCalendarGridView: View {
                         .stroke(Color("appOutline02Variant"), lineWidth: 1))
         }
       }
-      .frame(maxWidth: .infinity, alignment: .leading)
+      .frame(maxWidth: .infinity)
     }
     .padding(.horizontal, 16)
   }
@@ -2650,9 +2653,9 @@ struct IndividualHabitsMonthlyProgressContainer: View {
   // - 7 columns × 20pt cells = 140pt
   // - 6 gaps × 4pt spacing = 24pt
   // - 2 × 16pt horizontal padding = 32pt
-  // - Total: ~196pt, rounded to 160pt minimum for comfortable spacing
-  private let minCardWidth: CGFloat = 160
-  private let gridSpacing: CGFloat = 12
+  // - Total: ~196pt, rounded to 155pt minimum for comfortable spacing
+  private let minCardWidth: CGFloat = 155
+  private let gridSpacing: CGFloat = 16
   // Estimated card height: header (~60pt) + heatmap (~100pt for 5 weeks) + padding (~20pt)
   private let estimatedCardHeight: CGFloat = 180
 
