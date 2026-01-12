@@ -63,7 +63,6 @@ struct WhiteSheetContainer<Content: View>: View {
             scrollOffset = offset
           }))
     }
-    .coordinateSpace(name: "scroll")
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
     .ignoresSafeArea(.container, edges: .bottom)
@@ -157,9 +156,15 @@ struct ScrollOffsetModifier: ViewModifier {
     if scrollResponsive {
       content
         .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-          // Convert to positive value (scroll down = positive offset)
-          // When content scrolls down, minY becomes negative, so we negate it
+          // Debug logging to verify values
+          print("📜 Scroll offset (raw): \(offset)")
+          
+          // When scrolling down, the GeometryReader's minY decreases (becomes negative)
+          // We want positive values for scroll distance, so negate it
+          // At rest (not scrolled), minY should be 0 or close to 0
+          // As we scroll down, minY becomes negative
           let positiveOffset = max(0, -offset)
+          print("📜 Scroll offset (positive): \(positiveOffset)")
           onOffsetChange(positiveOffset)
         }
     } else {
