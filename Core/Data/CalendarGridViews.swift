@@ -1811,6 +1811,13 @@ struct IndividualHabitMonthlyProgressView: View {
 
   let habit: Habit
   let selectedMonth: Date
+  let cardWidth: CGFloat?
+
+  init(habit: Habit, selectedMonth: Date, cardWidth: CGFloat? = nil) {
+    self.habit = habit
+    self.selectedMonth = selectedMonth
+    self.cardWidth = cardWidth
+  }
 
   var body: some View {
     VStack(spacing: 12) {
@@ -1886,11 +1893,26 @@ struct IndividualHabitMonthlyProgressView: View {
               habit: habit,
               intensity: heatmapData.intensity,
               isScheduled: heatmapData.isScheduled,
-              completionPercentage: heatmapData.completionPercentage)
+              completionPercentage: heatmapData.completionPercentage,
+              cellSize: calculatedCellSize)
           }
         }
       }
     }
+  }
+
+  // Calculate cell size based on available card width
+  private var calculatedCellSize: CGFloat {
+    // Card has 16pt horizontal padding on each side = 32pt total
+    let horizontalPadding: CGFloat = 32
+    // 7 cells with 6 gaps of 4pt each = 24pt spacing
+    let cellSpacing: CGFloat = 24
+    // Available width for heatmap
+    let availableWidth = (cardWidth ?? 200) - horizontalPadding
+    // Calculate cell size: (availableWidth - spacing) / 7
+    let calculatedSize = (availableWidth - cellSpacing) / 7
+    // Ensure minimum size of 16pt and maximum of 24pt for readability
+    return max(16, min(24, calculatedSize))
   }
 
   private func getMonthlyHeatmapDataForHabit(
@@ -1950,10 +1972,25 @@ struct IndividualHabitHeatmapCellView: View {
   let intensity: Int
   let isScheduled: Bool
   let completionPercentage: Double
+  let cellSize: CGFloat
+
+  init(
+    habit: Habit,
+    intensity: Int,
+    isScheduled: Bool,
+    completionPercentage: Double,
+    cellSize: CGFloat = 20)
+  {
+    self.habit = habit
+    self.intensity = intensity
+    self.isScheduled = isScheduled
+    self.completionPercentage = completionPercentage
+    self.cellSize = cellSize
+  }
 
   var body: some View {
-    let size: CGFloat = 20
-    let cellSize = size * 0.8
+    let size = cellSize
+    let innerSize = size * 0.8
 
     ZStack {
       // Background
@@ -1965,12 +2002,12 @@ struct IndividualHabitHeatmapCellView: View {
         // Show heatmap when scheduled using habit color
         RoundedRectangle(cornerRadius: 6)
           .fill(heatmapColor(for: completionPercentage, habitColor: habit.color.color))
-          .frame(width: cellSize, height: cellSize)
+          .frame(width: innerSize, height: innerSize)
       } else {
         // Show empty outline when not scheduled
         RoundedRectangle(cornerRadius: 6)
           .stroke(Color("appOutline03"), lineWidth: 1)
-          .frame(width: cellSize, height: cellSize)
+          .frame(width: innerSize, height: innerSize)
       }
     }
     .frame(width: size, height: size)
@@ -2003,16 +2040,57 @@ struct IndividualHabitsMonthlyProgressContainer: View {
   let habits: [Habit]
   let selectedMonth: Date
 
+  // Minimum card width based on heatmap requirements:
+  // - 7 columns × 20pt cells = 140pt
+  // - 6 gaps × 4pt spacing = 24pt
+  // - 2 × 16pt horizontal padding = 32pt
+  // - Total: ~196pt, rounded to 160pt minimum for comfortable spacing
+  private let minCardWidth: CGFloat = 160
+  private let gridSpacing: CGFloat = 12
+
   var body: some View {
-    LazyVGrid(columns: [
-      GridItem(.flexible(), spacing: 12),
-      GridItem(.flexible(), spacing: 12),
-    ], spacing: 12) {
-      ForEach(habits, id: \.id) { habit in
-        IndividualHabitMonthlyProgressView(
-          habit: habit,
-          selectedMonth: selectedMonth)
+    // Use GeometryReader to measure available width
+    // Parent has 20pt padding on each side, so we account for that
+    GeometryReader { geometry in
+      let availableWidth = geometry.size.width
+      // Check if we can fit two columns: need space for 2 cards + spacing
+      let canFitTwoColumns = availableWidth >= (minCardWidth * 2 + gridSpacing)
+
+      LazyVGrid(
+        columns: gridColumns(for: canFitTwoColumns),
+        spacing: gridSpacing
+      ) {
+        ForEach(habits, id: \.id) { habit in
+          IndividualHabitMonthlyProgressView(
+            habit: habit,
+            selectedMonth: selectedMonth,
+            cardWidth: cardWidth(for: availableWidth, twoColumns: canFitTwoColumns))
+        }
       }
+    }
+    .frame(height: nil) // Let LazyVGrid determine height based on content
+  }
+
+  // MARK: Private
+
+  private func gridColumns(for twoColumns: Bool) -> [GridItem] {
+    if twoColumns {
+      return [
+        GridItem(.flexible(minimum: minCardWidth), spacing: gridSpacing),
+        GridItem(.flexible(minimum: minCardWidth), spacing: gridSpacing),
+      ]
+    } else {
+      return [GridItem(.flexible(minimum: minCardWidth))]
+    }
+  }
+
+  private func cardWidth(for availableWidth: CGFloat, twoColumns: Bool) -> CGFloat {
+    if twoColumns {
+      // Two columns: (availableWidth - spacing) / 2
+      return (availableWidth - gridSpacing) / 2
+    } else {
+      // Single column: use full width
+      return availableWidth
     }
   }
 }
