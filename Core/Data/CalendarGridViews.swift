@@ -257,6 +257,7 @@ struct MonthlyCalendarGridView: View {
         VStack(spacing: 0) {
           // Weekly heatmap table for this habit
           monthlyHeatmapTable(for: singleHabit, isCombined: false)
+            .padding(.top, 16)
 
           // Summary statistics row
           summaryStatisticsView(for: singleHabit)
@@ -1078,6 +1079,7 @@ struct YearlyCalendarGridView: View {
   let isDataLoaded: Bool
   let isLoadingProgress: Double
   let selectedYear: Int
+  let singleHabit: Habit?
 
   var body: some View {
     VStack(spacing: 12) {
@@ -1091,24 +1093,27 @@ struct YearlyCalendarGridView: View {
         LazyVStack(spacing: 16) {
           ForEach(Array(userHabits.enumerated()), id: \.element.id) { index, habit in
             VStack(spacing: 0) {
-              // Habit header
-              HStack(spacing: 8) {
-                HabitIconInlineView(habit: habit)
+              // Habit header - only show when not in single habit mode
+              if singleHabit == nil {
+                HStack(spacing: 8) {
+                  HabitIconInlineView(habit: habit)
 
-                Text(habit.name)
-                  .font(.appBodyMedium)
-                  .foregroundColor(.text01)
-                  .lineLimit(1)
-                  .truncationMode(.tail)
-                  .frame(maxWidth: .infinity, alignment: .leading)
+                  Text(habit.name)
+                    .font(.appBodyMedium)
+                    .foregroundColor(.text01)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
               }
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .padding(.horizontal, 16)
-              .padding(.top, 16)
-              .padding(.bottom, 12)
 
               // Yearly heatmap for this habit
               yearlyHeatmapTable(for: habit, index: index)
+                .padding(.top, singleHabit != nil ? 16 : 0)
 
               // Summary statistics row
               summaryStatisticsView(for: habit)
@@ -2424,31 +2429,34 @@ struct IndividualHabitMonthlyCalendarProgressView: View {
 
   let habit: Habit
   let selectedMonth: Date
+  let singleHabit: Habit?
 
   var body: some View {
     VStack(spacing: 16) {
-      // Habit header: Icon + Name | Goal
-      HStack {
-        // Habit icon + name
-        HStack(spacing: 8) {
-          HabitIconInlineView(habit: habit)
+      // Habit header: Icon + Name | Goal - only show when not in single habit mode
+      if singleHabit == nil {
+        HStack {
+          // Habit icon + name
+          HStack(spacing: 8) {
+            HabitIconInlineView(habit: habit)
+            
+            Text(habit.name)
+              .font(.appTitleMediumEmphasised)
+              .foregroundColor(.appText03)
+              .lineLimit(1)
+          }
           
-          Text(habit.name)
-            .font(.appTitleMediumEmphasised)
-            .foregroundColor(.appText03)
+          Spacer()
+          
+          // Goal text
+          Text(habit.goal)
+            .font(.appTitleSmall)
+            .foregroundColor(.appText05)
             .lineLimit(1)
         }
-        
-        Spacer()
-        
-        // Goal text
-        Text(habit.goal)
-          .font(.appTitleSmall)
-          .foregroundColor(.appText05)
-          .lineLimit(1)
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
       }
-      .padding(.horizontal, 16)
-      .padding(.top, 16)
 
       // Monthly calendar grid: Day labels and date rectangles
       VStack(spacing: 8) {
@@ -2462,6 +2470,7 @@ struct IndividualHabitMonthlyCalendarProgressView: View {
           }
         }
         .padding(.horizontal, 16)
+        .padding(.top, singleHabit != nil ? 16 : 0)
 
         // Calendar grid with dates
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 7), spacing: 8) {
@@ -2540,13 +2549,15 @@ struct IndividualHabitsMonthlyCalendarProgressContainer: View {
 
   let habits: [Habit]
   let selectedMonth: Date
+  let singleHabit: Habit?
 
   var body: some View {
     VStack(spacing: 16) {
       ForEach(habits, id: \.id) { habit in
         IndividualHabitMonthlyCalendarProgressView(
           habit: habit,
-          selectedMonth: selectedMonth)
+          selectedMonth: selectedMonth,
+          singleHabit: singleHabit)
           .background(
             RoundedRectangle(cornerRadius: 24)
               .fill(.appSurface01)
@@ -2601,7 +2612,7 @@ struct IndividualHabitHeatmapCellView: View {
 
     ZStack {
       // Background
-      RoundedRectangle(cornerRadius: 2)
+      RoundedRectangle(cornerRadius: 4)
         .fill(.clear)
         .frame(width: size, height: size)
 
@@ -2611,12 +2622,12 @@ struct IndividualHabitHeatmapCellView: View {
           .frame(width: innerSize, height: innerSize)
       } else if isScheduled {
         // Show heatmap when scheduled using habit color
-        RoundedRectangle(cornerRadius: 2)
+        RoundedRectangle(cornerRadius: 4)
           .fill(heatmapColor(for: completionPercentage, habitColor: habit.color.color))
           .frame(width: innerSize, height: innerSize)
       } else {
         // Show empty outline when not scheduled but in month
-        RoundedRectangle(cornerRadius: 2)
+        RoundedRectangle(cornerRadius: 4)
           .stroke(Color("appOutline03"), lineWidth: 1)
           .frame(width: innerSize, height: innerSize)
       }
@@ -2717,7 +2728,7 @@ struct IndividualHabitsMonthlyProgressContainer: View {
           cardWidth: cardWidth) // Pass calculated cardWidth (non-optional)
       }
     }
-    .frame(minHeight: totalHeight) // Ensure minimum height for ScrollView
+    .frame(minHeight: totalHeight, alignment: .top) // Ensure minimum height for ScrollView, align content to top
     .background(
       GeometryReader { geometry in
         Color.clear

@@ -167,6 +167,9 @@ struct ProgressTabView: View {
   
   /// Refresh ID to force views to update when habits change
   @State private var refreshID = UUID()
+  
+  /// Habit to show in detail view
+  @State private var habitForDetailView: Habit?
 
   // MARK: - Environment
 
@@ -352,7 +355,7 @@ struct ProgressTabView: View {
       .padding(.horizontal, 20)
     } else {
       // Show normal content when habits exist
-      VStack(spacing: 16) {
+      VStack(spacing: 20) {
         // Monthly Progress Card
         monthlyProgressCard
 
@@ -386,7 +389,8 @@ struct ProgressTabView: View {
         // Individual Habit Monthly Calendar Progress
         IndividualHabitsMonthlyCalendarProgressContainer(
           habits: [selectedHabit],
-          selectedMonth: selectedProgressDate)
+          selectedMonth: selectedProgressDate,
+          singleHabit: selectedHabit)
 
         // Monthly Difficulty Graph
         monthlyDifficultyGraph
@@ -425,7 +429,8 @@ struct ProgressTabView: View {
           yearlyHeatmapData: yearlyHeatmapData,
           isDataLoaded: isDataLoaded,
           isLoadingProgress: isLoadingProgress,
-          selectedYear: selectedYear)
+          selectedYear: selectedYear,
+          singleHabit: nil)
           .id("yearly-\(refreshID)")
       }
       .padding(.horizontal, 20)
@@ -442,7 +447,8 @@ struct ProgressTabView: View {
         yearlyHeatmapData: yearlyHeatmapData,
         isDataLoaded: isDataLoaded,
         isLoadingProgress: isLoadingProgress,
-        selectedYear: selectedYear)
+        selectedYear: selectedYear,
+        singleHabit: selectedHabit)
         .background(
           RoundedRectangle(cornerRadius: 24)
             .fill(.appSurface01)
@@ -558,6 +564,9 @@ struct ProgressTabView: View {
     VStack(spacing: 20) {
       // Date Selection
       dateSelectionSection
+      
+      // Goal Section - Only show when a habit is selected
+      goalSection
 
       // Weekly Content - Only show when "All habits" is selected and "Weekly" tab is active
       if selectedHabit == nil, selectedTimePeriod == 1 {
@@ -834,6 +843,21 @@ struct ProgressTabView: View {
     .onChange(of: selectedYear) {
       // Reload yearly data when year changes
       loadYearlyData()
+    }
+    .fullScreenCover(item: $habitForDetailView) { habit in
+      HabitDetailView(
+        habit: habit,
+        onUpdateHabit: nil,
+        selectedDate: selectedProgressDate,
+        onDeleteHabit: nil)
+        .gesture(
+          DragGesture()
+            .onEnded { value in
+              // Swipe right to dismiss (like back button)
+              if value.translation.width > 100, abs(value.translation.height) < 100 {
+                habitForDetailView = nil
+              }
+            })
     }
   }
 
@@ -1425,6 +1449,46 @@ struct ProgressTabView: View {
     }
   }
 
+  /// Goal section - Shows habit goal when a habit is selected
+  private var goalSection: some View {
+    Group {
+      if let selectedHabit = selectedHabit {
+        Button(action: {
+          habitForDetailView = selectedHabit
+        }) {
+          HStack {
+            // Left: "Goal" label
+            Text("Goal")
+              .font(.appLabelLargeEmphasised)
+              .foregroundColor(.text07)
+            
+            Spacer()
+            
+            // Right: Flag icon + goal text
+            HStack(spacing: 4) {
+              Image(.iconFlagFilled)
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 16, height: 16)
+                .foregroundColor(.text07)
+              
+              Text(selectedHabit.goal)
+                .font(.appBodySmallEmphasised)
+                .foregroundColor(.text07)
+            }
+          }
+          .padding(16)
+          .background(
+            RoundedRectangle(cornerRadius: 16)
+              .fill(Color("appSecondaryContainerFixed02"))
+          )
+          .padding(.horizontal, 20)
+        }
+        .buttonStyle(PlainButtonStyle())
+      }
+    }
+  }
+
   // Today's progress section
 
   /// Individual reminder card
@@ -1500,6 +1564,9 @@ struct ProgressTabView: View {
       VStack(spacing: 20) {
         // Date Selection
         dateSelectionSection
+        
+        // Goal Section - Only show when a habit is selected
+        goalSection
 
         // Difficulty Card - Only show when "All habits" is selected and "Daily" tab is active
         if selectedHabit == nil, selectedTimePeriod == 0 {
