@@ -1811,9 +1811,9 @@ struct IndividualHabitMonthlyProgressView: View {
 
   let habit: Habit
   let selectedMonth: Date
-  let cardWidth: CGFloat?
+  let cardWidth: CGFloat
 
-  init(habit: Habit, selectedMonth: Date, cardWidth: CGFloat? = nil) {
+  init(habit: Habit, selectedMonth: Date, cardWidth: CGFloat) {
     self.habit = habit
     self.selectedMonth = selectedMonth
     self.cardWidth = cardWidth
@@ -1908,9 +1908,9 @@ struct IndividualHabitMonthlyProgressView: View {
     // 7 cells with 6 gaps of 4pt each = 24pt spacing
     let cellSpacing: CGFloat = 24
     // Available width for heatmap
-    let availableWidth = (cardWidth ?? 200) - horizontalPadding
+    let availableForCells = cardWidth - horizontalPadding
     // Calculate cell size: (availableWidth - spacing) / 7
-    let calculatedSize = (availableWidth - cellSpacing) / 7
+    let calculatedSize = (availableForCells - cellSpacing) / 7
     // Ensure minimum size of 16pt and maximum of 24pt for readability
     return max(16, min(24, calculatedSize))
   }
@@ -2194,9 +2194,10 @@ struct IndividualHabitsMonthlyProgressContainer: View {
 
   // MARK: State
 
-  @State private var availableWidth: CGFloat = 0
-
-  // MARK: Constants
+  // Initialize with a reasonable default (iPhone width minus padding)
+  // Parent has 20pt padding on each side = 40pt total
+  // Will be updated by PreferenceKey when GeometryReader measures actual width
+  @State private var availableWidth: CGFloat = 335 // ~375pt (iPhone) - 40pt padding
 
   // Minimum card width based on heatmap requirements:
   // - 7 columns × 20pt cells = 140pt
@@ -2211,9 +2212,7 @@ struct IndividualHabitsMonthlyProgressContainer: View {
   // MARK: Computed Properties
 
   private var columnCount: Int {
-    // Use a default width if not yet measured (e.g., 375pt for iPhone)
-    let width = availableWidth > 0 ? availableWidth : 375
-    return width >= (minCardWidth * 2 + gridSpacing) ? 2 : 1
+    return availableWidth >= (minCardWidth * 2 + gridSpacing) ? 2 : 1
   }
 
   private var rowCount: Int {
@@ -2237,6 +2236,17 @@ struct IndividualHabitsMonthlyProgressContainer: View {
     }
   }
 
+  // Calculate card width based on available width and column count
+  private var cardWidth: CGFloat {
+    if columnCount == 2 {
+      // Two columns: (availableWidth - spacing) / 2
+      return (availableWidth - gridSpacing) / 2
+    } else {
+      // Single column: use full width
+      return availableWidth
+    }
+  }
+
   // MARK: Body
 
   var body: some View {
@@ -2245,7 +2255,7 @@ struct IndividualHabitsMonthlyProgressContainer: View {
         IndividualHabitMonthlyProgressView(
           habit: habit,
           selectedMonth: selectedMonth,
-          cardWidth: cardWidth)
+          cardWidth: cardWidth) // Pass calculated cardWidth (non-optional)
       }
     }
     .frame(minHeight: totalHeight) // Ensure minimum height for ScrollView
@@ -2256,20 +2266,13 @@ struct IndividualHabitsMonthlyProgressContainer: View {
       }
     )
     .onPreferenceChange(WidthPreferenceKey.self) { width in
-      availableWidth = width
-    }
-  }
-
-  // MARK: Private
-
-  private var cardWidth: CGFloat? {
-    guard availableWidth > 0 else { return nil }
-    if columnCount == 2 {
-      // Two columns: (availableWidth - spacing) / 2
-      return (availableWidth - gridSpacing) / 2
-    } else {
-      // Single column: use full width
-      return availableWidth
+      // Only update if we get a valid width measurement
+      if width > 0 {
+        #if DEBUG
+        print("📐 Width measured: \(width), previous: \(availableWidth), cardWidth: \(cardWidth)")
+        #endif
+        availableWidth = width
+      }
     }
   }
 }
