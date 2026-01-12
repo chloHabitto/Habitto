@@ -1396,17 +1396,21 @@ struct HomeTabView: View {
     
     debugLog("🔴 UNCOMPLETE_CHECK: habitId=\(habit.id), dateKey=\(dateKey)")
     debugLog("🔴 UNCOMPLETE_CHECK: awardedDateKeys=\(awardedDateKeys)")
-    debugLog("🔴 UNCOMPLETE_CHECK: awardedDateKeys.contains(\(dateKey))=\(awardedDateKeys.contains(dateKey))")
     
-    // ✅ SIMPLIFIED FIX: If day was awarded (all habits complete), uncompleting ANY habit
-    // makes the day incomplete. We don't need to check other habits.
-    if awardedDateKeys.contains(dateKey) {
-      awardedDateKeys.remove(dateKey)
+    // ✅ FIX: ALWAYS reset milestone tracking when any habit is uncompleted
+    // This ensures user can re-earn milestone after re-completing
+    // (Previous bug: awardedDateKeys is @State so it's empty after app restart,
+    // but lastShownMilestoneStreak is @AppStorage so it persists)
+    if lastShownMilestoneStreak != -1 {
+      debugLog("🔄 UNCOMPLETION: Resetting milestone tracking (lastShownMilestoneStreak was \(lastShownMilestoneStreak))")
       lastShownMilestoneStreak = -1
       lastShownMilestoneDateTimestamp = 0
-      debugLog("🔄 UNCOMPLETION: Day was awarded but habit uncompleted - reset award tracking and milestone state")
-    } else {
-      debugLog("🔴 UNCOMPLETE_CHECK: Day was not awarded, nothing to reset")
+    }
+    
+    // Also remove from awardedDateKeys if present
+    if awardedDateKeys.contains(dateKey) {
+      awardedDateKeys.remove(dateKey)
+      debugLog("🔄 UNCOMPLETION: Removed \(dateKey) from awardedDateKeys")
     }
     
     // ✅ FIX: Update completion status map immediately for this habit
