@@ -298,7 +298,8 @@ struct ProgressTabView: View {
         // Individual Habits Weekly Progress
         IndividualHabitsWeeklyProgressContainer(
           habits: getActiveHabits(),
-          selectedWeekStartDate: selectedWeekStartDate)
+          selectedWeekStartDate: selectedWeekStartDate,
+          selectedHabit: selectedHabit)
           .padding(.top, 8)
 
         // Weekly Analysis Card
@@ -3066,7 +3067,7 @@ struct ProgressTabView: View {
       .background(Color.surface)
     }
     .background(Color.surface)
-    .presentationDetents([.height(320)])
+    .presentationDetents([.height(400)])
     .presentationDragIndicator(.visible)
     .presentationCornerRadius(32)
   }
@@ -3140,20 +3141,21 @@ struct ProgressTabView: View {
 
         Spacer()
 
-        Button(action: {
-          // Navigate to detailed stats view
-          // This could be implemented as a sheet or navigation
-        }) {
-          HStack(spacing: 4) {
-            Text("See more")
-              .font(.appBodyMediumEmphasised)
-              .foregroundColor(.appText05)
-
-            Image(systemName: "chevron.right")
-              .font(.system(size: 8, weight: .bold))
-              .foregroundColor(.appText05)
-          }
-        }
+        // TODO: Re-enable when implementing detailed difficulty stats view
+        // Button(action: {
+        //   // Navigate to detailed stats view
+        //   // This could be implemented as a sheet or navigation
+        // }) {
+        //   HStack(spacing: 4) {
+        //     Text("See more")
+        //       .font(.appBodyMediumEmphasised)
+        //       .foregroundColor(.appText05)
+        //
+        //     Image(systemName: "chevron.right")
+        //       .font(.system(size: 8, weight: .bold))
+        //       .foregroundColor(.appText05)
+        //   }
+        // }
       }
       .padding(.horizontal, 20)
       .padding(.top, 20)
@@ -4926,7 +4928,7 @@ struct TimeBaseCompletionChart: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.vertical, 12)
 
-        Image(bestTime.timePeriod)
+        Image(timePeriodImageName(for: bestTime.timePeriod))
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 80, height: 80)
@@ -4937,6 +4939,18 @@ struct TimeBaseCompletionChart: View {
       .background(
         RoundedRectangle(cornerRadius: 24)
           .fill(Color(hex: isDayTime ? "C9E5FF" : "121E3D"))))
+  }
+
+  /// Maps time period names to their corresponding image names in Time/Stickers.xcassets
+  private func timePeriodImageName(for timePeriod: String) -> String {
+    switch timePeriod {
+    case "Lunch":
+      return "Afternoon"
+    case "Morning", "Evening", "Night":
+      return timePeriod
+    default:
+      return "Morning" // Default fallback
+    }
   }
 
   private func backgroundGrid(in geometry: GeometryProxy) -> some View {
