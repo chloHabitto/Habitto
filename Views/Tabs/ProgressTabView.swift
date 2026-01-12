@@ -352,7 +352,7 @@ struct ProgressTabView: View {
       .padding(.horizontal, 20)
     } else {
       // Show normal content when habits exist
-      VStack(spacing: 20) {
+      VStack(spacing: 16) {
         // Monthly Progress Card
         monthlyProgressCard
 
