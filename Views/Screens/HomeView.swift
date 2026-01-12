@@ -1198,18 +1198,14 @@ struct HomeView: View {
         debugLog("🔄 HomeView: Habit updated and saved successfully")
       })
     }
-    .confirmationDialog(
-      "Delete Habit",
-      isPresented: $state.showingDeleteConfirmation,
-      titleVisibility: .visible)
-    {
+    .alert("Delete Habit", isPresented: $state.showingDeleteConfirmation) {
       Button("Cancel", role: .cancel) {
-        print("🗑️ DELETE_FLOW: HomeView - Delete cancelled in confirmationDialog")
+        print("🗑️ DELETE_FLOW: HomeView - Delete cancelled in alert")
         debugLog("❌ Delete cancelled")
         state.habitToDelete = nil
       }
       Button("Delete", role: .destructive) {
-        print("🗑️ DELETE_FLOW: HomeView - Delete button tapped in confirmationDialog")
+        print("🗑️ DELETE_FLOW: HomeView - Delete button tapped in alert")
         if let habit = state.habitToDelete {
           print("🗑️ DELETE_FLOW: HomeView - Calling state.deleteHabit() for habit: \(habit.name) (ID: \(habit.id))")
           debugLog("🗑️ Deleting habit: \(habit.name)")

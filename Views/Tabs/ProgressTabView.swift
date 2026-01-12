@@ -1461,7 +1461,7 @@ struct ProgressTabView: View {
             // Left: "Goal" label
             Text("Goal")
               .font(.appLabelLargeEmphasised)
-              .foregroundColor(.text07)
+              .foregroundColor(Color("grey700"))
             
             Spacer()
             
@@ -1471,11 +1471,11 @@ struct ProgressTabView: View {
                 .renderingMode(.template)
                 .resizable()
                 .frame(width: 16, height: 16)
-                .foregroundColor(.text07)
+                .foregroundColor(Color("navy500"))
               
               Text(selectedHabit.goal)
                 .font(.appBodySmallEmphasised)
-                .foregroundColor(.text07)
+                .foregroundColor(Color("navy500"))
             }
           }
           .padding(16)

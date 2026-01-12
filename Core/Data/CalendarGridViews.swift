@@ -1790,13 +1790,20 @@ struct IndividualHabitsWeeklyProgressContainer: View {
   let selectedWeekStartDate: Date
   var selectedHabit: Habit? = nil
 
+  private var filteredHabits: [Habit] {
+    if let selectedHabit = selectedHabit {
+      return habits.filter { $0.id == selectedHabit.id }
+    }
+    return habits
+  }
+
   var body: some View {
     VStack(spacing: 16) {
-      ForEach(habits, id: \.id) { habit in
+      ForEach(filteredHabits, id: \.id) { habit in
         IndividualHabitWeeklyProgressView(
           habit: habit,
           selectedWeekStartDate: selectedWeekStartDate,
-          hideHeader: selectedHabit?.id == habit.id)
+          hideHeader: selectedHabit != nil)
           .background(
             RoundedRectangle(cornerRadius: 24)
               .fill(.appSurface01)
@@ -2058,28 +2065,28 @@ struct IndividualHabitWeeklyProgressViewNew: View {
 
   var body: some View {
     VStack(spacing: 16) {
-      // Header: Habit icon + Name | Goal
-      HStack {
-        // Habit icon + name
-        HStack(spacing: 8) {
-          HabitIconInlineView(habit: habit)
-          
-          Text(habit.name)
-            .font(.appTitleMediumEmphasised)
-            .foregroundColor(.appText03)
-            .lineLimit(1)
-        }
-        
-        Spacer()
-        
-        // Goal text
-        Text(habit.goal)
-          .font(.appTitleSmall)
-          .foregroundColor(.appText05)
-          .lineLimit(1)
-      }
-      .padding(.horizontal, 16)
-      .padding(.top, 16)
+      // Header: Habit icon + Name | Goal - HIDDEN
+      // HStack {
+      //   // Habit icon + name
+      //   HStack(spacing: 8) {
+      //     HabitIconInlineView(habit: habit)
+      //     
+      //     Text(habit.name)
+      //       .font(.appTitleMediumEmphasised)
+      //       .foregroundColor(.appText03)
+      //       .lineLimit(1)
+      //   }
+      //   
+      //   Spacer()
+      //   
+      //   // Goal text
+      //   Text(habit.goal)
+      //     .font(.appTitleSmall)
+      //     .foregroundColor(.appText05)
+      //     .lineLimit(1)
+      // }
+      // .padding(.horizontal, 16)
+      // .padding(.top, 16)
 
       // Weekly stat: Day labels and emoji icons
       VStack(spacing: 8) {
@@ -2093,6 +2100,7 @@ struct IndividualHabitWeeklyProgressViewNew: View {
           }
         }
         .padding(.horizontal, 16)
+        .padding(.top, 16)
 
         // Emoji icons row (using WeeklyTotalEmojiCell)
         HStack(spacing: 0) {

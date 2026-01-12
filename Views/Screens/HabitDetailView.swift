@@ -402,7 +402,7 @@ struct HabitDetailView: View {
       VStack(alignment: .leading, spacing: 4) {
         Text(habit.name)
           .font(.appTitleMediumEmphasised)
-          .foregroundColor(.primary)
+          .foregroundColor(.appText01)
 
         Text(habit.description.isEmpty ? "Description" : habit.description)
           .font(.appBodyMedium)
