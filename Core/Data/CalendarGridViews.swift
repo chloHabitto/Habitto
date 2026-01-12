@@ -246,7 +246,7 @@ struct MonthlyCalendarGridView: View {
   let singleHabit: Habit? // Optional: when provided, show only this habit; when nil, show combined view for all habits
 
   var body: some View {
-    VStack(spacing: 12) {
+    Group {
       if userHabits.isEmpty {
         CalendarEmptyStateView(
           title: "No habits yet",
@@ -255,22 +255,6 @@ struct MonthlyCalendarGridView: View {
       } else if let singleHabit = singleHabit {
         // Single habit mode: show calendar grid and stats for one habit
         VStack(spacing: 0) {
-          // Habit header
-          HStack(spacing: 8) {
-            HabitIconInlineView(habit: singleHabit)
-
-            Text(singleHabit.name)
-              .font(.appBodyMedium)
-              .foregroundColor(.text01)
-              .lineLimit(1)
-              .truncationMode(.tail)
-              .frame(maxWidth: .infinity, alignment: .leading)
-          }
-          .frame(maxWidth: .infinity, alignment: .leading)
-          .padding(.horizontal, 16)
-          .padding(.top, 16)
-          .padding(.bottom, 12)
-
           // Weekly heatmap table for this habit
           monthlyHeatmapTable(for: singleHabit, isCombined: false)
 
@@ -557,8 +541,8 @@ struct MonthlyCalendarGridView: View {
         HStack(spacing: 0) {
           // Week label cell - must match empty corner cell exactly
           Text("Week \(weekIndex + 1)")
-            .font(.appBodyMedium)
-            .foregroundColor(.text01)
+            .font(.appLabelMediumEmphasised)
+            .foregroundColor(.appText05)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             .frame(height: 36)
             .overlay(
@@ -1607,6 +1591,23 @@ struct WeeklyTotalEmojiCell: View {
   let isUpcoming: Bool
   let dayIndex: Int
   let weekStartDate: Date
+  let emojiSize: CGFloat
+
+  init(
+    completionPercentage: Double,
+    isScheduled: Bool,
+    isUpcoming: Bool,
+    dayIndex: Int,
+    weekStartDate: Date,
+    emojiSize: CGFloat = 20)
+  {
+    self.completionPercentage = completionPercentage
+    self.isScheduled = isScheduled
+    self.isUpcoming = isUpcoming
+    self.dayIndex = dayIndex
+    self.weekStartDate = weekStartDate
+    self.emojiSize = emojiSize
+  }
 
   var body: some View {
     ZStack {
@@ -1619,7 +1620,7 @@ struct WeeklyTotalEmojiCell: View {
           weekStartDate: weekStartDate))
           .resizable()
           .aspectRatio(contentMode: .fit)
-          .frame(width: 20, height: 20)
+          .frame(width: emojiSize, height: emojiSize)
           .opacity(isUpcoming ? 0.2 : 1.0)
       } else {
         // Show nothing when no habits are scheduled
@@ -1801,6 +1802,452 @@ struct IndividualHabitsWeeklyProgressContainer: View {
               .stroke(Color("appOutline1Variant"), lineWidth: 2))
       }
     }
+  }
+}
+
+// MARK: - AllHabitsWeeklyProgressView
+
+struct AllHabitsWeeklyProgressView: View {
+  // MARK: Internal
+
+  let habits: [Habit]
+  let selectedWeekStartDate: Date
+
+  var body: some View {
+    VStack(spacing: 16) {
+      // Header: Just "Total" text
+      HStack {
+        Text("Total")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.appText03)
+        
+        Spacer()
+      }
+      .padding(.horizontal, 16)
+      .padding(.top, 16)
+
+      // Weekly stat: Day labels and emoji icons
+      VStack(spacing: 8) {
+        // Day labels row
+        HStack(spacing: 0) {
+          ForEach(Array(weeklyDayLabels.enumerated()), id: \.offset) { index, day in
+            Text(day)
+              .font(.appLabelSmallEmphasised)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity)
+          }
+        }
+        .padding(.horizontal, 16)
+
+        // Emoji icons row (using WeeklyTotalEmojiCell)
+        HStack(spacing: 0) {
+          ForEach(0 ..< 7, id: \.self) { dayIndex in
+            let totalHeatmapData = StreakDataCalculator.getWeeklyTotalHeatmapData(
+              dayIndex: dayIndex,
+              habits: habits,
+              weekStartDate: selectedWeekStartDate)
+
+            // Calculate if this day is upcoming (future)
+            let calendar = AppDateFormatter.shared.getUserCalendar()
+            let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+            let targetDate = calendar
+              .date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+            let today = calendar.startOfDay(for: Date())
+            let isUpcoming = targetDate > today
+
+            WeeklyTotalEmojiCell(
+              completionPercentage: totalHeatmapData.completionPercentage,
+              isScheduled: totalHeatmapData.isScheduled,
+              isUpcoming: isUpcoming,
+              dayIndex: dayIndex,
+              weekStartDate: selectedWeekStartDate,
+              emojiSize: 28)
+              .frame(maxWidth: .infinity)
+          }
+        }
+        .padding(.horizontal, 16)
+      }
+      .padding(.bottom, 12)
+
+      // Stats section (similar to Monthly Calendar Grid & Stats Container)
+      weeklyStatsView
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+    }
+    .background(
+      RoundedRectangle(cornerRadius: 24)
+        .fill(.appSurface01)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
+    .overlay(
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
+  }
+
+  // MARK: Private
+
+  private var weeklyDayLabels: [String] {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    if calendar.firstWeekday == 1 { // Sunday
+      return ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+    } else { // Monday
+      return ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    }
+  }
+
+  private var weeklyStatsView: some View {
+    HStack(spacing: 0) {
+      // Completion percentage
+      VStack(spacing: 4) {
+        Text("\(Int(calculateWeeklyCompletionPercentage()))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Completion")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Best streak
+      VStack(spacing: 4) {
+        Text(pluralizeDay(calculateWeeklyBestStreak()))
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Best Streak")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Consistency percentage
+      VStack(spacing: 4) {
+        Text("\(Int(calculateWeeklyConsistency()))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Consistency")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+    }
+    .padding(.vertical, 16)
+    .background(Color("appSecondaryContainer03"))
+    .cornerRadius(16)
+  }
+
+  private func calculateWeeklyCompletionPercentage() -> Double {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let today = calendar.startOfDay(for: Date())
+    let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+    let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+
+    var totalGoal = 0
+    var totalCompleted = 0
+
+    // Calculate for all habits in the selected week
+    var currentDate = weekStart
+    while currentDate <= weekEnd, currentDate <= today {
+      for habit in habits {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+          let progress = habit.getProgress(for: currentDate)
+          totalGoal += goalAmount
+          totalCompleted += progress
+        }
+      }
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+
+    if totalGoal == 0 {
+      return 0.0
+    }
+
+    return min(100.0, (Double(totalCompleted) / Double(totalGoal)) * 100.0)
+  }
+
+  private func calculateWeeklyConsistency() -> Double {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let today = calendar.startOfDay(for: Date())
+    let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+    let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? weekStart
+
+    var totalScheduledDays = 0
+    var totalCompletedDays = 0
+    var currentDate = weekStart
+
+    while currentDate <= weekEnd, currentDate <= today {
+      var dayScheduled = false
+      var dayCompleted = false
+
+      for habit in habits {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          dayScheduled = true
+          if habit.isCompleted(for: currentDate) {
+            dayCompleted = true
+            break // At least one habit completed on this day
+          }
+        }
+      }
+
+      if dayScheduled {
+        totalScheduledDays += 1
+        if dayCompleted {
+          totalCompletedDays += 1
+        }
+      }
+
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+
+    if totalScheduledDays == 0 {
+      return 0.0
+    }
+
+    return (Double(totalCompletedDays) / Double(totalScheduledDays)) * 100.0
+  }
+
+  private func calculateWeeklyBestStreak() -> Int {
+    // Return the maximum best streak across all habits
+    // Use StreakDataCalculator which handles HabitData internally
+    return habits.map { habit in
+      StreakDataCalculator.calculateBestStreakFromHistory(for: habit)
+    }.max() ?? 0
+  }
+}
+
+// MARK: - IndividualHabitWeeklyProgressView (New Style)
+
+struct IndividualHabitWeeklyProgressViewNew: View {
+  // MARK: Internal
+
+  let habit: Habit
+  let selectedWeekStartDate: Date
+
+  var body: some View {
+    VStack(spacing: 16) {
+      // Header: Habit icon + Name | Goal
+      HStack {
+        // Habit icon + name
+        HStack(spacing: 8) {
+          HabitIconInlineView(habit: habit)
+          
+          Text(habit.name)
+            .font(.appTitleMediumEmphasised)
+            .foregroundColor(.appText03)
+            .lineLimit(1)
+        }
+        
+        Spacer()
+        
+        // Goal text
+        Text(habit.goal)
+          .font(.appTitleSmall)
+          .foregroundColor(.appText05)
+          .lineLimit(1)
+      }
+      .padding(.horizontal, 16)
+      .padding(.top, 16)
+
+      // Weekly stat: Day labels and emoji icons
+      VStack(spacing: 8) {
+        // Day labels row
+        HStack(spacing: 0) {
+          ForEach(Array(weeklyDayLabels.enumerated()), id: \.offset) { index, day in
+            Text(day)
+              .font(.appLabelSmallEmphasised)
+              .foregroundColor(.text05)
+              .frame(maxWidth: .infinity)
+          }
+        }
+        .padding(.horizontal, 16)
+
+        // Emoji icons row (using WeeklyTotalEmojiCell)
+        HStack(spacing: 0) {
+          ForEach(0 ..< 7, id: \.self) { dayIndex in
+            let heatmapData = StreakDataCalculator.getWeeklyTotalHeatmapData(
+              dayIndex: dayIndex,
+              habits: [habit],
+              weekStartDate: selectedWeekStartDate)
+
+            // Calculate if this day is upcoming (future)
+            let calendar = AppDateFormatter.shared.getUserCalendar()
+            let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+            let targetDate = calendar
+              .date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+            let today = calendar.startOfDay(for: Date())
+            let isUpcoming = targetDate > today
+
+            WeeklyTotalEmojiCell(
+              completionPercentage: heatmapData.completionPercentage,
+              isScheduled: heatmapData.isScheduled,
+              isUpcoming: isUpcoming,
+              dayIndex: dayIndex,
+              weekStartDate: selectedWeekStartDate,
+              emojiSize: 28)
+              .frame(maxWidth: .infinity)
+          }
+        }
+        .padding(.horizontal, 16)
+      }
+      .padding(.bottom, 12)
+
+      // Stats section (similar to Monthly Calendar Grid & Stats Container)
+      weeklyStatsView
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+    }
+    .background(
+      RoundedRectangle(cornerRadius: 24)
+        .fill(.appSurface01)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        ))
+    .overlay(
+      RoundedRectangle(cornerRadius: 24)
+        .stroke(Color("appOutline1Variant"), lineWidth: 2))
+  }
+
+  // MARK: Private
+
+  private var weeklyDayLabels: [String] {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    if calendar.firstWeekday == 1 { // Sunday
+      return ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"]
+    } else { // Monday
+      return ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+    }
+  }
+
+  private var weeklyStatsView: some View {
+    let stats = calculateWeeklyStats()
+    
+    return HStack(spacing: 0) {
+      // Completion percentage
+      VStack(spacing: 4) {
+        Text("\(Int(stats.completionRate))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Completion")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Best streak
+      VStack(spacing: 4) {
+        Text(pluralizeDay(stats.bestStreak))
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Best Streak")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Consistency percentage
+      VStack(spacing: 4) {
+        Text("\(Int(stats.consistencyRate))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Consistency")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+    }
+    .padding(.vertical, 16)
+    .background(Color("appSecondaryContainer03"))
+    .cornerRadius(16)
+  }
+
+  private func calculateWeeklyStats() -> (
+    completionRate: Double, bestStreak: Int, consistencyRate: Double)
+  {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+    let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+    let today = calendar.startOfDay(for: Date())
+
+    var totalGoal = 0
+    var totalCompleted = 0
+    var scheduledDays = 0
+    var completedDays = 0
+    var maxStreak = 0
+    var currentStreak = 0
+
+    var currentDate = weekStart
+    while currentDate < weekEnd, currentDate <= today {
+      let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate)
+
+      if isScheduled {
+        scheduledDays += 1
+
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+        let progress = habit.getProgress(for: currentDate)
+
+        totalGoal += goalAmount
+        totalCompleted += progress
+
+        if habit.isCompleted(for: currentDate) {
+          completedDays += 1
+          currentStreak += 1
+          maxStreak = max(maxStreak, currentStreak)
+        } else {
+          currentStreak = 0
+        }
+      } else {
+        currentStreak = 0
+      }
+
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+
+    let completionRate = totalGoal > 0
+      ? min(100.0, (Double(totalCompleted) / Double(totalGoal)) * 100.0)
+      : 0.0
+
+    let consistencyRate = scheduledDays > 0
+      ? (Double(completedDays) / Double(scheduledDays)) * 100.0
+      : 0.0
+
+    return (completionRate: completionRate, bestStreak: maxStreak, consistencyRate: consistencyRate)
   }
 }
 
@@ -2283,5 +2730,259 @@ private struct WidthPreferenceKey: PreferenceKey {
   static var defaultValue: CGFloat = 0
   static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
     value = nextValue()
+  }
+}
+
+// MARK: - IndividualWeeklyCalendarGridView
+
+struct IndividualWeeklyCalendarGridView: View {
+  // MARK: Internal
+
+  let habit: Habit
+  let selectedWeekStartDate: Date
+
+  var body: some View {
+    VStack(spacing: 0) {
+      // Header row with day labels only (no first column)
+      HStack(spacing: 0) {
+        ForEach(Array(weeklyDayHeaders.enumerated()), id: \.offset) { index, day in
+          Text(day)
+            .font(.appLabelMediumEmphasised)
+            .foregroundColor(.text05)
+            .frame(width: 40, height: 24) // Larger width for larger cells
+            .clipShape(
+              UnevenRoundedRectangle(
+                topLeadingRadius: index == 0 ? 12 : 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: index == 6 ? 12 : 0))
+            .overlay(
+              UnevenRoundedRectangle(
+                topLeadingRadius: index == 0 ? 12 : 0,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: index == 6 ? 12 : 0)
+              .stroke(Color("appOutline02Variant"), lineWidth: 1))
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      // Habit row with heatmap cells (no first column with habit name)
+      HStack(spacing: 0) {
+        ForEach(0 ..< 7, id: \.self) { dayIndex in
+          let heatmapData = StreakDataCalculator.getWeeklyHeatmapData(
+            for: habit,
+            dayIndex: dayIndex,
+            weekStartDate: selectedWeekStartDate)
+
+          HeatmapCellView(
+            intensity: heatmapData.intensity,
+            isScheduled: heatmapData.isScheduled,
+            completionPercentage: heatmapData.completionPercentage,
+            rectangleSizePercentage: 0.8, // Larger circles (0.8 instead of default 0.5)
+            isVacationDay: VacationManager.shared.isActive && VacationManager.shared
+              .isVacationDay(Calendar.current.date(
+                byAdding: .day,
+                value: dayIndex,
+                to: selectedWeekStartDate) ?? selectedWeekStartDate))
+            .frame(width: 40, height: 48) // Larger frame for larger circles
+            .overlay(
+              Rectangle()
+                .stroke(Color("appOutline02Variant"), lineWidth: 1))
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+
+      // Total row with emoji cells (no first column with "Total" label)
+      HStack(spacing: 0) {
+        ForEach(0 ..< 7, id: \.self) { dayIndex in
+          let totalHeatmapData = StreakDataCalculator.getWeeklyTotalHeatmapData(
+            dayIndex: dayIndex,
+            habits: [habit],
+            weekStartDate: selectedWeekStartDate)
+
+          // Calculate if this day is upcoming (future)
+          let calendar = AppDateFormatter.shared.getUserCalendar()
+          let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+          let targetDate = calendar
+            .date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
+          let today = calendar.startOfDay(for: Date())
+          let isUpcoming = targetDate > today
+
+          WeeklyTotalEmojiCell(
+            completionPercentage: totalHeatmapData.completionPercentage,
+            isScheduled: totalHeatmapData.isScheduled,
+            isUpcoming: isUpcoming,
+            dayIndex: dayIndex,
+            weekStartDate: selectedWeekStartDate,
+            emojiSize: 24) // Larger emoji for larger cells
+            .frame(width: 40, height: 40) // Larger frame
+            .clipShape(
+              UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: dayIndex == 0 ? 12 : 0,
+                bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                topTrailingRadius: 0))
+            .overlay(
+              UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: dayIndex == 0 ? 12 : 0,
+                bottomTrailingRadius: dayIndex == 6 ? 12 : 0,
+                topTrailingRadius: 0)
+              .stroke(Color("appOutline02Variant"), lineWidth: 1))
+        }
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .padding(.horizontal, 16)
+  }
+
+  // MARK: Private
+
+  private var weeklyDayHeaders: [String] {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    if calendar.firstWeekday == 1 { // Sunday
+      return ["S", "M", "T", "W", "T", "F", "S"]
+    } else { // Monday
+      return ["M", "T", "W", "T", "F", "S", "S"]
+    }
+  }
+}
+
+// MARK: - IndividualWeeklyStatsView
+
+struct IndividualWeeklyStatsView: View {
+  // MARK: Internal
+
+  let habit: Habit
+  let selectedWeekStartDate: Date
+
+  var body: some View {
+    let stats = calculateWeeklyStats()
+
+    HStack(spacing: 0) {
+      // Completion Rate
+      VStack(spacing: 4) {
+        Text("\(Int(stats.completionRate))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Completion")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Best Streak
+      VStack(spacing: 4) {
+        Text(pluralizeDay(stats.bestStreak))
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Best Streak")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+
+      // Vertical divider
+      Rectangle()
+        .fill(.outline3)
+        .frame(width: 1, height: 40)
+
+      // Consistency Rate
+      VStack(spacing: 4) {
+        Text("\(Int(stats.consistencyRate))%")
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        Text("Consistency")
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+      }
+      .frame(maxWidth: .infinity)
+    }
+    .padding(.vertical, 16)
+    .background(Color("appSecondaryContainer03"))
+    .cornerRadius(16)
+  }
+
+  // MARK: Private
+
+  private func calculateWeeklyStats() -> (
+    completionRate: Double, bestStreak: Int, consistencyRate: Double)
+  {
+    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let weekStart = calendar.startOfDay(for: selectedWeekStartDate)
+    let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+    let today = calendar.startOfDay(for: Date())
+
+    var totalGoal = 0
+    var totalCompleted = 0
+    var scheduledDays = 0
+    var completedDays = 0
+    var maxStreak = 0
+    var currentStreak = 0
+
+    var currentDate = weekStart
+    while currentDate < weekEnd, currentDate <= today {
+      let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate)
+
+      if isScheduled {
+        scheduledDays += 1
+
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+        let progress = habit.getProgress(for: currentDate)
+
+        totalGoal += goalAmount
+        totalCompleted += progress
+
+        if habit.isCompleted(for: currentDate) {
+          completedDays += 1
+          currentStreak += 1
+          maxStreak = max(maxStreak, currentStreak)
+        } else {
+          currentStreak = 0
+        }
+      } else {
+        currentStreak = 0
+      }
+
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+
+    let completionRate = totalGoal > 0
+      ? min(100.0, (Double(totalCompleted) / Double(totalGoal)) * 100.0)
+      : (habit.isCompleted(for: today) ? 100.0 : 0.0)
+
+    let consistencyRate = scheduledDays > 0
+      ? (Double(completedDays) / Double(scheduledDays)) * 100.0
+      : 0.0
+
+    // For best streak, use HabitData if available for persistent streak
+    let bestStreak: Int
+    if let habitData = getHabitData(for: habit.id) {
+      let calculatedBest = habitData.calculateAndUpdateBestStreak()
+      bestStreak = max(maxStreak, calculatedBest)
+    } else {
+      bestStreak = maxStreak
+    }
+
+    return (completionRate: completionRate, bestStreak: bestStreak, consistencyRate: consistencyRate)
+  }
+
+  private func getHabitData(for habitId: UUID) -> HabitData? {
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate<HabitData> { $0.id == habitId }
+      )
+      return try context.fetch(descriptor).first
+    } catch {
+      return nil
+    }
   }
 }
