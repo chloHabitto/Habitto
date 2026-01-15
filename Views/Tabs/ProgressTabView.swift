@@ -170,6 +170,9 @@ struct ProgressTabView: View {
   
   /// Habit to show in detail view
   @State private var habitForDetailView: Habit?
+  
+  /// Scroll offset for header collapse animation
+  @State private var scrollOffset: CGFloat = 0
 
   // MARK: - Environment
 
@@ -696,7 +699,8 @@ struct ProgressTabView: View {
         headerBackground: .surface01,
         contentBackground: .surface01,
         scrollResponsive: true,
-        headerCollapseThreshold: 50) {
+        headerCollapseThreshold: 50,
+        scrollOffset: scrollOffset) {
           ScrollView {
             VStack(spacing: 0) {
               // Tracking view at the top of scroll content
@@ -715,6 +719,12 @@ struct ProgressTabView: View {
             }
           }
           .coordinateSpace(name: "progressScroll")
+          .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
+            print("📜 Scroll offset (raw): \(offset)")
+            let positiveOffset = max(0, -offset)
+            print("📜 Scroll offset (positive): \(positiveOffset)")
+            scrollOffset = positiveOffset
+          }
           .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
         }
       

@@ -59,6 +59,7 @@
 		893628D52F139670006C927E /* HabittoWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HabittoWidgetExtension.entitlements; sourceTree = "<group>"; };
 		894FEC512F14008D0022BF50 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8958E9BA2E93AEC900AC3DB8 /* HabittoAppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = HabittoAppIcon.icon; sourceTree = "<group>"; };
+		896B96922F191C7100E4AAA2 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		897A76092F13907D004338E4 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AF58C92F114EBF0092F84C /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89AF5CB32F12B2710092F84C /* HabittoWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabittoWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -106,6 +107,8 @@
 		89BA7A132F13B18700FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Assets/Animations/01VeryEasy.json,
+				Assets/Animations/01VeryEasy2.json,
 				Assets/Icons.xcassets,
 				Assets/SemanticColors.xcassets,
 				Shared/DateKeyUtils.swift,
@@ -176,6 +179,11 @@
 			sourceTree = "<group>";
 		};
 		894FEC6E2F14008D0022BF50 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		896B96B22F191C7100E4AAA2 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -346,6 +354,10 @@
 				{
 					ProductGroup = 893624E72F1393AF006C927E /* Products */;
 					ProjectRef = 893624CF2F1393AF006C927E /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 896B96B22F191C7100E4AAA2 /* Products */;
+					ProjectRef = 896B96922F191C7100E4AAA2 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 89AF58DF2F114EBF0092F84C /* Products */;
