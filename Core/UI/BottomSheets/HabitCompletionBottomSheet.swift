@@ -207,6 +207,8 @@ struct HabitCompletionBottomSheet: View {
                   .id(colorScheme) // Force recreation when color scheme changes
               }
             }
+            .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            .id("\(difficulty.rawValue)-\(colorScheme)") // Unique ID for each difficulty and color scheme
             
             // Chat bubble
             ZStack {
@@ -225,6 +227,7 @@ struct HabitCompletionBottomSheet: View {
                 .padding(.leading, 10)
             }
           }
+          .animation(.easeInOut(duration: 0.25), value: difficulty)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.bottom, 8)
         }
@@ -245,7 +248,9 @@ struct HabitCompletionBottomSheet: View {
 
               // Only trigger haptic if difficulty actually changed
               if selectedDifficulty != newDifficulty {
-                selectedDifficulty = newDifficulty
+                withAnimation(.easeInOut(duration: 0.25)) {
+                  selectedDifficulty = newDifficulty
+                }
 
                 // Haptic feedback for slider movement
                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
