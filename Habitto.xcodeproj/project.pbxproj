@@ -107,7 +107,9 @@
 		89BA7A132F13B18700FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Assets/Animations/01VeryEasy_fixed.json,
 				Assets/Animations/01VeryEasy.json,
+				Assets/Animations/01VeryEasy.mov,
 				Assets/Animations/01VeryEasy2.json,
 				Assets/Icons.xcassets,
 				Assets/SemanticColors.xcassets,
