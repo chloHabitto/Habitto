@@ -172,37 +172,37 @@ struct HabitCompletionBottomSheet: View {
       VStack(spacing: 16) {
         // Character image with chat bubble
         if let difficulty = selectedDifficulty {
-          HStack(alignment: .center, spacing: 12) {
+          HStack(alignment: .center, spacing: 8) {
             // Character image
             Group {
               switch difficulty {
               case .veryEasy:
                 DifficultyVideoView(videoName: colorScheme == .dark ? "01VeryEasy_Dark" : "01VeryEasy_Light")
-                  .frame(width: 128, height: 128)
+                  .frame(width: 180, height: 180)
                   .aspectRatio(contentMode: .fit)
                   .id(colorScheme) // Force recreation when color scheme changes
 
               case .easy:
                 DifficultyVideoView(videoName: colorScheme == .dark ? "02Easy_Dark" : "02Easy_Light")
-                  .frame(width: 128, height: 128)
+                  .frame(width: 180, height: 180)
                   .aspectRatio(contentMode: .fit)
                   .id(colorScheme) // Force recreation when color scheme changes
 
               case .medium:
                 DifficultyVideoView(videoName: colorScheme == .dark ? "03Normal_Dark" : "03Normal_Light")
-                  .frame(width: 128, height: 128)
+                  .frame(width: 180, height: 180)
                   .aspectRatio(contentMode: .fit)
                   .id(colorScheme) // Force recreation when color scheme changes
 
               case .hard:
                 DifficultyVideoView(videoName: colorScheme == .dark ? "04Hard_Dark" : "04Hard_Light")
-                  .frame(width: 128, height: 128)
+                  .frame(width: 180, height: 180)
                   .aspectRatio(contentMode: .fit)
                   .id(colorScheme) // Force recreation when color scheme changes
 
               case .veryHard:
                 DifficultyVideoView(videoName: colorScheme == .dark ? "05VeryHard_Dark" : "05VeryHard_Light")
-                  .frame(width: 128, height: 128)
+                  .frame(width: 180, height: 180)
                   .aspectRatio(contentMode: .fit)
                   .id(colorScheme) // Force recreation when color scheme changes
               }
@@ -224,9 +224,8 @@ struct HabitCompletionBottomSheet: View {
                 .foregroundColor(.text03)
                 .padding(.leading, 10)
             }
-            .padding(.leading, 8)
           }
-          .frame(maxWidth: .infinity)
+          .frame(maxWidth: .infinity, alignment: .center)
           .padding(.bottom, 8)
         }
 
