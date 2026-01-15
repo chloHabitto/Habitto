@@ -1,4 +1,5 @@
 import SwiftUI
+import Lottie
 
 // MARK: - HabitCompletionBottomSheet
 
@@ -175,9 +176,7 @@ struct HabitCompletionBottomSheet: View {
             Group {
               switch difficulty {
               case .veryEasy:
-                Image("Difficulty-VeryEasy@4x")
-                  .resizable()
-                  .aspectRatio(contentMode: .fit)
+                DifficultyLottieView(animationName: "01VeryEasy2")
                   .frame(height: 128)
 
               case .easy:
@@ -326,6 +325,51 @@ struct HabitCompletionBottomSheet: View {
 
     print(
       "🎯 HabitCompletionBottomSheet: Saved difficulty rating \(difficulty.displayName) for habit '\(habit.name)' on \(completionDate)")
+  }
+}
+
+// MARK: - DifficultyLottieView
+
+struct DifficultyLottieView: UIViewRepresentable {
+  let animationName: String
+  let loopMode: LottieLoopMode
+  
+  init(animationName: String, loopMode: LottieLoopMode = .loop) {
+    self.animationName = animationName
+    self.loopMode = loopMode
+  }
+  
+  func makeUIView(context: Context) -> UIView {
+    let view = UIView()
+    let animationView = LottieAnimationView()
+    
+    // Load animation from Animations folder
+    if let path = Bundle.main.path(forResource: animationName, ofType: "json") {
+      animationView.animation = LottieAnimation.filepath(path)
+    } else {
+      animationView.animation = LottieAnimation.named(animationName)
+    }
+    
+    animationView.loopMode = loopMode
+    animationView.contentMode = .scaleAspectFit
+    animationView.translatesAutoresizingMaskIntoConstraints = false
+    
+    view.addSubview(animationView)
+    NSLayoutConstraint.activate([
+      animationView.topAnchor.constraint(equalTo: view.topAnchor),
+      animationView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+      animationView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+      animationView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+    ])
+    
+    animationView.animationSpeed = 1.0
+    animationView.play()
+    
+    return view
+  }
+  
+  func updateUIView(_ uiView: UIView, context: Context) {
+    // No updates needed
   }
 }
 

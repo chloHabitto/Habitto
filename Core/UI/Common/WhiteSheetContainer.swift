@@ -15,6 +15,7 @@ struct WhiteSheetContainer<Content: View>: View {
     contentBackground: Color = .surface,
     scrollResponsive: Bool = false,
     headerCollapseThreshold: CGFloat = 50,
+    scrollOffset: CGFloat = 0,
     @ViewBuilder content: () -> Content)
   {
     self.title = title
@@ -26,6 +27,7 @@ struct WhiteSheetContainer<Content: View>: View {
     self.contentBackground = contentBackground
     self.scrollResponsive = scrollResponsive
     self.headerCollapseThreshold = headerCollapseThreshold
+    self.scrollOffset = scrollOffset
     self.content = content()
   }
 
@@ -40,9 +42,8 @@ struct WhiteSheetContainer<Content: View>: View {
   let contentBackground: Color
   let scrollResponsive: Bool
   let headerCollapseThreshold: CGFloat
+  let scrollOffset: CGFloat
   let content: Content
-  
-  @State private var scrollOffset: CGFloat = 0
 
   var body: some View {
     VStack(spacing: 0) {
@@ -57,11 +58,6 @@ struct WhiteSheetContainer<Content: View>: View {
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
-        .modifier(ScrollOffsetModifier(
-          scrollResponsive: scrollResponsive,
-          onOffsetChange: { offset in
-            scrollOffset = offset
-          }))
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
@@ -146,33 +142,6 @@ struct WhiteSheetContainer<Content: View>: View {
   }
 }
 
-// MARK: - ScrollOffsetModifier
-
-struct ScrollOffsetModifier: ViewModifier {
-  let scrollResponsive: Bool
-  let onOffsetChange: (CGFloat) -> Void
-  
-  func body(content: Content) -> some View {
-    if scrollResponsive {
-      content
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-          // Debug logging to verify values
-          print("📜 Scroll offset (raw): \(offset)")
-          
-          // When scrolling down, the GeometryReader's minY decreases (becomes negative)
-          // We want positive values for scroll distance, so negate it
-          // At rest (not scrolled), minY should be 0 or close to 0
-          // As we scroll down, minY becomes negative
-          let positiveOffset = max(0, -offset)
-          print("📜 Scroll offset (positive): \(positiveOffset)")
-          onOffsetChange(positiveOffset)
-        }
-    } else {
-      content
-    }
-  }
-}
-
 // MARK: - Convenience Initializers
 
 extension WhiteSheetContainer {
@@ -182,6 +151,7 @@ extension WhiteSheetContainer {
     headerBackground: Color = .surface,
     contentBackground: Color = .white,
     scrollResponsive: Bool = false,
+    scrollOffset: CGFloat = 0,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -194,6 +164,7 @@ extension WhiteSheetContainer {
       contentBackground: contentBackground,
       scrollResponsive: scrollResponsive,
       headerCollapseThreshold: 50,
+      scrollOffset: scrollOffset,
       content: content)
   }
 
@@ -204,6 +175,7 @@ extension WhiteSheetContainer {
     headerBackground: Color = .surface,
     contentBackground: Color = .surface,
     scrollResponsive: Bool = false,
+    scrollOffset: CGFloat = 0,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -216,6 +188,7 @@ extension WhiteSheetContainer {
       contentBackground: contentBackground,
       scrollResponsive: scrollResponsive,
       headerCollapseThreshold: 50,
+      scrollOffset: scrollOffset,
       content: content)
   }
 
@@ -227,6 +200,7 @@ extension WhiteSheetContainer {
     contentBackground: Color = .surface,
     scrollResponsive: Bool = false,
     headerCollapseThreshold: CGFloat = 50,
+    scrollOffset: CGFloat = 0,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -239,6 +213,7 @@ extension WhiteSheetContainer {
       contentBackground: contentBackground,
       scrollResponsive: scrollResponsive,
       headerCollapseThreshold: headerCollapseThreshold,
+      scrollOffset: scrollOffset,
       content: content)
   }
 
@@ -249,6 +224,7 @@ extension WhiteSheetContainer {
     contentBackground: Color = .surface,
     scrollResponsive: Bool = false,
     headerCollapseThreshold: CGFloat = 50,
+    scrollOffset: CGFloat = 0,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -261,6 +237,7 @@ extension WhiteSheetContainer {
       contentBackground: contentBackground,
       scrollResponsive: scrollResponsive,
       headerCollapseThreshold: headerCollapseThreshold,
+      scrollOffset: scrollOffset,
       content: content)
   }
 
@@ -271,6 +248,7 @@ extension WhiteSheetContainer {
     headerBackground: Color = .surface,
     contentBackground: Color = .surface,
     scrollResponsive: Bool = false,
+    scrollOffset: CGFloat = 0,
     @ViewBuilder content: () -> Content)
   {
     self.init(
@@ -283,6 +261,7 @@ extension WhiteSheetContainer {
       contentBackground: contentBackground,
       scrollResponsive: scrollResponsive,
       headerCollapseThreshold: 50,
+      scrollOffset: scrollOffset,
       content: content)
   }
 }
