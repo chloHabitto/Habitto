@@ -9,6 +9,7 @@ struct HabitCompletionBottomSheet: View {
   let completionDate: Date
   @State private var selectedDifficulty: HabitDifficulty?
   let onDismiss: (() -> Void)?
+  @Environment(\.colorScheme) var colorScheme
 
   enum HabitDifficulty: Int, CaseIterable {
     case veryEasy = 1
@@ -176,32 +177,34 @@ struct HabitCompletionBottomSheet: View {
             Group {
               switch difficulty {
               case .veryEasy:
-                DifficultyVideoView(videoName: "01VeryEasy")
-                  .frame(height: 128)
+                DifficultyVideoView(videoName: colorScheme == .dark ? "01VeryEasy_Dark" : "01VeryEasy_Light")
+                  .frame(width: 128, height: 128)
+                  .aspectRatio(contentMode: .fit)
+                  .id(colorScheme) // Force recreation when color scheme changes
 
               case .easy:
-                Image("Difficulty-Easy@4x")
-                  .resizable()
+                DifficultyVideoView(videoName: colorScheme == .dark ? "02Easy_Dark" : "02Easy_Light")
+                  .frame(width: 128, height: 128)
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 128)
+                  .id(colorScheme) // Force recreation when color scheme changes
 
               case .medium:
-                Image("Difficulty-Medium@4x")
-                  .resizable()
+                DifficultyVideoView(videoName: colorScheme == .dark ? "03Normal_Dark" : "03Normal_Light")
+                  .frame(width: 128, height: 128)
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 128)
+                  .id(colorScheme) // Force recreation when color scheme changes
 
               case .hard:
-                Image("Difficulty-Hard@4x")
-                  .resizable()
+                DifficultyVideoView(videoName: colorScheme == .dark ? "04Hard_Dark" : "04Hard_Light")
+                  .frame(width: 128, height: 128)
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 128)
+                  .id(colorScheme) // Force recreation when color scheme changes
 
               case .veryHard:
-                Image("Difficulty-VeryHard@4x")
-                  .resizable()
+                DifficultyVideoView(videoName: colorScheme == .dark ? "05VeryHard_Dark" : "05VeryHard_Light")
+                  .frame(width: 128, height: 128)
                   .aspectRatio(contentMode: .fit)
-                  .frame(height: 128)
+                  .id(colorScheme) // Force recreation when color scheme changes
               }
             }
             
@@ -344,23 +347,36 @@ struct DifficultyVideoView: UIViewRepresentable {
     // Try multiple ways to load the video
     var videoURL: URL?
     
-    // Method 1: Try path-based loading
-    if let path = Bundle.main.path(forResource: videoName, ofType: "mov") {
+    // Method 1: Try path-based loading (mp4)
+    if let path = Bundle.main.path(forResource: videoName, ofType: "mp4") {
       videoURL = URL(fileURLWithPath: path)
       print("✅ DifficultyVideoView: Found video at path: \(path)")
     }
-    // Method 2: Try URL-based loading
-    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov") {
+    // Method 2: Try URL-based loading (mp4)
+    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mp4") {
       videoURL = url
       print("✅ DifficultyVideoView: Found video at URL: \(url)")
     }
-    // Method 3: Try with subdirectory
-    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov", subdirectory: "Animations") {
+    // Method 3: Try with subdirectory (mp4)
+    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mp4", subdirectory: "Animations") {
       videoURL = url
       print("✅ DifficultyVideoView: Found video in Animations folder: \(url)")
     }
+    // Method 4: Fallback to mov for backward compatibility
+    else if let path = Bundle.main.path(forResource: videoName, ofType: "mov") {
+      videoURL = URL(fileURLWithPath: path)
+      print("✅ DifficultyVideoView: Found video at path (mov): \(path)")
+    }
+    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov") {
+      videoURL = url
+      print("✅ DifficultyVideoView: Found video at URL (mov): \(url)")
+    }
+    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov", subdirectory: "Animations") {
+      videoURL = url
+      print("✅ DifficultyVideoView: Found video in Animations folder (mov): \(url)")
+    }
     else {
-      print("❌ DifficultyVideoView: Failed to find video file: \(videoName).mov")
+      print("❌ DifficultyVideoView: Failed to find video file: \(videoName).mp4 or \(videoName).mov")
       print("   Searched in Bundle.main")
       return videoView
     }
@@ -405,10 +421,31 @@ struct DifficultyVideoView: UIViewRepresentable {
       object: playerItem
     )
     
-    // Start playing after a small delay to ensure view is laid out
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-      player.play()
-      print("▶️ DifficultyVideoView: Started playing video")
+    // Wait for view to be laid out before playing
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+      // Force layout update
+      videoView.setNeedsLayout()
+      videoView.layoutIfNeeded()
+      
+      // Update player layer frame after layout - ensure it's not zero
+      if !videoView.bounds.isEmpty {
+        playerLayer.frame = videoView.bounds
+        print("📐 DifficultyVideoView: Updated player layer frame to: \(videoView.bounds)")
+        
+        // Start playing only if bounds are valid
+        player.play()
+        print("▶️ DifficultyVideoView: Started playing video")
+      } else {
+        print("⚠️ DifficultyVideoView: View bounds are empty, retrying...")
+        // Retry after another delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+          if !videoView.bounds.isEmpty {
+            playerLayer.frame = videoView.bounds
+            player.play()
+            print("▶️ DifficultyVideoView: Started playing video (retry)")
+          }
+        }
+      }
     }
     
     return videoView
@@ -459,8 +496,10 @@ class VideoPlayerView: UIView {
   var playerLayer: AVPlayerLayer? {
     didSet {
       if let layer = playerLayer {
-        layer.frame = bounds
         self.layer.addSublayer(layer)
+        // Update frame immediately
+        layer.frame = bounds
+        setNeedsLayout()
         print("✅ VideoPlayerView: Player layer added with frame: \(bounds)")
       }
     }
@@ -468,18 +507,25 @@ class VideoPlayerView: UIView {
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    playerLayer?.frame = bounds
-    print("📐 VideoPlayerView: layoutSubviews called, bounds: \(bounds)")
+    if let playerLayer = playerLayer {
+      // Ensure frame matches bounds exactly
+      if !bounds.isEmpty {
+        playerLayer.frame = bounds
+        print("📐 VideoPlayerView: layoutSubviews - bounds: \(bounds), layer frame: \(playerLayer.frame)")
+      }
+    }
   }
   
   override init(frame: CGRect) {
     super.init(frame: frame)
     backgroundColor = .clear
+    clipsToBounds = true
   }
   
   required init?(coder: NSCoder) {
     super.init(coder: coder)
     backgroundColor = .clear
+    clipsToBounds = true
   }
 }
 
