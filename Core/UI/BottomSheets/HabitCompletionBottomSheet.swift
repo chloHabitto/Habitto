@@ -1,5 +1,5 @@
 import SwiftUI
-import Lottie
+import AVKit
 
 // MARK: - HabitCompletionBottomSheet
 
@@ -176,7 +176,7 @@ struct HabitCompletionBottomSheet: View {
             Group {
               switch difficulty {
               case .veryEasy:
-                DifficultyLottieView(animationName: "01VeryEasy2")
+                DifficultyVideoView(videoName: "01VeryEasy")
                   .frame(height: 128)
 
               case .easy:
@@ -328,48 +328,158 @@ struct HabitCompletionBottomSheet: View {
   }
 }
 
-// MARK: - DifficultyLottieView
+// MARK: - DifficultyVideoView
 
-struct DifficultyLottieView: UIViewRepresentable {
-  let animationName: String
-  let loopMode: LottieLoopMode
+struct DifficultyVideoView: UIViewRepresentable {
+  let videoName: String
   
-  init(animationName: String, loopMode: LottieLoopMode = .loop) {
-    self.animationName = animationName
-    self.loopMode = loopMode
+  func makeCoordinator() -> Coordinator {
+    Coordinator()
   }
   
   func makeUIView(context: Context) -> UIView {
-    let view = UIView()
-    let animationView = LottieAnimationView()
+    let videoView = VideoPlayerView()
+    let coordinator = context.coordinator
     
-    // Load animation from Animations folder
-    if let path = Bundle.main.path(forResource: animationName, ofType: "json") {
-      animationView.animation = LottieAnimation.filepath(path)
-    } else {
-      animationView.animation = LottieAnimation.named(animationName)
+    // Try multiple ways to load the video
+    var videoURL: URL?
+    
+    // Method 1: Try path-based loading
+    if let path = Bundle.main.path(forResource: videoName, ofType: "mov") {
+      videoURL = URL(fileURLWithPath: path)
+      print("✅ DifficultyVideoView: Found video at path: \(path)")
+    }
+    // Method 2: Try URL-based loading
+    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov") {
+      videoURL = url
+      print("✅ DifficultyVideoView: Found video at URL: \(url)")
+    }
+    // Method 3: Try with subdirectory
+    else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov", subdirectory: "Animations") {
+      videoURL = url
+      print("✅ DifficultyVideoView: Found video in Animations folder: \(url)")
+    }
+    else {
+      print("❌ DifficultyVideoView: Failed to find video file: \(videoName).mov")
+      print("   Searched in Bundle.main")
+      return videoView
     }
     
-    animationView.loopMode = loopMode
-    animationView.contentMode = .scaleAspectFit
-    animationView.translatesAutoresizingMaskIntoConstraints = false
+    guard let url = videoURL else {
+      print("❌ DifficultyVideoView: URL is nil")
+      return videoView
+    }
     
-    view.addSubview(animationView)
-    NSLayoutConstraint.activate([
-      animationView.topAnchor.constraint(equalTo: view.topAnchor),
-      animationView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-      animationView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-      animationView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-    ])
+    let playerItem = AVPlayerItem(url: url)
+    let player = AVPlayer(playerItem: playerItem)
     
-    animationView.animationSpeed = 1.0
-    animationView.play()
+    // Set up looping - automatically restart when video ends
+    player.actionAtItemEnd = .none
     
-    return view
+    // Create player layer
+    let playerLayer = AVPlayerLayer(player: player)
+    playerLayer.videoGravity = .resizeAspect
+    
+    // Store references
+    coordinator.player = player
+    coordinator.playerLayer = playerLayer
+    coordinator.playerItem = playerItem
+    
+    // Add player layer to view
+    videoView.playerLayer = playerLayer
+    
+    print("✅ DifficultyVideoView: Video player setup complete")
+    print("   - Player: \(player)")
+    print("   - PlayerLayer: \(playerLayer)")
+    print("   - VideoView bounds: \(videoView.bounds)")
+    print("   - Video URL: \(url)")
+    
+    // Monitor player item status
+    playerItem.addObserver(coordinator, forKeyPath: "status", options: [.new], context: nil)
+    
+    // Set up notification observer for looping
+    NotificationCenter.default.addObserver(
+      coordinator,
+      selector: #selector(Coordinator.playerItemDidReachEnd),
+      name: .AVPlayerItemDidPlayToEndTime,
+      object: playerItem
+    )
+    
+    // Start playing after a small delay to ensure view is laid out
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+      player.play()
+      print("▶️ DifficultyVideoView: Started playing video")
+    }
+    
+    return videoView
   }
   
   func updateUIView(_ uiView: UIView, context: Context) {
-    // No updates needed
+    // Frame will be updated in VideoPlayerView's layoutSubviews
+  }
+  
+  class Coordinator: NSObject {
+    var player: AVPlayer?
+    var playerLayer: AVPlayerLayer?
+    var playerItem: AVPlayerItem?
+    
+    @objc func playerItemDidReachEnd(notification: Notification) {
+      guard let player = player else { return }
+      player.seek(to: .zero)
+      player.play()
+    }
+    
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+      if keyPath == "status" {
+        if let playerItem = object as? AVPlayerItem {
+          switch playerItem.status {
+          case .readyToPlay:
+            print("✅ DifficultyVideoView: Player item ready to play")
+          case .failed:
+            print("❌ DifficultyVideoView: Player item failed: \(playerItem.error?.localizedDescription ?? "Unknown error")")
+          case .unknown:
+            print("⚠️ DifficultyVideoView: Player item status unknown")
+          @unknown default:
+            print("⚠️ DifficultyVideoView: Player item status unknown")
+          }
+        }
+      }
+    }
+    
+    deinit {
+      playerItem?.removeObserver(self, forKeyPath: "status")
+      NotificationCenter.default.removeObserver(self)
+    }
+  }
+}
+
+// MARK: - VideoPlayerView
+
+class VideoPlayerView: UIView {
+  var playerLayer: AVPlayerLayer? {
+    didSet {
+      if let layer = playerLayer {
+        layer.frame = bounds
+        self.layer.addSublayer(layer)
+        print("✅ VideoPlayerView: Player layer added with frame: \(bounds)")
+      }
+    }
+  }
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    playerLayer?.frame = bounds
+    print("📐 VideoPlayerView: layoutSubviews called, bounds: \(bounds)")
+  }
+  
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    backgroundColor = .clear
+  }
+  
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+    backgroundColor = .clear
   }
 }
 
