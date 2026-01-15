@@ -172,7 +172,7 @@ struct HabitCompletionBottomSheet: View {
       VStack(spacing: 16) {
         // Character image with chat bubble
         if let difficulty = selectedDifficulty {
-          HStack(alignment: .center, spacing: 8) {
+          HStack(alignment: .center, spacing: 0) {
             // Character image
             Group {
               switch difficulty {
