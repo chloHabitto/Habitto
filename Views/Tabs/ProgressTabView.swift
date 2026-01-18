@@ -137,16 +137,15 @@ private struct ScrollOffsetTracker: View {
         let newOffset = max(0, (initialScrollOffset ?? minY) - minY)
         scrollOffset = newOffset
         
-        // Calculate raw header height
-        let rawHeight = fullHeaderHeight - min(newOffset, fullHeaderHeight)
+        // Calculate how much header should be hidden (0 = fully visible, 90 = fully hidden)
+        let headerHideAmount = min(newOffset, fullHeaderHeight)
         
-        // Simple direct mapping - NO animation during scroll
-        // Just set the snapped value directly
-        let snappedHeight: CGFloat = rawHeight > (fullHeaderHeight * 0.5) ? fullHeaderHeight : 0
+        // Snap: if more than halfway hidden, fully hide; otherwise fully show
+        let snappedHideAmount: CGFloat = headerHideAmount > (fullHeaderHeight * 0.5) ? fullHeaderHeight : 0
         
         // Only update if changed to avoid redundant updates
-        if displayHeaderHeight != snappedHeight {
-          displayHeaderHeight = snappedHeight  // No animation wrapper
+        if displayHeaderHeight != snappedHideAmount {
+          displayHeaderHeight = snappedHideAmount  // No animation wrapper
         }
       }
   }
