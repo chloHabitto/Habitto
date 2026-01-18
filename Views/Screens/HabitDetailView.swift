@@ -767,8 +767,7 @@ struct HabitDetailView: View {
         currentStreak: habit.computedStreak(),
         isScheduledToday: StreakDataCalculator.shouldShowHabitOnDate(habit, date: Date()),
         isCompletedToday: habit.getProgress(for: Date()) >= extractGoalNumber(from: habit.goal),
-        nextScheduledDate: calculateNextScheduledDate(for: habit),
-        habitColor: habit.color.color
+        nextScheduledDate: calculateNextScheduledDate(for: habit)
       )
     }
     .padding(.horizontal, 16)
