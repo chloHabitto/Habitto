@@ -297,6 +297,12 @@ class HomeViewState: ObservableObject {
       try await habitRepository.deleteHabit(habit)
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - habitRepository.deleteHabit() completed successfully")
       debugLog("✅ GUARANTEED: Habit deleted and persisted")
+      
+      // ✅ FIX: Recalculate streak after delete (habits changed)
+      await MainActor.run {
+        print("🗑️ DELETE_FLOW: Recalculating streak after habit deletion")
+        self.updateStreak()
+      }
     } catch {
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - ERROR: habitRepository.deleteHabit() failed: \(error.localizedDescription)")
       debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
@@ -356,10 +362,23 @@ class HomeViewState: ObservableObject {
         FirebaseBackupService.shared.backupHabit(habit)
         print("♻️ [RESTORE] Habit backup initiated to Firestore: \(habit.name)")
         
-        // CRITICAL: Reload habits to refresh UI
-        print("♻️ [RESTORE] Reloading habits to refresh UI...")
-        await habitRepository.loadHabits(force: true)
-        print("♻️ [RESTORE] Habits reloaded - UI should update now")
+        // ✅ PERFORMANCE FIX: Add habit back to local array instead of full reload
+        print("♻️ [RESTORE] Adding habit back to local habits array...")
+        await MainActor.run {
+          if !self.habits.contains(where: { $0.id == habit.id }) {
+            self.habits.append(habit)
+            print("♻️ [RESTORE] Habit added to local array")
+          } else {
+            print("♻️ [RESTORE] Habit already in local array (publisher may have added it)")
+          }
+          
+          // Clear the undo toast
+          self.deletedHabitForUndo = nil
+          
+          // Recalculate streak after restore
+          print("♻️ [RESTORE] Recalculating streak after restore")
+          self.updateStreak()
+        }
         
         print("♻️ [RESTORE] Habit restored via Undo: \(habit.name)")
       } else {
@@ -370,11 +389,6 @@ class HomeViewState: ObservableObject {
     } catch {
       print("❌ [RESTORE] Failed to restore habit: \(error.localizedDescription)")
       debugLog("❌ Failed to restore habit: \(error.localizedDescription)")
-    }
-    
-    // Clear the undo state to dismiss toast
-    await MainActor.run {
-      self.deletedHabitForUndo = nil
     }
     
     print("♻️ [RESTORE] HomeViewState.restoreHabit() - END")
