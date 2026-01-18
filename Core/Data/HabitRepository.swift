@@ -1216,6 +1216,11 @@ class HabitRepository: ObservableObject {
   func restoreSoftDeletedHabit(_ habit: Habit) async throws {
     debugLog("♻️ HabitRepository: Restoring soft-deleted habit: \(habit.name)")
     
+    // CRITICAL: Clear deleted tracking BEFORE reload to prevent filtering
+    debugLog("♻️ HabitRepository: Clearing deleted tracking for habit: \(habit.id)")
+    SyncEngine.clearDeletedHabit(habit.id)  // Clear from SyncEngine
+    await HabitStore.shared.unmarkHabitAsDeleted(habit.id)  // Clear from UserDefaults
+    
     // Query SwiftData for the soft-deleted HabitData by ID
     let modelContext = SwiftDataContainer.shared.modelContext
     

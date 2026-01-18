@@ -47,11 +47,12 @@ struct WhiteSheetContainer<Content: View>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section with dynamic height - follows scroll directly
+      // Header section with dynamic height and snap animation
       headerSection
         .background(headerBackground)
         .frame(height: scrollResponsive ? calculateHeaderHeight() : nil)  // Dynamic height
         .clipped()  // Hide overflow when collapsed
+        .animation(.spring(response: 0.25, dampingFraction: 0.9), value: scrollOffset)
 
       // Content area - naturally expands as header collapses
       content
