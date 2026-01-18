@@ -47,22 +47,22 @@ struct WhiteSheetContainer<Content: View>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section - instant snap, no animation
+      // Header section - instant snap, no animation - DEBUG WITH GREEN BACKGROUND
       if scrollResponsive {
         headerSection
-          .background(headerBackground)
+          .background(Color.green)  // Changed from headerBackground to GREEN for debugging
           .frame(height: max(0, 96 - scrollOffset))  // Increased by 1pt to eliminate gap artifacts
           .clipped()
           // NO animation - instant snap looks cleaner than animated gap
       } else {
         headerSection
-          .background(headerBackground)
+          .background(Color.green)  // Changed from headerBackground to GREEN for debugging
       }
 
-      // Content area
+      // Content area - MAKE RED FOR DEBUGGING
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(contentBackground)
+        .background(Color.red)  // Changed from contentBackground to RED for debugging
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
