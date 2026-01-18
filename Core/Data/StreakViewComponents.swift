@@ -436,13 +436,15 @@ struct HeatmapCellView: View {
     isScheduled: Bool,
     completionPercentage: Double,
     rectangleSizePercentage: Double = 0.5,
-    isVacationDay: Bool = false)
+    isVacationDay: Bool = false,
+    habitColor: Color? = nil)
   {
     self.intensity = intensity
     self.isScheduled = isScheduled
     self.completionPercentage = completionPercentage
     self.rectangleSizePercentage = rectangleSizePercentage
     self.isVacationDay = isVacationDay
+    self.habitColor = habitColor
   }
 
   // MARK: Internal
@@ -452,6 +454,7 @@ struct HeatmapCellView: View {
   let completionPercentage: Double
   let rectangleSizePercentage: Double
   let isVacationDay: Bool
+  let habitColor: Color?
 
   var body: some View {
     GeometryReader { geometry in
@@ -501,6 +504,30 @@ struct HeatmapCellView: View {
     // Clamp completion percentage between 0 and 100
     let clampedPercentage = max(0.0, min(100.0, completionPercentage))
 
+    // If habit color is provided, use it with varying opacity
+    if let baseColor = habitColor {
+      let selectedColor: Color = if clampedPercentage == 0.0 {
+        .primaryContainer
+      } else if clampedPercentage >= 100.0 {
+        baseColor.opacity(1.0)
+      } else if clampedPercentage >= 90.0 {
+        baseColor.opacity(0.9)
+      } else if clampedPercentage >= 75.0 {
+        baseColor.opacity(0.75)
+      } else if clampedPercentage >= 60.0 {
+        baseColor.opacity(0.6)
+      } else if clampedPercentage >= 40.0 {
+        baseColor.opacity(0.45)
+      } else if clampedPercentage >= 20.0 {
+        baseColor.opacity(0.3)
+      } else {
+        .primaryContainer
+      }
+      
+      return selectedColor
+    }
+    
+    // Fallback to green colors if no habit color is provided
     // Map completion percentage to modern color intensity with better contrast
     // 0% = primaryContainer (lightest)
     // 100% = green600 (darkest)
