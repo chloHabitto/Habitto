@@ -116,15 +116,10 @@ struct WhiteSheetContainer<Content: View>: View {
   
   // MARK: - Scroll-Responsive Calculations
   
-  /// Calculate header height based on scroll offset
-  /// Direct 1:1 mapping: header shrinks as you scroll
+  /// Return the pre-calculated display height
+  /// scrollOffset is already the snapped display height from ProgressTabView
   private func calculateHeaderHeight() -> CGFloat {
-    let fullHeaderHeight: CGFloat = 90
-    
-    // scrollOffset 0 → height 90
-    // scrollOffset 90 → height 0
-    let height = fullHeaderHeight - min(scrollOffset, fullHeaderHeight)
-    return max(0, height)
+    return scrollOffset
   }
 }
 

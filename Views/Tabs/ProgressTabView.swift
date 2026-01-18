@@ -121,7 +121,9 @@ enum HabitFilterStatus: String {
 private struct ScrollOffsetTracker: View {
   let minY: CGFloat
   @Binding var scrollOffset: CGFloat
+  @Binding var displayHeaderHeight: CGFloat
   @Binding var initialScrollOffset: CGFloat?
+  let fullHeaderHeight: CGFloat
   
   var body: some View {
     Color.clear
@@ -132,9 +134,25 @@ private struct ScrollOffsetTracker: View {
           initialScrollOffset = minY
         }
         
-        // Direct 1:1 mapping - header follows scroll position
+        // Calculate scroll offset
         let newOffset = max(0, (initialScrollOffset ?? minY) - minY)
         scrollOffset = newOffset
+        
+        // Calculate raw header height (1:1 with scroll)
+        let rawHeight = fullHeaderHeight - min(newOffset, fullHeaderHeight)
+        
+        // Snap logic: if more than halfway, show full; otherwise hide
+        let snappedHeight: CGFloat
+        if rawHeight > fullHeaderHeight * 0.5 {
+          snappedHeight = fullHeaderHeight  // Snap to visible
+        } else {
+          snappedHeight = 0  // Snap to hidden
+        }
+        
+        // Animate to snapped height
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+          displayHeaderHeight = snappedHeight
+        }
       }
   }
 }
@@ -196,7 +214,10 @@ struct ProgressTabView: View {
   
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
+  @State private var displayHeaderHeight: CGFloat = 90  // What we actually show (snapped)
   @State private var initialScrollOffset: CGFloat? = nil
+  
+  private let fullHeaderHeight: CGFloat = 90
   
   // MARK: - Cached Encouraging Messages
   @State private var cachedWeeklyMessage: String? = nil
@@ -728,7 +749,7 @@ struct ProgressTabView: View {
         headerBackground: .surface01,
         contentBackground: .surface01,
         scrollResponsive: true,
-        scrollOffset: scrollOffset) {
+        scrollOffset: displayHeaderHeight) {
           ScrollView {
             mainContentView
               .padding(.top, 20)
@@ -738,10 +759,12 @@ struct ProgressTabView: View {
                   ScrollOffsetTracker(
                     minY: geometry.frame(in: .global).minY,
                     scrollOffset: $scrollOffset,
+                    displayHeaderHeight: $displayHeaderHeight,
                     initialScrollOffset: Binding(
                       get: { initialScrollOffset },
                       set: { initialScrollOffset = $0 }
-                    )
+                    ),
+                    fullHeaderHeight: fullHeaderHeight
                   )
                 }
               )
