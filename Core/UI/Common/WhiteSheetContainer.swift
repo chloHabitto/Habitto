@@ -53,6 +53,7 @@ struct WhiteSheetContainer<Content: View>: View {
           .background(headerBackground)
           .frame(height: max(0, 96 - scrollOffset))
           .clipped()
+          .background(headerBackground)  // Add background AFTER clipped to extend below and cover gap
           // NO animation - instant snap looks cleaner than animated gap
       } else {
         headerSection
@@ -61,7 +62,7 @@ struct WhiteSheetContainer<Content: View>: View {
 
       // Content area
       content
-        .padding(.top, -1)  // Pull content up by 1pt to overlap header and eliminate gap
+        .padding(.top, -2)  // Increased from -1 to -2 to fully eliminate gap
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
     }
