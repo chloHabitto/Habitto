@@ -274,13 +274,17 @@ struct ProgressTabView: View {
       }
       .padding(.top, 16)
       .padding(.bottom, 0)
-      
-      // Full-width underline stroke at the bottom
-      Rectangle()
-        .fill(Color.outline2)
-        .frame(height: 1)
-        .frame(maxWidth: .infinity)
     }
+    .overlay(
+      // Full-width underline stroke at the bottom, spanning entire screen width
+      VStack {
+        Spacer()
+        Rectangle()
+          .fill(Color.outline2)
+          .frame(height: 1)
+      }
+      .frame(maxWidth: .infinity)
+    )
   }
 
   // MARK: - Weekly Content Views
