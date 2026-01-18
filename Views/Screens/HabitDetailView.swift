@@ -64,7 +64,7 @@ struct HabitDetailView: View {
           hasInitializedActiveState = true
         }
       }
-      .navigationTitle("Habit Detail")
+      .navigationTitle(habit.name)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {
@@ -235,6 +235,24 @@ struct HabitDetailView: View {
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(40)
     }
+    .sheet(isPresented: $showingCompletionInputSheet) {
+      CompletionInputSheet(
+        isPresented: $showingCompletionInputSheet,
+        habit: habit,
+        date: selectedDate,
+        onSave: { newCount in
+          todayProgress = newCount
+          updateHabitProgress(newCount)
+          
+          // Check if habit is completed and show completion sheet
+          let goalAmount = extractGoalNumber(from: habit.goal)
+          if newCount >= goalAmount {
+            isCompletingHabit = true
+            showingCompletionSheet = true
+          }
+        }
+      )
+    }
     .fullScreenCover(isPresented: $showingNotificationsSettings) {
       NotificationsView()
     }
@@ -256,6 +274,7 @@ struct HabitDetailView: View {
   @State private var isProcessingToggle = false
   @State private var hasInitializedActiveState = false
   @State private var showingCompletionSheet = false
+  @State private var showingCompletionInputSheet = false
   @State private var isCompletingHabit = false
   @State private var showingNotificationsSettings = false
 
@@ -347,13 +366,297 @@ struct HabitDetailView: View {
   
   private var progressTabContent: some View {
     VStack(spacing: 16) {
-      Text("Progress content coming soon")
-        .font(.appBodyMedium)
-        .foregroundColor(.text05)
-        .padding()
+      // Week Calendar Strip
+      weekCalendarStrip
+        .padding(.horizontal, 16)
+        .padding(.top, 4)
+      
+      // Streak Stats Card
+      streakStatsCard
+        .padding(.horizontal, 16)
+      
+      // This Month Summary
+      thisMonthSummary
+        .padding(.horizontal, 16)
+      
+      // Monthly History
+      monthlyHistory
+        .padding(.horizontal, 16)
+        .padding(.bottom, 32)
     }
-    .padding(.horizontal, 16)
-    .padding(.bottom, 32)
+  }
+  
+  // MARK: - Week Calendar Strip
+  
+  private var weekCalendarStrip: some View {
+    let calendar = Calendar.current
+    let today = Date()
+    let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
+    
+    return VStack(alignment: .leading, spacing: 12) {
+      Text("This Week")
+        .font(.appBodyMediumEmphasised)
+        .foregroundColor(.text01)
+      
+      HStack(spacing: 8) {
+        ForEach(0..<7) { dayOffset in
+          if let date = calendar.date(byAdding: .day, value: dayOffset, to: weekStart) {
+            weekDayItem(for: date)
+          }
+        }
+      }
+    }
+    .padding(16)
+    .background(Color.appSurface01Variant)
+    .cornerRadius(16)
+  }
+  
+  private func weekDayItem(for date: Date) -> some View {
+    let calendar = Calendar.current
+    let weekdaySymbol = calendar.shortWeekdaySymbols[calendar.component(.weekday, from: date) - 1]
+    let dayNumber = calendar.component(.day, from: date)
+    let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+    let progress = habit.getProgress(for: date)
+    let goalAmount = extractGoalNumber(from: habit.goal)
+    
+    return VStack(spacing: 6) {
+      Text(String(weekdaySymbol.prefix(1)))
+        .font(.appLabelSmall)
+        .foregroundColor(.text05)
+      
+      ZStack {
+        Circle()
+          .stroke(completionStatus(progress: progress, goal: goalAmount, isScheduled: isScheduled).color.opacity(0.3), lineWidth: 2)
+          .frame(width: 32, height: 32)
+        
+        if isScheduled {
+          Circle()
+            .fill(completionStatus(progress: progress, goal: goalAmount, isScheduled: isScheduled).color)
+            .frame(width: completionStatus(progress: progress, goal: goalAmount, isScheduled: isScheduled).size, height: completionStatus(progress: progress, goal: goalAmount, isScheduled: isScheduled).size)
+        } else {
+          Text("─")
+            .font(.appLabelSmall)
+            .foregroundColor(.text07)
+        }
+      }
+      
+      Text("\(dayNumber)")
+        .font(.appLabelSmall)
+        .foregroundColor(.text04)
+    }
+    .frame(maxWidth: .infinity)
+  }
+  
+  private func completionStatus(progress: Int, goal: Int, isScheduled: Bool) -> (color: Color, size: CGFloat) {
+    if !isScheduled {
+      return (.text07, 0)
+    }
+    
+    if progress >= goal {
+      // Completed: filled circle
+      return (habit.color.color, 28)
+    } else if progress > 0 {
+      // Partially completed: half circle
+      return (habit.color.color, 14)
+    } else {
+      // Missed/incomplete: empty circle
+      return (.text05, 0)
+    }
+  }
+  
+  // MARK: - Streak Stats Card
+  
+  private var streakStatsCard: some View {
+    HStack(spacing: 16) {
+      // Current Streak
+      VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 6) {
+          Text("🔥")
+            .font(.system(size: 20))
+          Text("Current")
+            .font(.appBodySmall)
+            .foregroundColor(.text05)
+        }
+        
+        Text("\(habit.computedStreak())")
+          .font(.appTitleLargeEmphasised)
+          .foregroundColor(.text01)
+        
+        Text(habit.computedStreak() == 1 ? "day" : "days")
+          .font(.appBodySmall)
+          .foregroundColor(.text05)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+      
+      Divider()
+        .frame(height: 60)
+      
+      // Longest Streak
+      VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 6) {
+          Text("🏆")
+            .font(.system(size: 20))
+          Text("Longest")
+            .font(.appBodySmall)
+            .foregroundColor(.text05)
+        }
+        
+        Text("\(StreakDataCalculator.calculateBestStreakFromHistory(for: habit))")
+          .font(.appTitleLargeEmphasised)
+          .foregroundColor(.text01)
+        
+        Text(StreakDataCalculator.calculateBestStreakFromHistory(for: habit) == 1 ? "day" : "days")
+          .font(.appBodySmall)
+          .foregroundColor(.text05)
+      }
+      .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    .padding(16)
+    .background(Color.appSurface01Variant)
+    .cornerRadius(16)
+  }
+  
+  // MARK: - This Month Summary
+  
+  private var thisMonthSummary: some View {
+    let calendar = Calendar.current
+    let today = Date()
+    let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) ?? today
+    let monthEnd = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthStart) ?? today
+    
+    let (completed, total) = calculateMonthStats(start: monthStart, end: min(monthEnd, today))
+    let percentage = total > 0 ? Int((Double(completed) / Double(total)) * 100) : 0
+    
+    return VStack(alignment: .leading, spacing: 12) {
+      HStack {
+        Text("This Month")
+          .font(.appTitleSmallEmphasised)
+          .foregroundColor(.text01)
+        
+        Spacer()
+        
+        Text("\(percentage)%")
+          .font(.appBodyMediumEmphasised)
+          .foregroundColor(.text03)
+      }
+      
+      Text("\(completed) of \(total) days completed")
+        .font(.appBodySmall)
+        .foregroundColor(.text05)
+      
+      // Progress bar
+      GeometryReader { geometry in
+        ZStack(alignment: .leading) {
+          RoundedRectangle(cornerRadius: 4)
+            .fill(Color.surfaceContainer)
+            .frame(height: 8)
+          
+          RoundedRectangle(cornerRadius: 4)
+            .fill(habit.color.color)
+            .frame(width: geometry.size.width * CGFloat(completed) / CGFloat(max(total, 1)), height: 8)
+        }
+      }
+      .frame(height: 8)
+    }
+    .padding(16)
+    .background(Color.appSurface01Variant)
+    .cornerRadius(16)
+  }
+  
+  // MARK: - Monthly History
+  
+  private var monthlyHistory: some View {
+    let months = last3Months()
+    
+    return VStack(alignment: .leading, spacing: 12) {
+      Text("Monthly History")
+        .font(.appTitleSmallEmphasised)
+        .foregroundColor(.text01)
+      
+      VStack(spacing: 12) {
+        ForEach(months, id: \.monthStart) { monthData in
+          monthHistoryRow(monthData: monthData)
+        }
+      }
+    }
+    .padding(16)
+    .background(Color.appSurface01Variant)
+    .cornerRadius(16)
+  }
+  
+  private func monthHistoryRow(monthData: (monthStart: Date, monthName: String)) -> some View {
+    let calendar = Calendar.current
+    let monthEnd = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: monthData.monthStart) ?? monthData.monthStart
+    let (completed, total) = calculateMonthStats(start: monthData.monthStart, end: min(monthEnd, Date()))
+    let percentage = total > 0 ? Int((Double(completed) / Double(total)) * 100) : 0
+    
+    return HStack(spacing: 12) {
+      Text(monthData.monthName)
+        .font(.appBodyMedium)
+        .foregroundColor(.text03)
+        .frame(width: 80, alignment: .leading)
+      
+      // Progress bar
+      GeometryReader { geometry in
+        ZStack(alignment: .leading) {
+          RoundedRectangle(cornerRadius: 4)
+            .fill(Color.surfaceContainer)
+            .frame(height: 8)
+          
+          RoundedRectangle(cornerRadius: 4)
+            .fill(habit.color.color)
+            .frame(width: geometry.size.width * CGFloat(completed) / CGFloat(max(total, 1)), height: 8)
+        }
+      }
+      .frame(height: 8)
+      
+      Text("\(percentage)%")
+        .font(.appBodySmall)
+        .foregroundColor(.text05)
+        .frame(width: 40, alignment: .trailing)
+    }
+  }
+  
+  private func calculateMonthStats(start: Date, end: Date) -> (completed: Int, total: Int) {
+    let calendar = Calendar.current
+    var currentDate = start
+    var completed = 0
+    var total = 0
+    
+    while currentDate <= end {
+      if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+        total += 1
+        let progress = habit.getProgress(for: currentDate)
+        let goalAmount = extractGoalNumber(from: habit.goal)
+        if progress >= goalAmount {
+          completed += 1
+        }
+      }
+      
+      guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
+      currentDate = nextDate
+    }
+    
+    return (completed, total)
+  }
+  
+  private func last3Months() -> [(monthStart: Date, monthName: String)] {
+    let calendar = Calendar.current
+    let today = Date()
+    var months: [(Date, String)] = []
+    
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "MMM yyyy"
+    
+    for monthOffset in 1...3 {
+      if let monthStart = calendar.date(byAdding: .month, value: -monthOffset, to: today),
+         let monthStartDay = calendar.date(from: calendar.dateComponents([.year, .month], from: monthStart)) {
+        let monthName = dateFormatter.string(from: monthStartDay)
+        months.append((monthStartDay, monthName))
+      }
+    }
+    
+    return months
   }
 
   // MARK: - Main Content Card
@@ -366,7 +669,19 @@ struct HabitDetailView: View {
       Divider()
         .padding(.horizontal, 16)
 
-      // Habit Details Section
+      // Completion Ring Section
+      completionRingSection
+
+      Divider()
+        .padding(.horizontal, 16)
+
+      // Quick Stats Section
+      quickStatsSection
+
+      Divider()
+        .padding(.horizontal, 16)
+
+      // Habit Details Section (Goal)
       habitDetailsSection
 
       Divider()
@@ -374,12 +689,6 @@ struct HabitDetailView: View {
 
       // Reminders Section
       remindersSection
-
-      Divider()
-        .padding(.horizontal, 16)
-
-      // Today's Progress Section
-      todayProgressSection
     }
     .background(.appSurface01Variant)
     .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -417,21 +726,47 @@ struct HabitDetailView: View {
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.appText01)
 
-        Text(habit.description.isEmpty ? "Description" : habit.description)
-          .font(.appBodyMedium)
-          .foregroundColor(.text05)
+        if !habit.description.isEmpty {
+          Text(habit.description)
+            .font(.appBodyMedium)
+            .foregroundColor(.text05)
+        }
       }
 
       Spacer()
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 16)
+  }
 
-      // Active status tag
-      Text("Active")
-        .font(.appLabelSmall)
-        .foregroundColor(.onPrimary)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Color.secondary)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+  // MARK: - Completion Ring Section
+  
+  private var completionRingSection: some View {
+    VStack(spacing: 0) {
+      CompletionRingView(
+        progress: Double(todayProgress) / Double(max(extractGoalNumber(from: habit.goal), 1)),
+        currentValue: todayProgress,
+        goalValue: extractGoalNumber(from: habit.goal),
+        unit: extractUnitFromGoal(habit.goal),
+        habitColor: habit.color.color,
+        onTap: {
+          showingCompletionInputSheet = true
+        }
+      )
+    }
+    .frame(maxWidth: .infinity)
+    .padding(.horizontal, 16)
+    .padding(.vertical, 24)
+  }
+  
+  // MARK: - Quick Stats Section
+  
+  private var quickStatsSection: some View {
+    VStack(spacing: 0) {
+      QuickStatsRow(
+        currentStreak: habit.computedStreak(),
+        schedule: habit.schedule
+      )
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 16)
@@ -493,56 +828,34 @@ struct HabitDetailView: View {
         .disabled(!habitRemindersEnabled)
       }
 
-      // Warning banner when habit reminders are disabled
+      // Compact warning when habit reminders are disabled
       if !habitRemindersEnabled {
-        VStack(spacing: 8) {
-          HStack(spacing: 12) {
-            Image(systemName: "exclamationmark.triangle.fill")
-              .font(.system(size: 16))
-              .foregroundColor(.orange)
-
-            VStack(alignment: .leading, spacing: 4) {
-              Text("Habit reminders are turned off")
-                .font(.appBodySmallEmphasised)
-                .foregroundColor(.text01)
-
-              if habit.reminders.isEmpty {
-                Text("Please enable Habit reminders in Settings before adding a reminder.")
-                  .font(.appBodySmall)
-                  .foregroundColor(.text04)
-                  .fixedSize(horizontal: false, vertical: true)
-              } else {
-                Text(
-                  "These reminders won't notify you until you enable Habit reminders in Settings.")
-                  .font(.appBodySmall)
-                  .foregroundColor(.text04)
-                  .fixedSize(horizontal: false, vertical: true)
-              }
-            }
-
+        Button(action: {
+          showingNotificationsSettings = true
+        }) {
+          HStack(spacing: 8) {
+            Text("⚠️")
+              .font(.system(size: 14))
+            
+            Text("Reminders off")
+              .font(.appBodySmall)
+              .foregroundColor(.text01)
+            
+            Text("·")
+              .font(.appBodySmall)
+              .foregroundColor(.text04)
+            
+            Text("Enable")
+              .font(.appBodySmall)
+              .foregroundColor(.primary)
+            
             Spacer()
           }
-
-          // Navigation button to Settings
-          Button(action: {
-            showingNotificationsSettings = true
-          }) {
-            HStack(spacing: 6) {
-              Image(systemName: "gear")
-                .font(.system(size: 14))
-              Text("Go to Settings")
-                .font(.appBodySmallEmphasised)
-            }
-            .foregroundColor(.primary)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(Color.primary.opacity(0.1))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-          }
+          .padding(.horizontal, 12)
+          .padding(.vertical, 8)
+          .background(Color.orange.opacity(0.1))
+          .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .padding(12)
-        .background(Color.orange.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
       }
 
       // Reminders list
@@ -864,6 +1177,31 @@ struct HabitDetailView: View {
   }
 
   // MARK: - Helper Functions
+  
+  private func extractUnitFromGoal(_ goalString: String) -> String {
+    // Extract unit from goal strings like "5 times on everyday", "20 pages on daily", etc.
+    let lowerGoal = goalString.lowercased()
+    
+    // Try to extract unit by splitting on " on " or " per "
+    var unitPart = ""
+    if let onRange = lowerGoal.range(of: " on ") {
+      unitPart = String(lowerGoal[..<onRange.lowerBound])
+    } else if let perRange = lowerGoal.range(of: " per ") {
+      unitPart = String(lowerGoal[..<perRange.lowerBound])
+    } else {
+      unitPart = lowerGoal
+    }
+    
+    // Extract the unit word (everything after the number)
+    let components = unitPart.components(separatedBy: " ")
+    if components.count >= 2 {
+      // Join all words except the first (the number)
+      let unit = components.dropFirst().joined(separator: " ")
+      return unit
+    }
+    
+    return "times" // Default fallback
+  }
 
   private func extractGoalNumber(from goalString: String) -> Int {
     // Extract the number from goal strings like "5 times on 1 times a week", "20 pages on
