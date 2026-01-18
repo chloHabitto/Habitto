@@ -51,7 +51,7 @@ struct WhiteSheetContainer<Content: View>: View {
       if scrollResponsive {
         headerSection
           .background(headerBackground)
-          .frame(height: max(0, 90 - scrollOffset))
+          .frame(height: max(0, 91 - scrollOffset))  // 90pt content + 1pt stroke
           .clipped()
           // NO animation - instant snap looks cleaner than animated gap
       } else {

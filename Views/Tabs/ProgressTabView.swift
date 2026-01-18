@@ -137,7 +137,7 @@ private struct ScrollOffsetTracker: View {
         let newOffset = max(0, (initialScrollOffset ?? minY) - minY)
         scrollOffset = newOffset
         
-        // Calculate how much header should be hidden (0 = fully visible, 90 = fully hidden)
+        // Calculate how much header should be hidden (0 = fully visible, fullHeaderHeight = fully hidden)
         let headerHideAmount = min(newOffset, fullHeaderHeight)
         
         // Snap: if more than halfway hidden, fully hide; otherwise fully show
@@ -208,10 +208,10 @@ struct ProgressTabView: View {
   
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
-  @State private var displayHeaderHeight: CGFloat = 90  // What we actually show (snapped)
+  @State private var displayHeaderHeight: CGFloat = 91  // What we actually show (snapped) - includes 1pt stroke
   @State private var initialScrollOffset: CGFloat? = nil
   
-  private let fullHeaderHeight: CGFloat = 90
+  private let fullHeaderHeight: CGFloat = 91  // 90pt content + 1pt stroke
   
   // MARK: - Cached Encouraging Messages
   @State private var cachedWeeklyMessage: String? = nil
@@ -273,7 +273,7 @@ struct ProgressTabView: View {
         impactFeedback.selectionChanged()
       }
       .padding(.top, 16)
-      .padding(.bottom, -1)  // Pull stroke up by 1pt to avoid clipping
+      .padding(.bottom, 0)
       
       // Full-width underline stroke at the bottom
       Rectangle()
