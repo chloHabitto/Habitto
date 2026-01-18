@@ -16,6 +16,7 @@ struct WhiteSheetContainer<Content: View>: View {
     scrollResponsive: Bool = false,
     headerCollapseThreshold: CGFloat = 50,
     scrollOffset: CGFloat = 0,
+    headerVisible: Bool = true,
     @ViewBuilder content: () -> Content)
   {
     self.title = title
@@ -28,6 +29,7 @@ struct WhiteSheetContainer<Content: View>: View {
     self.scrollResponsive = scrollResponsive
     self.headerCollapseThreshold = headerCollapseThreshold
     self.scrollOffset = scrollOffset
+    self.headerVisible = headerVisible
     self.content = content()
   }
 
@@ -43,6 +45,7 @@ struct WhiteSheetContainer<Content: View>: View {
   let scrollResponsive: Bool
   let headerCollapseThreshold: CGFloat
   let scrollOffset: CGFloat
+  let headerVisible: Bool
   let content: Content
 
   var body: some View {
@@ -52,7 +55,7 @@ struct WhiteSheetContainer<Content: View>: View {
         .background(headerBackground)
         .frame(height: scrollResponsive ? calculateHeaderHeight() : nil)  // Dynamic height
         .clipped()  // Hide overflow when collapsed
-        .animation(.easeOut(duration: 0.2), value: scrollOffset)
+        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: headerVisible)
 
       // Content area - naturally expands as header collapses
       content
@@ -117,17 +120,11 @@ struct WhiteSheetContainer<Content: View>: View {
   
   // MARK: - Scroll-Responsive Calculations
   
-  /// Calculate header height based on scroll offset
-  /// Returns full height when not scrolled, 
-  /// shrinks to 0 as user scrolls down
+  /// Calculate header height based on header visibility
+  /// Returns full height (90pt) when visible, 0pt when hidden
   private func calculateHeaderHeight() -> CGFloat {
     let fullHeaderHeight: CGFloat = 90  // Approximate header height
-    
-    // Map scrollOffset to header height
-    // At 0 scroll → full height (90pt)
-    // At 90+ scroll → 0 height
-    let collapsedAmount = min(scrollOffset, fullHeaderHeight)
-    return max(0, fullHeaderHeight - collapsedAmount)
+    return headerVisible ? fullHeaderHeight : 0
   }
 }
 
