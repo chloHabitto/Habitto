@@ -28,9 +28,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     super.init()
     guard !Self.hasLoggedInit else { return }
     Self.hasLoggedInit = true
-    // Use both print and NSLog to ensure visibility
     debugLog("🚀 AppDelegate: INIT CALLED")
-    NSLog("🚀 AppDelegate: INIT CALLED (NSLog)")
   }
   
   func application(
@@ -46,10 +44,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.didFinishLaunching")
     
-    // Use both print and NSLog to ensure visibility - SYNCHRONOUSLY at the very start
+    // Force flush to ensure log appears immediately
     debugLog("🚀 AppDelegate: didFinishLaunchingWithOptions called")
-    NSLog("🚀 AppDelegate: didFinishLaunchingWithOptions called (NSLog)")
-    fflush(stdout) // Force flush to ensure log appears immediately
+    fflush(stdout)
     
     FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.didFinishLaunching")
     debugLog("✅ AppDelegate: Firebase configured (or already configured)")
@@ -70,13 +67,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     // Configure other Firebase services asynchronously
     debugLog("🚀 AppDelegate: Creating Task.detached for SyncEngine initialization...")
-    NSLog("🚀 AppDelegate: Creating Task.detached for SyncEngine initialization...")
     fflush(stdout) // Force flush before async task
     
     // Use Task instead of Task.detached to ensure it runs on MainActor immediately
     Task { @MainActor in
       debugLog("🚀 AppDelegate: Task block started executing...")
-      NSLog("🚀 AppDelegate: Task block started executing...")
       fflush(stdout)
       
       // ✅ CRITICAL: Ensure user is authenticated (anonymous if not signed in)
@@ -86,7 +81,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         debugLog("🔐 AppDelegate: Ensuring user authentication...")
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
         debugLog("✅ AppDelegate: User authenticated - uid: \(uid)")
-        NSLog("✅ AppDelegate: User authenticated - uid: %@", uid)
         
         // ✅ CRITICAL: Check if this is a scenario that needs user choice
         // If user has BOTH guest data AND cloud data, don't auto-migrate - let UI show choice
@@ -98,7 +92,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         if hasGuestData && hasCloudData {
           // BOTH exist - don't auto-migrate, let UI show choice
           debugLog("🔄 AppDelegate: Guest and cloud data both exist - skipping auto-migration, UI will show choice")
-          NSLog("🔄 AppDelegate: Guest and cloud data both exist - skipping auto-migration")
         } else if hasGuestData && !hasCloudData {
           // Only guest data exists - safe to auto-migrate to new account
           debugLog("🔄 AppDelegate: Only guest data exists - auto-migrating to new account...")
@@ -112,10 +105,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // ✅ CRITICAL: Start periodic sync for anonymous users
         // This ensures data syncs to Firestore automatically in the background
         debugLog("🔄 AppDelegate: Starting periodic sync for user: \(uid)")
-        NSLog("🔄 AppDelegate: Starting periodic sync for user: %@", uid)
         await SyncEngine.shared.startPeriodicSync(userId: uid)
         debugLog("✅ AppDelegate: Periodic sync started")
-        NSLog("✅ AppDelegate: Periodic sync started")
         
         // ✅ Register/update device on every app launch (non-guest users only)
         if !CurrentUser.isGuestId(uid) {
@@ -126,7 +117,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         
       } catch {
         debugLog("❌ AppDelegate: Failed to authenticate user: \(error.localizedDescription)")
-        NSLog("❌ AppDelegate: Failed to authenticate user: %@", error.localizedDescription)
         // Continue app launch even if authentication fails
         // User can still use the app in guest mode
       }
@@ -266,10 +256,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     // Register event compaction background task
     debugLog("📅 EventCompactor: Registering background task handler...")
-    NSLog("📅 EventCompactor: Registering background task handler...")
     EventCompactor.registerBackgroundTaskHandler()
     debugLog("✅ EventCompactor: Background task handler registered")
-    NSLog("✅ EventCompactor: Background task handler registered")
 
     return true
   }

@@ -333,12 +333,6 @@ class StreakDataCalculator {
       ? 0.0
       : totalCompletion / Double(scheduledHabits.count)
 
-    // Debug: Print total heatmap data
-    let dateKey = DateUtils.dateKey(for: targetDate)
-    let weekday = calendar.component(.weekday, from: targetDate)
-    print(
-      "🔍 TOTAL HEATMAP DEBUG - Date: \(dateKey) | DayIndex: \(dayIndex) | Weekday: \(weekday) | Scheduled Habits: \(scheduledHabits.count) | Average Completion: \(averageCompletion)%")
-
     // Map completion percentage to intensity for backward compatibility
     let intensity = if averageCompletion == 0 {
       0

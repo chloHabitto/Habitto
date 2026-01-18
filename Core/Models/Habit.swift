@@ -901,13 +901,6 @@ struct Habit: Identifiable, Codable, Equatable {
         let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
         let isComplete = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
         
-        print("📊 COMPLETE_HISTORICAL: isCompleted(\(dateKey)) from CompletionRecord")
-        print("  - Source: SwiftData CompletionRecord")
-        print("  - progress: \(progress)")
-        print("  - historicalGoal: '\(historicalGoal)'")
-        print("  - goalAmount: \(goalAmount)")
-        print("  - isCompleted: \(isComplete)")
-        
         return isComplete
       } else {
         // No CompletionRecord found - check dictionary as fallback
@@ -915,13 +908,6 @@ struct Habit: Identifiable, Codable, Equatable {
         let historicalGoal = goalString(for: date)
         let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
         let calculatedCompleted = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
-        
-        print("📊 COMPLETE_HISTORICAL: isCompleted(\(dateKey)) from dictionary (no CompletionRecord found)")
-        print("  - Source: in-memory dictionary (fallback)")
-        print("  - progress: \(progress)")
-        print("  - historicalGoal: '\(historicalGoal)'")
-        print("  - goalAmount: \(goalAmount)")
-        print("  - isCompleted: \(calculatedCompleted)")
         
         return calculatedCompleted
       }
@@ -932,13 +918,6 @@ struct Habit: Identifiable, Codable, Equatable {
     let historicalGoal = goalString(for: date)
     let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
     let storedStatus = completionStatus[dateKey]
-
-    print("📊 COMPLETE_TODAY: isCompleted(\(dateKey))")
-    print("  - Source: in-memory dictionary")
-    print("  - progress: \(progress)")
-    print("  - historicalGoal: '\(historicalGoal)'")
-    print("  - goalAmount: \(goalAmount)")
-    print("  - completionStatus[\(dateKey)]: \(storedStatus.map { String($0) } ?? "nil")")
 
     // Derive completion from underlying data (progress vs historical goal).
     let calculatedCompleted = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
