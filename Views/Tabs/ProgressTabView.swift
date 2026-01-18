@@ -116,6 +116,19 @@ enum HabitFilterStatus: String {
   case inactive = "Inactive"
 }
 
+// MARK: - ScrollDebugView
+
+private struct ScrollDebugView: View {
+  let minY: CGFloat
+  
+  var body: some View {
+    // This prints every time the view body is evaluated
+    let _ = print("📏 GeometryReader minY: \(minY)")
+    return Color.clear
+      .preference(key: ScrollOffsetPreferenceKey.self, value: minY)
+  }
+}
+
 // MARK: - ProgressTabView
 
 struct ProgressTabView: View {
@@ -708,15 +721,12 @@ struct ProgressTabView: View {
               .padding(.bottom, 20)
               .background(
                 GeometryReader { geometry in
-                  Color.clear
-                    .preference(
-                      key: ScrollOffsetPreferenceKey.self,
-                      value: geometry.frame(in: .global).minY
-                    )
+                  ScrollDebugView(minY: geometry.frame(in: .global).minY)
                 }
               )
           }
           .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
+            print("📜 onPreferenceChange received: \(offset)")
             if initialScrollOffset == nil {
               initialScrollOffset = offset
               print("📜 Initial scroll offset: \(offset)")
