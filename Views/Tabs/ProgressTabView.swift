@@ -2131,7 +2131,7 @@ struct ProgressTabView: View {
           // Right side: Progress ring (vertically centered)
           AnimatedCircularProgressRing(
             progress: getCompletionPercentage(),
-            size: 52)
+            size: 56)
         }
         .padding(.horizontal, 0)
         .padding(.vertical, 12)
@@ -2175,7 +2175,7 @@ struct ProgressTabView: View {
         // Right side: Progress ring (vertically centered)
         AnimatedCircularProgressRing(
           progress: getWeeklyProgressPercentage(),
-          size: 52)
+          size: 56)
       }
       .padding(.horizontal, 0)
       .padding(.vertical, 12)
@@ -3827,7 +3827,7 @@ struct ProgressTabView: View {
         // Right side: Progress ring (vertically centered)
         AnimatedCircularProgressRing(
           progress: getMonthlyProgressPercentage(),
-          size: 52)
+          size: 56)
       }
       .padding(.horizontal, 0)
       .padding(.vertical, 12)
