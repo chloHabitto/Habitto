@@ -20,7 +20,8 @@ struct HomeTabView: View {
     onSetProgress: ((Habit, Date, Int) -> Void)?,
     onDeleteHabit: ((Habit) -> Void)?,
     onCompletionDismiss: (() -> Void)?,
-    onStreakRecalculationNeeded: ((Bool) -> Void)? = nil)
+    onStreakRecalculationNeeded: ((Bool) -> Void)? = nil,
+    onWaitForPersistence: (() async -> Void)? = nil)
   {
     self._selectedDate = selectedDate
     self._selectedStatsTab = selectedStatsTab
@@ -32,6 +33,7 @@ struct HomeTabView: View {
     self.onDeleteHabit = onDeleteHabit
     self.onCompletionDismiss = onCompletionDismiss
     self.onStreakRecalculationNeeded = onStreakRecalculationNeeded
+    self.onWaitForPersistence = onWaitForPersistence
     
     // Initialize DailyAwardService
     // Use new Firebase-based DailyAwardService (no ModelContext needed)
@@ -57,6 +59,7 @@ struct HomeTabView: View {
   let onDeleteHabit: ((Habit) -> Void)?
   let onCompletionDismiss: (() -> Void)?
   let onStreakRecalculationNeeded: ((Bool) -> Void)?
+  let onWaitForPersistence: (() async -> Void)?
 
   var body: some View {
     return mainContent
@@ -212,6 +215,9 @@ struct HomeTabView: View {
 
   /// ✅ PHASE 5: Prefetch completion status to prevent N+1 queries
   @State private var completionStatusMap: [UUID: Bool] = [:]
+  
+  /// ✅ DIAGNOSTIC: Track notification count for debugging
+  @State private var notificationCount = 0
   
   /// ✅ FIX: Track processed dates to prevent duplicate XP awards in same session
   @State private var processedDates = Set<String>()
@@ -728,6 +734,23 @@ struct HomeTabView: View {
     
     let isUserInitiated = userInfo["isUserInitiated"] as? Bool ?? false
     
+    // ✅ DIAGNOSTIC: Increment and log notification count
+    notificationCount += 1
+    let timestamp = Date()
+    
+    debugLog("")
+    debugLog(String(repeating: "🔔", count: 40))
+    debugLog("🔔 NOTIFICATION_RECEIVED #\(notificationCount) at \(DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .medium))")
+    debugLog("   newStreak: \(newStreak)")
+    debugLog("   isUserInitiated: \(isUserInitiated)")
+    debugLog("   BEFORE - milestoneStreakCount: \(milestoneStreakCount)")
+    debugLog("   BEFORE - showStreakMilestone: \(showStreakMilestone)")
+    debugLog("   BEFORE - pendingMilestone: \(pendingMilestone?.description ?? "nil")")
+    debugLog("   BEFORE - showCelebration: \(showCelebration)")
+    debugLog("   BEFORE - lastShownMilestoneStreak: \(lastShownMilestoneStreak)")
+    debugLog(String(repeating: "🔔", count: 40))
+    debugLog("")
+    
     debugLog("🔍 MILESTONE_DEBUG: START - newStreak=\(newStreak), isUserInitiated=\(isUserInitiated)")
     debugLog("🔍 MILESTONE_DEBUG: Current state - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone), lastShownMilestoneStreak=\(lastShownMilestoneStreak), pendingMilestone=\(pendingMilestone?.description ?? "nil")")
     
@@ -802,6 +825,7 @@ struct HomeTabView: View {
       
       milestoneStreakCount = newStreak
       debugLog("🔍 MILESTONE_DEBUG: Set milestoneStreakCount=\(milestoneStreakCount)")
+      debugLog("✅ AFTER - milestoneStreakCount: \(milestoneStreakCount)")
       
       // For streak 1, show milestone sheet INSTEAD of regular celebration
       if newStreak == 1 {
@@ -1547,7 +1571,14 @@ struct HomeTabView: View {
         // DO NOT call publishXP() here - it overwrites the database value with calculated value
         debugLog("✅ DERIVED_XP: Skipping XP recalculation - XP will update via DailyAwardService when award is granted")
 
-        // ✅ BUG 2 FIX: Call streak recalculation FIRST
+        // ✅ RACE CONDITION FIX: Wait for ALL persistence operations to complete
+        // This ensures the SwiftData save from setHabitProgress() has finished
+        // before we trigger streak recalculation (which fetches fresh data from SwiftData)
+        debugLog("⏳ COMPLETION_FLOW: Waiting for persistence to complete before streak calculation...")
+        await onWaitForPersistence?()
+        debugLog("✅ COMPLETION_FLOW: Persistence complete! Now safe to calculate streak from fresh SwiftData.")
+
+        // ✅ BUG 2 FIX: Call streak recalculation AFTER persistence completes
         debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
           debugLog("🔍 BEFORE_CALLBACK: About to call onStreakRecalculationNeeded?(true)")

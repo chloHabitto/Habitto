@@ -765,7 +765,10 @@ struct HabitDetailView: View {
     VStack(spacing: 0) {
       QuickStatsRow(
         currentStreak: habit.computedStreak(),
-        schedule: habit.schedule
+        isScheduledToday: StreakDataCalculator.shouldShowHabitOnDate(habit, date: Date()),
+        isCompletedToday: habit.getProgress(for: Date()) >= extractGoalNumber(from: habit.goal),
+        nextScheduledDate: calculateNextScheduledDate(for: habit),
+        habitColor: habit.color.color
       )
     }
     .padding(.horizontal, 16)
@@ -1177,6 +1180,21 @@ struct HabitDetailView: View {
   }
 
   // MARK: - Helper Functions
+  
+  private func calculateNextScheduledDate(for habit: Habit) -> Date? {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    
+    // Check next 30 days for next scheduled date
+    for dayOffset in 1...30 {
+      if let futureDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: futureDate) {
+          return futureDate
+        }
+      }
+    }
+    return nil
+  }
   
   private func extractUnitFromGoal(_ goalString: String) -> String {
     // Extract unit from goal strings like "5 times on everyday", "20 pages on daily", etc.

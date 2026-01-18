@@ -122,6 +122,8 @@ class HomeViewState: ObservableObject {
   private var activePersistenceOperations = 0
   // ✅ STEP 1: Add flag to track if current recalculation is user-initiated
   private var isUserInitiatedRecalculation = false
+  // ✅ RACE CONDITION FIX: Track continuations waiting for persistence to complete
+  private var pendingPersistenceContinuations: [CheckedContinuation<Void, Never>] = []
   
   /// Calculate and update streak (call this when habits change)
   func updateStreak() {
@@ -509,7 +511,37 @@ class HomeViewState: ObservableObject {
     activePersistenceOperations = max(0, activePersistenceOperations - 1)
     debugLog(
       "⏳ STREAK_QUEUE: Persistence op finished (\(context)) → remaining=\(activePersistenceOperations)")
+    
+    // ✅ RACE CONDITION FIX: Signal any waiting continuations when all operations complete
+    if activePersistenceOperations == 0 {
+      let continuations = pendingPersistenceContinuations
+      pendingPersistenceContinuations.removeAll()
+      debugLog("⏳ STREAK_QUEUE: Resuming \(continuations.count) waiting continuation(s)")
+      for continuation in continuations {
+        continuation.resume()
+      }
+    }
+    
     processStreakRecalculationQueue()
+  }
+  
+  /// ✅ RACE CONDITION FIX: Wait for all pending persistence operations to complete
+  /// This ensures streak calculation doesn't start until data is fully saved to SwiftData
+  func waitForPersistenceCompletion() async {
+    // If no operations in progress, return immediately
+    guard activePersistenceOperations > 0 else {
+      debugLog("⏳ WAIT_PERSISTENCE: No operations in progress, returning immediately")
+      return
+    }
+    
+    debugLog("⏳ WAIT_PERSISTENCE: Waiting for \(activePersistenceOperations) operation(s) to complete...")
+    
+    // Otherwise, wait for signal from endPersistenceOperation
+    await withCheckedContinuation { continuation in
+      pendingPersistenceContinuations.append(continuation)
+    }
+    
+    debugLog("✅ WAIT_PERSISTENCE: All persistence operations completed!")
   }
 
   @MainActor
@@ -1044,6 +1076,11 @@ struct HomeView: View {
           debugLog("🔄 HomeView: Streak recalculation requested from HomeTabView, isUserInitiated: \(isUserInitiated)")
           state.requestStreakRecalculation(reason: "HomeTabView callback", isUserInitiated: isUserInitiated)
           debugLog("✅ HomeView: Streak recalculation enqueued with isUserInitiated=\(isUserInitiated)")
+        },
+        onWaitForPersistence: {
+          // ✅ RACE CONDITION FIX: Allow HomeTabView to wait for persistence to complete
+          // This ensures streak calculation doesn't start until data is fully saved
+          await state.waitForPersistenceCompletion()
         })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
