@@ -1,3 +1,4 @@
+import AVKit
 import MijickPopups
 import SwiftUI
 
@@ -3276,40 +3277,11 @@ struct ProgressTabView: View {
 
             // Image, title and other texts in separate VStack
             VStack(spacing: 16) {
-              // Character image (centered below arc)
-              Group {
-                switch difficultyData.level {
-                case .veryEasy:
-                  Image("Difficulty-VeryEasy@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 100)
-
-                case .easy:
-                  Image("Difficulty-Easy@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 100)
-
-                case .medium:
-                  Image("Difficulty-Medium@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 100)
-
-                case .hard:
-                  Image("Difficulty-Hard@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 100)
-
-                case .veryHard:
-                  Image("Difficulty-VeryHard@4x")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 100)
-                }
-              }
+              // Character animation (centered below arc)
+              DifficultyAnimationView(difficulty: difficultyData.level)
+                .frame(width: 100, height: 100)
+                .frame(maxWidth: .infinity)
+                .clipped()
 
               // Difficulty level text (centered)
               Text(difficultyData.level.displayName)
@@ -3349,7 +3321,7 @@ struct ProgressTabView: View {
     }
     .background(
       RoundedRectangle(cornerRadius: 24)
-        .fill(.appSurface01)
+        .fill(.appSurface01Variant)
         .overlay(
           LinearGradient(
             stops: [
@@ -5760,6 +5732,121 @@ struct WeeklySummaryStatsView: View {
     .padding(.vertical, 16)
     .background(Color("appSecondaryContainer03"))
     .cornerRadius(16)
+  }
+}
+
+// MARK: - DifficultyAnimationView
+
+struct DifficultyAnimationView: View {
+  let difficulty: HabitDifficulty
+  @Environment(\.colorScheme) var colorScheme
+  @State private var player: AVPlayer?
+  
+  var body: some View {
+    Group {
+      if let videoURL = getVideoURL() {
+        LoopingVideoPlayer(videoURL: videoURL)
+      } else {
+        // Fallback to static image if video not found
+        Image(getFallbackImageName())
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+      }
+    }
+    .onChange(of: colorScheme) { _ in
+      // Reload video when color scheme changes
+      player?.pause()
+      player = nil
+    }
+  }
+  
+  private func getVideoURL() -> URL? {
+    let videoName = getVideoFileName()
+    // Try to find the video in the bundle
+    if let url = Bundle.main.url(forResource: videoName, withExtension: "mp4") {
+      return url
+    }
+    // Try with subdirectory path
+    if let url = Bundle.main.url(forResource: "Assets/Animations/\(videoName)", withExtension: "mp4") {
+      return url
+    }
+    return nil
+  }
+  
+  private func getVideoFileName() -> String {
+    let theme = colorScheme == .dark ? "Dark" : "Light"
+    switch difficulty {
+    case .veryEasy:
+      return "01VeryEasy_\(theme)"
+    case .easy:
+      return "02Easy_\(theme)"
+    case .medium:
+      return "03Normal_\(theme)"
+    case .hard:
+      return "04Hard_\(theme)"
+    case .veryHard:
+      return "05VeryHard_\(theme)"
+    }
+  }
+  
+  private func getFallbackImageName() -> String {
+    switch difficulty {
+    case .veryEasy:
+      return "Difficulty-VeryEasy@4x"
+    case .easy:
+      return "Difficulty-Easy@4x"
+    case .medium:
+      return "Difficulty-Medium@4x"
+    case .hard:
+      return "Difficulty-Hard@4x"
+    case .veryHard:
+      return "Difficulty-VeryHard@4x"
+    }
+  }
+}
+
+// MARK: - LoopingVideoPlayer
+
+struct LoopingVideoPlayer: View {
+  let videoURL: URL
+  @State private var player: AVPlayer?
+  
+  var body: some View {
+    ZStack {
+      if let player = player {
+        VideoPlayer(player: player)
+          .aspectRatio(contentMode: .fit)
+          .disabled(true)
+      } else {
+        Color.clear
+      }
+    }
+    .onAppear {
+      setupPlayer()
+    }
+    .onDisappear {
+      player?.pause()
+      NotificationCenter.default.removeObserver(self)
+    }
+  }
+  
+  private func setupPlayer() {
+    let playerItem = AVPlayerItem(url: videoURL)
+    let newPlayer = AVPlayer(playerItem: playerItem)
+    newPlayer.isMuted = true
+    
+    // Loop the video
+    NotificationCenter.default.addObserver(
+      forName: .AVPlayerItemDidPlayToEndTime,
+      object: playerItem,
+      queue: .main
+    ) { _ in
+      newPlayer.seek(to: .zero)
+      newPlayer.play()
+    }
+    
+    self.player = newPlayer
+    newPlayer.play()
   }
 }
 
