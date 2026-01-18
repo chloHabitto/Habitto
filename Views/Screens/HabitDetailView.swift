@@ -16,21 +16,8 @@ struct HabitDetailView: View {
       ScrollViewReader { _ in
         ScrollView {
           contentView
-            .background(
-              GeometryReader { contentGeometry in
-                Color.clear
-                  .preference(
-                    key: ScrollOffsetPreferenceKey.self,
-                    value: contentGeometry.frame(in: .global).minY)
-              })
         }
         .background(.appSurface01Variant02)
-        .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
-          let newOffset = -value
-          if abs(newOffset - scrollOffset) > 1 {
-            scrollOffset = newOffset
-          }
-        }
       }
       .onAppear {
         // ✅ FIX: Reload habit from repository to ensure we have the latest version
@@ -83,13 +70,9 @@ struct HabitDetailView: View {
         }
         
         ToolbarItem(placement: .principal) {
-          if scrollOffset > 50 {
-            Text("Habit details")
-              .font(.appHeadlineSmallEmphasised)
-              .foregroundColor(.text01)
-          } else {
-            EmptyView()
-          }
+          Text("Habit Detail")
+            .font(.appHeadlineSmallEmphasised)
+            .foregroundColor(.text01)
         }
         
         ToolbarItem(placement: .navigationBarTrailing) {
@@ -265,7 +248,6 @@ struct HabitDetailView: View {
   @State private var selectedReminder: ReminderItem?
   @State private var showingReminderDeleteConfirmation = false
   @State private var reminderToDelete: ReminderItem?
-  @State private var scrollOffset: CGFloat = 0
   @State private var isActive = true
   @State private var showingInactiveConfirmation = false
   @State private var isProcessingToggle = false
@@ -289,16 +271,9 @@ struct HabitDetailView: View {
 
   private var contentView: some View {
     VStack(spacing: 0) {
-      // Full header (fades out when scrolled)
-      fullHeader
-        .opacity(scrollOffset > 50 ? 0 : 1)
-        .animation(.easeInOut(duration: 0.2), value: scrollOffset > 50)
-        .padding(.top, 8)
-        .padding(.bottom, 24)
-        .id("header")
-
       // Main content card
       mainContentCard
+        .padding(.top, 16)
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
 
@@ -307,29 +282,6 @@ struct HabitDetailView: View {
         .padding(.horizontal, 16)
         .padding(.bottom, 32)
     }
-  }
-
-  // MARK: - Full Header (shown when at top)
-
-  private var fullHeader: some View {
-    VStack(spacing: 0) {
-      // Title section - left aligned
-      VStack(alignment: .leading, spacing: 8) {
-        Text("Habit details")
-          .font(.appHeadlineSmallEmphasised)
-          .foregroundColor(.text01)
-          .accessibilityAddTraits(.isHeader)
-
-        Text("View and edit your habit details.")
-          .font(.appTitleSmall)
-          .foregroundColor(.text05)
-          .fixedSize(horizontal: false, vertical: true)
-      }
-      .frame(maxWidth: .infinity, alignment: .leading)
-      .padding(.horizontal, 20)
-      .padding(.top, 16)
-    }
-    .padding(.top, 0)
   }
 
   // MARK: - Main Content Card
