@@ -6,14 +6,20 @@ struct QuickStatsRow: View {
   // MARK: Internal
   
   let currentStreak: Int
-  let schedule: String
+  let isScheduledToday: Bool
+  let isCompletedToday: Bool
+  let nextScheduledDate: Date?
+  let habitColor: Color
   
   var body: some View {
     HStack(spacing: 16) {
       // Left: Streak
       HStack(spacing: 6) {
-        Text("🔥")
-          .font(.system(size: 16))
+        Image("Icon-Fire_Outlined")
+          .resizable()
+          .renderingMode(.template)
+          .frame(width: 16, height: 16)
+          .foregroundColor(.orange)
         
         Text("\(currentStreak) \(currentStreak == 1 ? "day" : "days")")
           .font(.appBodySmallEmphasised)
@@ -22,14 +28,23 @@ struct QuickStatsRow: View {
       
       Spacer()
       
-      // Right: Schedule
+      // Right: Next Due Status
       HStack(spacing: 6) {
-        Text("📅")
-          .font(.system(size: 16))
+        if isScheduledToday && isCompletedToday {
+          Image(systemName: "checkmark")
+            .font(.system(size: 14, weight: .semibold))
+            .foregroundColor(habitColor)
+        } else {
+          Image("Icon-CalendarMark_Outlined")
+            .resizable()
+            .renderingMode(.template)
+            .frame(width: 16, height: 16)
+            .foregroundColor(nextDueIconColor)
+        }
         
-        Text(formattedSchedule)
+        Text(nextDueText)
           .font(.appBodySmallEmphasised)
-          .foregroundColor(.text03)
+          .foregroundColor(nextDueColor)
       }
     }
     .frame(maxWidth: .infinity)
@@ -37,98 +52,101 @@ struct QuickStatsRow: View {
   
   // MARK: Private
   
-  private var formattedSchedule: String {
-    let lowerSchedule = schedule.lowercased()
-    
-    // Handle common schedule formats and shorten for display
-    if lowerSchedule.contains("everyday") || lowerSchedule == "daily" {
-      return "Daily"
+  private var nextDueText: String {
+    if isScheduledToday {
+      return isCompletedToday ? "Done today" : "Due today"
     }
     
-    if lowerSchedule.contains("once a week") {
-      return "Weekly"
+    guard let nextDate = nextScheduledDate else {
+      return "Not scheduled"
     }
     
-    if lowerSchedule.contains("twice a week") {
-      return "2x/week"
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let next = calendar.startOfDay(for: nextDate)
+    let daysDiff = calendar.dateComponents([.day], from: today, to: next).day ?? 0
+    
+    if daysDiff == 1 {
+      return "Next: Tomorrow"
+    } else if daysDiff <= 7 {
+      let formatter = DateFormatter()
+      formatter.dateFormat = "EEEE" // "Wednesday"
+      return "Next: \(formatter.string(from: nextDate))"
+    } else {
+      let formatter = DateFormatter()
+      formatter.dateFormat = "MMM d" // "Jan 25"
+      return "Next: \(formatter.string(from: nextDate))"
     }
-    
-    if lowerSchedule.contains("once a month") {
-      return "Monthly"
+  }
+  
+  private var nextDueIconColor: Color {
+    if !isScheduledToday && nextScheduledDate == nil {
+      return .text05
+    } else {
+      return .text03
     }
-    
-    // Extract day count patterns like "3 days a week" or "5 days a month"
-    if let regex = try? NSRegularExpression(pattern: #"(\d+)\s*days?\s*a\s*(week|month)"#, options: .caseInsensitive),
-       let match = regex.firstMatch(in: schedule, options: [], range: NSRange(location: 0, length: schedule.count)) {
-      let numberRange = match.range(at: 1)
-      let periodRange = match.range(at: 2)
-      
-      if let numRange = Range(numberRange, in: schedule),
-         let perRange = Range(periodRange, in: schedule) {
-        let number = String(schedule[numRange])
-        let period = String(schedule[perRange])
-        
-        if period.lowercased() == "week" {
-          return "\(number)x/week"
-        } else {
-          return "\(number)x/month"
-        }
-      }
+  }
+  
+  private var nextDueColor: Color {
+    if isScheduledToday && isCompletedToday {
+      return habitColor
+    } else if !isScheduledToday && nextScheduledDate == nil {
+      return .text05
+    } else {
+      return .text03
     }
-    
-    // Handle specific weekdays - show first day if multiple
-    let weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-    let dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    
-    for (index, weekday) in weekdays.enumerated() {
-      if lowerSchedule.contains(weekday) {
-        // Check if there are multiple days (contains comma)
-        if lowerSchedule.contains(",") {
-          // Count how many days
-          let dayCount = weekdays.filter { lowerSchedule.contains($0) }.count
-          if dayCount > 1 {
-            return "\(dayCount) days/week"
-          }
-        }
-        return dayNames[index]
-      }
-    }
-    
-    // Fallback: return truncated original schedule
-    if schedule.count > 20 {
-      return String(schedule.prefix(17)) + "..."
-    }
-    
-    return schedule
   }
 }
 
 // MARK: - Preview
 
 #Preview {
-  VStack(spacing: 24) {
+  VStack(spacing: 20) {
+    // Due today
     QuickStatsRow(
       currentStreak: 12,
-      schedule: "everyday"
+      isScheduledToday: true,
+      isCompletedToday: false,
+      nextScheduledDate: nil,
+      habitColor: .blue
     )
     
+    // Done today
+    QuickStatsRow(
+      currentStreak: 12,
+      isScheduledToday: true,
+      isCompletedToday: true,
+      nextScheduledDate: nil,
+      habitColor: .green
+    )
+    
+    // Next tomorrow
     QuickStatsRow(
       currentStreak: 5,
-      schedule: "3 days a week"
+      isScheduledToday: false,
+      isCompletedToday: false,
+      nextScheduledDate: Calendar.current.date(byAdding: .day, value: 1, to: Date()),
+      habitColor: .blue
     )
     
+    // Next Wednesday
     QuickStatsRow(
-      currentStreak: 1,
-      schedule: "every Monday, Wednesday & Friday"
+      currentStreak: 5,
+      isScheduledToday: false,
+      isCompletedToday: false,
+      nextScheduledDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()),
+      habitColor: .blue
     )
     
+    // Not scheduled
     QuickStatsRow(
       currentStreak: 0,
-      schedule: "once a month"
+      isScheduledToday: false,
+      isCompletedToday: false,
+      nextScheduledDate: nil,
+      habitColor: .gray
     )
   }
   .padding()
   .background(Color.appSurface01Variant)
-  .cornerRadius(16)
-  .padding()
 }
