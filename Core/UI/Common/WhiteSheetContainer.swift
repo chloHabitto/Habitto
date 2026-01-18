@@ -55,7 +55,7 @@ struct WhiteSheetContainer<Content: View>: View {
         .background(headerBackground)
         .frame(height: scrollResponsive ? calculateHeaderHeight() : nil)  // Dynamic height
         .clipped()  // Hide overflow when collapsed
-        .animation(.spring(response: 0.3, dampingFraction: 0.8), value: headerVisible)
+        .animation(.spring(response: 0.35, dampingFraction: 0.9), value: headerVisible)
 
       // Content area - naturally expands as header collapses
       content

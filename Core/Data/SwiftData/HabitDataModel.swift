@@ -79,6 +79,15 @@ final class HabitData {
   /// ✅ PERSISTENT: Only increases, never decreases, survives data loss
   /// Updated when current calculated streak exceeds it
   var bestStreakEver: Int = 0
+  
+  // MARK: - Soft Delete Fields
+  /// When the habit was soft-deleted (nil = active, Date = soft-deleted)
+  /// Soft-deleted habits are filtered from queries but retained for audit/recovery
+  var deletedAt: Date?
+  
+  /// Source of the deletion action for audit trail
+  /// Values: "user", "sync", "migration", "cleanup"
+  var deletionSource: String?
 
   // Relationships
   @Relationship(deleteRule: .cascade) var completionHistory: [CompletionRecord]
@@ -110,6 +119,59 @@ final class HabitData {
   /// Returns the persistent bestStreakEver value, which never decreases
   var bestStreak: Int {
     bestStreakEver
+  }
+  
+  // MARK: - Soft Delete Methods
+  
+  /// Soft delete this habit (marks as deleted without removing from database)
+  /// - Parameters:
+  ///   - source: The source of the deletion ("user", "sync", "migration", "cleanup")
+  ///   - context: ModelContext for creating the deletion log
+  func softDelete(source: String, context: ModelContext) {
+    // Mark as deleted
+    self.deletedAt = Date()
+    self.deletionSource = source
+    self.updatedAt = Date()
+    
+    // Create audit log entry
+    let log = HabitDeletionLog(
+      habitId: self.id,
+      habitName: self.name,
+      userId: self.userId,
+      source: source,
+      metadata: nil
+    )
+    context.insert(log)
+    
+    // Diagnostic logging
+    print("🗑️ [SOFT_DELETE] Habit soft-deleted:")
+    print("   ID: \(self.id.uuidString.prefix(8))...")
+    print("   Name: '\(self.name)'")
+    print("   UserId: '\(self.userId.isEmpty ? "EMPTY" : self.userId.prefix(8) + "...")'")
+    print("   Source: \(source)")
+    print("   DeletedAt: \(self.deletedAt?.description ?? "nil")")
+    
+    // Log stack trace for debugging
+    #if DEBUG
+    print("   Call stack:")
+    Thread.callStackSymbols.prefix(5).forEach { print("      \($0)") }
+    #endif
+  }
+  
+  /// Check if this habit is soft-deleted
+  var isSoftDeleted: Bool {
+    deletedAt != nil
+  }
+  
+  /// Restore a soft-deleted habit (undelete)
+  func restore() {
+    self.deletedAt = nil
+    self.deletionSource = nil
+    self.updatedAt = Date()
+    
+    print("♻️ [RESTORE] Habit restored:")
+    print("   ID: \(self.id.uuidString.prefix(8))...")
+    print("   Name: '\(self.name)'")
   }
 
   static func decodeColor(_ data: Data) -> Color {
@@ -743,6 +805,58 @@ final class HabitData {
     let components: [CGFloat] = [red, green, blue, alpha]
     return (try? NSKeyedArchiver.archivedData(withRootObject: components, requiringSecureCoding: true)) ?? Data()
   }
+}
+
+// MARK: - HabitDeletionLog
+
+/// Audit log for all habit deletion events
+/// This model provides a complete audit trail to investigate data loss
+@Model
+final class HabitDeletionLog {
+  // MARK: Lifecycle
+  
+  init(
+    habitId: UUID,
+    habitName: String,
+    userId: String,
+    source: String,
+    metadata: String? = nil
+  ) {
+    self.id = UUID()
+    self.habitId = habitId
+    self.habitName = habitName
+    self.userId = userId
+    self.deletedAt = Date()
+    self.source = source
+    self.metadata = metadata
+  }
+  
+  // MARK: Internal
+  
+  /// Unique identifier for this deletion log entry
+  @Attribute(.unique) var id: UUID
+  
+  /// ID of the habit that was deleted
+  var habitId: UUID
+  
+  /// Name of the habit (preserved for debugging)
+  var habitName: String
+  
+  /// User who owned the habit
+  var userId: String
+  
+  /// When the deletion occurred
+  var deletedAt: Date
+  
+  /// Source of deletion: "user", "sync", "migration", "cleanup"
+  var source: String
+  
+  /// Optional JSON metadata for additional context
+  /// Examples:
+  /// - {"screen": "HabitsTabView", "method": "swipeToDelete"}
+  /// - {"syncConflict": "remoteDeleted", "hasLocalRecords": true}
+  /// - {"migration": "v1_to_v2", "reason": "invalidData"}
+  var metadata: String?
 }
 
 // MARK: - CompletionRecord

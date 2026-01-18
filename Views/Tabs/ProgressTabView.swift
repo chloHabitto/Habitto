@@ -121,45 +121,60 @@ enum HabitFilterStatus: String {
 private struct ScrollOffsetTracker: View {
   let minY: CGFloat
   @Binding var scrollOffset: CGFloat
+  @Binding var lastScrollOffset: CGFloat
+  @Binding var accumulatedScrollDelta: CGFloat
   @Binding var headerVisible: Bool
   @Binding var initialScrollOffset: CGFloat?
+  
+  let hideThreshold: CGFloat
+  let showThreshold: CGFloat
+  let minimumMovement: CGFloat
   
   var body: some View {
     Color.clear
       .task(id: minY) {
+        guard !Task.isCancelled else { return }
+        
         // Capture initial position on first appearance
         if initialScrollOffset == nil {
           initialScrollOffset = minY
+          lastScrollOffset = 0
           print("📜 Initial scroll offset captured: \(minY)")
           return
         }
         
         // Calculate current scroll offset
-        let delta = (initialScrollOffset ?? minY) - minY
-        let newOffset = max(0, delta)
+        let newOffset = max(0, (initialScrollOffset ?? minY) - minY)
+        let delta = newOffset - lastScrollOffset
         
-        // Detect scroll direction by comparing with previous offset
-        let scrollingDown = newOffset > scrollOffset
-        let scrollingUp = newOffset < scrollOffset
+        // Ignore tiny movements (noise filtering)
+        guard abs(delta) >= minimumMovement else { return }
         
-        // Update header visibility based on direction
-        // Hide when scrolling down past threshold, show immediately on scroll up
-        if scrollingDown && newOffset > 20 {  // Threshold before hiding
-          if headerVisible {
-            headerVisible = false
-            print("📜 Header hiding (scrolling down, offset: \(newOffset))")
-          }
-        } else if scrollingUp {
-          if !headerVisible {
-            headerVisible = true
-            print("📜 Header showing (scrolling up, offset: \(newOffset))")
-          }
+        // Track direction change - reset accumulator when direction changes
+        if (delta > 0 && accumulatedScrollDelta < 0) || (delta < 0 && accumulatedScrollDelta > 0) {
+          accumulatedScrollDelta = 0
+          print("📜 Direction changed, reset accumulator")
         }
         
-        // Update scroll offset if changed significantly
-        if abs(newOffset - scrollOffset) > 0.5 {
-          scrollOffset = newOffset
+        // Accumulate scroll in current direction
+        accumulatedScrollDelta += delta
+        
+        // Apply hysteresis: different thresholds for hide vs show
+        if accumulatedScrollDelta > hideThreshold && headerVisible {
+          // Scrolled down enough - hide header
+          headerVisible = false
+          accumulatedScrollDelta = 0
+          print("📜 Header hiding (accumulated: \(accumulatedScrollDelta), threshold: \(hideThreshold))")
+        } else if accumulatedScrollDelta < -showThreshold && !headerVisible {
+          // Scrolled up enough - show header
+          headerVisible = true
+          accumulatedScrollDelta = 0
+          print("📜 Header showing (accumulated: \(accumulatedScrollDelta), threshold: -\(showThreshold))")
         }
+        
+        // Update tracking variables
+        lastScrollOffset = newOffset
+        scrollOffset = newOffset
       }
   }
 }
@@ -221,8 +236,15 @@ struct ProgressTabView: View {
   
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
+  @State private var lastScrollOffset: CGFloat = 0
+  @State private var accumulatedScrollDelta: CGFloat = 0
   @State private var headerVisible: Bool = true
   @State private var initialScrollOffset: CGFloat? = nil
+  
+  // Constants for scroll behavior
+  private let hideThreshold: CGFloat = 50    // Must scroll down 50pt to hide
+  private let showThreshold: CGFloat = 20    // Must scroll up 20pt to show
+  private let minimumMovement: CGFloat = 3   // Ignore movements smaller than this
 
   // MARK: - Environment
 
@@ -759,11 +781,16 @@ struct ProgressTabView: View {
                   ScrollOffsetTracker(
                     minY: geometry.frame(in: .global).minY,
                     scrollOffset: $scrollOffset,
+                    lastScrollOffset: $lastScrollOffset,
+                    accumulatedScrollDelta: $accumulatedScrollDelta,
                     headerVisible: $headerVisible,
                     initialScrollOffset: Binding(
                       get: { initialScrollOffset },
                       set: { initialScrollOffset = $0 }
-                    )
+                    ),
+                    hideThreshold: hideThreshold,
+                    showThreshold: showThreshold,
+                    minimumMovement: minimumMovement
                   )
                 }
               )

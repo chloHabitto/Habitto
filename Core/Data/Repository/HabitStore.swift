@@ -429,16 +429,16 @@ final actor HabitStore {
   // MARK: - Delete Habit
 
   func deleteHabit(_ habit: Habit) async throws {
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
-    logger.info("Deleting habit: \(habit.name)")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
+    logger.info("Soft-deleting habit: \(habit.name)")
 
     // ✅ CRITICAL FIX: Mark habit as deleted FIRST (before any deletion operations)
-    // This ensures we can filter it out even if deletion fails
-    markHabitAsDeleted(habit.id)  // Store in UserDefaults
+    // This ensures we can filter it out even if soft-delete fails
+    markHabitAsDeleted(habit.id)  // Store in UserDefaults (legacy)
     SyncEngine.markHabitAsDeleted(habit.id)  // Store in SyncEngine for sync prevention
 
     // Record user analytics
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Recording analytics")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Recording analytics")
     let analytics = await userAnalytics
     await analytics.recordEvent(.featureUsed, metadata: [
       "action": "habit_deleted",
@@ -447,41 +447,38 @@ final actor HabitStore {
     ])
 
     // Load current habits
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Loading current habits")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Loading current habits")
     var currentHabits = try await loadHabits()
     let beforeCount = currentHabits.count
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Loaded \(beforeCount) habits")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Loaded \(beforeCount) habits")
     
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Removing habit from array")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Removing habit from in-memory array")
     currentHabits.removeAll { $0.id == habit.id }
     let afterCount = currentHabits.count
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
 
-    // ✅ CRITICAL FIX: Delete from Firestore FIRST to prevent SyncEngine from restoring it
-    // If we delete from SwiftData first, SyncEngine might restore it from Firestore on next sync
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting from Firestore FIRST to prevent restoration")
+    // TODO: Update Firestore to support soft delete (mark as deleted instead of hard delete)
+    // For now, we still hard-delete from Firestore but soft-delete locally for audit trail
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Deleting from Firestore (TODO: implement soft delete)")
     await FirebaseBackupService.shared.deleteHabitBackupAwait(habitId: habit.id)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Firestore habit deletion completed")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Firestore habit deletion completed")
     
-    // ✅ CRITICAL FIX: Delete completion records from Firestore BEFORE deleting habit
-    // Orphaned completion records can cause the habit to be recreated during sync
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Deleting completion records from Firestore (AWAITED)")
+    // Delete completion records from Firestore
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Deleting completion records from Firestore")
     await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habit.id)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Completion records deletion COMPLETED")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Completion records deletion COMPLETED")
     
-    // ✅ CRITICAL FIX: Delete from storage AFTER Firestore deletion
-    // This ensures Firestore is clean before we delete locally
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Calling activeStorage.deleteHabit() AFTER Firestore deletion")
+    // ✅ SOFT DELETE: This now soft-deletes (marks as deleted) instead of hard deleting
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Calling activeStorage.deleteHabit() (SOFT DELETE)")
     try await activeStorage.deleteHabit(id: habit.id)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - activeStorage.deleteHabit() completed")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - activeStorage.deleteHabit() completed (habit soft-deleted)")
 
-    // ✅ CRITICAL FIX: Also delete from UserDefaults to prevent habit resurrection
-    // UserDefaults acts as a fallback during app initialization - if the habit exists there,
-    // it will be restored to SwiftData on app restart
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Cleaning up UserDefaults to prevent resurrection")
+    // ✅ SOFT DELETE: Clean up UserDefaults (legacy system)
+    // Note: This is less critical with soft delete, but still good for cleanup
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Cleaning up UserDefaults")
     do {
       try await userDefaultsStorage.deleteHabit(id: habit.id)
-      print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - UserDefaults individual key deleted")
+      print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - UserDefaults individual key deleted")
       
       // Also ensure the SavedHabits array is updated
       var userDefaultsHabits = try await userDefaultsStorage.loadHabits()
@@ -490,21 +487,21 @@ final actor HabitStore {
       let afterCount = userDefaultsHabits.count
       if beforeCount != afterCount {
         try await userDefaultsStorage.saveHabits(userDefaultsHabits, immediate: true)
-        print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - UserDefaults SavedHabits array updated: \(beforeCount) → \(afterCount)")
+        print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - UserDefaults SavedHabits array updated: \(beforeCount) → \(afterCount)")
       }
     } catch {
-      // Don't fail the deletion if UserDefaults cleanup fails - SwiftData is the source of truth
-      print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - WARNING: UserDefaults cleanup failed: \(error.localizedDescription)")
+      // Don't fail the soft-delete if UserDefaults cleanup fails
+      print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - WARNING: UserDefaults cleanup failed: \(error.localizedDescription)")
     }
 
-    // THEN save the updated array (without the deleted habit)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Now saving updated habits array")
+    // THEN save the updated array (without the soft-deleted habit)
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Now saving updated habits array")
     try await saveHabits(currentHabits)
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - Habits array saved")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Habits array saved")
     
 
-    print("🗑️ DELETE_FLOW: HabitStore.deleteHabit() - END")
-    logger.info("Successfully deleted habit: \(habit.name)")
+    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - END")
+    logger.info("Successfully soft-deleted habit: \(habit.name)")
   }
 
   func scheduledHabits(for date: Date) async throws -> [Habit] {

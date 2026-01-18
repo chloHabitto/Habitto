@@ -8,20 +8,21 @@ import SwiftData
 /// **Created:** 2024 (Current baseline)
 /// **Purpose:** Establish versioned schema baseline for future migrations
 ///
-/// **Models Included (13 total):**
+/// **Models Included (14 total):**
 /// 1. HabitData - Main habit entity
 /// 2. CompletionRecord - Daily completion tracking
-/// 3. DailyAward - Daily XP awards
-/// 4. UserProgressData - User XP and leveling
-/// 5. AchievementData - Unlocked achievements
-/// 6. ProgressEvent - Event-sourced progress changes
-/// 7. GlobalStreakModel - Global streak tracking
-/// 8. DifficultyRecord - Daily difficulty ratings
-/// 9. UsageRecord - Usage history
-/// 10. HabitNote - Notes attached to habits
-/// 11. StorageHeader - Schema version tracking (app-level)
-/// 12. MigrationRecord - Migration history (app-level)
-/// 13. MigrationState - Migration status tracking (app-level)
+/// 3. HabitDeletionLog - Audit log for habit deletions
+/// 4. DailyAward - Daily XP awards
+/// 5. UserProgressData - User XP and leveling
+/// 6. AchievementData - Unlocked achievements
+/// 7. ProgressEvent - Event-sourced progress changes
+/// 8. GlobalStreakModel - Global streak tracking
+/// 9. DifficultyRecord - Daily difficulty ratings
+/// 10. UsageRecord - Usage history
+/// 11. HabitNote - Notes attached to habits
+/// 12. StorageHeader - Schema version tracking (app-level)
+/// 13. MigrationRecord - Migration history (app-level)
+/// 14. MigrationState - Migration status tracking (app-level)
 ///
 /// **Note:** SimpleHabitData is NOT included in V1 as it's deprecated and not in active schema
 ///
@@ -42,6 +43,7 @@ enum HabittoSchemaV1: VersionedSchema {
       // Primary Models
       HabitData.self,
       CompletionRecord.self,
+      HabitDeletionLog.self,
       DailyAward.self,
       UserProgressData.self,
       AchievementData.self,
@@ -79,43 +81,48 @@ extension HabittoSchemaV1 {
     **Created:** 2024
     **Status:** Baseline (Current Production)
     
-    ## Models (13 total)
+    ## Models (14 total)
     
     ### Primary Models
     1. **HabitData** - Main habit entity with relationships
-       - Properties: id, userId, name, description, icon, colorData, habitType, schedule, goal, reminder, startDate, endDate, baseline, target, goalHistoryJSON, createdAt, updatedAt
+       - Properties: id, userId, name, description, icon, colorData, habitType, schedule, goal, reminder, startDate, endDate, baseline, target, goalHistoryJSON, createdAt, updatedAt, deletedAt, deletionSource
        - Relationships: completionHistory, difficultyHistory, usageHistory, notes (all cascade delete)
+       - Soft Delete: deletedAt and deletionSource fields for audit trail
     
     2. **CompletionRecord** - Daily completion tracking
        - Properties: userId, habitId, date, dateKey, isCompleted, progress, createdAt, updatedAt
        - Unique constraint: userIdHabitIdDateKey (composite)
     
-    3. **DailyAward** - Daily XP awards
+    3. **HabitDeletionLog** - Audit log for habit deletions
+       - Properties: id, habitId, habitName, userId, deletedAt, source, metadata
+       - Purpose: Complete audit trail for investigating data loss
+    
+    4. **DailyAward** - Daily XP awards
        - Properties: id, userId, dateKey, xpGranted, allHabitsCompleted, createdAt
        - Unique constraint: userIdDateKey
     
-    4. **UserProgressData** - User XP and leveling
+    5. **UserProgressData** - User XP and leveling
        - Properties: id, userId (unique), xpTotal, level, xpForCurrentLevel, xpForNextLevel, dailyXP, lastCompletedDate, streakDays, createdAt, updatedAt
        - Relationships: achievements (cascade delete)
     
-    5. **AchievementData** - Unlocked achievements
+    6. **AchievementData** - Unlocked achievements
        - Properties: id, userId, title, description, xpReward, isUnlocked, unlockedDate, iconName, category, requirementType, requirementTarget, progress, createdAt, updatedAt
     
-    6. **ProgressEvent** - Event-sourced progress changes
+    7. **ProgressEvent** - Event-sourced progress changes
        - Properties: id (deterministic string), habitId, dateKey, eventType, progressDelta, createdAt, occurredAt, utcDayStart, utcDayEnd, deviceId, userId, timezoneIdentifier, operationId (unique), synced, lastSyncedAt, syncVersion, isRemote, deletedAt, note, metadata
     
-    7. **GlobalStreakModel** - Global streak tracking
+    8. **GlobalStreakModel** - Global streak tracking
        - Properties: id, userId, currentStreak, longestStreak, totalCompleteDays, streakHistory, lastCompleteDate, lastUpdated
     
     ### Supporting Models
-    8. **DifficultyRecord** - Daily difficulty ratings
-    9. **UsageRecord** - Usage history
-    10. **HabitNote** - Notes attached to habits
+    9. **DifficultyRecord** - Daily difficulty ratings
+    10. **UsageRecord** - Usage history
+    11. **HabitNote** - Notes attached to habits
     
     ### App-Level Migration Tracking
-    11. **StorageHeader** - Tracks app-level schema version (separate from SwiftData versioning)
-    12. **MigrationRecord** - Logs app-level migrations
-    13. **MigrationState** - Tracks per-user migration status
+    12. **StorageHeader** - Tracks app-level schema version (separate from SwiftData versioning)
+    13. **MigrationRecord** - Logs app-level migrations
+    14. **MigrationState** - Tracks per-user migration status
     
     ## Notes
     

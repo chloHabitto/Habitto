@@ -433,19 +433,20 @@ final class SwiftDataStorage: HabitStorageProtocol {
         sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
 
       // Filter by current user ID if authenticated, otherwise show guest data
+      // ✅ SOFT DELETE: Filter out soft-deleted habits (deletedAt != nil)
       if let userId = currentUserId {
         descriptor.predicate = #Predicate<HabitData> { habitData in
-          habitData.userId == userId
+          habitData.userId == userId && habitData.deletedAt == nil
         }
-        print("🔍 [SWIFTDATA_LOAD] Query predicate: userId == '\(userId.prefix(8))...'")
-        logger.info("🔄 Query predicate: userId == '\(userId.prefix(8))...'")
+        print("🔍 [SWIFTDATA_LOAD] Query predicate: userId == '\(userId.prefix(8))...' AND deletedAt == nil")
+        logger.info("🔄 Query predicate: userId == '\(userId.prefix(8))...' AND deletedAt == nil")
       } else {
         // For guest users, show data with empty userId
         descriptor.predicate = #Predicate<HabitData> { habitData in
-          habitData.userId == ""
+          habitData.userId == "" && habitData.deletedAt == nil
         }
-        print("🔍 [SWIFTDATA_LOAD] Query predicate: userId == '' (empty string)")
-        logger.info("🔄 Query predicate: userId == '' (empty string)")
+        print("🔍 [SWIFTDATA_LOAD] Query predicate: userId == '' (empty string) AND deletedAt == nil")
+        logger.info("🔄 Query predicate: userId == '' (empty string) AND deletedAt == nil")
       }
 
       // ✅ CRITICAL FIX: Process pending changes before fetching
@@ -866,50 +867,50 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   func deleteHabit(id: UUID) async throws {
-    print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - START for habit ID: \(id)")
-    logger.info("Deleting habit with ID: \(id)")
+    print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - START for habit ID: \(id)")
+    logger.info("Soft-deleting habit with ID: \(id)")
 
     do {
-      // ✅ CRITICAL FIX: Fetch ALL habits and filter in Swift code
-      // #Predicate has issues capturing the id parameter correctly
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Fetching all habits to find by ID")
+      // ✅ SOFT DELETE: Fetch ALL habits (including soft-deleted) to find by ID
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Fetching all habits to find by ID")
       
       let descriptor = FetchDescriptor<HabitData>()
       let allHabits = try container.modelContext.fetch(descriptor)
       
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Found \(allHabits.count) total habits in database")
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Found \(allHabits.count) total habits in database")
       
       // Find the habit by ID using Swift filtering (not predicate)
       guard let habitData = allHabits.first(where: { $0.id == id }) else {
-        print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - WARNING: Habit not found for deletion: \(id)")
-        print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Available habit IDs: \(allHabits.map { $0.id })")
+        print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - WARNING: Habit not found for deletion: \(id)")
+        print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Available habit IDs: \(allHabits.map { $0.id })")
         logger.warning("Habit not found for deletion: \(id)")
         return
       }
 
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Found habit: '\(habitData.name)' (ID: \(habitData.id), userId: \(habitData.userId))")
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Calling modelContext.delete()")
-      container.modelContext.delete(habitData)
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Found habit: '\(habitData.name)' (ID: \(habitData.id), userId: \(habitData.userId))")
       
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Calling modelContext.save()")
+      // ✅ SOFT DELETE: Mark as deleted instead of hard deleting
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Performing SOFT DELETE (marking as deleted)")
+      habitData.softDelete(source: "user", context: container.modelContext)
+      
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Calling modelContext.save()")
       try container.modelContext.save()
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - modelContext.save() completed")
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - modelContext.save() completed")
 
-      // ✅ CRITICAL FIX: Force WAL checkpoint to ensure deletion is persisted to disk
-      // Without this, if the app is killed before automatic checkpoint, changes are lost
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - Forcing aggressive WAL checkpoint...")
+      // ✅ CRITICAL FIX: Force WAL checkpoint to ensure soft-delete is persisted to disk
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Forcing WAL checkpoint...")
       forceWALCheckpoint()
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - WAL checkpoint completed")
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - WAL checkpoint completed")
 
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - END - Successfully deleted")
-      logger.info("Successfully deleted habit with ID: \(id)")
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - END - Successfully soft-deleted")
+      logger.info("Successfully soft-deleted habit with ID: \(id)")
 
     } catch {
-      print("🗑️ DELETE_FLOW: SwiftDataStorage.deleteHabit() - ERROR: \(error.localizedDescription)")
-      logger.error("Failed to delete habit: \(error.localizedDescription)")
+      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - ERROR: \(error.localizedDescription)")
+      logger.error("Failed to soft-delete habit: \(error.localizedDescription)")
       throw DataError.storage(StorageError(
         type: .unknown,
-        message: "Failed to delete habit: \(error.localizedDescription)",
+        message: "Failed to soft-delete habit: \(error.localizedDescription)",
         underlyingError: error))
     }
   }
