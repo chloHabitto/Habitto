@@ -589,6 +589,7 @@ struct ProgressTabView: View {
 
   @ViewBuilder
   private var mainContentView: some View {
+    let _ = print("🔄 mainContentView body called")
     VStack(spacing: 20) {
       // Date Selection
       dateSelectionSection
@@ -1939,10 +1940,12 @@ struct ProgressTabView: View {
   }
 
   private var isTodaySelected: Bool {
-    Calendar.current.isDate(selectedProgressDate, inSameDayAs: Date())
+    let _ = print("🔄 isTodaySelected computed - calling Date()")
+    return Calendar.current.isDate(selectedProgressDate, inSameDayAs: Date())
   }
 
   private var isThisWeekSelected: Bool {
+    let _ = print("🔄 isThisWeekSelected computed - calling Date()")
     let calendar = AppDateFormatter.shared.getUserCalendar()
     let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
     let selectedWeekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate)?
@@ -1951,6 +1954,7 @@ struct ProgressTabView: View {
   }
 
   private var isThisMonthSelected: Bool {
+    let _ = print("🔄 isThisMonthSelected computed - calling Date()")
     let calendar = Calendar.current
     let currentMonth = calendar.component(.month, from: Date())
     let currentYear = calendar.component(.year, from: Date())
@@ -1960,6 +1964,7 @@ struct ProgressTabView: View {
   }
 
   private var isThisYearSelected: Bool {
+    let _ = print("🔄 isThisYearSelected computed - calling Date()")
     let calendar = Calendar.current
     let currentYear = calendar.component(.year, from: Date())
     return currentYear == selectedYear
