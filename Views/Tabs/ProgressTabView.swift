@@ -208,10 +208,10 @@ struct ProgressTabView: View {
   
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
-  @State private var displayHeaderHeight: CGFloat = 95  // Actual measured height including 1pt stroke
+  @State private var displayHeaderHeight: CGFloat = 96  // Increased by 1pt to eliminate gap artifacts
   @State private var initialScrollOffset: CGFloat? = nil
   
-  private let fullHeaderHeight: CGFloat = 95  // Actual measured height including 1pt stroke
+  private let fullHeaderHeight: CGFloat = 96  // Increased by 1pt to eliminate gap artifacts
   
   // MARK: - Cached Encouraging Messages
   @State private var cachedWeeklyMessage: String? = nil
