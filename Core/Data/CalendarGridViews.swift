@@ -79,7 +79,7 @@ struct WeeklyCalendarGridView: View {
             ForEach(Array(weeklyDayHeaders.enumerated()), id: \.offset) { index, day in
               Text(day)
                 .font(.appLabelMediumEmphasised)
-                .foregroundColor(.text05)
+                .foregroundColor(.appText06)
                 .frame(width: 24, height: 24)
                 .clipShape(
                   UnevenRoundedRectangle(
@@ -390,7 +390,7 @@ struct MonthlyCalendarGridView: View {
         ForEach(Array(dayHeaders.enumerated()), id: \.offset) { index, day in
           Text(day)
             .font(.appLabelMediumEmphasised)
-            .foregroundColor(.text05)
+            .foregroundColor(.appText06)
             .frame(width: 24, height: 24)
             .clipShape(
               UnevenRoundedRectangle(
@@ -518,7 +518,7 @@ struct MonthlyCalendarGridView: View {
         ForEach(Array(dayHeaders.enumerated()), id: \.offset) { index, day in
           Text(day)
             .font(.appLabelMediumEmphasised)
-            .foregroundColor(.text05)
+            .foregroundColor(.appText06)
             .frame(minWidth: 0, maxWidth: .infinity)
             .frame(height: 24)
             .clipShape(
@@ -1723,7 +1723,7 @@ struct IndividualHabitWeeklyProgressView: View {
           ForEach(Array(weeklyDayLabels.enumerated()), id: \.offset) { index, day in
             Text(day)
               .font(.appLabelSmallEmphasised)
-              .foregroundColor(.text05)
+              .foregroundColor(.appText06)
               .frame(maxWidth: .infinity)
           }
         }
@@ -1854,7 +1854,7 @@ struct AllHabitsWeeklyProgressView: View {
           ForEach(Array(weeklyDayLabels.enumerated()), id: \.offset) { index, day in
             Text(day)
               .font(.appLabelSmallEmphasised)
-              .foregroundColor(.text05)
+              .foregroundColor(.appText06)
               .frame(maxWidth: .infinity)
           }
         }
@@ -2095,7 +2095,7 @@ struct IndividualHabitWeeklyProgressViewNew: View {
           ForEach(Array(weeklyDayLabels.enumerated()), id: \.offset) { index, day in
             Text(day)
               .font(.appLabelSmallEmphasised)
-              .foregroundColor(.text05)
+              .foregroundColor(.appText06)
               .frame(maxWidth: .infinity)
           }
         }
@@ -2479,7 +2479,7 @@ struct IndividualHabitMonthlyCalendarProgressView: View {
           ForEach(Array(monthlyDayLabels.enumerated()), id: \.offset) { index, day in
             Text(day)
               .font(.appLabelSmallEmphasised)
-              .foregroundColor(.text05)
+              .foregroundColor(.appText06)
               .frame(maxWidth: .infinity)
           }
         }
@@ -2785,7 +2785,7 @@ struct IndividualWeeklyCalendarGridView: View {
         ForEach(Array(weeklyDayHeaders.enumerated()), id: \.offset) { index, day in
           Text(day)
             .font(.appLabelMediumEmphasised)
-            .foregroundColor(.text05)
+            .foregroundColor(.appText06)
             .frame(width: 40, height: 24) // Larger width for larger cells
             .clipShape(
               UnevenRoundedRectangle(
