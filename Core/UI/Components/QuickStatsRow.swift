@@ -9,14 +9,15 @@ struct QuickStatsRow: View {
   let isScheduledToday: Bool
   let isCompletedToday: Bool
   let nextScheduledDate: Date?
-  let habitColor: Color
   
   var body: some View {
     HStack(spacing: 16) {
       // Left: Streak
       HStack(spacing: 6) {
         Image("Icon-Fire_Outlined")
-          .font(.system(size: 16))
+          .resizable()
+          .renderingMode(.template)
+          .frame(width: 16, height: 16)
           .foregroundColor(.text05)
         
         Text("\(currentStreak) \(currentStreak == 1 ? "day" : "days")")
@@ -31,10 +32,12 @@ struct QuickStatsRow: View {
         if isScheduledToday && isCompletedToday {
           Image(systemName: "checkmark")
             .font(.system(size: 16))
-            .foregroundColor(habitColor)
+            .foregroundColor(.success)
         } else {
           Image("Icon-CalendarMark_Outlined")
-            .font(.system(size: 16))
+            .resizable()
+            .renderingMode(.template)
+            .frame(width: 16, height: 16)
             .foregroundColor(.text05)
         }
         
@@ -77,7 +80,7 @@ struct QuickStatsRow: View {
   
   private var nextDueColor: Color {
     if isScheduledToday && isCompletedToday {
-      return habitColor
+      return .success
     } else if !isScheduledToday && nextScheduledDate == nil {
       return .text05
     } else {
@@ -95,8 +98,7 @@ struct QuickStatsRow: View {
       currentStreak: 12,
       isScheduledToday: true,
       isCompletedToday: false,
-      nextScheduledDate: nil,
-      habitColor: .blue
+      nextScheduledDate: nil
     )
     
     // Done today
@@ -104,8 +106,7 @@ struct QuickStatsRow: View {
       currentStreak: 12,
       isScheduledToday: true,
       isCompletedToday: true,
-      nextScheduledDate: nil,
-      habitColor: .green
+      nextScheduledDate: nil
     )
     
     // Next tomorrow
@@ -113,8 +114,7 @@ struct QuickStatsRow: View {
       currentStreak: 5,
       isScheduledToday: false,
       isCompletedToday: false,
-      nextScheduledDate: Calendar.current.date(byAdding: .day, value: 1, to: Date()),
-      habitColor: .blue
+      nextScheduledDate: Calendar.current.date(byAdding: .day, value: 1, to: Date())
     )
     
     // Next Wednesday
@@ -122,8 +122,7 @@ struct QuickStatsRow: View {
       currentStreak: 5,
       isScheduledToday: false,
       isCompletedToday: false,
-      nextScheduledDate: Calendar.current.date(byAdding: .day, value: 3, to: Date()),
-      habitColor: .blue
+      nextScheduledDate: Calendar.current.date(byAdding: .day, value: 3, to: Date())
     )
     
     // Not scheduled
@@ -131,8 +130,7 @@ struct QuickStatsRow: View {
       currentStreak: 0,
       isScheduledToday: false,
       isCompletedToday: false,
-      nextScheduledDate: nil,
-      habitColor: .gray
+      nextScheduledDate: nil
     )
   }
   .padding()
