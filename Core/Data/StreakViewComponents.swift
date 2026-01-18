@@ -485,7 +485,7 @@ struct HeatmapCellView: View {
         } else {
           // Show empty circle outline when not scheduled
           RoundedRectangle(cornerRadius: 12)
-            .stroke(.outline3, lineWidth: 1)
+            .stroke(.appOutline02, lineWidth: 1)
             .frame(width: cellSize, height: cellSize)
         }
       }
