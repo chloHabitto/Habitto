@@ -2021,9 +2021,28 @@ actor SyncEngine {
         let deletedLocallyButInFirestore = remoteHabitIds.subtracting(localHabitIds)
         
         if !deletedLocallyButInFirestore.isEmpty {
-            logger.info("🗑️ SyncEngine: Found \(deletedLocallyButInFirestore.count) habits deleted locally but still in Firestore - cleaning up Firestore")
+            logger.info("🗑️ SyncEngine: Found \(deletedLocallyButInFirestore.count) habits deleted locally but still in Firestore - checking for soft-deleted habits")
+            
+            // ✅ SOFT DELETE FIX: Check if any of these habits are soft-deleted locally
+            // Soft-deleted habits should be kept in Firestore for recovery
+            let softDeletedIds: Set<UUID> = await MainActor.run {
+                let modelContext = SwiftDataContainer.shared.modelContext
+                let allLocalHabits = (try? modelContext.fetch(FetchDescriptor<HabitData>())) ?? []
+                return Set(allLocalHabits.filter { $0.deletedAt != nil }.map { $0.id })
+            }
+            
+            logger.info("🔄 RECONCILE: Found \(softDeletedIds.count) soft-deleted habits locally")
             
             for habitId in deletedLocallyButInFirestore {
+                // Check if it's soft-deleted locally
+                if softDeletedIds.contains(habitId) {
+                    logger.info("⏭️ SyncEngine: Habit \(habitId.uuidString.prefix(8))... is soft-deleted locally - keeping in Firestore for recovery")
+                    continue  // Don't delete from Firestore - it's intentionally kept for recovery
+                }
+                
+                // Only delete if not in local database at all (true orphan)
+                logger.info("🗑️ SyncEngine: Deleting true orphaned habit \(habitId.uuidString.prefix(8))... from Firestore")
+                
                 // ✅ CRITICAL BUG FIX: Mark as deleted to prevent resurrection
                 Self.markHabitAsDeleted(habitId)
                 

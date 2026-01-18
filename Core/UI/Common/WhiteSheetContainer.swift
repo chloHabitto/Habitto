@@ -47,23 +47,26 @@ struct WhiteSheetContainer<Content: View>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section - always 90pt, uses offset to hide
-      // scrollOffset is "hide amount": 0 = visible, 90 = hidden
-      headerSection
-        .background(headerBackground)
-        .offset(y: scrollResponsive ? -scrollOffset : 0)
-        .animation(.spring(response: 0.25, dampingFraction: 0.9), value: scrollOffset)
+      // Header section - height animates, content clips
+      if scrollResponsive {
+        headerSection
+          .background(headerBackground)
+          .frame(height: max(0, 90 - scrollOffset))  // 90 when scrollOffset=0, 0 when scrollOffset=90
+          .clipped()
+          .animation(.spring(response: 0.25, dampingFraction: 0.9), value: scrollOffset)
+      } else {
+        headerSection
+          .background(headerBackground)
+      }
 
-      // Content area - moves up by same amount when header hides
+      // Content area - NO offset, naturally expands to fill space
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
-        .offset(y: scrollResponsive ? -scrollOffset : 0)
-        .animation(.spring(response: 0.25, dampingFraction: 0.9), value: scrollOffset)
+      // NO animation or offset on content!
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
-    .clipped() // Clip the header when it slides above the container
     .ignoresSafeArea(.container, edges: .bottom)
   }
 
