@@ -382,8 +382,53 @@ struct HabitDetailView: View {
       // Monthly History
       monthlyHistory
         .padding(.horizontal, 16)
+      
+      // See More Progress Button
+      seeMoreProgressButton
+        .padding(.horizontal, 16)
         .padding(.bottom, 32)
     }
+  }
+  
+  // MARK: - See More Progress Button
+  
+  private var seeMoreProgressButton: some View {
+    Button(action: {
+      // Navigate to Progress tab with this habit selected
+      navigateToProgressTab()
+    }) {
+      HStack {
+        // Left: "See More Progress" label
+        Text("See More Progress")
+          .font(.appLabelLargeEmphasised)
+          .foregroundColor(Color("grey700"))
+        
+        Spacer()
+        
+        // Right: Arrow icon
+        Image(systemName: "chevron.right")
+          .font(.system(size: 16, weight: .semibold))
+          .foregroundColor(Color("navy500"))
+      }
+      .padding(16)
+      .background(
+        RoundedRectangle(cornerRadius: 16)
+          .fill(Color("appSecondaryContainerFixed02"))
+      )
+    }
+    .buttonStyle(PlainButtonStyle())
+  }
+  
+  private func navigateToProgressTab() {
+    // Dismiss the current sheet
+    dismiss()
+    
+    // Post notification to switch to Progress tab and select this habit
+    NotificationCenter.default.post(
+      name: NSNotification.Name("SwitchToProgressTabWithHabit"),
+      object: nil,
+      userInfo: ["habitId": habit.id]
+    )
   }
   
   // MARK: - Week Calendar Strip

@@ -1326,6 +1326,22 @@ struct HomeView: View {
       // Add haptic feedback when tab is selected
       UISelectionFeedbackGenerator().selectionChanged()
     }
+    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToProgressTabWithHabit"))) { notification in
+      // Switch to Progress tab
+      state.selectedTab = .progress
+      
+      // Forward the notification to ProgressTabView to select the habit
+      if let habitId = notification.userInfo?["habitId"] as? UUID {
+        // Delay slightly to ensure the Progress tab is visible
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+          NotificationCenter.default.post(
+            name: NSNotification.Name("SelectHabitInProgressTab"),
+            object: nil,
+            userInfo: ["habitId": habitId]
+          )
+        }
+      }
+    }
     .onAppear {
       debugLog("🚀 HomeView: onAppear called!")
       debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")

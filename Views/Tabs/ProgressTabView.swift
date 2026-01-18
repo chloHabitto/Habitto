@@ -924,6 +924,14 @@ struct ProgressTabView: View {
       // Reload yearly data when year changes
       loadYearlyData()
     }
+    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SelectHabitInProgressTab"))) { notification in
+      if let habitId = notification.userInfo?["habitId"] as? UUID {
+        // Find the habit with this ID
+        if let habit = HabitRepository.shared.habits.first(where: { $0.id == habitId }) {
+          selectedHabit = habit
+        }
+      }
+    }
     .fullScreenCover(item: $habitForDetailView) { habit in
       HabitDetailView(
         habit: habit,
