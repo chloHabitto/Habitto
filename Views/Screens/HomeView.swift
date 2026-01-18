@@ -302,41 +302,49 @@ class HomeViewState: ObservableObject {
     print("♻️ [RESTORE] HomeViewState.restoreHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     
     do {
-      // Query SwiftData for the soft-deleted HabitData by ID
       let modelContext = SwiftDataContainer.shared.modelContext
       
-      // Fetch ALL habits (including soft-deleted) to find by ID
-      let descriptor = FetchDescriptor<HabitData>()
-      let allHabits = try modelContext.fetch(descriptor)
+      // Find the habit in SwiftData by ID
+      let habitId = habit.id
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate { $0.id == habitId }
+      )
       
-      guard let habitData = allHabits.first(where: { $0.id == habit.id }) else {
-        print("♻️ [RESTORE] ERROR: Habit not found in SwiftData: \(habit.id)")
-        return
+      if let habitData = try modelContext.fetch(descriptor).first {
+        print("♻️ [RESTORE] Found habit in SwiftData: '\(habitData.name)' (deletedAt: \(habitData.deletedAt?.description ?? "nil"))")
+        
+        // Restore if soft-deleted (handles race condition where deletedAt might still be nil)
+        if habitData.deletedAt != nil {
+          habitData.restore()
+          try modelContext.save()
+          print("♻️ [RESTORE] Habit was soft-deleted, restored successfully")
+        } else {
+          print("♻️ [RESTORE] Habit was not soft-deleted (race condition - delete hadn't completed yet)")
+          // Habit exists but wasn't marked as deleted yet - it's fine, just reload
+        }
+        
+        // CRITICAL: Reload habits to refresh UI
+        print("♻️ [RESTORE] Reloading habits to refresh UI...")
+        await habitRepository.loadHabits(force: true)
+        print("♻️ [RESTORE] Habits reloaded - UI should update now")
+        
+        print("♻️ [RESTORE] Habit restored via Undo: \(habit.name)")
+      } else {
+        print("⚠️ [RESTORE] Habit not found in SwiftData - may have been hard-deleted")
+        // Habit was removed from SwiftData entirely - can't restore
       }
-      
-      print("♻️ [RESTORE] Found habit in SwiftData: '\(habitData.name)' (deletedAt: \(habitData.deletedAt?.description ?? "nil"))")
-      
-      // Call restore() method (sets deletedAt = nil)
-      habitData.restore()
-      
-      // Save context
-      try modelContext.save()
-      print("♻️ [RESTORE] Habit restored via Undo: \(habitData.name)")
-      
-      // Reload habits to update UI
-      await habitRepository.loadHabits(force: true)
-      
-      // Clear deletedHabitForUndo to dismiss toast
-      await MainActor.run {
-        self.deletedHabitForUndo = nil
-      }
-      
-      print("♻️ [RESTORE] HomeViewState.restoreHabit() - END")
       
     } catch {
-      print("♻️ [RESTORE] ERROR: Failed to restore habit: \(error.localizedDescription)")
+      print("❌ [RESTORE] Failed to restore habit: \(error.localizedDescription)")
       debugLog("❌ Failed to restore habit: \(error.localizedDescription)")
     }
+    
+    // Clear the undo state to dismiss toast
+    await MainActor.run {
+      self.deletedHabitForUndo = nil
+    }
+    
+    print("♻️ [RESTORE] HomeViewState.restoreHabit() - END")
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
