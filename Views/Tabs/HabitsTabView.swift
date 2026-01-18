@@ -149,7 +149,21 @@ struct HabitsTabView: View {
 
   /// Computed property for habits
   private var habits: [Habit] {
-    state.habits
+    let habitsArray = state.habits
+    
+    // ✅ DIAGNOSTIC: Log habits arriving in state
+    if !habitsArray.isEmpty {
+      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+      print("🔍 [HABITS_TAB_VIEW] Habits arrived in state.habits")
+      print("   Total habits in state: \(habitsArray.count)")
+      for (index, habit) in habitsArray.enumerated() {
+        print("   [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
+        print("       Name: '\(habit.name)'")
+      }
+      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    }
+    
+    return habitsArray
   }
 
   private var filteredHabits: [Habit] {
@@ -166,17 +180,28 @@ struct HabitsTabView: View {
         seenIds.insert(habit.id)
       }
     }
+    
+    let afterDedupeCount = uniqueHabits.count
+    if afterDedupeCount != habits.count {
+      print("🔍 [HABITS_TAB_VIEW] After deduplication: \(habits.count) → \(afterDedupeCount) habits")
+    }
 
     // In edit mode, show ALL habits to allow proper reordering
     // (Can't reorder a filtered view - causes index mismatch)
     if editMode == .active {
+      print("🔍 [HABITS_TAB_VIEW] Edit mode active - showing all \(afterDedupeCount) habits (no filtering)")
       return uniqueHabits
     }
 
+    // Determine filter based on selected tab
+    let tabName: String
+    let filterResult: [Habit]
+    
     // Then apply the tab-based filtering (only in normal mode)
     switch selectedStatsTab {
     case 0: // Active
-      return uniqueHabits.filter { habit in
+      tabName = "Active"
+      filterResult = uniqueHabits.filter { habit in
         // ✅ FIX: Habit is active if it hasn't ended yet (includes future-starting habits)
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
         
@@ -185,7 +210,8 @@ struct HabitsTabView: View {
       }
 
     case 1: // Inactive
-      return uniqueHabits.filter { habit in
+      tabName = "Inactive"
+      filterResult = uniqueHabits.filter { habit in
         // ✅ FIX: Habit is inactive ONLY if its end date has passed
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
         
@@ -193,13 +219,39 @@ struct HabitsTabView: View {
         return today > endDate
       }
 
-    case 2,
-         3: // Dummy tabs - show all habits
-      return uniqueHabits
+    case 2, 3: // Dummy tabs - show all habits
+      tabName = "All"
+      filterResult = uniqueHabits
 
     default:
-      return uniqueHabits
+      tabName = "Default"
+      filterResult = uniqueHabits
     }
+    
+    // ✅ DIAGNOSTIC: Log filtering results
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("🔍 [HABITS_TAB_VIEW] Tab filtering applied:")
+    print("   Selected tab: \(selectedStatsTab) (\(tabName))")
+    print("   Edit mode: \(editMode == .active ? "active" : "inactive")")
+    print("   Before filtering: \(afterDedupeCount) habits")
+    print("   After filtering: \(filterResult.count) habits")
+    
+    if !filterResult.isEmpty {
+      print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+      print("   📋 [HABITS_TAB_VIEW] Habits shown after filtering:")
+      for (index, habit) in filterResult.enumerated() {
+        let endDateDisplay = habit.endDate?.description ?? "nil (no end date)"
+        print("      [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
+        print("          Name: '\(habit.name)'")
+        print("          endDate: \(endDateDisplay)")
+      }
+      print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    } else {
+      print("   ⚠️ No habits match the filter criteria")
+    }
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    
+    return filterResult
   }
 
   // MARK: - Empty State Views

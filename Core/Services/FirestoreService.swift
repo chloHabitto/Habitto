@@ -162,21 +162,54 @@ class FirestoreService: FirebaseService, ObservableObject {
       throw FirestoreServiceError.notAuthenticated
     }
     
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("🔍 [FIRESTORE_FETCH] FirestoreService.fetchHabits() called")
+    print("   UserId: \(userId.prefix(8))...")
+    
     let snapshot = try await db.collection("users")
       .document(userId)
       .collection("habits")
       .whereField("isActive", isEqualTo: true)
       .getDocuments()
     
-    let fetchedHabits = snapshot.documents.compactMap { doc in
+    print("🔍 [FIRESTORE_FETCH] Query returned \(snapshot.documents.count) documents from Firestore")
+    print("   (Note: Query filters by isActive == true)")
+    
+    // Log each document BEFORE any filtering
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("📋 [FIRESTORE_FETCH] Documents BEFORE filtering:")
+    for (index, doc) in snapshot.documents.enumerated() {
+      let data = doc.data()
+      let name = data["name"] as? String ?? "N/A"
+      let isActive = data["isActive"] as? Bool ?? false
+      let habitType = data["habitType"] as? String ?? "N/A"
+      print("   [\(index + 1)] ID: \(doc.documentID.prefix(8))...")
+      print("       Name: '\(name)'")
+      print("       isActive: \(isActive)")
+      print("       habitType: \(habitType)")
+      if habitType == "breaking" {
+        let target = data["target"] as? Int ?? 0
+        let baseline = data["baseline"] as? Int ?? 0
+        print("       target: \(target), baseline: \(baseline)")
+      }
+    }
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    
+    let fetchedHabits = snapshot.documents.compactMap { doc -> Habit? in
       do {
         let firestoreHabit = try doc.data(as: FirestoreHabit.self)
         return firestoreHabit.toHabit()
       } catch {
-        print("❌ Failed to decode habit \(doc.documentID): \(error)")
+        print("❌ [FIRESTORE_FETCH] Failed to decode habit \(doc.documentID): \(error)")
         return nil
       }
     }
+    
+    print("🔍 [FIRESTORE_FETCH] After decoding: \(fetchedHabits.count) habits decoded successfully")
+    
+    // Track filtering
+    var filteredOut: [(name: String, reason: String)] = []
+    let beforeFilterCount = fetchedHabits.count
     
     // ✅ Simple validation: only skip habits with invalid data that would cause crashes
     habits = fetchedHabits.filter { habit in
@@ -184,12 +217,38 @@ class FirestoreService: FirebaseService, ObservableObject {
       if habit.habitType == .breaking {
         let isValid = habit.target < habit.baseline && habit.baseline > 0
         if !isValid {
-          print("⚠️ Skipping invalid breaking habit: '\(habit.name)'")
+          let reason = "Invalid breaking habit: target (\(habit.target)) >= baseline (\(habit.baseline)) or baseline <= 0"
+          filteredOut.append((name: habit.name, reason: reason))
           return false
         }
       }
       return true
     }
+    
+    let afterFilterCount = habits.count
+    
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("🔍 [FIRESTORE_FETCH] Filtering results:")
+    print("   Before filtering: \(beforeFilterCount) habits")
+    print("   After filtering: \(afterFilterCount) habits")
+    print("   Filtered out: \(filteredOut.count) habit(s)")
+    
+    if !filteredOut.isEmpty {
+      print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+      print("   ⚠️ [FIRESTORE_FETCH] HABITS FILTERED OUT:")
+      for (index, item) in filteredOut.enumerated() {
+        print("      [\(index + 1)] '\(item.name)'")
+        print("          Reason: \(item.reason)")
+      }
+      print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    }
+    
+    print("📋 [FIRESTORE_FETCH] Final habits returned:")
+    for (index, habit) in habits.enumerated() {
+      print("   [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
+      print("       Name: '\(habit.name)'")
+    }
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
   }
   
   /// Start listening to habit changes in real-time

@@ -47,14 +47,14 @@ struct WhiteSheetContainer<Content: View>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section with custom background
+      // Header section with dynamic height
       headerSection
         .background(headerBackground)
-        .offset(y: scrollResponsive ? calculateHeaderOffset() : 0)
-        .opacity(scrollResponsive ? calculateHeaderOpacity() : 1)
+        .frame(height: scrollResponsive ? calculateHeaderHeight() : nil)  // Dynamic height
+        .clipped()  // Hide overflow when collapsed
         .animation(.easeOut(duration: 0.2), value: scrollOffset)
 
-      // Content area with custom background
+      // Content area - naturally expands as header collapses
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
@@ -117,28 +117,17 @@ struct WhiteSheetContainer<Content: View>: View {
   
   // MARK: - Scroll-Responsive Calculations
   
-  private func calculateHeaderOffset() -> CGFloat {
-    // Header height is approximately 100pt (90pt + buffer)
-    let headerHeight: CGFloat = 100
-    // Negative offset to move header up (hide it)
-    let offset = -min(scrollOffset, headerHeight)
-    return offset
-  }
-  
-  private func calculateHeaderOpacity() -> Double {
-    // Start fading when scroll exceeds threshold
-    let fadeStart = headerCollapseThreshold
-    let fadeEnd: CGFloat = 100 // Full header height
+  /// Calculate header height based on scroll offset
+  /// Returns full height when not scrolled, 
+  /// shrinks to 0 as user scrolls down
+  private func calculateHeaderHeight() -> CGFloat {
+    let fullHeaderHeight: CGFloat = 90  // Approximate header height
     
-    if scrollOffset < fadeStart {
-      return 1.0
-    } else if scrollOffset >= fadeEnd {
-      return 0.0
-    } else {
-      // Linear fade between threshold and full height
-      let progress = (scrollOffset - fadeStart) / (fadeEnd - fadeStart)
-      return Double(1.0 - progress)
-    }
+    // Map scrollOffset to header height
+    // At 0 scroll → full height (90pt)
+    // At 90+ scroll → 0 height
+    let collapsedAmount = min(scrollOffset, fullHeaderHeight)
+    return max(0, fullHeaderHeight - collapsedAmount)
   }
 }
 
