@@ -1243,6 +1243,11 @@ class HabitRepository: ObservableObject {
     try modelContext.save()
     debugLog("✅ HabitRepository: Successfully restored habit: \(habit.name)")
     
+    // Re-upload to Firestore (habit was hard-deleted during soft-delete)
+    debugLog("♻️ HabitRepository: Re-uploading habit to Firestore...")
+    FirebaseBackupService.shared.backupHabit(habit)
+    debugLog("♻️ HabitRepository: Habit backup initiated to Firestore: \(habit.name)")
+    
     // Reload habits to update UI
     await loadHabits(force: true)
   }

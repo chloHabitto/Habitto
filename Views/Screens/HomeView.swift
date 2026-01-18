@@ -329,6 +329,11 @@ class HomeViewState: ObservableObject {
           // Habit exists but wasn't marked as deleted yet - it's fine, just reload
         }
         
+        // CRITICAL: Re-upload to Firestore (habit was hard-deleted during soft-delete)
+        print("♻️ [RESTORE] Re-uploading habit to Firestore...")
+        FirebaseBackupService.shared.backupHabit(habit)
+        print("♻️ [RESTORE] Habit backup initiated to Firestore: \(habit.name)")
+        
         // CRITICAL: Reload habits to refresh UI
         print("♻️ [RESTORE] Reloading habits to refresh UI...")
         await habitRepository.loadHabits(force: true)

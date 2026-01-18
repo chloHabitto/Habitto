@@ -47,20 +47,23 @@ struct WhiteSheetContainer<Content: View>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section with dynamic height and snap animation
+      // Header section - always 90pt, uses offset to hide
+      // scrollOffset is "hide amount": 0 = visible, 90 = hidden
       headerSection
         .background(headerBackground)
-        .frame(height: scrollResponsive ? calculateHeaderHeight() : nil)  // Dynamic height
-        .clipped()  // Hide overflow when collapsed
+        .offset(y: scrollResponsive ? -scrollOffset : 0)
         .animation(.spring(response: 0.25, dampingFraction: 0.9), value: scrollOffset)
 
-      // Content area - naturally expands as header collapses
+      // Content area - moves up by same amount when header hides
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
+        .offset(y: scrollResponsive ? -scrollOffset : 0)
+        .animation(.spring(response: 0.25, dampingFraction: 0.9), value: scrollOffset)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
+    .clipped() // Clip the header when it slides above the container
     .ignoresSafeArea(.container, edges: .bottom)
   }
 
@@ -115,13 +118,6 @@ struct WhiteSheetContainer<Content: View>: View {
     .frame(maxWidth: .infinity, minHeight: showGrabber ? 20 : 0, alignment: .top)
   }
   
-  // MARK: - Scroll-Responsive Calculations
-  
-  /// Return the pre-calculated display height
-  /// scrollOffset is already the snapped display height from ProgressTabView
-  private func calculateHeaderHeight() -> CGFloat {
-    return scrollOffset
-  }
 }
 
 // MARK: - Convenience Initializers
