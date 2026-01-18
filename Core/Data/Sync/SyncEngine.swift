@@ -2000,11 +2000,12 @@ actor SyncEngine {
     private func reconcileDeletedHabits(userId: String, remoteHabitIds: Set<UUID>) async {
         logger.info("🔄 RECONCILE: Starting with \(remoteHabitIds.count) remote habit IDs")
         
-        // Get local habit IDs
+        // Get local habit IDs (excluding soft-deleted habits)
         let localHabitIds: Set<UUID> = await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
+            // ✅ SOFT DELETE: Exclude soft-deleted habits from reconciliation
             let predicate = #Predicate<HabitData> { habit in
-                habit.userId == userId
+                habit.userId == userId && habit.deletedAt == nil
             }
             let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
             let localHabits = (try? modelContext.fetch(descriptor)) ?? []
@@ -2047,14 +2048,16 @@ actor SyncEngine {
             }
         }
         
-        // DIRECTION 2: Delete locally habits that were deleted remotely
+        // DIRECTION 2: Soft-delete locally habits that were deleted remotely
         // (exist locally but not in Firestore)
+        // ⚠️ SYNC SAFETY: We SOFT-DELETE instead of hard-deleting to preserve audit trail
         let deletedRemotelyButLocal = localHabitIds.subtracting(remoteHabitIds)
         
         if !deletedRemotelyButLocal.isEmpty {
-            logger.info("🗑️ SyncEngine: Found \(deletedRemotelyButLocal.count) habits deleted remotely but still local - cleaning up local SwiftData")
+            logger.info("🗑️ [SOFT_DELETE] SyncEngine: Found \(deletedRemotelyButLocal.count) habits deleted remotely but still local")
+            logger.warning("⚠️ [SYNC_SAFETY] Using SOFT DELETE (not hard delete) to preserve audit trail")
             
-            // ✅ CRITICAL BUG FIX: Mark as deleted to prevent resurrection before deleting
+            // ✅ CRITICAL BUG FIX: Mark as deleted to prevent resurrection before soft-deleting
             for habitId in deletedRemotelyButLocal {
                 Self.markHabitAsDeleted(habitId)
             }
@@ -2063,37 +2066,50 @@ actor SyncEngine {
                 let modelContext = SwiftDataContainer.shared.modelContext
                 
                 for habitId in deletedRemotelyButLocal {
-                    // Find and delete the local habit
+                    // Find the local habit
                     let predicate = #Predicate<HabitData> { habit in
                         habit.id == habitId && habit.userId == userId
                     }
                     let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
                     
-                    if let habitToDelete = try? modelContext.fetch(descriptor).first {
-                        logger.info("🗑️ SyncEngine: Deleting locally orphaned habit '\(habitToDelete.name)' (\(habitId.uuidString.prefix(8))...)")
-                        modelContext.delete(habitToDelete)
+                    if let habitToSoftDelete = try? modelContext.fetch(descriptor).first {
+                        // ⚠️ SYNC SAFETY: Check if habit has completion records - if so, log warning
+                        let hasCompletionRecords = !habitToSoftDelete.completionHistory.isEmpty
+                        
+                        if hasCompletionRecords {
+                            logger.warning("⚠️ [SYNC_CONFLICT] Habit '\(habitToSoftDelete.name)' deleted remotely but HAS LOCAL COMPLETION RECORDS")
+                            logger.warning("   HabitId: \(habitId.uuidString.prefix(8))...")
+                            logger.warning("   Local completion records: \(habitToSoftDelete.completionHistory.count)")
+                            logger.warning("   Action: SOFT-DELETING locally (preserving data for investigation)")
+                        }
+                        
+                        // ✅ SOFT DELETE: Mark as deleted instead of hard deleting
+                        logger.info("🗑️ [SOFT_DELETE] SyncEngine: Soft-deleting locally orphaned habit '\(habitToSoftDelete.name)' (\(habitId.uuidString.prefix(8))...)")
+                        habitToSoftDelete.softDelete(source: "sync", context: modelContext)
                     }
                 }
                 
                 do {
                     try modelContext.save()
-                    logger.info("✅ SyncEngine: Deleted \(deletedRemotelyButLocal.count) locally orphaned habits from SwiftData")
+                    logger.info("✅ [SOFT_DELETE] SyncEngine: Soft-deleted \(deletedRemotelyButLocal.count) locally orphaned habits from SwiftData")
                 } catch {
-                    logger.error("❌ SyncEngine: Failed to save after deleting local orphaned habits: \(error.localizedDescription)")
+                    logger.error("❌ [SOFT_DELETE] SyncEngine: Failed to save after soft-deleting local orphaned habits: \(error.localizedDescription)")
                 }
             }
             
-            // After deleting locally orphaned habits, also delete their completion records from Firestore
+            // ⚠️ SYNC SAFETY: We do NOT delete completion records from Firestore when soft-deleting
+            // This preserves the audit trail and allows for investigation of sync conflicts
+            logger.info("ℹ️ [SYNC_SAFETY] Preserving completion records in Firestore for soft-deleted habits")
+            
+            // Clear the deleted markers after soft-delete is complete
             for habitId in deletedRemotelyButLocal {
-                await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habitId)
-                // Clear the deleted marker after cleanup is complete
                 Self.clearDeletedHabit(habitId)
             }
             
             // ✅ CRITICAL FIX: Reload HabitRepository's in-memory list BEFORE any save operations
-            // This prevents stale data from re-creating deleted habits
+            // This prevents stale data from re-creating soft-deleted habits
             await HabitRepository.shared.loadHabits(force: true)
-            logger.info("✅ SyncEngine: Reloaded HabitRepository after deleting \(deletedRemotelyButLocal.count) local habits")
+            logger.info("✅ [SOFT_DELETE] SyncEngine: Reloaded HabitRepository after soft-deleting \(deletedRemotelyButLocal.count) local habits")
             
             // Clear cache and notify UI to reload
             await habitStore.clearStorageCache()
