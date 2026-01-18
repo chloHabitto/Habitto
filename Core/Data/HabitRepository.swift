@@ -933,6 +933,15 @@ class HabitRepository: ObservableObject {
       try await habitStore.deleteHabit(habit)
       print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - habitStore.deleteHabit() completed")
       debugLog("✅ GUARANTEED: Habit deleted from SwiftData")
+      
+      // ✅ FIX: Manually update published habits to prevent race condition with publisher
+      // This ensures the @Published habits array is immediately updated, preventing the
+      // publisher from re-adding the deleted habit to HomeView before delete completes
+      await MainActor.run {
+        self.habits.removeAll { $0.id == habit.id }
+        print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Updated @Published habits array")
+      }
+      
       print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - END")
     } catch {
       print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - ERROR: \(error.localizedDescription)")
