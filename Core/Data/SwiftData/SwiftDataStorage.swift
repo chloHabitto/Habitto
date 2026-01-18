@@ -889,6 +889,14 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
       print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Found habit: '\(habitData.name)' (ID: \(habitData.id), userId: \(habitData.userId))")
       
+      // ✅ RACE CONDITION FIX: Check if habit was restored while delete was pending
+      let deletedIds = UserDefaults.standard.stringArray(forKey: "DeletedHabitIDs") ?? []
+      if !deletedIds.contains(id.uuidString) {
+        print("⏭️ [SOFT_DELETE] Skipping - habit was restored while delete was pending")
+        logger.info("Skipping soft-delete - habit \(id) was restored while delete was pending")
+        return
+      }
+      
       // ✅ SOFT DELETE: Mark as deleted instead of hard deleting
       print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Performing SOFT DELETE (marking as deleted)")
       habitData.softDelete(source: "user", context: container.modelContext)
