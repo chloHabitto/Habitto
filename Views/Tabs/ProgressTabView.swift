@@ -121,6 +121,7 @@ enum HabitFilterStatus: String {
 private struct ScrollOffsetTracker: View {
   let minY: CGFloat
   @Binding var scrollOffset: CGFloat
+  @Binding var headerVisible: Bool
   @Binding var initialScrollOffset: CGFloat?
   
   var body: some View {
@@ -133,14 +134,31 @@ private struct ScrollOffsetTracker: View {
           return
         }
         
-        // Update scroll offset on every change
+        // Calculate current scroll offset
         let delta = (initialScrollOffset ?? minY) - minY
         let newOffset = max(0, delta)
         
-        // Only update if changed significantly
-        if abs(newOffset - scrollOffset) > 1 {
+        // Detect scroll direction by comparing with previous offset
+        let scrollingDown = newOffset > scrollOffset
+        let scrollingUp = newOffset < scrollOffset
+        
+        // Update header visibility based on direction
+        // Hide when scrolling down past threshold, show immediately on scroll up
+        if scrollingDown && newOffset > 20 {  // Threshold before hiding
+          if headerVisible {
+            headerVisible = false
+            print("📜 Header hiding (scrolling down, offset: \(newOffset))")
+          }
+        } else if scrollingUp {
+          if !headerVisible {
+            headerVisible = true
+            print("📜 Header showing (scrolling up, offset: \(newOffset))")
+          }
+        }
+        
+        // Update scroll offset if changed significantly
+        if abs(newOffset - scrollOffset) > 0.5 {
           scrollOffset = newOffset
-          print("📜 Scroll offset updated: \(newOffset) (minY: \(minY))")
         }
       }
   }
@@ -203,6 +221,7 @@ struct ProgressTabView: View {
   
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
+  @State private var headerVisible: Bool = true
   @State private var initialScrollOffset: CGFloat? = nil
 
   // MARK: - Environment
@@ -730,8 +749,7 @@ struct ProgressTabView: View {
         headerBackground: .surface01,
         contentBackground: .surface01,
         scrollResponsive: true,
-        headerCollapseThreshold: 50,
-        scrollOffset: scrollOffset) {
+        headerVisible: headerVisible) {
           ScrollView {
             mainContentView
               .padding(.top, 20)
@@ -741,6 +759,7 @@ struct ProgressTabView: View {
                   ScrollOffsetTracker(
                     minY: geometry.frame(in: .global).minY,
                     scrollOffset: $scrollOffset,
+                    headerVisible: $headerVisible,
                     initialScrollOffset: Binding(
                       get: { initialScrollOffset },
                       set: { initialScrollOffset = $0 }
