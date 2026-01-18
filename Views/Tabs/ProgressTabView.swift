@@ -116,16 +116,33 @@ enum HabitFilterStatus: String {
   case inactive = "Inactive"
 }
 
-// MARK: - ScrollDebugView
+// MARK: - ScrollOffsetTracker
 
-private struct ScrollDebugView: View {
+private struct ScrollOffsetTracker: View {
   let minY: CGFloat
+  @Binding var scrollOffset: CGFloat
+  @Binding var initialScrollOffset: CGFloat?
   
   var body: some View {
-    // This prints every time the view body is evaluated
-    let _ = print("📏 GeometryReader minY: \(minY)")
-    return Color.clear
-      .preference(key: ScrollOffsetPreferenceKey.self, value: minY)
+    Color.clear
+      .task(id: minY) {
+        // Capture initial position on first appearance
+        if initialScrollOffset == nil {
+          initialScrollOffset = minY
+          print("📜 Initial scroll offset captured: \(minY)")
+          return
+        }
+        
+        // Update scroll offset on every change
+        let delta = (initialScrollOffset ?? minY) - minY
+        let newOffset = max(0, delta)
+        
+        // Only update if changed significantly
+        if abs(newOffset - scrollOffset) > 1 {
+          scrollOffset = newOffset
+          print("📜 Scroll offset updated: \(newOffset) (minY: \(minY))")
+        }
+      }
   }
 }
 
@@ -721,25 +738,16 @@ struct ProgressTabView: View {
               .padding(.bottom, 20)
               .background(
                 GeometryReader { geometry in
-                  ScrollDebugView(minY: geometry.frame(in: .global).minY)
+                  ScrollOffsetTracker(
+                    minY: geometry.frame(in: .global).minY,
+                    scrollOffset: $scrollOffset,
+                    initialScrollOffset: Binding(
+                      get: { initialScrollOffset },
+                      set: { initialScrollOffset = $0 }
+                    )
+                  )
                 }
               )
-          }
-          .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-            print("📜 onPreferenceChange received: \(offset)")
-            if initialScrollOffset == nil {
-              initialScrollOffset = offset
-              print("📜 Initial scroll offset: \(offset)")
-            }
-            
-            let scrollDelta = (initialScrollOffset ?? 0) - offset
-            let positiveOffset = max(0, scrollDelta)
-            
-            // Only update if changed significantly (reduces noise)
-            if abs(positiveOffset - scrollOffset) > 1 {
-              print("📜 Scroll delta: \(positiveOffset)")
-              scrollOffset = positiveOffset
-            }
           }
           .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
         }
