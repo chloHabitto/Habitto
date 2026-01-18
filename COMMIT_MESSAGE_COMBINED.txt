@@ -1,0 +1,82 @@
+Fix: Resolve two critical bugs causing streak calculation to fail
+
+This fixes the "streak stays at 0 after first completion" bug by addressing
+TWO root causes discovered during investigation.
+
+Root Cause #1: Race Condition (Persistence Timing)
+- Streak calculation triggered before habit completion saved to SwiftData
+- updateAllStreaks() fetched data while async save was in progress
+- Result: Stale data read, streak calculated as 0
+
+Root Cause #2: Soft Delete Issue (Deleted Habits Breaking Streak)
+- updateAllStreaks() queried SwiftData directly, bypassing HabitRepository
+- Got ALL habits including soft-deleted ones (deletedAt != nil)
+- Example: 2 active habits + 10 deleted habits = 12 total
+- Streak calculation: 2/12 complete → Streak broken (expected 2/2)
+
+Solution #1: Continuation-Based Synchronization
+- Added pendingPersistenceContinuations to HomeViewState
+- Added waitForPersistenceCompletion() async function
+- Modified endPersistenceOperation() to resume waiting continuations
+- onDifficultySheetDismissed() now awaits persistence before streak calc
+
+Solution #2: Use Repository as Single Source of Truth
+- Changed updateAllStreaks() to use habitRepository.habits
+- Changed backfillHistoricalLongestStreak() to use habitRepository.habits
+- Repository already filters out soft-deleted habits
+- Added diagnostic logging to show mismatch detection
+- Added cleanupOldSoftDeletedHabits() to remove habits older than 30 days
+
+Changes:
+
+1. Views/Screens/HomeView.swift
+   FIX #1:
+   - Added pendingPersistenceContinuations tracking
+   - Added waitForPersistenceCompletion() function
+   - Modified endPersistenceOperation() to resume continuations
+   - Wired onWaitForPersistence callback to HomeTabView
+   
+   FIX #2:
+   - Changed updateAllStreaks() to use habitRepository.habits (line 628)
+   - Changed backfillHistoricalLongestStreak() to use habitRepository.habits (line 780)
+   - Added diagnostic logging for habit count mismatch
+   - Added cleanupOldSoftDeletedHabits() function
+   - Call cleanup on app launch
+
+2. Views/Tabs/HomeTabView.swift
+   FIX #1:
+   - Added onWaitForPersistence callback parameter
+   - Modified onDifficultySheetDismissed() to await persistence
+   - Added diagnostic notification counter and enhanced logging
+
+3. Core/Models/Habit.swift
+   - Added diagnostic logging to meetsStreakCriteria()
+   - Fixed variable shadowing bug (debugGoalAmount)
+
+Testing:
+- Fresh install: First habit completion now shows streak=1 and Day 1 milestone
+- Soft delete: Deleted habits no longer break streak calculation
+- Rapid completion: No race conditions or duplicate awards
+- Persistence timing: Waits 0.3-0.5s for save to complete (acceptable)
+- Console logs show proper synchronization sequence
+
+Performance Impact:
+- Adds 0.3-0.5s wait when completing last habit (ensures correctness)
+- Actually faster: Uses pre-filtered repository array instead of querying all habits
+- User won't notice (already waiting for difficulty sheet animation)
+
+Before Fix:
+  Console: "⚠️ MISMATCH: SwiftData has 12 habits, HabitRepository has 2"
+  Console: "❌ Day 2026-01-18: 2/12 habits complete - STREAK BROKEN"
+  Result: Streak = 0, no milestone, no celebration
+
+After Fix:
+  Console: "✅ Using HabitRepository (2 active) for streak calculation"
+  Console: "✅ Day 2026-01-18: 2/2 habits complete - STREAK CONTINUES"
+  Result: Streak = 1, Day 1 milestone shows, celebration plays
+
+See Documentation:
+- COMPLETE_FIX_SUMMARY.md - Overview of both fixes
+- STREAK_RACE_CONDITION_FIX.md - Detailed analysis of Fix #1
+- SOFT_DELETE_STREAK_FIX.md - Detailed analysis of Fix #2
+- STREAK_BUG_TEST_CHECKLIST.md - Testing instructions
