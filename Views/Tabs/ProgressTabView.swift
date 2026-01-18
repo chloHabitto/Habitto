@@ -607,7 +607,6 @@ struct ProgressTabView: View {
 
   @ViewBuilder
   private var mainContentView: some View {
-    let _ = print("🔄 mainContentView body called")
     VStack(spacing: 20) {
       // Date Selection
       dateSelectionSection
@@ -1551,7 +1550,7 @@ struct ProgressTabView: View {
             
             Spacer()
             
-            // Right: Flag icon + goal text
+            // Right: Flag icon + goal text + arrow
             HStack(spacing: 4) {
               Image(.iconFlagFilled)
                 .renderingMode(.template)
@@ -1561,6 +1560,10 @@ struct ProgressTabView: View {
               
               Text(selectedHabit.goal)
                 .font(.appBodySmallEmphasised)
+                .foregroundColor(Color("navy500"))
+              
+              Image(systemName: "chevron.right")
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundColor(Color("navy500"))
             }
           }

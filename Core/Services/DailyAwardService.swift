@@ -42,6 +42,11 @@ class DailyAwardService: ObservableObject {
     private let dateFormatter: LocalDateFormatter
     private let logger = Logger(subsystem: "com.habitto.app", category: "DailyAwardService")
     
+    // MARK: - Debouncing
+    
+    private var lastRefreshTime: Date?
+    private let refreshDebounceInterval: TimeInterval = 2.0 // Don't refresh more than once every 2 seconds
+    
     // MARK: - Constants
     
     /// XP required for each level
@@ -417,6 +422,13 @@ class DailyAwardService: ObservableObject {
     /// Refresh XP state from SwiftData
     /// ✅ GUEST-ONLY MODE: Loads XP from UserProgressData and DailyAward records
     func refreshXPState() async {
+        // Debounce: Skip if called too recently
+        if let lastRefresh = lastRefreshTime, Date().timeIntervalSince(lastRefresh) < refreshDebounceInterval {
+            logger.debug("⏭️ DailyAwardService: Skipping XP refresh (debounced - last refresh was \(Date().timeIntervalSince(lastRefresh))s ago)")
+            return
+        }
+        
+        lastRefreshTime = Date()
         logger.info("🔄 DailyAwardService: Refreshing XP state from SwiftData")
         
         let modelContext = SwiftDataContainer.shared.modelContext
