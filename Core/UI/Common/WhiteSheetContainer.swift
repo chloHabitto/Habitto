@@ -47,23 +47,22 @@ struct WhiteSheetContainer<Content: View>: View {
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section - height animates, content clips
+      // Header section - instant snap, no animation
       if scrollResponsive {
         headerSection
           .background(headerBackground)
-          .frame(height: max(0, 90 - scrollOffset))  // 90 when scrollOffset=0, 0 when scrollOffset=90
+          .frame(height: max(0, 90 - scrollOffset))
           .clipped()
-          .animation(.spring(response: 0.25, dampingFraction: 0.9), value: scrollOffset)
+          // NO animation - instant snap looks cleaner than animated gap
       } else {
         headerSection
           .background(headerBackground)
       }
 
-      // Content area - NO offset, naturally expands to fill space
+      // Content area
       content
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(contentBackground)
-      // NO animation or offset on content!
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
