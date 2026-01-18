@@ -305,9 +305,6 @@ enum FormInputComponents {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(isSelected ? primaryColor : secondaryColor)
-        .overlay(
-          RoundedRectangle(cornerRadius: 12)
-            .stroke(isSelected ? primaryColor : .outline3, lineWidth: 1.5))
         .cornerRadius(12)
       }
       .buttonStyle(PlainButtonStyle())
