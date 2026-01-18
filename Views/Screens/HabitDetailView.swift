@@ -1,5 +1,12 @@
 import SwiftUI
 
+// MARK: - DetailTab
+
+enum DetailTab {
+  case details
+  case progress
+}
+
 // MARK: - HabitDetailView
 
 struct HabitDetailView: View {
@@ -236,6 +243,7 @@ struct HabitDetailView: View {
   // MARK: Private
 
   @Environment(\.dismiss) private var dismiss
+  @State private var selectedTab: DetailTab = .details
   @State private var todayProgress = 0
   @State private var showingEditView = false
   @State private var showingDeleteConfirmation = false
@@ -266,9 +274,65 @@ struct HabitDetailView: View {
 
   private var contentView: some View {
     VStack(spacing: 0) {
+      // Segmented control
+      tabSegmentedControl
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 12)
+      
+      // Tab content
+      if selectedTab == .details {
+        detailsTabContent
+      } else {
+        progressTabContent
+      }
+    }
+  }
+  
+  // MARK: - Tab Segmented Control
+  
+  private var tabSegmentedControl: some View {
+    HStack(spacing: 8) {
+      tabButton(title: "Details", tab: .details)
+      tabButton(title: "Progress", tab: .progress)
+      Spacer()
+    }
+  }
+  
+  private func tabButton(title: String, tab: DetailTab) -> some View {
+    Button(action: {
+      withAnimation(.easeInOut(duration: 0.2)) {
+        selectedTab = tab
+      }
+    }) {
+      HStack(spacing: 4) {
+        if selectedTab == tab {
+          Image(systemName: "checkmark")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.onPrimaryContainer)
+        }
+        Text(title)
+          .font(selectedTab == tab ? .appLabelMediumEmphasised : .appLabelMedium)
+          .foregroundColor(.onPrimaryContainer)
+      }
+      .padding(.leading, selectedTab == tab ? 16 : 12)
+      .padding(.trailing, 12)
+      .frame(height: 32)
+      .background(
+        RoundedRectangle(cornerRadius: 16)
+          .fill(selectedTab == tab ? Color.primaryContainer : Color.clear)
+      )
+    }
+    .buttonStyle(PlainButtonStyle())
+  }
+  
+  // MARK: - Details Tab Content
+  
+  private var detailsTabContent: some View {
+    VStack(spacing: 0) {
       // Main content card
       mainContentCard
-        .padding(.top, 16)
+        .padding(.top, 4)
         .padding(.horizontal, 16)
         .padding(.bottom, 16)
 
@@ -277,6 +341,19 @@ struct HabitDetailView: View {
         .padding(.horizontal, 16)
         .padding(.bottom, 32)
     }
+  }
+  
+  // MARK: - Progress Tab Content
+  
+  private var progressTabContent: some View {
+    VStack(spacing: 16) {
+      Text("Progress content coming soon")
+        .font(.appBodyMedium)
+        .foregroundColor(.text05)
+        .padding()
+    }
+    .padding(.horizontal, 16)
+    .padding(.bottom, 32)
   }
 
   // MARK: - Main Content Card

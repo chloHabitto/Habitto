@@ -46,26 +46,36 @@ struct WhiteSheetContainer<Content: View>: View {
   let content: Content
 
   var body: some View {
-    VStack(spacing: 0) {
-      // Header section - instant snap, no animation
-      if scrollResponsive {
-        headerSection
-          .background(headerBackground)
-          .frame(height: max(0, 90 - scrollOffset))
-          .clipped()
-          // NO animation - instant snap looks cleaner than animated gap
-      } else {
+    ZStack(alignment: .top) {
+      // Content layer - fills entire space with dynamic top padding
+      VStack(spacing: 0) {
+        // Spacer that shrinks as header hides (acts as padding)
+        if scrollResponsive {
+          Color.clear
+            .frame(height: max(0, 90 - scrollOffset))
+        } else {
+          Color.clear
+            .frame(height: 90)
+        }
+        
+        // Actual content
+        content
+          .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+      }
+      .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+      .background(contentBackground)
+      
+      // Header layer - slides up/down as overlay
+      VStack(spacing: 0) {
         headerSection
           .background(headerBackground)
       }
-
-      // Content area
-      content
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(contentBackground)
+      .frame(height: 90, alignment: .top)
+      .offset(y: scrollResponsive ? -scrollOffset : 0)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .clipShape(RoundedCorner(radius: 28, corners: [.topLeft, .topRight]))
+    .animation(.spring(response: 0.3, dampingFraction: 0.85), value: scrollOffset)
     .ignoresSafeArea(.container, edges: .bottom)
   }
 
