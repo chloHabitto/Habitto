@@ -173,6 +173,7 @@ struct ProgressTabView: View {
   
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
+  @State private var initialScrollOffset: CGFloat? = nil
 
   // MARK: - Environment
 
@@ -710,17 +711,25 @@ struct ProgressTabView: View {
                   Color.clear
                     .preference(
                       key: ScrollOffsetPreferenceKey.self,
-                      value: geometry.frame(in: .named("progressScroll")).minY
+                      value: geometry.frame(in: .global).minY
                     )
                 }
               )
           }
-          .coordinateSpace(name: "progressScroll")
           .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
-            print("📜 Scroll offset (raw): \(offset)")
-            let positiveOffset = max(0, -offset)
-            print("📜 Scroll offset (positive): \(positiveOffset)")
-            scrollOffset = positiveOffset
+            if initialScrollOffset == nil {
+              initialScrollOffset = offset
+              print("📜 Initial scroll offset: \(offset)")
+            }
+            
+            let scrollDelta = (initialScrollOffset ?? 0) - offset
+            let positiveOffset = max(0, scrollDelta)
+            
+            // Only update if changed significantly (reduces noise)
+            if abs(positiveOffset - scrollOffset) > 1 {
+              print("📜 Scroll delta: \(positiveOffset)")
+              scrollOffset = positiveOffset
+            }
           }
           .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
         }
