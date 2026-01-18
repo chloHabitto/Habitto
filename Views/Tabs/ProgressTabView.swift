@@ -702,21 +702,18 @@ struct ProgressTabView: View {
         headerCollapseThreshold: 50,
         scrollOffset: scrollOffset) {
           ScrollView {
-            VStack(spacing: 0) {
-              // Tracking view at the top of scroll content
-              GeometryReader { geometry in
-                Color.clear
-                  .preference(
-                    key: ScrollOffsetPreferenceKey.self,
-                    value: geometry.frame(in: .named("progressScroll")).minY
-                  )
-              }
-              .frame(height: 0)
-              
-              mainContentView
-                .padding(.top, 20)
-                .padding(.bottom, 20) // Padding for content spacing
-            }
+            mainContentView
+              .padding(.top, 20)
+              .padding(.bottom, 20)
+              .background(
+                GeometryReader { geometry in
+                  Color.clear
+                    .preference(
+                      key: ScrollOffsetPreferenceKey.self,
+                      value: geometry.frame(in: .named("progressScroll")).minY
+                    )
+                }
+              )
           }
           .coordinateSpace(name: "progressScroll")
           .onPreferenceChange(ScrollOffsetPreferenceKey.self) { offset in
