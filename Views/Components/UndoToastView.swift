@@ -23,7 +23,7 @@ struct UndoToastView: View {
       // Deleted message
       Text("\"\(habitName)\" deleted")
         .font(.appBodyLarge)
-        .foregroundColor(.white)
+        .foregroundColor(.appText02)
         .lineLimit(1)
       
       Spacer()
@@ -34,7 +34,7 @@ struct UndoToastView: View {
       }) {
         Text("Undo")
           .font(.appBodyLargeEmphasised)
-          .foregroundColor(.accentColor)
+          .foregroundColor(.appPrimary)
           .padding(.horizontal, 12)
           .padding(.vertical, 6)
           .background(
