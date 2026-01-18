@@ -16,10 +16,8 @@ struct QuickStatsRow: View {
       // Left: Streak
       HStack(spacing: 6) {
         Image("Icon-Fire_Outlined")
-          .resizable()
-          .renderingMode(.template)
-          .frame(width: 16, height: 16)
-          .foregroundColor(.orange)
+          .font(.system(size: 16))
+          .foregroundColor(.text05)
         
         Text("\(currentStreak) \(currentStreak == 1 ? "day" : "days")")
           .font(.appBodySmallEmphasised)
@@ -32,14 +30,12 @@ struct QuickStatsRow: View {
       HStack(spacing: 6) {
         if isScheduledToday && isCompletedToday {
           Image(systemName: "checkmark")
-            .font(.system(size: 14, weight: .semibold))
+            .font(.system(size: 16))
             .foregroundColor(habitColor)
         } else {
           Image("Icon-CalendarMark_Outlined")
-            .resizable()
-            .renderingMode(.template)
-            .frame(width: 16, height: 16)
-            .foregroundColor(nextDueIconColor)
+            .font(.system(size: 16))
+            .foregroundColor(.text05)
         }
         
         Text(nextDueText)
@@ -76,14 +72,6 @@ struct QuickStatsRow: View {
       let formatter = DateFormatter()
       formatter.dateFormat = "MMM d" // "Jan 25"
       return "Next: \(formatter.string(from: nextDate))"
-    }
-  }
-  
-  private var nextDueIconColor: Color {
-    if !isScheduledToday && nextScheduledDate == nil {
-      return .text05
-    } else {
-      return .text03
     }
   }
   

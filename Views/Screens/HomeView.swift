@@ -52,6 +52,11 @@ class HomeViewState: ObservableObject {
       }
     }
     self.updateStreak()
+    
+    // ✅ CLEANUP: Remove old soft-deleted habits on app launch
+    Task {
+      await self.cleanupOldSoftDeletedHabits()
+    }
 
     // Subscribe to HabitRepository changes
     habitRepository.$habits
@@ -627,15 +632,35 @@ class HomeViewState: ObservableObject {
         }()
         debugLog("🔍 STREAK_START: GlobalStreakModel.currentStreak = \(streak.currentStreak), longestStreak = \(streak.longestStreak)")
         
-        // Fetch all habits for this user
-        var habitsDescriptor = FetchDescriptor<HabitData>(
+        // ✅ CRITICAL FIX: Use HabitRepository.habits instead of querying SwiftData directly
+        // HabitRepository.habits already filters out soft-deleted habits (deletedAt != nil)
+        // Querying SwiftData directly was including ALL habits (even deleted ones), breaking streak calculation
+        
+        // ✅ DIAGNOSTIC: Show what was fixed
+        #if DEBUG
+        var allHabitsDescriptor = FetchDescriptor<HabitData>(
           predicate: #Predicate { habit in
             habit.userId == userId
           }
         )
-        habitsDescriptor.includePendingChanges = true
-        let habitDataList = try modelContext.fetch(habitsDescriptor)
-        let habits = habitDataList.map { $0.toHabit() }
+        allHabitsDescriptor.includePendingChanges = true
+        if let allHabitDataList = try? modelContext.fetch(allHabitsDescriptor) {
+          let allHabitsCount = allHabitDataList.count
+          let deletedHabitsCount = allHabitDataList.filter { $0.deletedAt != nil }.count
+          let activeHabitsCount = habitRepository.habits.count
+          
+          if allHabitsCount != activeHabitsCount {
+            debugLog("⚠️ [HABIT_LOAD] MISMATCH DETECTED (but now fixed!):")
+            debugLog("   SwiftData has \(allHabitsCount) total habits (\(deletedHabitsCount) soft-deleted)")
+            debugLog("   HabitRepository has \(activeHabitsCount) active habits")
+            debugLog("   ✅ Using HabitRepository (\(activeHabitsCount) active) for streak calculation")
+          }
+        }
+        #endif
+        
+        let habits = habitRepository.habits
+        
+        debugLog("🔄 STREAK_RECALC: Using \(habits.count) active habits from HabitRepository (soft-deleted habits excluded)")
         
         guard !habits.isEmpty else {
           debugLog("ℹ️ STREAK_RECALC: No habits found - resetting streak to 0")
@@ -753,6 +778,79 @@ class HomeViewState: ObservableObject {
   
   /// One-time backfill to calculate and restore historical longestStreak for existing users
   /// This runs once per user to restore their historical best streak that was never persisted before
+  
+  // MARK: - Soft Delete Cleanup
+  
+  /// Clean up soft-deleted habits older than 30 days
+  /// This permanently removes habits that have been in the "Recently Deleted" state for too long
+  func cleanupOldSoftDeletedHabits() async {
+    debugLog("🗑️ CLEANUP: Starting cleanup of old soft-deleted habits...")
+    
+    let modelContext = SwiftDataContainer.shared.modelContext
+    let userId = await CurrentUser().idOrGuest
+    
+    do {
+      // Find soft-deleted habits older than 30 days
+      let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+      
+      // ✅ FIX: SwiftData predicates can't capture Date variables
+      // Solution: Fetch all soft-deleted habits for user, then filter in Swift
+      let descriptor = FetchDescriptor<HabitData>(
+        predicate: #Predicate { habit in
+          habit.userId == userId && habit.deletedAt != nil
+        }
+      )
+      
+      let allDeletedHabits = try modelContext.fetch(descriptor)
+      
+      // Filter in Swift for date comparison
+      let oldDeletedHabits = allDeletedHabits.filter { habitData in
+        guard let deletedAt = habitData.deletedAt else { return false }
+        return deletedAt < thirtyDaysAgo
+      }
+      
+      guard !oldDeletedHabits.isEmpty else {
+        debugLog("🗑️ CLEANUP: No old soft-deleted habits found")
+        return
+      }
+      
+      debugLog("🗑️ CLEANUP: Found \(oldDeletedHabits.count) old soft-deleted habits to permanently delete")
+      
+      for habitData in oldDeletedHabits {
+        debugLog("🗑️ CLEANUP: Permanently deleting '\(habitData.name)' (deleted on \(habitData.deletedAt?.description ?? "unknown"))")
+        
+        // Delete associated CompletionRecords
+        // ✅ FIX: SwiftData predicates can't capture UUID variables
+        // Solution: Fetch all CompletionRecords for user, then filter in Swift by habitId
+        let completionDescriptor = FetchDescriptor<CompletionRecord>(
+          predicate: #Predicate { record in
+            record.userId == userId
+          }
+        )
+        let allUserRecords = try modelContext.fetch(completionDescriptor)
+        
+        // Filter in Swift for UUID comparison
+        let habitId = habitData.id
+        let completionRecords = allUserRecords.filter { record in
+          record.habitId == habitId
+        }
+        
+        for record in completionRecords {
+          modelContext.delete(record)
+        }
+        
+        // Delete the habit itself
+        modelContext.delete(habitData)
+      }
+      
+      try modelContext.save()
+      debugLog("✅ CLEANUP: Permanently deleted \(oldDeletedHabits.count) old soft-deleted habits and their completion records")
+      
+    } catch {
+      debugLog("❌ CLEANUP: Failed to clean up old soft-deleted habits: \(error)")
+    }
+  }
+  
   // MARK: - Widget Sync Helper
   
   /// Syncs the current streak to UserDefaults for widget extension
@@ -781,15 +879,11 @@ class HomeViewState: ObservableObject {
     debugLog("🔄 STREAK_BACKFILL: Starting historical longestStreak backfill for user '\(userId.isEmpty ? "guest" : userId)'")
     
     do {
-      // Fetch all habits for this user
-      var habitsDescriptor = FetchDescriptor<HabitData>(
-        predicate: #Predicate { habit in
-          habit.userId == userId
-        }
-      )
-      habitsDescriptor.includePendingChanges = true
-      let habitDataList = try modelContext.fetch(habitsDescriptor)
-      let habits = habitDataList.map { $0.toHabit() }
+      // ✅ CRITICAL FIX: Use HabitRepository.habits instead of querying SwiftData directly
+      // This ensures we only backfill for ACTIVE habits (excluding soft-deleted ones)
+      let habits = habitRepository.habits
+      
+      debugLog("📊 STREAK_BACKFILL: Using \(habits.count) active habits from HabitRepository")
       
       guard !habits.isEmpty else {
         debugLog("ℹ️ STREAK_BACKFILL: No habits found, skipping backfill")
