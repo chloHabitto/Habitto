@@ -134,24 +134,19 @@ private struct ScrollOffsetTracker: View {
           initialScrollOffset = minY
         }
         
-        // Calculate scroll offset
         let newOffset = max(0, (initialScrollOffset ?? minY) - minY)
         scrollOffset = newOffset
         
-        // Calculate raw header height (1:1 with scroll)
+        // Calculate raw header height
         let rawHeight = fullHeaderHeight - min(newOffset, fullHeaderHeight)
         
-        // Snap logic: if more than halfway, show full; otherwise hide
-        let snappedHeight: CGFloat
-        if rawHeight > fullHeaderHeight * 0.5 {
-          snappedHeight = fullHeaderHeight  // Snap to visible
-        } else {
-          snappedHeight = 0  // Snap to hidden
-        }
+        // Simple direct mapping - NO animation during scroll
+        // Just set the snapped value directly
+        let snappedHeight: CGFloat = rawHeight > (fullHeaderHeight * 0.5) ? fullHeaderHeight : 0
         
-        // Animate to snapped height
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-          displayHeaderHeight = snappedHeight
+        // Only update if changed to avoid redundant updates
+        if displayHeaderHeight != snappedHeight {
+          displayHeaderHeight = snappedHeight  // No animation wrapper
         }
       }
   }
@@ -857,9 +852,13 @@ struct ProgressTabView: View {
       }
     }
     .onAppear {
-      // Generate initial encouraging messages
-      cachedWeeklyMessage = generateWeeklyEncouragingMessage()
-      cachedMonthlyMessage = generateMonthlyEncouragingMessage()
+      // Generate initial encouraging messages if not already cached
+      if cachedWeeklyMessage == nil {
+        cachedWeeklyMessage = generateWeeklyEncouragingMessage()
+      }
+      if cachedMonthlyMessage == nil {
+        cachedMonthlyMessage = generateMonthlyEncouragingMessage()
+      }
       
       // Calculate streak statistics when view appears
       updateStreakStatistics()
@@ -2686,15 +2685,9 @@ struct ProgressTabView: View {
   }
 
   private func getWeeklyEncouragingMessage() -> String {
-    // Return cached message if available
-    if let cached = cachedWeeklyMessage {
-      return cached
-    }
-    
-    // Generate new message
-    let message = generateWeeklyEncouragingMessage()
-    cachedWeeklyMessage = message
-    return message
+    // Just return cached value if available, otherwise generate
+    // Do NOT set state here - SwiftUI doesn't allow state modification during body computation
+    return cachedWeeklyMessage ?? generateWeeklyEncouragingMessage()
   }
   
   private func generateWeeklyEncouragingMessage() -> String {
@@ -4107,15 +4100,9 @@ struct ProgressTabView: View {
   }
 
   private func getMonthlyEncouragingMessage() -> String {
-    // Return cached message if available
-    if let cached = cachedMonthlyMessage {
-      return cached
-    }
-    
-    // Generate new message
-    let message = generateMonthlyEncouragingMessage()
-    cachedMonthlyMessage = message
-    return message
+    // Just return cached value if available, otherwise generate
+    // Do NOT set state here - SwiftUI doesn't allow state modification during body computation
+    return cachedMonthlyMessage ?? generateMonthlyEncouragingMessage()
   }
   
   private func generateMonthlyEncouragingMessage() -> String {

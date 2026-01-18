@@ -1091,6 +1091,18 @@ final actor HabitStore {
     let deletedIds = UserDefaults.standard.stringArray(forKey: Self.deletedHabitsKey) ?? []
     return deletedIds.contains(habitId.uuidString)
   }
+  
+  /// Unmark a habit as deleted (for restore/undo operations)
+  func unmarkHabitAsDeleted(_ habitId: UUID) {
+    var deletedIds = UserDefaults.standard.stringArray(forKey: Self.deletedHabitsKey) ?? []
+    let idString = habitId.uuidString
+    if let index = deletedIds.firstIndex(of: idString) {
+      deletedIds.remove(at: index)
+      UserDefaults.standard.set(deletedIds, forKey: Self.deletedHabitsKey)
+      UserDefaults.standard.synchronize()
+      print("♻️ [RESTORE] Unmarked habit \(idString.prefix(8))... as deleted in UserDefaults")
+    }
+  }
 
   /// Check for habits stored in UserDefaults (legacy storage)
   private func checkForLegacyHabits() async throws -> [Habit] {

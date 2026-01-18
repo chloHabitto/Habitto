@@ -301,6 +301,12 @@ class HomeViewState: ObservableObject {
   func restoreHabit(_ habit: Habit) async {
     print("♻️ [RESTORE] HomeViewState.restoreHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     
+    // CRITICAL: Clear deleted tracking BEFORE reload to prevent filtering
+    print("♻️ [RESTORE] Clearing deleted tracking for habit: \(habit.id)")
+    SyncEngine.clearDeletedHabit(habit.id)  // Clear from SyncEngine
+    await HabitStore.shared.unmarkHabitAsDeleted(habit.id)  // Clear from UserDefaults
+    print("♻️ [RESTORE] Deleted tracking cleared - habit will not be filtered out")
+    
     do {
       let modelContext = SwiftDataContainer.shared.modelContext
       
