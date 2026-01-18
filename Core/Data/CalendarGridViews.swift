@@ -1170,7 +1170,7 @@ struct YearlyCalendarGridView: View {
   // MARK: - Yearly Heatmap Table
 
   @ViewBuilder
-  private func yearlyHeatmapTable(for _: Habit, index: Int) -> some View {
+  private func yearlyHeatmapTable(for habit: Habit, index: Int) -> some View {
     VStack(spacing: 8) {
       // Calculate date components outside of @ViewBuilder
       let calendar = AppDateFormatter.shared.getUserCalendar()
@@ -1191,7 +1191,8 @@ struct YearlyCalendarGridView: View {
               intensity: heatmapData.intensity,
               isScheduled: heatmapData.isScheduled,
               completionPercentage: heatmapData.completionPercentage,
-              rectangleSizePercentage: 0.8)
+              rectangleSizePercentage: 0.8,
+              habitColor: habit.color.color)
               .aspectRatio(1, contentMode: .fit)
               .cornerRadius(2)
           } else {

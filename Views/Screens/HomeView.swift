@@ -129,8 +129,6 @@ class HomeViewState: ObservableObject {
   private var isUserInitiatedRecalculation = false
   // ✅ RACE CONDITION FIX: Track continuations waiting for persistence to complete
   private var pendingPersistenceContinuations: [CheckedContinuation<Void, Never>] = []
-  // ✅ DELETE RACE CONDITION FIX: Track habits currently being deleted
-  private var deleteInProgress: Set<UUID> = []
   
   /// Calculate and update streak (call this when habits change)
   func updateStreak() {
@@ -270,125 +268,101 @@ class HomeViewState: ObservableObject {
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
-  /// ✅ UNDO TOAST: Shows toast immediately, but restoreHabit() waits for delete to complete
+  /// ✅ UNDO TOAST: Shows toast immediately for instant feedback
   func deleteHabit(_ habit: Habit) async {
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
-    
-    // Mark delete as in-progress to prevent restore during deletion
-    deleteInProgress.insert(habit.id)
-    defer { deleteInProgress.remove(habit.id) }
     
     // Show toast immediately and remove from local state for instant UI update
     await MainActor.run {
       self.deletedHabitForUndo = habit
-      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Removing from local habits array")
-      var updatedHabits = self.habits
-      let beforeCount = updatedHabits.count
-      updatedHabits.removeAll { $0.id == habit.id }
-      let afterCount = updatedHabits.count
-      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Local habits: \(beforeCount) → \(afterCount)")
-      self.habits = updatedHabits
-      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Local state updated, toast shown")
+      self.habits.removeAll { $0.id == habit.id }
+      print("🗑️ DELETE_FLOW: Local state updated, toast shown")
     }
 
-    // Then delete from storage in background
-    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Calling habitRepository.deleteHabit()")
+    // Delete from storage in background
+    print("🗑️ DELETE_FLOW: Calling habitRepository.deleteHabit()")
     do {
       try await habitRepository.deleteHabit(habit)
-      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - habitRepository.deleteHabit() completed successfully")
+      print("🗑️ DELETE_FLOW: Delete completed successfully")
       debugLog("✅ GUARANTEED: Habit deleted and persisted")
       
-      // ✅ FIX: Recalculate streak after delete (habits changed)
+      // ✅ Recalculate streak after delete
       await MainActor.run {
-        print("🗑️ DELETE_FLOW: Recalculating streak after habit deletion")
-        self.updateStreak()
+        print("🗑️ DELETE_FLOW: Recalculating streak after deletion")
+        self.requestStreakRecalculation(reason: "Habit deleted")
       }
     } catch {
-      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - ERROR: habitRepository.deleteHabit() failed: \(error.localizedDescription)")
+      print("🗑️ DELETE_FLOW: ERROR: \(error.localizedDescription)")
       debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
       
-      // ✅ ERROR RECOVERY: If delete fails, restore to local state and dismiss toast
+      // ✅ ERROR RECOVERY: Restore habit to UI and dismiss toast
       await MainActor.run {
         self.habits.append(habit)
         self.deletedHabitForUndo = nil
       }
     }
-    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Clearing habitToDelete")
+    
     habitToDelete = nil
-    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - END")
+    print("🗑️ DELETE_FLOW: END")
   }
   
   /// Restore a soft-deleted habit (called from undo toast)
   func restoreHabit(_ habit: Habit) async {
     print("♻️ [RESTORE] HomeViewState.restoreHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     
-    // ✅ RACE CONDITION FIX: Wait if delete is still in progress
-    while deleteInProgress.contains(habit.id) {
-      print("♻️ [RESTORE] Waiting for delete to complete...")
-      try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+    // ✅ IMMEDIATELY dismiss toast and add habit to UI (instant feedback)
+    await MainActor.run {
+      self.deletedHabitForUndo = nil  // Dismiss toast FIRST
+      if !self.habits.contains(where: { $0.id == habit.id }) {
+        self.habits.append(habit)
+        print("♻️ [RESTORE] Habit added to local UI")
+      } else {
+        print("♻️ [RESTORE] Habit already in local UI")
+      }
     }
-    print("♻️ [RESTORE] Delete completed (or not in progress), proceeding with restore")
     
-    // CRITICAL: Clear deleted tracking BEFORE reload to prevent filtering
-    print("♻️ [RESTORE] Clearing deleted tracking for habit: \(habit.id)")
-    SyncEngine.clearDeletedHabit(habit.id)  // Clear from SyncEngine
-    await HabitStore.shared.unmarkHabitAsDeleted(habit.id)  // Clear from UserDefaults
-    print("♻️ [RESTORE] Deleted tracking cleared - habit will not be filtered out")
+    // Background: Clear deleted tracking
+    print("♻️ [RESTORE] Clearing deleted tracking...")
+    SyncEngine.clearDeletedHabit(habit.id)
+    await HabitStore.shared.unmarkHabitAsDeleted(habit.id)
+    print("♻️ [RESTORE] Deleted tracking cleared")
     
+    // Background: Restore in SwiftData (unmark soft-delete)
     do {
       let modelContext = SwiftDataContainer.shared.modelContext
-      
-      // Find the habit in SwiftData by ID
       let habitId = habit.id
       let descriptor = FetchDescriptor<HabitData>(
         predicate: #Predicate { $0.id == habitId }
       )
       
       if let habitData = try modelContext.fetch(descriptor).first {
-        print("♻️ [RESTORE] Found habit in SwiftData: '\(habitData.name)' (deletedAt: \(habitData.deletedAt?.description ?? "nil"))")
+        print("♻️ [RESTORE] Found habit in SwiftData (deletedAt: \(habitData.deletedAt?.description ?? "nil"))")
         
-        // Restore if soft-deleted (handles race condition where deletedAt might still be nil)
+        // Unmark soft-delete
         if habitData.deletedAt != nil {
-          habitData.restore()
+          habitData.deletedAt = nil
+          habitData.deletionSource = nil
           try modelContext.save()
-          print("♻️ [RESTORE] Habit was soft-deleted, restored successfully")
+          print("♻️ [RESTORE] Soft-delete unmarked in SwiftData")
         } else {
-          print("♻️ [RESTORE] Habit was not soft-deleted (race condition - delete hadn't completed yet)")
-          // Habit exists but wasn't marked as deleted yet - it's fine, just reload
+          print("♻️ [RESTORE] Habit wasn't soft-deleted yet (delete in progress)")
         }
         
-        // CRITICAL: Re-upload to Firestore (habit was hard-deleted during soft-delete)
-        print("♻️ [RESTORE] Re-uploading habit to Firestore...")
+        // Re-upload to Firestore (habit was hard-deleted during soft-delete)
+        print("♻️ [RESTORE] Re-uploading to Firestore...")
         FirebaseBackupService.shared.backupHabit(habit)
-        print("♻️ [RESTORE] Habit backup initiated to Firestore: \(habit.name)")
         
-        // ✅ PERFORMANCE FIX: Add habit back to local array instead of full reload
-        print("♻️ [RESTORE] Adding habit back to local habits array...")
-        await MainActor.run {
-          if !self.habits.contains(where: { $0.id == habit.id }) {
-            self.habits.append(habit)
-            print("♻️ [RESTORE] Habit added to local array")
-          } else {
-            print("♻️ [RESTORE] Habit already in local array (publisher may have added it)")
-          }
-          
-          // Clear the undo toast
-          self.deletedHabitForUndo = nil
-          
-          // Recalculate streak after restore
-          print("♻️ [RESTORE] Recalculating streak after restore")
-          self.updateStreak()
-        }
-        
-        print("♻️ [RESTORE] Habit restored via Undo: \(habit.name)")
       } else {
-        print("⚠️ [RESTORE] Habit not found in SwiftData - may have been hard-deleted")
-        // Habit was removed from SwiftData entirely - can't restore
+        print("⚠️ [RESTORE] Habit not found in SwiftData")
       }
-      
     } catch {
-      print("❌ [RESTORE] Failed to restore habit: \(error.localizedDescription)")
-      debugLog("❌ Failed to restore habit: \(error.localizedDescription)")
+      print("❌ [RESTORE] Error restoring in SwiftData: \(error)")
+    }
+    
+    // Recalculate streak after restore
+    await MainActor.run {
+      print("♻️ [RESTORE] Recalculating streak...")
+      self.requestStreakRecalculation(reason: "Habit restored via Undo")
     }
     
     print("♻️ [RESTORE] HomeViewState.restoreHabit() - END")
