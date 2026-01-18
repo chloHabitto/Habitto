@@ -57,6 +57,7 @@ struct HabitDetailView: View {
           hasInitializedActiveState = true
         }
       }
+      .navigationTitle("Habit Detail")
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarLeading) {
@@ -67,12 +68,6 @@ struct HabitDetailView: View {
               .font(.system(size: 12, weight: .bold))
               .foregroundColor(.text01)
           }
-        }
-        
-        ToolbarItem(placement: .principal) {
-          Text("Habit Detail")
-            .font(.appHeadlineSmallEmphasised)
-            .foregroundColor(.text01)
         }
         
         ToolbarItem(placement: .navigationBarTrailing) {
