@@ -268,17 +268,12 @@ class HomeViewState: ObservableObject {
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
-  /// ✅ UNDO TOAST: Sets deletedHabitForUndo to show undo toast
+  /// ✅ UNDO TOAST: Sets deletedHabitForUndo to show undo toast (AFTER delete succeeds)
   func deleteHabit(_ habit: Habit) async {
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     
-    // ✅ UNDO TOAST: Store habit for undo before deletion
-    await MainActor.run {
-      self.deletedHabitForUndo = habit
-    }
-    
     // Immediately remove from local state for instant UI update
-    DispatchQueue.main.async {
+    await MainActor.run {
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Removing from local habits array")
       var updatedHabits = self.habits
       let beforeCount = updatedHabits.count
@@ -295,9 +290,20 @@ class HomeViewState: ObservableObject {
       try await habitRepository.deleteHabit(habit)
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - habitRepository.deleteHabit() completed successfully")
       debugLog("✅ GUARANTEED: Habit deleted and persisted")
+      
+      // ✅ RACE CONDITION FIX: Only show Undo toast AFTER delete succeeds
+      // This prevents the user from tapping Undo while delete is still in progress
+      await MainActor.run {
+        self.deletedHabitForUndo = habit
+      }
     } catch {
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - ERROR: habitRepository.deleteHabit() failed: \(error.localizedDescription)")
       debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
+      
+      // ✅ ERROR RECOVERY: If delete fails, restore to local state
+      await MainActor.run {
+        self.habits.append(habit)
+      }
     }
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Clearing habitToDelete")
     habitToDelete = nil
