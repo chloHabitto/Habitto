@@ -129,6 +129,8 @@ class HomeViewState: ObservableObject {
   private var isUserInitiatedRecalculation = false
   // ✅ RACE CONDITION FIX: Track continuations waiting for persistence to complete
   private var pendingPersistenceContinuations: [CheckedContinuation<Void, Never>] = []
+  // ✅ DELETE RACE CONDITION FIX: Track habits currently being deleted
+  private var deleteInProgress: Set<UUID> = []
   
   /// Calculate and update streak (call this when habits change)
   func updateStreak() {
@@ -268,12 +270,17 @@ class HomeViewState: ObservableObject {
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
-  /// ✅ UNDO TOAST: Sets deletedHabitForUndo to show undo toast (AFTER delete succeeds)
+  /// ✅ UNDO TOAST: Shows toast immediately, but restoreHabit() waits for delete to complete
   func deleteHabit(_ habit: Habit) async {
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     
-    // Immediately remove from local state for instant UI update
+    // Mark delete as in-progress to prevent restore during deletion
+    deleteInProgress.insert(habit.id)
+    defer { deleteInProgress.remove(habit.id) }
+    
+    // Show toast immediately and remove from local state for instant UI update
     await MainActor.run {
+      self.deletedHabitForUndo = habit
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Removing from local habits array")
       var updatedHabits = self.habits
       let beforeCount = updatedHabits.count
@@ -281,28 +288,23 @@ class HomeViewState: ObservableObject {
       let afterCount = updatedHabits.count
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Local habits: \(beforeCount) → \(afterCount)")
       self.habits = updatedHabits
-      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Local state updated")
+      print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Local state updated, toast shown")
     }
 
-    // Then delete from storage
+    // Then delete from storage in background
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Calling habitRepository.deleteHabit()")
     do {
       try await habitRepository.deleteHabit(habit)
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - habitRepository.deleteHabit() completed successfully")
       debugLog("✅ GUARANTEED: Habit deleted and persisted")
-      
-      // ✅ RACE CONDITION FIX: Only show Undo toast AFTER delete succeeds
-      // This prevents the user from tapping Undo while delete is still in progress
-      await MainActor.run {
-        self.deletedHabitForUndo = habit
-      }
     } catch {
       print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - ERROR: habitRepository.deleteHabit() failed: \(error.localizedDescription)")
       debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
       
-      // ✅ ERROR RECOVERY: If delete fails, restore to local state
+      // ✅ ERROR RECOVERY: If delete fails, restore to local state and dismiss toast
       await MainActor.run {
         self.habits.append(habit)
+        self.deletedHabitForUndo = nil
       }
     }
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Clearing habitToDelete")
@@ -313,6 +315,13 @@ class HomeViewState: ObservableObject {
   /// Restore a soft-deleted habit (called from undo toast)
   func restoreHabit(_ habit: Habit) async {
     print("♻️ [RESTORE] HomeViewState.restoreHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
+    
+    // ✅ RACE CONDITION FIX: Wait if delete is still in progress
+    while deleteInProgress.contains(habit.id) {
+      print("♻️ [RESTORE] Waiting for delete to complete...")
+      try? await Task.sleep(nanoseconds: 100_000_000) // 0.1s
+    }
+    print("♻️ [RESTORE] Delete completed (or not in progress), proceeding with restore")
     
     // CRITICAL: Clear deleted tracking BEFORE reload to prevent filtering
     print("♻️ [RESTORE] Clearing deleted tracking for habit: \(habit.id)")
