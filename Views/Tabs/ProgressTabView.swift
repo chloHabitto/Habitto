@@ -208,10 +208,10 @@ struct ProgressTabView: View {
   
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
-  @State private var displayHeaderHeight: CGFloat = 95  // Increased for debugging 5pt red stroke
+  @State private var displayHeaderHeight: CGFloat = 95  // Actual measured height including 1pt stroke
   @State private var initialScrollOffset: CGFloat? = nil
   
-  private let fullHeaderHeight: CGFloat = 95  // Increased for debugging 5pt red stroke
+  private let fullHeaderHeight: CGFloat = 95  // Actual measured height including 1pt stroke
   
   // MARK: - Cached Encouraging Messages
   @State private var cachedWeeklyMessage: String? = nil
@@ -275,10 +275,10 @@ struct ProgressTabView: View {
       .padding(.top, 16)
       .padding(.bottom, 0)
       
-      // Full-width underline stroke at the bottom - MAKE OBVIOUS FOR DEBUGGING
+      // Full-width underline stroke at the bottom
       Rectangle()
-        .fill(Color.red)  // Changed from Color.outline2 to RED
-        .frame(height: 5)  // Changed from 1 to 5
+        .fill(Color.outline2)
+        .frame(height: 1)
         .frame(maxWidth: .infinity)
     }
   }
