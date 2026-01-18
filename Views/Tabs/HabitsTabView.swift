@@ -104,6 +104,42 @@ struct HabitsTabView: View {
             .onMove(perform: moveHabit)
             .onDelete(perform: deleteHabit)
             
+            // Recently Deleted section
+            if recentlyDeletedCount > 0 {
+              Section {
+                Button(action: {
+                  showingRecentlyDeleted = true
+                }) {
+                  HStack(spacing: 12) {
+                    Image(systemName: "trash")
+                      .font(.system(size: 18))
+                      .foregroundColor(.secondary)
+                    
+                    Text("Recently Deleted")
+                      .font(.appBodyLarge)
+                      .foregroundColor(.secondary)
+                    
+                    Spacer()
+                    
+                    Text("\(recentlyDeletedCount)")
+                      .font(.appCaptionMedium)
+                      .foregroundColor(.secondary)
+                    
+                    Image(systemName: "chevron.right")
+                      .font(.system(size: 14))
+                      .foregroundColor(.secondary)
+                  }
+                  .padding(.vertical, 12)
+                  .padding(.horizontal, 16)
+                  .background(Color(.systemGray6))
+                  .cornerRadius(8)
+                }
+                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
+              }
+            }
+            
             Spacer()
               .frame(height: 80)
               .listRowInsets(EdgeInsets())
@@ -135,9 +171,23 @@ struct HabitsTabView: View {
                 }
               })
       }
+      .sheet(isPresented: $showingRecentlyDeleted) {
+        RecentlyDeletedView()
+      }
       .onAppear {
         // Debug: Check for duplicate habits
         debugCheckForDuplicates()
+        
+        // Load recently deleted count
+        Task {
+          await updateRecentlyDeletedCount()
+        }
+      }
+      .onChange(of: habits) { oldValue, newValue in
+        // Update recently deleted count when habits change
+        Task {
+          await updateRecentlyDeletedCount()
+        }
       }
   }
 
@@ -146,6 +196,8 @@ struct HabitsTabView: View {
   @State private var selectedStatsTab = 0
   @State private var selectedHabit: Habit? = nil
   @State private var editMode: EditMode = .inactive
+  @State private var recentlyDeletedCount = 0
+  @State private var showingRecentlyDeleted = false
 
   /// Computed property for habits
   private var habits: [Habit] {
@@ -422,6 +474,14 @@ struct HabitsTabView: View {
       }
     } else {
       print("✅ HabitsTabView: No duplicate habits found")
+    }
+  }
+  
+  /// Update the count of recently deleted habits
+  private func updateRecentlyDeletedCount() async {
+    let count = await HabitRepository.shared.countSoftDeletedHabits()
+    await MainActor.run {
+      recentlyDeletedCount = count
     }
   }
 }

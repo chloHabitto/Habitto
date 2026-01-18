@@ -914,6 +914,114 @@ final class SwiftDataStorage: HabitStorageProtocol {
         underlyingError: error))
     }
   }
+  
+  /// Load soft-deleted habits for the current user (for Recently Deleted view)
+  func loadSoftDeletedHabits() async throws -> [Habit] {
+    let currentUserId = await getCurrentUserId()
+    let userId = currentUserId ?? ""
+    
+    logger.info("Loading soft-deleted habits for user: \(userId.isEmpty ? "guest" : userId)")
+    
+    do {
+      // Query soft-deleted habits (deletedAt != nil) within 30 days
+      let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+      
+      var descriptor: FetchDescriptor<HabitData>
+      if userId.isEmpty {
+        descriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate { habitData in
+            habitData.userId == "" && habitData.deletedAt != nil && habitData.deletedAt! > thirtyDaysAgo
+          },
+          sortBy: [SortDescriptor(\.deletedAt, order: .reverse)])
+      } else {
+        descriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate { habitData in
+            habitData.userId == userId && habitData.deletedAt != nil && habitData.deletedAt! > thirtyDaysAgo
+          },
+          sortBy: [SortDescriptor(\.deletedAt, order: .reverse)])
+      }
+      
+      let habitDataArray = try container.modelContext.fetch(descriptor)
+      let habits = habitDataArray.map { $0.toHabit() }
+      
+      logger.info("Found \(habits.count) soft-deleted habits for user: \(userId.isEmpty ? "guest" : userId)")
+      return habits
+      
+    } catch {
+      logger.error("Failed to load soft-deleted habits: \(error.localizedDescription)")
+      throw DataError.storage(StorageError(
+        type: .unknown,
+        message: "Failed to load soft-deleted habits: \(error.localizedDescription)",
+        underlyingError: error))
+    }
+  }
+  
+  /// Count soft-deleted habits for the current user
+  func countSoftDeletedHabits() async throws -> Int {
+    let currentUserId = await getCurrentUserId()
+    let userId = currentUserId ?? ""
+    
+    do {
+      // Query soft-deleted habits (deletedAt != nil) within 30 days
+      let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+      
+      var descriptor: FetchDescriptor<HabitData>
+      if userId.isEmpty {
+        descriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate { habitData in
+            habitData.userId == "" && habitData.deletedAt != nil && habitData.deletedAt! > thirtyDaysAgo
+          })
+      } else {
+        descriptor = FetchDescriptor<HabitData>(
+          predicate: #Predicate { habitData in
+            habitData.userId == userId && habitData.deletedAt != nil && habitData.deletedAt! > thirtyDaysAgo
+          })
+      }
+      
+      let habitDataArray = try container.modelContext.fetch(descriptor)
+      return habitDataArray.count
+      
+    } catch {
+      logger.error("Failed to count soft-deleted habits: \(error.localizedDescription)")
+      return 0
+    }
+  }
+  
+  /// Hard delete a habit permanently (called from Recently Deleted view)
+  func permanentlyDeleteHabit(id: UUID) async throws {
+    print("🗑️ [HARD_DELETE] SwiftDataStorage.permanentlyDeleteHabit() - START for habit ID: \(id)")
+    logger.info("Permanently deleting habit with ID: \(id)")
+    
+    do {
+      let descriptor = FetchDescriptor<HabitData>()
+      let allHabits = try container.modelContext.fetch(descriptor)
+      
+      guard let habitData = allHabits.first(where: { $0.id == id }) else {
+        print("🗑️ [HARD_DELETE] SwiftDataStorage.permanentlyDeleteHabit() - WARNING: Habit not found: \(id)")
+        logger.warning("Habit not found for permanent deletion: \(id)")
+        return
+      }
+      
+      print("🗑️ [HARD_DELETE] SwiftDataStorage.permanentlyDeleteHabit() - Found habit: '\(habitData.name)'")
+      
+      // Hard delete from SwiftData
+      container.modelContext.delete(habitData)
+      
+      try container.modelContext.save()
+      print("🗑️ [HARD_DELETE] SwiftDataStorage.permanentlyDeleteHabit() - END - Successfully hard-deleted")
+      logger.info("Successfully permanently deleted habit with ID: \(id)")
+      
+      // Note: HabitDeletionLog is kept for audit trail
+      
+    } catch {
+      print("🗑️ [HARD_DELETE] SwiftDataStorage.permanentlyDeleteHabit() - ERROR: \(error.localizedDescription)")
+      logger.error("Failed to permanently delete habit: \(error.localizedDescription)")
+      throw DataError.storage(StorageError(
+        type: .unknown,
+        message: "Failed to permanently delete habit: \(error.localizedDescription)",
+        underlyingError: error))
+    }
+  }
 
   /// Clear all habits for the current user
   func clearAllHabits() async throws {
