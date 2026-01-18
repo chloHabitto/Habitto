@@ -59,12 +59,24 @@ protocol HabitStorageProtocol: DataStorageProtocol where DataType == Habit {
   /// - Returns: The loaded habit, or nil if not found
   func loadHabit(id: UUID) async throws -> Habit?
 
-  /// Delete a habit by ID
+  /// Delete a habit by ID (soft delete)
   /// - Parameter id: The habit ID
   func deleteHabit(id: UUID) async throws
 
   /// Clear all habit data
   func clearAllHabits() async throws
+  
+  /// Load soft-deleted habits (for Recently Deleted view)
+  /// - Returns: Array of soft-deleted habits within 30 days
+  func loadSoftDeletedHabits() async throws -> [Habit]
+  
+  /// Count soft-deleted habits
+  /// - Returns: Number of soft-deleted habits within 30 days
+  func countSoftDeletedHabits() async throws -> Int
+  
+  /// Permanently delete a habit (hard delete)
+  /// - Parameter id: The habit ID
+  func permanentlyDeleteHabit(id: UUID) async throws
 }
 
 // MARK: - Backward Compatibility Extension
@@ -73,6 +85,31 @@ extension HabitStorageProtocol {
   /// Load habits from storage (backward compatibility - defaults to force: false)
   func loadHabits() async throws -> [Habit] {
     return try await loadHabits(force: false)
+  }
+}
+
+// MARK: - Default Implementations for Soft Delete Methods
+
+extension HabitStorageProtocol {
+  /// Default implementation - returns empty array
+  /// Only SwiftDataStorage has the real implementation
+  func loadSoftDeletedHabits() async throws -> [Habit] {
+    print("⚠️ loadSoftDeletedHabits() not implemented for this storage type")
+    return []
+  }
+  
+  /// Default implementation - returns 0
+  /// Only SwiftDataStorage has the real implementation
+  func countSoftDeletedHabits() async throws -> Int {
+    print("⚠️ countSoftDeletedHabits() not implemented for this storage type")
+    return 0
+  }
+  
+  /// Default implementation - no-op
+  /// Only SwiftDataStorage has the real implementation
+  func permanentlyDeleteHabit(id: UUID) async throws {
+    print("⚠️ permanentlyDeleteHabit() not implemented for this storage type")
+    // No-op by default
   }
 }
 

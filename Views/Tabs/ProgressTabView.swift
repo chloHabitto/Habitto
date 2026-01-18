@@ -197,6 +197,10 @@ struct ProgressTabView: View {
   /// Scroll offset for header collapse animation
   @State private var scrollOffset: CGFloat = 0
   @State private var initialScrollOffset: CGFloat? = nil
+  
+  // MARK: - Cached Encouraging Messages
+  @State private var cachedWeeklyMessage: String? = nil
+  @State private var cachedMonthlyMessage: String? = nil
 
   // MARK: - Environment
 
@@ -830,6 +834,10 @@ struct ProgressTabView: View {
       }
     }
     .onAppear {
+      // Generate initial encouraging messages
+      cachedWeeklyMessage = generateWeeklyEncouragingMessage()
+      cachedMonthlyMessage = generateMonthlyEncouragingMessage()
+      
       // Calculate streak statistics when view appears
       updateStreakStatistics()
 
@@ -843,6 +851,10 @@ struct ProgressTabView: View {
       updateTimeBaseCompletionData()
     }
     .onChange(of: habitRepository.habits) { oldHabits, newHabits in
+      // Clear message caches when habits change (progress data changes)
+      cachedWeeklyMessage = nil
+      cachedMonthlyMessage = nil
+      
       // Refresh selectedHabit to get latest data (including difficulty history)
       if let selectedId = selectedHabit?.id,
          let updatedHabit = newHabits.first(where: { $0.id == selectedId }) {
@@ -868,6 +880,8 @@ struct ProgressTabView: View {
       updateTimeBaseCompletionData()
     }
     .onChange(of: selectedWeekStartDate) {
+      // Clear weekly message cache to regenerate on next access
+      cachedWeeklyMessage = nil
       // Update streak statistics when week changes (for weekly view)
       updateStreakStatistics()
       // Update difficulty data when week changes
@@ -876,6 +890,8 @@ struct ProgressTabView: View {
       updateTimeBaseCompletionData()
     }
     .onChange(of: selectedProgressDate) { _, _ in
+      // Clear monthly message cache to regenerate on next access
+      cachedMonthlyMessage = nil
       // Force view refresh when month changes
       refreshID = UUID()
       // Update difficulty data when month changes
@@ -2647,6 +2663,18 @@ struct ProgressTabView: View {
   }
 
   private func getWeeklyEncouragingMessage() -> String {
+    // Return cached message if available
+    if let cached = cachedWeeklyMessage {
+      return cached
+    }
+    
+    // Generate new message
+    let message = generateWeeklyEncouragingMessage()
+    cachedWeeklyMessage = message
+    return message
+  }
+  
+  private func generateWeeklyEncouragingMessage() -> String {
     let progressPercentage = getWeeklyProgressPercentage()
     let completedDays = getWeeklyCompletedDaysCount()
     let totalPossibleDays = getWeeklyTotalPossibleDays()
@@ -4056,6 +4084,18 @@ struct ProgressTabView: View {
   }
 
   private func getMonthlyEncouragingMessage() -> String {
+    // Return cached message if available
+    if let cached = cachedMonthlyMessage {
+      return cached
+    }
+    
+    // Generate new message
+    let message = generateMonthlyEncouragingMessage()
+    cachedMonthlyMessage = message
+    return message
+  }
+  
+  private func generateMonthlyEncouragingMessage() -> String {
     let progressPercentage = getMonthlyProgressPercentage()
     let completedCount = getMonthlyCompletedHabitsCount()
     let scheduledCount = getMonthlyScheduledHabitsCount()

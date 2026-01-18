@@ -1173,6 +1173,74 @@ class HabitRepository: ObservableObject {
     
     return progress
   }
+  
+  // MARK: - Soft Delete Recovery
+  
+  /// Load soft-deleted habits (for Recently Deleted view)
+  func loadSoftDeletedHabits() async throws -> [Habit] {
+    debugLog("🔄 HabitRepository: Loading soft-deleted habits...")
+    do {
+      let habits = try await habitStore.loadSoftDeletedHabits()
+      debugLog("✅ HabitRepository: Loaded \(habits.count) soft-deleted habits")
+      return habits
+    } catch {
+      debugLog("❌ HabitRepository: Failed to load soft-deleted habits: \(error.localizedDescription)")
+      throw error
+    }
+  }
+  
+  /// Count soft-deleted habits (for Recently Deleted badge)
+  func countSoftDeletedHabits() async -> Int {
+    do {
+      let count = try await habitStore.countSoftDeletedHabits()
+      return count
+    } catch {
+      debugLog("❌ HabitRepository: Failed to count soft-deleted habits: \(error.localizedDescription)")
+      return 0
+    }
+  }
+  
+  /// Permanently delete a habit (called from Recently Deleted view)
+  func permanentlyDeleteHabit(_ habit: Habit) async throws {
+    debugLog("🗑️ HabitRepository: Permanently deleting habit: \(habit.name)")
+    do {
+      try await habitStore.permanentlyDeleteHabit(id: habit.id)
+      debugLog("✅ HabitRepository: Successfully permanently deleted habit: \(habit.name)")
+    } catch {
+      debugLog("❌ HabitRepository: Failed to permanently delete habit: \(error.localizedDescription)")
+      throw error
+    }
+  }
+  
+  /// Restore a soft-deleted habit (called from Recently Deleted view)
+  func restoreSoftDeletedHabit(_ habit: Habit) async throws {
+    debugLog("♻️ HabitRepository: Restoring soft-deleted habit: \(habit.name)")
+    
+    // Query SwiftData for the soft-deleted HabitData by ID
+    let modelContext = SwiftDataContainer.shared.modelContext
+    
+    // Fetch ALL habits (including soft-deleted) to find by ID
+    let descriptor = FetchDescriptor<HabitData>()
+    let allHabits = try modelContext.fetch(descriptor)
+    
+    guard let habitData = allHabits.first(where: { $0.id == habit.id }) else {
+      debugLog("❌ HabitRepository: Habit not found for restoration: \(habit.id)")
+      throw DataError.storage(StorageError(
+        type: .unknown,
+        message: "Habit not found for restoration",
+        underlyingError: nil))
+    }
+    
+    // Call restore() method (sets deletedAt = nil)
+    habitData.restore()
+    
+    // Save context
+    try modelContext.save()
+    debugLog("✅ HabitRepository: Successfully restored habit: \(habit.name)")
+    
+    // Reload habits to update UI
+    await loadHabits(force: true)
+  }
 
   // MARK: - Clean Up Duplicates
 

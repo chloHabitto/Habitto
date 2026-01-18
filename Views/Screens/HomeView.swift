@@ -105,6 +105,7 @@ class HomeViewState: ObservableObject {
   @Published var habitToDelete: Habit?
   @Published var showingOverviewView = false
   @Published var showingNotificationView = false
+  @Published var deletedHabitForUndo: Habit? = nil
 
   /// Core Data adapter
   let habitRepository = HabitRepository.shared
@@ -260,8 +261,14 @@ class HomeViewState: ObservableObject {
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
+  /// ✅ UNDO TOAST: Sets deletedHabitForUndo to show undo toast
   func deleteHabit(_ habit: Habit) async {
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
+    
+    // ✅ UNDO TOAST: Store habit for undo before deletion
+    await MainActor.run {
+      self.deletedHabitForUndo = habit
+    }
     
     // Immediately remove from local state for instant UI update
     DispatchQueue.main.async {
@@ -288,6 +295,48 @@ class HomeViewState: ObservableObject {
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - Clearing habitToDelete")
     habitToDelete = nil
     print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - END")
+  }
+  
+  /// Restore a soft-deleted habit (called from undo toast)
+  func restoreHabit(_ habit: Habit) async {
+    print("♻️ [RESTORE] HomeViewState.restoreHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
+    
+    do {
+      // Query SwiftData for the soft-deleted HabitData by ID
+      let modelContext = SwiftDataContainer.shared.modelContext
+      
+      // Fetch ALL habits (including soft-deleted) to find by ID
+      let descriptor = FetchDescriptor<HabitData>()
+      let allHabits = try modelContext.fetch(descriptor)
+      
+      guard let habitData = allHabits.first(where: { $0.id == habit.id }) else {
+        print("♻️ [RESTORE] ERROR: Habit not found in SwiftData: \(habit.id)")
+        return
+      }
+      
+      print("♻️ [RESTORE] Found habit in SwiftData: '\(habitData.name)' (deletedAt: \(habitData.deletedAt?.description ?? "nil"))")
+      
+      // Call restore() method (sets deletedAt = nil)
+      habitData.restore()
+      
+      // Save context
+      try modelContext.save()
+      print("♻️ [RESTORE] Habit restored via Undo: \(habitData.name)")
+      
+      // Reload habits to update UI
+      await habitRepository.loadHabits(force: true)
+      
+      // Clear deletedHabitForUndo to dismiss toast
+      await MainActor.run {
+        self.deletedHabitForUndo = nil
+      }
+      
+      print("♻️ [RESTORE] HomeViewState.restoreHabit() - END")
+      
+    } catch {
+      print("♻️ [RESTORE] ERROR: Failed to restore habit: \(error.localizedDescription)")
+      debugLog("❌ Failed to restore habit: \(error.localizedDescription)")
+    }
   }
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
@@ -1238,6 +1287,30 @@ struct HomeView: View {
     }
     .sheet(isPresented: $tutorialManager.shouldShowTutorial) {
       TutorialBottomSheet(tutorialManager: tutorialManager)
+    }
+    .overlay(alignment: .bottom) {
+      // ✅ UNDO TOAST: Show toast when habit is deleted
+      if let deletedHabit = state.deletedHabitForUndo {
+        VStack {
+          Spacer()
+          
+          UndoToastView(
+            habitName: deletedHabit.name,
+            onUndo: {
+              Task {
+                await state.restoreHabit(deletedHabit)
+              }
+            },
+            onDismiss: {
+              state.deletedHabitForUndo = nil
+            }
+          )
+          .padding(.horizontal, 16)
+          .padding(.bottom, 100) // Above tab bar
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        .animation(.spring(response: 0.3), value: state.deletedHabitForUndo)
+      }
     }
     .onChange(of: state.habits) { oldHabits, newHabits in
       // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)

@@ -1490,4 +1490,27 @@ final actor HabitStore {
   func getLastEventCreationFailure() -> Date? {
     lastEventCreationFailure
   }
+  
+  // MARK: - Soft Delete Recovery Methods
+  
+  /// Load soft-deleted habits for the current user (for Recently Deleted view)
+  func loadSoftDeletedHabits() async throws -> [Habit] {
+    logger.info("Loading soft-deleted habits from storage...")
+    let habits = try await activeStorage.loadSoftDeletedHabits()
+    logger.info("Loaded \(habits.count) soft-deleted habits")
+    return habits
+  }
+  
+  /// Count soft-deleted habits for the current user
+  func countSoftDeletedHabits() async throws -> Int {
+    let count = try await activeStorage.countSoftDeletedHabits()
+    return count
+  }
+  
+  /// Permanently delete a habit (hard delete from SwiftData)
+  func permanentlyDeleteHabit(id: UUID) async throws {
+    logger.info("Permanently deleting habit with ID: \(id)")
+    try await activeStorage.permanentlyDeleteHabit(id: id)
+    logger.info("Successfully permanently deleted habit with ID: \(id)")
+  }
 }
