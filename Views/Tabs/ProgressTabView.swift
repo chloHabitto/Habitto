@@ -265,7 +265,6 @@ struct ProgressTabView: View {
         ],
         selectedIndex: selectedTimePeriod,
         style: .underline,
-        expandToFullWidth: true,
         backgroundColor: .surface1)
       { index in
         selectedTimePeriod = index
@@ -274,7 +273,13 @@ struct ProgressTabView: View {
         impactFeedback.selectionChanged()
       }
       .padding(.top, 16)
-      .padding(.bottom, 0)
+      .padding(.bottom, -1)  // Pull stroke up by 1pt to avoid clipping
+      
+      // Full-width underline stroke at the bottom
+      Rectangle()
+        .fill(Color.outline2)
+        .frame(height: 1)
+        .frame(maxWidth: .infinity)
     }
   }
 
