@@ -69,7 +69,10 @@ struct FAQView: View {
       answer: "Your progress is automatically tracked in the Progress tab. You can see daily, weekly, and monthly views of how well you're doing with your habits."),
     FAQItem(
       question: "Can I export my habit data?",
-      answer: "Currently, habit data is stored locally on your device. We're working on cloud sync and export features for future updates.")
+      answer: "Currently, habit data is stored locally on your device. We're working on cloud sync and export features for future updates."),
+    FAQItem(
+      question: "Why can't I see my habit on the home screen?",
+      answer: "Your habit might not appear on the home screen because:\n• It could be inactive (check the Inactive tab)\n• It's not scheduled for today\n• It's set for a different time of day")
   ]
 
   /// Filtered FAQ data based on search text

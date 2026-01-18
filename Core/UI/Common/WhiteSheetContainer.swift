@@ -16,7 +16,6 @@ struct WhiteSheetContainer<Content: View>: View {
     scrollResponsive: Bool = false,
     headerCollapseThreshold: CGFloat = 50,
     scrollOffset: CGFloat = 0,
-    headerVisible: Bool = true,
     @ViewBuilder content: () -> Content)
   {
     self.title = title
@@ -29,7 +28,6 @@ struct WhiteSheetContainer<Content: View>: View {
     self.scrollResponsive = scrollResponsive
     self.headerCollapseThreshold = headerCollapseThreshold
     self.scrollOffset = scrollOffset
-    self.headerVisible = headerVisible
     self.content = content()
   }
 
@@ -45,17 +43,15 @@ struct WhiteSheetContainer<Content: View>: View {
   let scrollResponsive: Bool
   let headerCollapseThreshold: CGFloat
   let scrollOffset: CGFloat
-  let headerVisible: Bool
   let content: Content
 
   var body: some View {
     VStack(spacing: 0) {
-      // Header section with dynamic height
+      // Header section with dynamic height - follows scroll directly
       headerSection
         .background(headerBackground)
         .frame(height: scrollResponsive ? calculateHeaderHeight() : nil)  // Dynamic height
         .clipped()  // Hide overflow when collapsed
-        .animation(.spring(response: 0.35, dampingFraction: 0.9), value: headerVisible)
 
       // Content area - naturally expands as header collapses
       content
@@ -120,11 +116,15 @@ struct WhiteSheetContainer<Content: View>: View {
   
   // MARK: - Scroll-Responsive Calculations
   
-  /// Calculate header height based on header visibility
-  /// Returns full height (90pt) when visible, 0pt when hidden
+  /// Calculate header height based on scroll offset
+  /// Direct 1:1 mapping: header shrinks as you scroll
   private func calculateHeaderHeight() -> CGFloat {
-    let fullHeaderHeight: CGFloat = 90  // Approximate header height
-    return headerVisible ? fullHeaderHeight : 0
+    let fullHeaderHeight: CGFloat = 90
+    
+    // scrollOffset 0 → height 90
+    // scrollOffset 90 → height 0
+    let height = fullHeaderHeight - min(scrollOffset, fullHeaderHeight)
+    return max(0, height)
   }
 }
 
