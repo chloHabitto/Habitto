@@ -24,6 +24,20 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
   struct RemoteConfig: Codable {
     // MARK: Lifecycle
 
+    init(
+      isMigrationEnabled: Bool,
+      minAppVersion: String?,
+      maxFailureRate: Double,
+      configVersion: String,
+      lastUpdated: Date
+    ) {
+      self.isMigrationEnabled = isMigrationEnabled
+      self.minAppVersion = minAppVersion
+      self.maxFailureRate = maxFailureRate
+      self.configVersion = configVersion
+      self.lastUpdated = lastUpdated
+    }
+
     init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       self.isMigrationEnabled = try container.decodeIfPresent(
@@ -275,19 +289,13 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
   ]
 
   /// Local default config (used when remote fails)
-  private let defaultConfig: RemoteConfig = {
-    let json = """
-    {
-        "isMigrationEnabled": true,
-        "minAppVersion": "1.0.0",
-        "maxFailureRate": 0.15,
-        "configVersion": "1.0.0",
-        "lastUpdated": \(Date().timeIntervalSince1970)
-    }
-    """
-    let data = json.data(using: .utf8)!
-    return try! JSONDecoder().decode(RemoteConfig.self, from: data)
-  }()
+  private let defaultConfig = RemoteConfig(
+    isMigrationEnabled: true,
+    minAppVersion: nil,
+    maxFailureRate: 0.15,
+    configVersion: "1.0.0",
+    lastUpdated: Date()
+  )
 
   // Local TTL cache
   private let configTTL: TimeInterval = 300 // 5 minutes
