@@ -12,51 +12,44 @@ struct SkipHabitSheet: View {
   @Environment(\.dismiss) private var dismiss
   
   var body: some View {
-    VStack(spacing: 0) {
-      // Drag Handle
-      RoundedRectangle(cornerRadius: 2.5)
-        .fill(Color.text05.opacity(0.3))
-        .frame(width: 36, height: 5)
-        .padding(.top, 12)
-        .padding(.bottom, 16)
-      
-      // Header Section
-      VStack(spacing: 12) {
-        // Icon
+    VStack(spacing: 16) {
+      // Header Section - no custom drag handle, system provides one
+      VStack(spacing: 8) {
         Image(systemName: "forward.fill")
           .font(.system(size: 28))
           .foregroundColor(.text03)
         
-        // Title
         Text("Skip \"\(habitName)\"")
           .font(.appTitleSmallEmphasised)
           .foregroundColor(.text01)
           .multilineTextAlignment(.center)
         
-        // Subtitle
         Text("Your streak will stay protected")
           .font(.appBodySmall)
           .foregroundColor(.text04)
           .multilineTextAlignment(.center)
       }
       .padding(.horizontal, 20)
-      .padding(.bottom, 20)
+      .padding(.top, 8)
       
       // Divider
-      Rectangle()
-        .fill(Color.grey100)
-        .frame(height: 1)
+      Divider()
         .padding(.horizontal, 20)
       
       // Reason Selection Section
-      VStack(alignment: .leading, spacing: 16) {
+      VStack(alignment: .leading, spacing: 12) {
         Text("Why are you skipping?")
           .font(.appBodyMediumEmphasised)
           .foregroundColor(.text03)
           .padding(.horizontal, 20)
         
         // Reason Grid
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+        LazyVGrid(columns: [
+          GridItem(.flexible()),
+          GridItem(.flexible()),
+          GridItem(.flexible()),
+          GridItem(.flexible())
+        ], spacing: 12) {
           ForEach(SkipReason.allCases, id: \.self) { reason in
             SkipReasonChip(reason: reason) {
               handleSkip(reason)
@@ -65,9 +58,6 @@ struct SkipHabitSheet: View {
         }
         .padding(.horizontal, 20)
       }
-      .padding(.top, 20)
-      
-      Spacer()
       
       // Cancel Button
       Button(action: {
@@ -76,13 +66,10 @@ struct SkipHabitSheet: View {
         Text("Cancel")
           .font(.appBodyMedium)
           .foregroundColor(.text04)
-          .frame(maxWidth: .infinity)
-          .frame(height: 50)
       }
-      .padding(.horizontal, 20)
+      .padding(.top, 8)
       .padding(.bottom, 20)
     }
-    .frame(height: 340)
     .background(Color.surface)
   }
   

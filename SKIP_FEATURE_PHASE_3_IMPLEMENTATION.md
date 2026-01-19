@@ -28,7 +28,7 @@ if let _ = calendar.date(byAdding: .day, value: -1, to: today) {
 
 **File:** `Views/Modals/SkipHabitSheet.swift` (147 lines)
 
-A compact bottom sheet (340pt height) for selecting a skip reason.
+A bottom sheet (400pt height) for selecting a skip reason with comfortable spacing.
 
 #### Component Structure
 
@@ -91,7 +91,8 @@ struct SkipHabitSheet: View {
 - `.appLabelSmall` - Chip labels
 
 **Dimensions:**
-- Sheet height: 340pt
+- Sheet height: 400pt
+- System drag indicator: Visible
 - Drag handle: 36x5pt
 - Icon size: 28pt (header), 20pt (chips)
 - Grid columns: 4
@@ -176,7 +177,7 @@ Or with the newer `.height` presentation:
 
 ✅ **Layout**
 - Responsive 4-column grid
-- Compact design (340pt total height)
+- Comfortable design (400pt total height)
 - Custom drag handle for familiarity
 
 ### Skip Reasons Grid
@@ -265,7 +266,7 @@ let action: () -> Void  // Action on tap
 
 ### Manual Testing Checklist
 
-- [ ] Sheet presents at correct height (340pt)
+- [ ] Sheet presents at correct height (400pt)
 - [ ] Drag handle is visible and styled correctly
 - [ ] Header shows habit name and protection message
 - [ ] All 7 reasons are displayed in grid
@@ -385,7 +386,7 @@ SkipReasonChip(
 **Phase 3 Complete!** ✅
 
 The Skip Habit feature now has a polished UI component for selecting skip reasons. The sheet:
-- Provides a clean, compact interface (340pt)
+- Provides a clean, comfortable interface (400pt)
 - Shows all 7 skip reasons in an easy-to-scan grid
 - Gives haptic feedback on selection
 - Auto-dismisses for efficiency

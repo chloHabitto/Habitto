@@ -159,8 +159,8 @@ struct HabitDetailView: View {
           skipHabit(reason: reason)
         }
       )
-      .presentationDetents([.height(340)])
-      .presentationDragIndicator(.hidden)
+      .presentationDetents([.height(400)])
+      .presentationDragIndicator(.visible)
     }
     .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
       Button("Cancel", role: .cancel) { }
