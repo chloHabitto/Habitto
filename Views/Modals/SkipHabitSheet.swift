@@ -10,41 +10,127 @@ struct SkipHabitSheet: View {
   let onSkip: (SkipReason) -> Void
   
   @Environment(\.dismiss) private var dismiss
+  @State private var selectedReason: SkipReason?
   
   var body: some View {
-    BaseBottomSheet(
-      title: "Skip \"\(habitName)\"",
-      description: "Your streak will stay protected",
-      onClose: { dismiss() },
-      useSimpleCloseButton: true
-    ) {
-      VStack(alignment: .leading, spacing: 12) {
-        Text("Why are you skipping?")
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(.text03)
-          .padding(.horizontal, 20)
-          .padding(.top, 16)
+    VStack(spacing: 20) {
+      // Header Section
+      headerSection
+      
+      // Reason Selection Section
+      reasonSelectionSection
+      
+      // Action Buttons
+      Spacer()
+      
+      actionButtons
+    }
+    .padding(.horizontal, 24)
+    .padding(.top, 8)
+    .padding(.bottom, 24)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    .background(Color.appSurface01Variant)
+    .ignoresSafeArea(edges: .bottom)
+    .presentationDetents([.height(540)])
+  }
+  
+  // MARK: - Header Section
+  
+  private var headerSection: some View {
+    VStack(spacing: 4) {
+      // Close button
+      HStack {
+        Spacer()
         
-        // Reason Grid
-        LazyVGrid(columns: [
-          GridItem(.flexible()),
-          GridItem(.flexible()),
-          GridItem(.flexible()),
-          GridItem(.flexible())
-        ], spacing: 12) {
-          ForEach(SkipReason.allCases, id: \.self) { reason in
-            SkipReasonChip(reason: reason) {
-              handleSkip(reason)
-            }
+        Button(action: {
+          dismiss()
+        }) {
+          Image(systemName: "xmark")
+            .font(.system(size: 16, weight: .heavy))
+            .foregroundColor(.text07)
+            .frame(width: 44, height: 44)
+        }
+        .padding(.trailing, -12)
+      }
+      .padding(.top, 8)
+      
+      // Title
+      Text("Skip \"\(habitName)\"")
+        .font(Font.appHeadlineSmallEmphasised)
+        .foregroundColor(.text01)
+        .frame(maxWidth: .infinity, alignment: .center)
+      
+      // Description
+      Text("Your streak will stay protected")
+        .font(Font.appBodyMediumEmphasised)
+        .foregroundColor(.text05)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+  }
+  
+  // MARK: - Reason Selection Section
+  
+  private var reasonSelectionSection: some View {
+    VStack(alignment: .leading, spacing: 12) {
+      Text("Why are you skipping?")
+        .font(.appBodyMediumEmphasised)
+        .foregroundColor(.text03)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      
+      // Reason Grid
+      LazyVGrid(columns: [
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible()),
+        GridItem(.flexible())
+      ], spacing: 12) {
+        ForEach(SkipReason.allCases, id: \.self) { reason in
+          SkipReasonChip(
+            reason: reason,
+            isSelected: selectedReason == reason
+          ) {
+            selectedReason = reason
           }
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 20)
-        
-        Spacer()
       }
     }
-    .presentationDetents([.height(400)])
+  }
+  
+  // MARK: - Action Buttons
+  
+  private var actionButtons: some View {
+    HStack(spacing: 16) {
+      // Cancel button
+      Button(action: {
+        dismiss()
+      }) {
+        Text("Cancel")
+          .font(Font.appButtonText1)
+          .foregroundColor(.text04)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 16)
+          .background(.badgeBackground)
+          .cornerRadius(30)
+      }
+      .buttonStyle(PlainButtonStyle())
+      
+      // Save button
+      Button(action: {
+        if let reason = selectedReason {
+          handleSkip(reason)
+        }
+      }) {
+        Text("Skip")
+          .font(Font.appButtonText1)
+          .foregroundColor(.onPrimary)
+          .frame(maxWidth: .infinity)
+          .padding(.vertical, 16)
+          .background(selectedReason != nil ? .primary : .disabledBackground)
+          .cornerRadius(30)
+      }
+      .buttonStyle(PlainButtonStyle())
+      .disabled(selectedReason == nil)
+    }
   }
   
   // MARK: Private
@@ -66,6 +152,7 @@ struct SkipHabitSheet: View {
 
 struct SkipReasonChip: View {
   let reason: SkipReason
+  let isSelected: Bool
   let action: () -> Void
   
   var body: some View {
@@ -73,11 +160,11 @@ struct SkipReasonChip: View {
       VStack(spacing: 8) {
         Image(systemName: reason.icon)
           .font(.system(size: 20))
-          .foregroundColor(.text01)
+          .foregroundColor(isSelected ? .primary : .text01)
         
         Text(reason.shortLabel)
           .font(.appLabelSmall)
-          .foregroundColor(.text01)
+          .foregroundColor(isSelected ? .primary : .text01)
           .lineLimit(1)
           .minimumScaleFactor(0.8)
       }
@@ -85,11 +172,11 @@ struct SkipReasonChip: View {
       .padding(.vertical, 12)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(Color.surfaceContainer)
+          .fill(isSelected ? Color.primary.opacity(0.1) : Color.surfaceContainer)
       )
       .overlay(
         RoundedRectangle(cornerRadius: 12)
-          .stroke(Color.outline3.opacity(0.3), lineWidth: 1)
+          .stroke(isSelected ? Color.primary : Color.outline3.opacity(0.3), lineWidth: isSelected ? 2 : 1)
       )
     }
     .buttonStyle(PlainButtonStyle())
@@ -106,5 +193,5 @@ struct SkipReasonChip: View {
       print("Skipped with reason: \(reason.rawValue)")
     }
   )
-  .background(Color.black.opacity(0.3))
+  .presentationDetents([.height(540)])
 }
