@@ -709,6 +709,12 @@ class HabitRepository: ObservableObject {
       #if DEBUG
       debugLog("  → HabitStore.createHabit completed")
       #endif
+      
+      // ✅ FIX: Update @Published habits array immediately so UI reflects the change
+      await MainActor.run {
+        self.habits.append(habit)
+        self.objectWillChange.send()
+      }
 
       // ✅ FIX: Check if today's DailyAward should be updated after habit creation
       // If new habit makes today incomplete, revoke today's XP award
