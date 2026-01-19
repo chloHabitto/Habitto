@@ -1362,6 +1362,12 @@ struct HomeTabView: View {
       // DON'T use completionStatusMap as it may be stale/prefetched
       let habitData = habits.first(where: { $0.id == h.id }) ?? h
       
+      // ⏭️ SKIP FEATURE: Exclude skipped habits from remaining count
+      if habitData.isSkipped(for: selectedDate) {
+        debugLog("⏭️ CELEBRATION_CHECK: Habit '\(h.name)' is SKIPPED - excluding from remaining check")
+        return false // Skipped habits don't count as "remaining"
+      }
+      
       // Use meetsStreakCriteria for streak/XP purposes (respects Streak Mode)
       let meetsCriteria = habitData.meetsStreakCriteria(for: selectedDate)
       debugLog("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | meetsStreakCriteria=\(meetsCriteria)")
