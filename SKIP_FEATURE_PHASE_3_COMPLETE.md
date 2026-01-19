@@ -10,7 +10,7 @@ Phase 3 of the Skip Habit feature has been successfully implemented, adding a po
 
 ### 1. SkipHabitSheet Component
 
-A **340pt compact bottom sheet** that provides an intuitive interface for skipping habits.
+A **400pt bottom sheet** that provides an intuitive interface for skipping habits with proper spacing.
 
 #### Visual Layout
 
@@ -39,7 +39,7 @@ A **340pt compact bottom sheet** that provides an intuitive interface for skippi
 │                                    │
 │          Cancel                    │
 └────────────────────────────────────┘
-         340pt height
+         400pt height
 ```
 
 #### Component Features
@@ -155,10 +155,11 @@ struct HabitCard: View {
 
 ### Presentation Detents
 
-The sheet is designed for a **fixed height of 340pt**:
+The sheet is designed for a **fixed height of 400pt**:
 
 ```swift
-.presentationDetents([.height(340)])
+.presentationDetents([.height(400)])
+.presentationDragIndicator(.visible)
 ```
 
 This ensures:
@@ -224,7 +225,7 @@ The file includes a SwiftUI preview for quick testing:
 
 ### Manual Testing Checklist
 
-- [x] Sheet presents at 340pt height
+- [x] Sheet presents at 400pt height
 - [x] Drag handle visible and styled
 - [x] Header displays habit name
 - [x] Protection message shown
@@ -343,7 +344,7 @@ The Skip Habit feature now has:
 The `SkipHabitSheet` is ready to be integrated into any view that needs skip functionality. It provides a beautiful, compact, and efficient interface for users to skip habits while preserving their streaks.
 
 **Key Achievements:**
-- 340pt compact design
+- 400pt comfortable design with proper spacing
 - 7 skip reasons in easy-to-scan grid
 - Haptic feedback for premium feel
 - Auto-dismiss for efficiency

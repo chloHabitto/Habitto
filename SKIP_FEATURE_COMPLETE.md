@@ -22,7 +22,7 @@ The Skip Habit feature is now **fully functional** in HabitDetailView! Users can
 - [x] Comprehensive test suite (4 test scenarios)
 
 ### Phase 3: UI Components ✅
-- [x] `SkipHabitSheet` - 340pt bottom sheet with reason selection
+- [x] `SkipHabitSheet` - 400pt bottom sheet with reason selection
 - [x] 4-column grid layout showing all 7 skip reasons
 - [x] Icons + labels for each reason
 - [x] Haptic feedback on selection
@@ -60,7 +60,7 @@ The Skip Habit feature is now **fully functional** in HabitDetailView! Users can
    ↓
 3. Taps "Skip"
    ↓
-4. SkipHabitSheet appears (340pt)
+4. SkipHabitSheet appears (400pt)
    ↓
 5. Selects reason (e.g., "Medical")
    ↓
@@ -266,7 +266,7 @@ The Skip Habit feature is now **fully functional** in HabitDetailView! Users can
 
 ### UX Polish
 ✅ **Haptic Feedback** - Success + impact for user actions
-✅ **Compact UI** - 340pt sheet doesn't dominate screen
+✅ **Comfortable UI** - 400pt sheet with proper spacing
 ✅ **Visual Clarity** - Three distinct ring states
 ✅ **Design System** - Uses semantic colors/fonts
 ✅ **Fast Workflow** - Auto-dismiss, minimal taps

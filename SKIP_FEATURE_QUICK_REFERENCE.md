@@ -158,7 +158,8 @@ When streak is calculated with skips:
       skipHabit(reason: reason)
     }
   )
-  .presentationDetents([.height(340)])
+  .presentationDetents([.height(400)])
+  .presentationDragIndicator(.visible)
 }
 ```
 

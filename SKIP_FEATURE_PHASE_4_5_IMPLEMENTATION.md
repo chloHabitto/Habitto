@@ -329,7 +329,7 @@ UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
 3. **Test Skip Flow**
    - Tap "Skip"
-   - SkipHabitSheet should appear (340pt height)
+   - SkipHabitSheet should appear (400pt height)
    - Select any reason (e.g., Medical)
    - Feel haptic feedback (success notification)
    - Sheet should dismiss automatically
