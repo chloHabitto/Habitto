@@ -328,18 +328,22 @@ struct HabitDetailView: View {
         if selectedTab == tab {
           Image(systemName: "checkmark")
             .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.onPrimaryContainer)
+            .foregroundColor(.appOnPrimaryContainer)
         }
         Text(title)
           .font(selectedTab == tab ? .appLabelMediumEmphasised : .appLabelMedium)
-          .foregroundColor(.onPrimaryContainer)
+          .foregroundColor(selectedTab == tab ? .appOnPrimaryContainer : .appText03)
       }
       .padding(.leading, selectedTab == tab ? 16 : 12)
       .padding(.trailing, 12)
       .frame(height: 32)
       .background(
         RoundedRectangle(cornerRadius: 16)
-          .fill(selectedTab == tab ? Color.primaryContainer : Color.clear)
+          .fill(selectedTab == tab ? Color.appPrimaryContainer : Color.clear)
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 16)
+          .stroke(selectedTab == tab ? Color.clear : Color.appOutline02, lineWidth: 1)
       )
     }
     .buttonStyle(PlainButtonStyle())
