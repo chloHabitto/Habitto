@@ -54,6 +54,7 @@
 /* Begin PBXFileReference section */
 		890C9EDC2E4E05B7006E28C7 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		892CC7432F1E3B1900A1AD64 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89317DC32F1CEFFA009DB565 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8932309A2F1CFCE8002D1248 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		893624CF2F1393AF006C927E /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -169,6 +170,11 @@
 				890C9EDE2E4E05B8006E28C7 /* SwiftUI.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		892CC76C2F1E3B1900A1AD64 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
 			sourceTree = "<group>";
 		};
 		89317DE72F1CEFFA009DB565 /* Products */ = {
@@ -419,6 +425,10 @@
 				{
 					ProductGroup = 893230BE2F1CFCE8002D1248 /* Products */;
 					ProjectRef = 8932309A2F1CFCE8002D1248 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 892CC76C2F1E3B1900A1AD64 /* Products */;
+					ProjectRef = 892CC7432F1E3B1900A1AD64 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 893624E72F1393AF006C927E /* Products */;
