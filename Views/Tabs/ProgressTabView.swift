@@ -5281,9 +5281,13 @@ struct DifficultyLineChart: View {
 
             // Shaded area under the line
             shadedArea(in: geometry)
+              .opacity(selectedDayIndex == nil ? 1.0 : 0.3)
+              .animation(.easeInOut(duration: 0.2), value: selectedDayIndex)
 
             // Difficulty line - drawn first so it appears behind the images
             difficultyLine(in: geometry)
+              .opacity(selectedDayIndex == nil ? 1.0 : 0.3)
+              .animation(.easeInOut(duration: 0.2), value: selectedDayIndex)
 
             // Data points - drawn last so they appear on top of the line
             dataPoints(in: geometry)
@@ -5304,6 +5308,7 @@ struct DifficultyLineChart: View {
               let dayDate = calendar
                 .date(byAdding: .day, value: index, to: weekStartDate) ?? weekStartDate
               let dayName = getDayAbbreviation(for: dayDate)
+              let isSelected = selectedDayIndex == index
 
               // Use the same positioning logic as data points
               let availableWidth = labelGeometry.size.width - 60 // Subtract spacer width
@@ -5312,8 +5317,11 @@ struct DifficultyLineChart: View {
 
               Text(dayName)
                 .font(.appLabelSmallEmphasised)
-                .foregroundColor(.appText05)
+                .fontWeight(isSelected ? .bold : .regular)
+                .foregroundColor(isSelected ? .white : .appText05)
+                .opacity(selectedDayIndex == nil ? 1.0 : (isSelected ? 1.0 : 0.4))
                 .position(x: x, y: 0)
+                .animation(.easeInOut(duration: 0.2), value: selectedDayIndex)
             }
           }
           .frame(maxWidth: .infinity)
@@ -5321,10 +5329,23 @@ struct DifficultyLineChart: View {
       }
       .frame(height: 20)
       .padding(.top, 16)
+      
+      // Selection details panel
+      if let selectedIndex = selectedDayIndex,
+         selectedIndex < data.count,
+         data[selectedIndex].hasData {
+        selectionDetailsPanel(for: data[selectedIndex])
+          .transition(.asymmetric(
+            insertion: .opacity.combined(with: .offset(y: -10)),
+            removal: .opacity))
+          .animation(.easeOut(duration: 0.25), value: selectedDayIndex)
+      }
     }
   }
-
+  
   // MARK: Private
+  
+  @State private var selectedDayIndex: Int?
 
   private let calendar = AppDateFormatter.shared.getUserCalendar()
 
@@ -5445,8 +5466,19 @@ struct DifficultyLineChart: View {
         let gridLevel = 4 - (Int(point.difficulty) - 1) // Convert 1-5 to 4-0
         let gridSpacing = height / 4.0 // 4 spacings between 5 grid lines
         let y = CGFloat(gridLevel) * gridSpacing
+        
+        let isSelected = selectedDayIndex == index
+        let shouldDim = selectedDayIndex != nil && !isSelected
 
         ZStack {
+          // Highlight ring for selected point
+          if isSelected {
+            Circle()
+              .fill(Color.blue.opacity(0.2))
+              .frame(width: 34, height: 34)
+              .blur(radius: 3)
+          }
+          
           // White background circle with subtle shadow
           Circle()
             .fill(.surface)
@@ -5462,7 +5494,20 @@ struct DifficultyLineChart: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: 18, height: 18)
         }
+        .scaleEffect(isSelected ? 1.3 : 1.0)
+        .opacity(shouldDim ? 0.3 : 1.0)
+        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isSelected)
+        .animation(.easeInOut(duration: 0.2), value: shouldDim)
         .position(x: x, y: y)
+        .onTapGesture {
+          if selectedDayIndex == index {
+            selectedDayIndex = nil
+          } else {
+            selectedDayIndex = index
+          }
+        }
+        .accessibilityLabel("Difficulty for \(getDayAbbreviation(for: point.date)): \(difficultyLabel(for: Int(round(point.difficulty))))")
+        .accessibilityHint("Double tap to select and view details")
       }
     }
   }
@@ -5504,6 +5549,47 @@ struct DifficultyLineChart: View {
     case 5: "Difficulty-VeryHard@4x"
     default: "Difficulty-Medium@4x"
     }
+  }
+  
+  private func selectionDetailsPanel(for point: DifficultyDataPoint) -> some View {
+    HStack(spacing: 16) {
+      // Large emoji icon
+      Image(difficultyImageName(for: point.difficulty))
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(width: 32, height: 32)
+      
+      // Text info
+      VStack(alignment: .leading, spacing: 4) {
+        Text(formatFullDate(point.date))
+          .font(.appLabelSmallEmphasised)
+          .foregroundColor(.appText02)
+        
+        HStack(spacing: 8) {
+          Text(difficultyLabel(for: Int(round(point.difficulty))))
+            .font(.appLabelSmall)
+            .foregroundColor(.appText05)
+          
+          Text("Level \(Int(round(point.difficulty)))/5")
+            .font(.appLabelSmall)
+            .foregroundColor(.appText05)
+        }
+      }
+      
+      Spacer()
+    }
+    .padding(16)
+    .background(.ultraThinMaterial)
+    .cornerRadius(12)
+    .padding(.top, 8)
+    .accessibilityElement(children: .combine)
+    .accessibilityLabel("Selected difficulty: \(difficultyLabel(for: Int(round(point.difficulty)))), Level \(Int(round(point.difficulty))) out of 5, \(formatFullDate(point.date))")
+  }
+  
+  private func formatFullDate(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "EEEE, MMM d"
+    return formatter.string(from: date)
   }
 }
 

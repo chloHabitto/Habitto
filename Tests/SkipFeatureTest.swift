@@ -167,7 +167,7 @@ class SkipFeatureTest {
     }
     
     // Day -1: MISSED (not skipped, not completed)
-    if let yesterday = calendar.date(byAdding: .day, value: -1, to: today) {
+    if let _ = calendar.date(byAdding: .day, value: -1, to: today) {
       // Don't mark as completed or skipped
       print("  ❌ Day -1: Missed (not completed, not skipped)")
     }
