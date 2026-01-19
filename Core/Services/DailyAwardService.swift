@@ -198,10 +198,8 @@ class DailyAwardService: ObservableObject {
             await refreshXPState()
             
             // ✅ CRITICAL FIX: XPManager is already notified in refreshXPState()
-            // But we log here for debugging
             if let state = xpState {
                 logger.info("✅ DailyAwardService: XP awarded - Total: \(state.totalXP), Level: \(state.level)")
-                print("💰 [XP_TRACE] \(Date()) awardXP() - XP awarded successfully, XPManager notified")
             }
             
         } catch {
@@ -434,13 +432,10 @@ class DailyAwardService: ObservableObject {
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = await CurrentUser().idOrGuest
         
-        print("🔍 [XP_REFRESH] Refreshing XP state for userId: \(userId.isEmpty ? "EMPTY STRING" : userId.prefix(8))...")
-        
         do {
             // ✅ DIAGNOSTIC: Query ALL DailyAwards first
             let allAwardsDescriptor = FetchDescriptor<DailyAward>()
             let allAwards = try modelContext.fetch(allAwardsDescriptor)
-            print("🔍 [XP_REFRESH] Total DailyAwards in database: \(allAwards.count)")
             
             // Calculate XP from DailyAward records (source of truth)
             let awardPredicate = #Predicate<DailyAward> { award in
@@ -448,7 +443,6 @@ class DailyAwardService: ObservableObject {
             }
             let awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
             let awards = try modelContext.fetch(awardDescriptor)
-            print("🔍 [XP_REFRESH] Predicate query returned: \(awards.count) awards")
             
             // ✅ FALLBACK: If predicate returns 0 but we have awards, check for userId mismatches
             var finalAwards = awards
@@ -456,7 +450,6 @@ class DailyAwardService: ObservableObject {
                 // First try code filter with exact userId match
                 let filtered = allAwards.filter { $0.userId == userId }
                 if !filtered.isEmpty {
-                    print("⚠️ [XP_REFRESH] Predicate returned 0, but found \(filtered.count) awards with code filter - using filtered results")
                     finalAwards = filtered
                 } else {
                     // If still empty, check for guest/empty string mismatches
@@ -465,43 +458,30 @@ class DailyAwardService: ObservableObject {
                         // Current user is guest - check for any awards with empty userId
                         let guestAwards = allAwards.filter { $0.userId.isEmpty }
                         if !guestAwards.isEmpty {
-                            print("⚠️ [XP_REFRESH] Found \(guestAwards.count) awards with empty userId (guest) - using them")
                             finalAwards = guestAwards
                         }
-                    } else {
-                        // Current user is authenticated - check if there are awards with empty userId that should be migrated
-                        // For now, we'll use empty array and let the repair function fix it
-                        print("⚠️ [XP_REFRESH] No awards found for authenticated userId - may need userId repair")
                     }
                 }
             }
             
             let totalXP = finalAwards.reduce(0) { $0 + $1.xpGranted }
-            print("🔍 [XP_REFRESH] Calculated total XP: \(totalXP) from \(finalAwards.count) awards")
             
             // Get level from UserProgressData or calculate from XP
             // ✅ DIAGNOSTIC: Query ALL UserProgressData first
             let allProgressDescriptor = FetchDescriptor<UserProgressData>()
             let allProgress = try modelContext.fetch(allProgressDescriptor)
-            print("🔍 [XP_REFRESH] Total UserProgressData in database: \(allProgress.count)")
-            for progress in allProgress {
-                let userIdDisplay = progress.userId.isEmpty ? "EMPTY STRING" : "\(progress.userId.prefix(8))..."
-                print("   UserProgressData - userId: '\(userIdDisplay)', XP: \(progress.xpTotal), Level: \(progress.level)")
-            }
             
             let progressPredicate = #Predicate<UserProgressData> { progress in
                 progress.userId == userId
             }
             let progressDescriptor = FetchDescriptor<UserProgressData>(predicate: progressPredicate)
             let progressRecords = try modelContext.fetch(progressDescriptor)
-            print("🔍 [XP_REFRESH] Predicate query for UserProgressData returned: \(progressRecords.count) records")
             
             // ✅ FALLBACK: If predicate returns 0 but we have progress, use code filter
             var finalProgress: UserProgressData? = progressRecords.first
             if finalProgress == nil && !allProgress.isEmpty {
                 let filtered = allProgress.filter { $0.userId == userId }
                 if let first = filtered.first {
-                    print("⚠️ [XP_REFRESH] Predicate returned 0, but found progress with code filter - using filtered result")
                     finalProgress = first
                 }
             }
@@ -512,13 +492,11 @@ class DailyAwardService: ObservableObject {
                 // UserProgressData is in sync, use its level
                 level = progress.level
                 currentLevelXP = progress.xpForCurrentLevel
-                print("✅ [XP_REFRESH] Using UserProgressData level: \(level), currentLevelXP: \(currentLevelXP)")
             } else {
                 // Calculate level from XP
                 let levelInfo = calculateLevel(totalXP: totalXP)
                 level = levelInfo.level
                 currentLevelXP = levelInfo.currentLevelXP
-                print("✅ [XP_REFRESH] Calculated level from XP: \(level), currentLevelXP: \(currentLevelXP)")
                 
                 // Update UserProgressData if it exists but is out of sync
                 if let progress = progressRecords.first {
@@ -529,17 +507,6 @@ class DailyAwardService: ObservableObject {
             
             // Update XPState
             let refreshTimestamp = Date()
-            let oldState = xpState
-            let oldXP = oldState?.totalXP ?? 0
-            
-            print("💰 [XP_TRACE] \(refreshTimestamp) refreshXPState() - Updating xpState")
-            print("   Source: DailyAwardService.refreshXPState()")
-            print("   Thread: MainActor")
-            if oldXP != totalXP {
-                print("   XP changing from \(oldXP) to \(totalXP)")
-            } else {
-                print("   XP unchanged: \(totalXP)")
-            }
             
             xpState = XPState(
                 totalXP: totalXP,
@@ -549,7 +516,6 @@ class DailyAwardService: ObservableObject {
             )
             
             logger.info("✅ DailyAwardService: XP state refreshed - Total: \(totalXP), Level: \(level)")
-            print("💰 [XP_TRACE] \(Date()) refreshXPState() - xpState updated")
             
             // ✅ CRITICAL FIX: Immediately notify XPManager for instant UI updates
             // Since both DailyAwardService and XPManager are @MainActor, we can call directly
@@ -557,7 +523,6 @@ class DailyAwardService: ObservableObject {
             // This ensures @Observable properties update synchronously on MainActor, triggering SwiftUI to re-render
             if let newState = xpState {
                 XPManager.shared.applyXPState(newState, fromDirectCall: true)
-                print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager directly (fromDirectCall: true, immediate UI update)")
             }
             
         } catch {
@@ -575,7 +540,6 @@ class DailyAwardService: ObservableObject {
             // Since both classes are @MainActor, we can call directly
             // Pass fromDirectCall: true to bypass grace period check
             XPManager.shared.applyXPState(defaultState, fromDirectCall: true)
-            print("💰 [XP_TRACE] \(Date()) refreshXPState() - Notified XPManager with default state (fromDirectCall: true, error case)")
         }
     }
     

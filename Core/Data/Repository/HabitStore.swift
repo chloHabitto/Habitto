@@ -73,19 +73,12 @@ final actor HabitStore {
     // ✅ CRITICAL FIX: Log current userId before loading to verify filtering
     let currentUserId = await CurrentUser().idOrGuest
     let userIdForLogging = currentUserId.isEmpty ? "EMPTY (guest)" : String(currentUserId.prefix(8)) + "..."
-    logger.info("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)' (force: \(force))")
-    print("🔄 [HABIT_STORE] Guest-only mode: Loading habits for userId: '\(userIdForLogging)' (force: \(force))")
-    print("🔄 [HABIT_STORE] CurrentUser().idOrGuest = '\(currentUserId.isEmpty ? "EMPTY" : currentUserId)'")
     
     var habits = try await activeStorage.loadHabits(force: force)
     
-    // ✅ CRITICAL FIX: Log results to verify filtering worked
-    logger.info("🔄 [HABIT_STORE] Loaded \(habits.count) habits for userId: '\(userIdForLogging)'")
-    print("🔄 [HABIT_STORE] Loaded \(habits.count) habits for userId: '\(userIdForLogging)'")
     // ✅ FIX: Only warn if actually in guest mode (userId is empty)
     if !habits.isEmpty && currentUserId.isEmpty {
       logger.warning("⚠️ [HABIT_STORE] Expected 0 habits in guest mode but found \(habits.count) - filtering may have failed!")
-      print("⚠️ [HABIT_STORE] Expected 0 habits in guest mode but found \(habits.count) - filtering may have failed!")
     }
 
     // If no habits found in SwiftData, check for habits in UserDefaults (migration scenario)
@@ -95,7 +88,6 @@ final actor HabitStore {
       // This prevents account data from being re-imported as guest data after sign-out
       if currentUserId.isEmpty {
         logger.info("🛑 Skipping UserDefaults migration in guest mode - account data should not be imported")
-        print("🛑 [HABIT_STORE] Skipping UserDefaults migration in guest mode - account data should not be imported")
         return habits // Return empty array for guest mode
       }
       
@@ -129,7 +121,6 @@ final actor HabitStore {
             let userIds = Set(authenticatedHabits.map { $0.userId })
             logger.info("🔍 Found \(authenticatedHabits.count) habits with userIds: \(userIds.map { String($0.prefix(8)) + "..." })")
             logger.info("🛑 Skipping UserDefaults migration - account data exists in SwiftData")
-            print("🛑 [HABIT_STORE] Skipping UserDefaults migration - found \(authenticatedHabits.count) habits for authenticated users")
             return true
           }
         } catch {
@@ -987,7 +978,6 @@ final actor HabitStore {
     // Access swiftDataStorage directly since it's a UserAwareStorage wrapper
     swiftDataStorage.clearCache()
     logger.info("✅ HabitStore: Cleared UserAwareStorage cache")
-    print("🧹 [HABIT_STORE] Cleared UserAwareStorage cache to force fresh load after migration")
   }
 
   // MARK: Private

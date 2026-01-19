@@ -1705,7 +1705,6 @@ class HabitRepository: ObservableObject {
       // Query DailyAwards for userId == "" will return 0 awards, so XP will be 0
       await DailyAwardService.shared.refreshXPState()
       debugLog("✅ HabitRepository: XP state refreshed for guest mode")
-      print("🔄 [XP_REFRESH] HabitRepository: Triggered XP refresh after sign-out")
 
     case .authenticating:
       debugLog("🔄 HabitRepository: User authenticating, keeping current data...")

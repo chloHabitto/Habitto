@@ -36,18 +36,14 @@ class UserAwareStorage: HabitStorageProtocol {
     
     // ✅ CRITICAL FIX: Get current userId to verify filtering
     let currentUserId = await getCurrentUserId()
-    let userIdForLogging = currentUserId.isEmpty ? "EMPTY (guest)" : String(currentUserId.prefix(8)) + "..."
-    print("🔄 [USER_AWARE_STORAGE] Loading habits for userId: '\(userIdForLogging)' (force: \(force))")
 
     // ✅ CRITICAL FIX: Clear cache if force is true
     if force {
-      print("🔄 [USER_AWARE_STORAGE] Force=true - clearing cache")
       cachedHabits = nil
     }
 
     // ✅ CRITICAL FIX: Clear cache if userId changed
     if let cachedUserId = self.currentUserId, cachedUserId != currentUserId {
-      print("🔄 [USER_AWARE_STORAGE] User changed - clearing cache (old: '\(cachedUserId.isEmpty ? "EMPTY" : String(cachedUserId.prefix(8)) + "...")', new: '\(userIdForLogging)')")
       cachedHabits = nil
       self.currentUserId = currentUserId
     }
@@ -57,19 +53,12 @@ class UserAwareStorage: HabitStorageProtocol {
        let cached = cachedHabits,
        let cachedUserId = self.currentUserId,
        cachedUserId == currentUserId {
-      print("🔄 [USER_AWARE_STORAGE] Returning cached habits (count: \(cached.count)) for userId: '\(userIdForLogging)'")
       return cached
     }
 
     // Use the specific loadHabits method from base storage instead of generic load
     // This avoids the "Generic load called" warning
     let habits = try await baseStorage.loadHabits(force: force)
-    
-    // ✅ CRITICAL FIX: Log results to verify filtering
-    print("🔄 [USER_AWARE_STORAGE] Base storage returned \(habits.count) habits for userId: '\(userIdForLogging)'")
-    if !habits.isEmpty && currentUserId.isEmpty {
-      print("⚠️ [USER_AWARE_STORAGE] WARNING: Found \(habits.count) habits in guest mode - should be 0!")
-    }
 
     // Update cache
     cachedHabits = habits
@@ -254,7 +243,6 @@ class UserAwareStorage: HabitStorageProtocol {
   /// ✅ CRITICAL FIX: This ensures fresh data is loaded after migration completes
   func clearCache() {
     cachedHabits = nil
-    print("🧹 [USER_AWARE_STORAGE] Cache cleared (forced)")
   }
 
   // MARK: Private

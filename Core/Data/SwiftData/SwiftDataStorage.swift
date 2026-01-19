@@ -399,14 +399,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
     
     logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
     
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("🔍 [SWIFTDATA_LOAD] SwiftDataStorage.loadHabits() called")
-    
-    // ✅ DEBUG: Log userId being used for query
     let userIdForQuery = currentUserId ?? ""
-    print("🔍 [SWIFTDATA_LOAD] UserId being queried: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
-    logger.info("🔄 [HABIT_STORE] Loading habits for userId: '\(userIdForQuery.isEmpty ? "EMPTY (guest)" : userIdForQuery.prefix(8) + "...")'")
-    print("🔄 [HABIT_STORE] CurrentUser().idOrGuest = '\(userIdForQuery.isEmpty ? "EMPTY" : userIdForQuery)'")
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -414,19 +407,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       // First, query ALL habits (no predicate) to see total count
       let allHabitsDescriptor = FetchDescriptor<HabitData>()
       let allHabitsTotal = try container.modelContext.fetch(allHabitsDescriptor)
-      print("🔍 [SWIFTDATA_LOAD] TOTAL habits in database (no predicate): \(allHabitsTotal.count)")
-      
-      if !allHabitsTotal.isEmpty {
-        print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("   📋 [SWIFTDATA_LOAD] All habits in database:")
-        for (index, habit) in allHabitsTotal.enumerated() {
-          let userIdDisplay = habit.userId.isEmpty ? "EMPTY" : habit.userId.prefix(8) + "..."
-          print("      [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
-          print("          Name: '\(habit.name)'")
-          print("          userId: '\(userIdDisplay)'")
-        }
-        print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      }
       
       // Create user-specific fetch descriptor
       var descriptor = FetchDescriptor<HabitData>(
@@ -438,15 +418,11 @@ final class SwiftDataStorage: HabitStorageProtocol {
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == userId && habitData.deletedAt == nil
         }
-        print("🔍 [SWIFTDATA_LOAD] Query predicate: userId == '\(userId.prefix(8))...' AND deletedAt == nil")
-        logger.info("🔄 Query predicate: userId == '\(userId.prefix(8))...' AND deletedAt == nil")
       } else {
         // For guest users, show data with empty userId
         descriptor.predicate = #Predicate<HabitData> { habitData in
           habitData.userId == "" && habitData.deletedAt == nil
         }
-        print("🔍 [SWIFTDATA_LOAD] Query predicate: userId == '' (empty string) AND deletedAt == nil")
-        logger.info("🔄 Query predicate: userId == '' (empty string) AND deletedAt == nil")
       }
 
       // ✅ CRITICAL FIX: Process pending changes before fetching
@@ -455,31 +431,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
       
       var habitDataArray = try container.modelContext.fetch(descriptor)
       
-      print("🔍 [SWIFTDATA_LOAD] Habits matching userId predicate: \(habitDataArray.count)")
-      
       // ✅ CRITICAL FIX: Log query results to diagnose @Query refresh issues
       let queryTimestamp = Date()
       let finalUserId = currentUserId ?? ""
       logger.info("🔄 [SWIFTDATA_QUERY] \(queryTimestamp) Query executed - found \(habitDataArray.count) habits for userId '\(finalUserId.isEmpty ? "EMPTY_STRING" : String(finalUserId.prefix(8)) + "...")'")
-      print("🔄 [HABIT_LOAD] Query result: Found \(habitDataArray.count) habits for userId '\(finalUserId.isEmpty ? "EMPTY" : finalUserId.prefix(8) + "...")'")
       
-      // Log each habit returned
-      if !habitDataArray.isEmpty {
-        print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("   📋 [SWIFTDATA_LOAD] Habits returned (after userId predicate):")
-        for (index, habit) in habitDataArray.enumerated() {
-          print("      [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
-          print("          Name: '\(habit.name)'")
-          print("          userId: '\(habit.userId.isEmpty ? "EMPTY" : habit.userId.prefix(8) + "...")'")
-        }
-        print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        
-        let habitUserIds = Set(habitDataArray.map { $0.userId })
-        logger.info("🔄 [HABIT_LOAD] Habit userIds in result: \(habitUserIds.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." })")
-        print("🔄 [HABIT_LOAD] Habit userIds found: \(habitUserIds.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." })")
-      } else {
-        print("   ⚠️ [SWIFTDATA_LOAD] No habits found matching userId predicate")
-      }
+      let habitUserIds = Set(habitDataArray.map { $0.userId })
+      logger.info("🔄 [HABIT_LOAD] Habit userIds in result: \(habitUserIds.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." })")
       
       // ✅ FALLBACK: If authenticated but no habits found, check for guest habits
       // This handles migration scenarios where habits were saved with empty userId
@@ -629,32 +587,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
         .info(
           "Successfully loaded \(habits.count) habits for user: \(currentUserId ?? "guest") in \(String(format: "%.3f", timeElapsed))s")
       
-      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      print("📋 [SWIFTDATA_LOAD] Final habits returned:")
-      print("   Total habits after all filtering: \(habits.count)")
-      
-      if !habits.isEmpty {
-        for (index, habit) in habits.enumerated() {
-          print("   [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
-          print("       Name: '\(habit.name)'")
-        }
-      } else {
-        print("   ⚠️ No habits returned (empty array)")
-      }
-      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      
-      // ✅ DIAGNOSTIC: Log detailed information about loaded habits
-      print("🔍 [HABIT_LOAD] Loading habits for userId: \(currentUserId ?? "nil (guest)")")
-      print("🔍 [HABIT_LOAD] Found \(habits.count) habits")
-      
       if habits.isEmpty {
-        print("⚠️ [HABIT_LOAD] No habits found for userId: \(currentUserId ?? "guest")")
         // Check if habits exist with different userIds
         await diagnosticCheckForHabits()
       } else {
-        print("✅ [HABIT_LOAD] Loaded \(habits.count) habits successfully")
-        print("   User ID: \(currentUserId ?? "guest")")
-        print("   Habit names: \(habits.map { $0.name }.joined(separator: ", "))")
         
         // ✅ DIAGNOSTIC: Log completion records per habit
         for habit in habits {

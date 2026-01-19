@@ -187,9 +187,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
           await compactor.scheduleNextCompaction()
           debugLog("✅ EventCompactor: Scheduling completed")
           NSLog("✅ EventCompactor: Scheduling completed")
-        } else {
-          debugLog("⏭️ SyncEngine: Skipping sync for guest user")
-          NSLog("⏭️ SyncEngine: Skipping sync for guest user")
         }
       } catch {
         debugLog("❌ SyncEngine: Failed to authenticate user: \(error.localizedDescription)")
