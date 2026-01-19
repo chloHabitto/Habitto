@@ -1323,14 +1323,32 @@ struct HabitDetailView: View {
   // MARK: - Skip Feature Methods
   
   private func skipHabit(reason: SkipReason) {
-    habit.skip(for: selectedDate, reason: reason)
-    isHabitSkipped = true
-    onUpdateHabit?(habit)
+    let dateKey = Habit.dateKey(for: selectedDate)
+    print("⏭️ SKIP: ========== STARTING SKIP ==========")
+    print("⏭️ SKIP: Habit: '\(habit.name)' (ID: \(habit.id.uuidString.prefix(8))...)")
+    print("⏭️ SKIP: Date: \(dateKey)")
+    print("⏭️ SKIP: Reason: \(reason.rawValue)")
+    print("⏭️ SKIP: Before skip - habit.skippedDays count: \(habit.skippedDays.count)")
     
+    // Modify the habit to add skip
+    habit.skip(for: selectedDate, reason: reason)
+    
+    print("⏭️ SKIP: After skip - habit.skippedDays count: \(habit.skippedDays.count)")
+    print("⏭️ SKIP: Skip data: \(habit.skippedDays)")
+    
+    // Update local state
+    isHabitSkipped = true
+    
+    // CRITICAL: Persist the change to SwiftData
+    print("⏭️ SKIP: Calling onUpdateHabit to persist changes...")
+    onUpdateHabit?(habit)
+    print("⏭️ SKIP: onUpdateHabit called")
+    
+    // Haptic feedback
     let generator = UINotificationFeedbackGenerator()
     generator.notificationOccurred(.success)
     
-    print("⏭️ SKIP: Habit '\(habit.name)' skipped for \(Habit.dateKey(for: selectedDate)) - reason: \(reason.rawValue)")
+    print("⏭️ SKIP: ========== SKIP COMPLETE ==========")
   }
   
   private func unskipHabit() {
