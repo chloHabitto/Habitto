@@ -220,8 +220,6 @@ struct HabitsTabView: View {
         seenIds.insert(habit.id)
       }
     }
-    
-    let afterDedupeCount = uniqueHabits.count
 
     // In edit mode, show ALL habits to allow proper reordering
     // (Can't reorder a filtered view - causes index mismatch)
@@ -230,13 +228,11 @@ struct HabitsTabView: View {
     }
 
     // Determine filter based on selected tab
-    let tabName: String
     let filterResult: [Habit]
     
     // Then apply the tab-based filtering (only in normal mode)
     switch selectedStatsTab {
     case 0: // Active
-      tabName = "Active"
       filterResult = uniqueHabits.filter { habit in
         // ✅ FIX: Habit is active if it hasn't ended yet (includes future-starting habits)
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
@@ -246,7 +242,6 @@ struct HabitsTabView: View {
       }
 
     case 1: // Inactive
-      tabName = "Inactive"
       filterResult = uniqueHabits.filter { habit in
         // ✅ FIX: Habit is inactive ONLY if its end date has passed
         let endDate = habit.endDate.map { calendar.startOfDay(for: $0) } ?? Date.distantFuture
@@ -256,11 +251,9 @@ struct HabitsTabView: View {
       }
 
     case 2, 3: // Dummy tabs - show all habits
-      tabName = "All"
       filterResult = uniqueHabits
 
     default:
-      tabName = "Default"
       filterResult = uniqueHabits
     }
     

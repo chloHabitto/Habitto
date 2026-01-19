@@ -398,15 +398,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
     }
     
     logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
-    
-    let userIdForQuery = currentUserId ?? ""
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
     do {
-      // First, query ALL habits (no predicate) to see total count
-      let allHabitsDescriptor = FetchDescriptor<HabitData>()
-      let allHabitsTotal = try container.modelContext.fetch(allHabitsDescriptor)
       
       // Create user-specific fetch descriptor
       var descriptor = FetchDescriptor<HabitData>(
