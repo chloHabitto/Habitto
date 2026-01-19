@@ -1192,9 +1192,9 @@ struct YearlyCalendarGridView: View {
               isScheduled: heatmapData.isScheduled,
               completionPercentage: heatmapData.completionPercentage,
               rectangleSizePercentage: 0.8,
-              habitColor: habit.color.color)
+              habitColor: habit.color.color,
+              cornerRadius: 2)
               .aspectRatio(1, contentMode: .fit)
-              .cornerRadius(2)
           } else {
             // Fallback for missing data
             Rectangle()
@@ -1740,15 +1740,30 @@ struct IndividualHabitWeeklyProgressView: View {
             let isScheduled = StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
             
             ZStack {
-              // Rectangle background
-              RoundedRectangle(cornerRadius: 8)
-                .fill(isCompleted && isScheduled ? habit.color.color : Color("appOutline02"))
-                .frame(width: 32, height: 32)
+              if isScheduled {
+                if isCompleted {
+                  // Completed & Scheduled: Fill with habit color
+                  RoundedRectangle(cornerRadius: 8)
+                    .fill(habit.color.color)
+                    .frame(width: 32, height: 32)
+                } else {
+                  // Scheduled but not completed: Fill with appOutline02
+                  RoundedRectangle(cornerRadius: 8)
+                    .fill(Color("appOutline02"))
+                    .frame(width: 32, height: 32)
+                }
+              } else {
+                // Not scheduled: Border only
+                RoundedRectangle(cornerRadius: 8)
+                  .stroke(Color("appOutline02"), lineWidth: 1)
+                  .frame(width: 32, height: 32)
+              }
               
               // Date number
               Text("\(dayNumber)")
                 .font(.appTitleMediumEmphasised)
-                .foregroundColor(isCompleted && isScheduled ? Color("appTextDarkFixed") : Color("appOutline06"))
+                .foregroundColor(
+                  (isScheduled && isCompleted) ? Color("appTextDarkFixed") : Color("appText07"))
             }
             .frame(maxWidth: .infinity)
           }
@@ -2643,7 +2658,7 @@ struct IndividualHabitHeatmapCellView: View {
       } else {
         // Show empty outline when not scheduled but in month
         RoundedRectangle(cornerRadius: 4)
-          .stroke(Color("appOutline03"), lineWidth: 1)
+          .stroke(Color("appOutline02"), lineWidth: 1)
           .frame(width: innerSize, height: innerSize)
       }
     }
