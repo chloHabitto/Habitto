@@ -1,4 +1,5 @@
 import AVKit
+import Charts
 import MijickPopups
 import SwiftUI
 
@@ -469,6 +470,14 @@ struct ProgressTabView: View {
     } else {
       // Show normal content when habits exist
       VStack(spacing: 20) {
+        // Monthly Completion Bar Chart
+        MonthlyCompletionBarChartWrapper(
+          data: calculateMonthlyCompletionDataForAllHabits(),
+          accentColor: .primary,
+          title: "Monthly Completions",
+          subtitle: "All habits • \(selectedYear)"
+        )
+        
         // Yearly Calendar Grid
         YearlyCalendarGridView(
           userHabits: getActiveHabitsForSelectedYear(),
@@ -487,6 +496,16 @@ struct ProgressTabView: View {
   @ViewBuilder
   private var yearlyIndividualHabitContent: some View {
     VStack(spacing: 20) {
+      // Monthly Completion Bar Chart
+      if let selectedHabit = selectedHabit {
+        MonthlyCompletionBarChartWrapper(
+          data: calculateMonthlyCompletionDataForHabit(selectedHabit),
+          accentColor: Color(hex: selectedHabit.colorHex) ?? .primary,
+          title: "Monthly Completions",
+          subtitle: "\(selectedHabit.name) • \(selectedYear)"
+        )
+      }
+      
       // Yearly Calendar Grid and Stats Container
       YearlyCalendarGridView(
         userHabits: [selectedHabit!],
@@ -1834,6 +1853,145 @@ struct ProgressTabView: View {
       return false
     }
   }
+  
+  /// Calculate monthly completion data for all habits in the selected year
+  private func calculateMonthlyCompletionDataForAllHabits() -> [MonthlyCompletionData] {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let activeHabits = getActiveHabitsForSelectedYear()
+    
+    var monthlyData: [MonthlyCompletionData] = []
+    
+    // Iterate through all 12 months
+    for month in 1...12 {
+      var components = DateComponents()
+      components.year = selectedYear
+      components.month = month
+      components.day = 1
+      
+      guard let monthStart = calendar.date(from: components),
+            let monthRange = calendar.range(of: .day, in: .month, for: monthStart) else {
+        continue
+      }
+      
+      var scheduledDays = 0
+      var completedDays = 0
+      
+      // Iterate through each day of the month
+      for day in monthRange {
+        components.day = day
+        guard let date = calendar.date(from: components) else { continue }
+        
+        // Skip future dates
+        if date > today {
+          break
+        }
+        
+        // Check each habit for this date
+        var dayHasScheduledHabit = false
+        var allScheduledHabitsCompleted = true
+        var scheduledHabitsCount = 0
+        
+        for habit in activeHabits {
+          if StreakDataCalculator.shouldShowHabitOnDate(habit, date: date) {
+            dayHasScheduledHabit = true
+            scheduledHabitsCount += 1
+            
+            if !habit.isCompleted(for: date) {
+              allScheduledHabitsCompleted = false
+            }
+          }
+        }
+        
+        // Only count days where at least one habit is scheduled
+        if dayHasScheduledHabit {
+          scheduledDays += 1
+          if allScheduledHabitsCompleted {
+            completedDays += 1
+          }
+        }
+      }
+      
+      monthlyData.append(MonthlyCompletionData(
+        month: shortMonthName(for: month),
+        monthNumber: month,
+        scheduledDays: scheduledDays,
+        completedDays: completedDays
+      ))
+    }
+    
+    return monthlyData
+  }
+  
+  /// Calculate monthly completion data for a single habit in the selected year
+  private func calculateMonthlyCompletionDataForHabit(_ habit: Habit) -> [MonthlyCompletionData] {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    
+    var monthlyData: [MonthlyCompletionData] = []
+    
+    // Iterate through all 12 months
+    for month in 1...12 {
+      var components = DateComponents()
+      components.year = selectedYear
+      components.month = month
+      components.day = 1
+      
+      guard let monthStart = calendar.date(from: components),
+            let monthRange = calendar.range(of: .day, in: .month, for: monthStart) else {
+        continue
+      }
+      
+      var scheduledDays = 0
+      var completedDays = 0
+      
+      // Iterate through each day of the month
+      for day in monthRange {
+        components.day = day
+        guard let date = calendar.date(from: components) else { continue }
+        
+        // Skip future dates
+        if date > today {
+          break
+        }
+        
+        // Check if habit is scheduled for this date
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: date) {
+          scheduledDays += 1
+          
+          if habit.isCompleted(for: date) {
+            completedDays += 1
+          }
+        }
+      }
+      
+      monthlyData.append(MonthlyCompletionData(
+        month: shortMonthName(for: month),
+        monthNumber: month,
+        scheduledDays: scheduledDays,
+        completedDays: completedDays
+      ))
+    }
+    
+    return monthlyData
+  }
+  
+  /// Returns 3-letter month abbreviation
+  private func shortMonthName(for month: Int) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMM"
+    
+    var components = DateComponents()
+    components.year = 2000
+    components.month = month
+    components.day = 1
+    
+    guard let date = Calendar.current.date(from: components) else {
+      return ""
+    }
+    
+    return formatter.string(from: date)
+  }
 
   private func getActiveHabitsForSelectedWeek() -> [Habit] {
     let calendar = AppDateFormatter.shared.getUserCalendar()
@@ -1886,6 +2044,129 @@ struct ProgressTabView: View {
     // For other tabs, use all active habits
     let habitsToUse = selectedTimePeriod == 1 ? getActiveHabitsForSelectedWeek() : getActiveHabits()
     streakStatistics = StreakDataCalculator.calculateStreakStatistics(from: habitsToUse)
+  }
+  
+  // MARK: - Monthly Completion Chart Helper Functions
+  
+  /// Calculate monthly completion data for all active habits in the selected year
+  private func calculateMonthlyCompletionDataForAllHabits() -> [MonthlyCompletionData] {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let activeHabits = getActiveHabitsForSelectedYear()
+    
+    var monthlyData: [MonthlyCompletionData] = []
+    
+    // Iterate through all 12 months
+    for month in 1...12 {
+      var components = DateComponents()
+      components.year = selectedYear
+      components.month = month
+      components.day = 1
+      
+      guard let monthStart = calendar.date(from: components),
+            let monthInterval = calendar.dateInterval(of: .month, for: monthStart) else {
+        continue
+      }
+      
+      let monthEnd = calendar.date(byAdding: .day, value: -1, to: monthInterval.end) ?? monthInterval.end
+      
+      var scheduledDaysCount = 0
+      var completedDaysCount = 0
+      
+      // Iterate through each day of the month
+      var currentDate = monthStart
+      while currentDate <= monthEnd && currentDate <= today {
+        // Check all active habits for this day
+        for habit in activeHabits {
+          // Check if habit is scheduled for this date
+          if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+            scheduledDaysCount += 1
+            
+            // Check if completed
+            if habit.isCompleted(for: currentDate) {
+              completedDaysCount += 1
+            }
+          }
+        }
+        
+        guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+          break
+        }
+        currentDate = nextDate
+      }
+      
+      let monthData = MonthlyCompletionData(
+        month: shortMonthName(for: month),
+        monthNumber: month,
+        scheduledDays: scheduledDaysCount,
+        completedDays: completedDaysCount
+      )
+      monthlyData.append(monthData)
+    }
+    
+    return monthlyData
+  }
+  
+  /// Calculate monthly completion data for a single habit in the selected year
+  private func calculateMonthlyCompletionDataForHabit(_ habit: Habit) -> [MonthlyCompletionData] {
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    
+    var monthlyData: [MonthlyCompletionData] = []
+    
+    // Iterate through all 12 months
+    for month in 1...12 {
+      var components = DateComponents()
+      components.year = selectedYear
+      components.month = month
+      components.day = 1
+      
+      guard let monthStart = calendar.date(from: components),
+            let monthInterval = calendar.dateInterval(of: .month, for: monthStart) else {
+        continue
+      }
+      
+      let monthEnd = calendar.date(byAdding: .day, value: -1, to: monthInterval.end) ?? monthInterval.end
+      
+      var scheduledDaysCount = 0
+      var completedDaysCount = 0
+      
+      // Iterate through each day of the month
+      var currentDate = monthStart
+      while currentDate <= monthEnd && currentDate <= today {
+        // Check if habit is scheduled for this date
+        if StreakDataCalculator.shouldShowHabitOnDate(habit, date: currentDate) {
+          scheduledDaysCount += 1
+          
+          // Check if completed
+          if habit.isCompleted(for: currentDate) {
+            completedDaysCount += 1
+          }
+        }
+        
+        guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else {
+          break
+        }
+        currentDate = nextDate
+      }
+      
+      let monthData = MonthlyCompletionData(
+        month: shortMonthName(for: month),
+        monthNumber: month,
+        scheduledDays: scheduledDaysCount,
+        completedDays: completedDaysCount
+      )
+      monthlyData.append(monthData)
+    }
+    
+    return monthlyData
+  }
+  
+  /// Get 3-letter month abbreviation for a month number (1-12)
+  private func shortMonthName(for month: Int) -> String {
+    let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    guard month >= 1 && month <= 12 else { return "" }
+    return monthNames[month - 1]
   }
 
   // MARK: - Helper Functions for Calendar
