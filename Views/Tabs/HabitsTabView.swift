@@ -203,18 +203,6 @@ struct HabitsTabView: View {
   private var habits: [Habit] {
     let habitsArray = state.habits
     
-    // ✅ DIAGNOSTIC: Log habits arriving in state
-    if !habitsArray.isEmpty {
-      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      print("🔍 [HABITS_TAB_VIEW] Habits arrived in state.habits")
-      print("   Total habits in state: \(habitsArray.count)")
-      for (index, habit) in habitsArray.enumerated() {
-        print("   [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
-        print("       Name: '\(habit.name)'")
-      }
-      print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    }
-    
     return habitsArray
   }
 
@@ -234,14 +222,10 @@ struct HabitsTabView: View {
     }
     
     let afterDedupeCount = uniqueHabits.count
-    if afterDedupeCount != habits.count {
-      print("🔍 [HABITS_TAB_VIEW] After deduplication: \(habits.count) → \(afterDedupeCount) habits")
-    }
 
     // In edit mode, show ALL habits to allow proper reordering
     // (Can't reorder a filtered view - causes index mismatch)
     if editMode == .active {
-      print("🔍 [HABITS_TAB_VIEW] Edit mode active - showing all \(afterDedupeCount) habits (no filtering)")
       return uniqueHabits
     }
 
@@ -279,29 +263,6 @@ struct HabitsTabView: View {
       tabName = "Default"
       filterResult = uniqueHabits
     }
-    
-    // ✅ DIAGNOSTIC: Log filtering results
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("🔍 [HABITS_TAB_VIEW] Tab filtering applied:")
-    print("   Selected tab: \(selectedStatsTab) (\(tabName))")
-    print("   Edit mode: \(editMode == .active ? "active" : "inactive")")
-    print("   Before filtering: \(afterDedupeCount) habits")
-    print("   After filtering: \(filterResult.count) habits")
-    
-    if !filterResult.isEmpty {
-      print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-      print("   📋 [HABITS_TAB_VIEW] Habits shown after filtering:")
-      for (index, habit) in filterResult.enumerated() {
-        let endDateDisplay = habit.endDate?.description ?? "nil (no end date)"
-        print("      [\(index + 1)] ID: \(habit.id.uuidString.prefix(8))...")
-        print("          Name: '\(habit.name)'")
-        print("          endDate: \(endDateDisplay)")
-      }
-      print("   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    } else {
-      print("   ⚠️ No habits match the filter criteria")
-    }
-    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     
     return filterResult
   }

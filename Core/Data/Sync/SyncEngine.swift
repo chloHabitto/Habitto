@@ -941,14 +941,12 @@ actor SyncEngine {
                     // Both timestamps valid - compare them
                     if localTimestamp <= remoteTs {
                         // Remote is newer or equal, skip write
-                        logger.info("⏭️ SyncEngine: Skipping push for \(completion.habitId.prefix(8))... dateKey=\(completion.dateKey) - remote is newer (local: \(localTimestamp), remote: \(remoteTs))")
                         alreadySyncedCount += 1
                         shouldWriteRemote = false
                         continue
                     }
                 } else if remoteTimestamp != nil && !localIsValid {
                     // Remote has valid timestamp but local doesn't - prefer remote
-                    logger.info("⏭️ SyncEngine: Skipping push for \(completion.habitId.prefix(8))... dateKey=\(completion.dateKey) - local timestamp invalid")
                     alreadySyncedCount += 1
                     shouldWriteRemote = false
                     continue
@@ -1014,9 +1012,6 @@ actor SyncEngine {
         // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(actualUserId) else {
             logger.info("⏭️ Skipping pull for guest user (userId = \"\")")
-            debugLog("⏭️ SyncEngine: Skipping pull for guest user (userId: '\(actualUserId)')")
-            NSLog("⏭️ SyncEngine: Skipping pull for guest user (userId: '%@')", actualUserId)
-            fflush(stdout)
             return PullSyncSummary()
         }
         
@@ -1421,7 +1416,6 @@ actor SyncEngine {
                 // If a habit was deleted but still exists in Firestore (deletion didn't complete),
                 // we should NOT recreate it on sync - this causes deleted habits to reappear
                 if Self.isHabitDeleted(habitId) {
-                    logger.info("⏭️ SyncEngine: Skipping creation of deleted habit \(habitId.uuidString.prefix(8))... from Firestore")
                     return
                 }
                 
@@ -1475,7 +1469,6 @@ actor SyncEngine {
         
         // ✅ CRITICAL BUG FIX: Skip if this habit was deleted - prevents resurrection
         if Self.isHabitDeleted(habitId) {
-            logger.info("⏭️ SyncEngine: Skipping completion for deleted habit \(habitId.uuidString.prefix(8))...")
             return
         }
         
@@ -1490,13 +1483,11 @@ actor SyncEngine {
         }
         
         guard habitExists else {
-            logger.info("⏭️ SyncEngine: Skipping completion for non-existent habit \(habitId.uuidString.prefix(8))...")
             return
         }
         
         // If there are pending local events for this habit/date, skip remote overwrite
         if await hasPendingLocalEvents(habitId: habitId, dateKey: dateKey) {
-            logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - pending local events")
             return
         }
         
@@ -1571,8 +1562,6 @@ actor SyncEngine {
                             existingRecord.updatedAt = Date()
                             try modelContext.save()
                             logger.info("✅ SyncEngine: Updated completion (same timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
-                        } else {
-                            logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - already in sync")
                         }
                     } else if remoteTimestamp == Date(timeIntervalSince1970: 0) &&
                               (existingRecord.isCompleted != remoteIsCompleted || existingRecord.progress != remoteProgress) {
@@ -1585,8 +1574,6 @@ actor SyncEngine {
                         existingRecord.updatedAt = Date()
                         try modelContext.save()
                         logger.info("✅ SyncEngine: Updated completion (invalid remote timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
-                    } else {
-                        logger.info("⏭️ SyncEngine: Skipping completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) - local is newer (local: \(localTimestamp), remote: \(remoteTimestamp))")
                     }
                 } else {
                     // Create new completion record

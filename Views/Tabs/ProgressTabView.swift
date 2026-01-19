@@ -2010,7 +2010,6 @@ struct ProgressTabView: View {
   }
 
   private var isThisYearSelected: Bool {
-    let _ = print("🔄 isThisYearSelected computed - calling Date()")
     let calendar = Calendar.current
     let currentYear = calendar.component(.year, from: Date())
     return currentYear == selectedYear
