@@ -687,12 +687,6 @@ struct Habit: Identifiable, Codable, Equatable {
     let progress = getProgress(for: date)
     let dateKey = Self.dateKey(for: date)
     
-    // ✅ DIAGNOSTIC: Log what data we're reading for streak calculation
-    #if DEBUG
-    let debugGoalAmount = goalAmount(for: date)  // ← RENAMED to avoid shadowing
-    debugLog("🔍 meetsStreakCriteria: habit=\(name), date=\(dateKey), progress=\(progress), goal=\(debugGoalAmount), mode=\(mode.rawValue)")
-    #endif
-    
     switch mode {
     case .full:
       // Strict mode: progress must meet or exceed goal (current behavior)

@@ -48,7 +48,6 @@ class HomeViewState: ObservableObject {
       if existingStreak > 0 {
         // Keep existing value until we calculate the real one
         self.currentStreak = existingStreak
-        debugLog("📱 WIDGET_SYNC: Preserved existing streak value from UserDefaults: \(existingStreak)")
       }
     }
     self.updateStreak()
@@ -174,20 +173,11 @@ class HomeViewState: ObservableObject {
           let timestamp = Date()
           let oldStreak = currentStreak
           
-          print("💰 [STREAK_TRACE] \(timestamp) updateStreak() - START")
-          print("   Source: GlobalStreakModel query")
-          print("   Thread: MainActor")
-          print("   Streak changing from \(oldStreak) to \(loadedStreak)")
-          
-          debugLog("🔍 UI_STREAK: updateStreak() will display streak = \(loadedStreak)")
           currentStreak = loadedStreak
           
           // ✅ WIDGET SYNC: Update UserDefaults for widget extension IMMEDIATELY
           // This ensures the widget can read the value even if the app is not running
           syncStreakToWidget(loadedStreak)
-          
-          print("💰 [STREAK_TRACE] \(Date()) updateStreak() - COMPLETE")
-          print("   Final: currentStreak=\(self.currentStreak)")
           
           // ✅ FIX: Also broadcast via notification for consistency
           // ✅ STEP 1: Include isUserInitiated flag in notification
@@ -255,9 +245,7 @@ class HomeViewState: ObservableObject {
       // Get the updated habit from the repository (it should have the latest completionStatus/completionHistory)
       if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {
         WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
-        debugLog("📱 WIDGET_SYNC: Synced updated habit '\(updatedHabit.name)' to widget storage")
       } else {
-        debugLog("⚠️ WIDGET_SYNC: Could not find updated habit in repository, syncing original habit")
         WidgetDataSync.shared.syncHabitToWidget(habit)
       }
       
@@ -402,9 +390,7 @@ class HomeViewState: ObservableObject {
       // Get the updated habit from the repository (it should have the latest completionStatus/completionHistory)
       if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {
         WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
-        debugLog("📱 WIDGET_SYNC: Synced updated habit '\(updatedHabit.name)' to widget storage")
       } else {
-        debugLog("⚠️ WIDGET_SYNC: Could not find updated habit in repository, syncing original habit")
         WidgetDataSync.shared.syncHabitToWidget(habit)
       }
       
@@ -652,12 +638,8 @@ class HomeViewState: ObservableObject {
           let deletedHabitsCount = allHabitDataList.filter { $0.deletedAt != nil }.count
           let activeHabitsCount = habitRepository.habits.count
           
-          if allHabitsCount != activeHabitsCount {
-            debugLog("⚠️ [HABIT_LOAD] MISMATCH DETECTED (but now fixed!):")
-            debugLog("   SwiftData has \(allHabitsCount) total habits (\(deletedHabitsCount) soft-deleted)")
-            debugLog("   HabitRepository has \(activeHabitsCount) active habits")
-            debugLog("   ✅ Using HabitRepository (\(activeHabitsCount) active) for streak calculation")
-          }
+          _ = allHabitsCount
+          _ = activeHabitsCount
         }
         #endif
         
@@ -863,17 +845,12 @@ class HomeViewState: ObservableObject {
       // ✅ FIX: Always sync, even if streak is 0, so widget knows the value is valid
       sharedDefaults.set(streak, forKey: "widgetCurrentStreak")
       sharedDefaults.synchronize()
-      debugLog("📱 WIDGET_SYNC: Updated widget streak to \(streak) (key now exists in UserDefaults)")
       
       // ✅ CRITICAL FIX: Reload widget timeline immediately to show updated streak
       // This ensures the widget displays the latest streak value right away
       #if canImport(WidgetKit)
       WidgetCenter.shared.reloadAllTimelines()
-      debugLog("📱 WIDGET_SYNC: Triggered widget timeline reload")
       #endif
-    } else {
-      debugLog("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
-      print("⚠️ WIDGET_SYNC: App Group 'group.com.habitto.widget' is not accessible - check entitlements")
     }
   }
   

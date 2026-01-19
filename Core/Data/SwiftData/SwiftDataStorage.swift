@@ -368,8 +368,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
     // ✅ CRITICAL FIX: Log userId to track changes during migration
     let timestamp = Date()
     let userIdDisplay = currentUserId ?? "nil (guest)"
-    logger.info("🔄 [SWIFTDATA_QUERY] \(timestamp) loadHabits() called - currentUserId: '\(userIdDisplay.isEmpty ? "EMPTY_STRING" : String(userIdDisplay.prefix(8)) + "...")'")
-    
     // ✅ FIX: Only retry if we're expecting an authenticated user
     // For guest users, nil is expected and we should use "guest" immediately
     // Check if Firebase Auth is actually configured and might have a user
@@ -398,15 +396,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
     }
     
     logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
-    
-    let userIdForQuery = currentUserId ?? ""
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
     do {
-      // First, query ALL habits (no predicate) to see total count
-      let allHabitsDescriptor = FetchDescriptor<HabitData>()
-      let allHabitsTotal = try container.modelContext.fetch(allHabitsDescriptor)
       
       // Create user-specific fetch descriptor
       var descriptor = FetchDescriptor<HabitData>(
@@ -434,10 +427,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
       // ✅ CRITICAL FIX: Log query results to diagnose @Query refresh issues
       let queryTimestamp = Date()
       let finalUserId = currentUserId ?? ""
-      logger.info("🔄 [SWIFTDATA_QUERY] \(queryTimestamp) Query executed - found \(habitDataArray.count) habits for userId '\(finalUserId.isEmpty ? "EMPTY_STRING" : String(finalUserId.prefix(8)) + "...")'")
-      
       let habitUserIds = Set(habitDataArray.map { $0.userId })
-      logger.info("🔄 [HABIT_LOAD] Habit userIds in result: \(habitUserIds.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." })")
       
       // ✅ FALLBACK: If authenticated but no habits found, check for guest habits
       // This handles migration scenarios where habits were saved with empty userId
