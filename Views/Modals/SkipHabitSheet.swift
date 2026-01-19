@@ -12,36 +12,18 @@ struct SkipHabitSheet: View {
   @Environment(\.dismiss) private var dismiss
   
   var body: some View {
-    VStack(spacing: 16) {
-      // Header Section - no custom drag handle, system provides one
-      VStack(spacing: 8) {
-        Image(systemName: "forward.fill")
-          .font(.system(size: 28))
-          .foregroundColor(.text03)
-        
-        Text("Skip \"\(habitName)\"")
-          .font(.appTitleSmallEmphasised)
-          .foregroundColor(.text01)
-          .multilineTextAlignment(.center)
-        
-        Text("Your streak will stay protected")
-          .font(.appBodySmall)
-          .foregroundColor(.text04)
-          .multilineTextAlignment(.center)
-      }
-      .padding(.horizontal, 20)
-      .padding(.top, 8)
-      
-      // Divider
-      Divider()
-        .padding(.horizontal, 20)
-      
-      // Reason Selection Section
+    BaseBottomSheet(
+      title: "Skip \"\(habitName)\"",
+      description: "Your streak will stay protected",
+      onClose: { dismiss() },
+      useSimpleCloseButton: true
+    ) {
       VStack(alignment: .leading, spacing: 12) {
         Text("Why are you skipping?")
           .font(.appBodyMediumEmphasised)
           .foregroundColor(.text03)
           .padding(.horizontal, 20)
+          .padding(.top, 16)
         
         // Reason Grid
         LazyVGrid(columns: [
@@ -57,20 +39,12 @@ struct SkipHabitSheet: View {
           }
         }
         .padding(.horizontal, 20)
+        .padding(.bottom, 20)
+        
+        Spacer()
       }
-      
-      // Cancel Button
-      Button(action: {
-        dismiss()
-      }) {
-        Text("Cancel")
-          .font(.appBodyMedium)
-          .foregroundColor(.text04)
-      }
-      .padding(.top, 8)
-      .padding(.bottom, 20)
     }
-    .background(Color.surface)
+    .presentationDetents([.height(400)])
   }
   
   // MARK: Private
