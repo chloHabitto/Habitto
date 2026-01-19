@@ -79,8 +79,8 @@ struct MonthlyCompletionBarChart_iOS17: View {
       Chart {
         ForEach(data) { monthData in
           BarMark(
-            x: .value("Month", monthData.month),
-            y: .value("Completion", monthData.completionRate)
+            x: .value("Completion", monthData.completionRate),
+            y: .value("Month", monthData.month)
           )
           .foregroundStyle(
             selectedMonth == nil || selectedMonth == monthData.monthNumber
@@ -90,9 +90,9 @@ struct MonthlyCompletionBarChart_iOS17: View {
           .cornerRadius(4)
         }
       }
-      .chartXSelection(value: $selectedMonth)
-      .chartYAxis {
-        AxisMarks(position: .leading, values: [0, 0.25, 0.5, 0.75, 1.0]) { value in
+      .chartYSelection(value: $selectedMonth)
+      .chartXAxis {
+        AxisMarks(position: .bottom, values: [0, 0.25, 0.5, 0.75, 1.0]) { value in
           if let doubleValue = value.as(Double.self) {
             AxisValueLabel {
               Text("\(Int(doubleValue * 100))%")
@@ -104,8 +104,8 @@ struct MonthlyCompletionBarChart_iOS17: View {
           }
         }
       }
-      .chartXAxis {
-        AxisMarks { value in
+      .chartYAxis {
+        AxisMarks(position: .leading) { value in
           if let stringValue = value.as(String.self) {
             AxisValueLabel {
               Text(stringValue)
@@ -115,8 +115,8 @@ struct MonthlyCompletionBarChart_iOS17: View {
           }
         }
       }
-      .chartYScale(domain: 0...1)
-      .frame(height: 200)
+      .chartXScale(domain: 0...1)
+      .frame(height: 340)
       .padding(.horizontal, 20)
       
       // Selected month details
@@ -208,8 +208,8 @@ struct MonthlyCompletionBarChart_iOS16: View {
       Chart {
         ForEach(data) { monthData in
           BarMark(
-            x: .value("Month", monthData.month),
-            y: .value("Completion", monthData.completionRate)
+            x: .value("Completion", monthData.completionRate),
+            y: .value("Month", monthData.month)
           )
           .foregroundStyle(
             selectedMonth == nil || selectedMonth == monthData.monthNumber
@@ -219,8 +219,8 @@ struct MonthlyCompletionBarChart_iOS16: View {
           .cornerRadius(4)
         }
       }
-      .chartYAxis {
-        AxisMarks(position: .leading, values: [0, 0.25, 0.5, 0.75, 1.0]) { value in
+      .chartXAxis {
+        AxisMarks(position: .bottom, values: [0, 0.25, 0.5, 0.75, 1.0]) { value in
           if let doubleValue = value.as(Double.self) {
             AxisValueLabel {
               Text("\(Int(doubleValue * 100))%")
@@ -232,8 +232,8 @@ struct MonthlyCompletionBarChart_iOS16: View {
           }
         }
       }
-      .chartXAxis {
-        AxisMarks { value in
+      .chartYAxis {
+        AxisMarks(position: .leading) { value in
           if let stringValue = value.as(String.self) {
             AxisValueLabel {
               Text(stringValue)
@@ -243,14 +243,14 @@ struct MonthlyCompletionBarChart_iOS16: View {
           }
         }
       }
-      .chartYScale(domain: 0...1)
-      .frame(height: 200)
+      .chartXScale(domain: 0...1)
+      .frame(height: 340)
       .padding(.horizontal, 20)
       .onTapGesture { location in
-        // Simple tap selection for iOS 16
-        let chartWidth = UIScreen.main.bounds.width - 40
-        let barWidth = chartWidth / CGFloat(data.count)
-        let tappedIndex = Int(location.x / barWidth)
+        // Simple tap selection for iOS 16 (horizontal bars)
+        let chartHeight: CGFloat = 340
+        let barHeight = chartHeight / CGFloat(data.count)
+        let tappedIndex = Int(location.y / barHeight)
         
         if tappedIndex >= 0 && tappedIndex < data.count {
           let tappedMonth = data[tappedIndex].monthNumber
