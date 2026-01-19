@@ -46,6 +46,7 @@ struct HabitDetailView: View {
         }
         
         todayProgress = habit.getProgress(for: selectedDate)
+        isHabitSkipped = habit.isSkipped(for: selectedDate)
         
         // Always recalculate active state based on current habit's dates
         let calendar = Calendar.current
@@ -128,6 +129,7 @@ struct HabitDetailView: View {
 
       if oldDay != newDay {
         todayProgress = habit.getProgress(for: selectedDate)
+        isHabitSkipped = habit.isSkipped(for: selectedDate)
       }
     }
     .sheet(isPresented: $showingEditView) {
@@ -148,6 +150,17 @@ struct HabitDetailView: View {
         onCancel: {
           selectedReminder = nil
         })
+    }
+    .sheet(isPresented: $showingSkipSheet) {
+      SkipHabitSheet(
+        habitName: habit.name,
+        habitColor: habit.color.color,
+        onSkip: { reason in
+          skipHabit(reason: reason)
+        }
+      )
+      .presentationDetents([.height(340)])
+      .presentationDragIndicator(.hidden)
     }
     .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
       Button("Cancel", role: .cancel) { }
@@ -277,6 +290,8 @@ struct HabitDetailView: View {
   @State private var showingCompletionInputSheet = false
   @State private var isCompletingHabit = false
   @State private var showingNotificationsSettings = false
+  @State private var showingSkipSheet = false
+  @State private var isHabitSkipped = false
 
   /// Check if habit reminders are globally enabled - using @AppStorage for automatic updates
   @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = true
@@ -800,6 +815,14 @@ struct HabitDetailView: View {
         habitColor: habit.color.color,
         onTap: {
           showingCompletionInputSheet = true
+        },
+        isSkipped: isHabitSkipped,
+        onSkip: {
+          if isHabitSkipped {
+            unskipHabit()
+          } else {
+            showingSkipSheet = true
+          }
         }
       )
     }
@@ -1300,6 +1323,30 @@ struct HabitDetailView: View {
 
     // Notify parent view of the change
     onUpdateHabit?(updatedHabit)
+  }
+  
+  // MARK: - Skip Feature Methods
+  
+  private func skipHabit(reason: SkipReason) {
+    habit.skip(for: selectedDate, reason: reason)
+    isHabitSkipped = true
+    onUpdateHabit?(habit)
+    
+    let generator = UINotificationFeedbackGenerator()
+    generator.notificationOccurred(.success)
+    
+    print("⏭️ SKIP: Habit '\(habit.name)' skipped for \(Habit.dateKey(for: selectedDate)) - reason: \(reason.rawValue)")
+  }
+  
+  private func unskipHabit() {
+    habit.unskip(for: selectedDate)
+    isHabitSkipped = false
+    onUpdateHabit?(habit)
+    
+    let generator = UIImpactFeedbackGenerator(style: .medium)
+    generator.impactOccurred()
+    
+    print("⏭️ UNSKIP: Habit '\(habit.name)' unskipped for \(Habit.dateKey(for: selectedDate))")
   }
 
   /// Helper function to sort goal text chronologically

@@ -4556,7 +4556,6 @@ struct ProgressTabView: View {
           DifficultyLineChart(
             data: weeklyDifficultyData,
             weekStartDate: selectedWeekStartDate)
-            .frame(height: 200)
         }
       }
     }
@@ -5382,17 +5381,25 @@ struct DifficultyLineChart: View {
 
     let width = geometry.size.width
     let height = geometry.size.height
-    let stepX = width / CGFloat(data.count - 1)
+    
+    // Use consistent padding with data points
+    let padding: CGFloat = 20
+    let chartWidth = width - (padding * 2)
+    let stepX = data.count > 1 ? chartWidth / CGFloat(data.count - 1) : 0
 
     var path = Path()
 
-    // Start from bottom left
-    path.move(to: CGPoint(x: 0, y: height))
+    // Start from bottom left with padding
+    if let firstPoint = validData.first,
+       let firstIndex = data.firstIndex(where: { $0.date == firstPoint.date }) {
+      let startX = padding + (CGFloat(firstIndex) * stepX)
+      path.move(to: CGPoint(x: startX, y: height))
+    }
 
     // Add line points
     for (index, point) in validData.enumerated() {
       let originalIndex = data.firstIndex { $0.date == point.date } ?? index
-      let x = CGFloat(originalIndex) * stepX
+      let x = padding + (CGFloat(originalIndex) * stepX)
       // Invert the grid level: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
       let gridLevel = 4 - (Int(point.difficulty) - 1) // Convert 1-5 to 4-0
       let gridSpacing = height / 4.0
@@ -5401,8 +5408,12 @@ struct DifficultyLineChart: View {
       path.addLine(to: CGPoint(x: x, y: y))
     }
 
-    // Close the path to bottom right
-    path.addLine(to: CGPoint(x: width, y: height))
+    // Close the path to bottom right with padding
+    if let lastPoint = validData.last,
+       let lastIndex = data.firstIndex(where: { $0.date == lastPoint.date }) {
+      let endX = padding + (CGFloat(lastIndex) * stepX)
+      path.addLine(to: CGPoint(x: endX, y: height))
+    }
     path.closeSubpath()
 
     return AnyView(
@@ -5423,14 +5434,18 @@ struct DifficultyLineChart: View {
 
     let width = geometry.size.width
     let height = geometry.size.height
-    let stepX = width / CGFloat(data.count - 1)
+    
+    // Use consistent padding with data points
+    let padding: CGFloat = 20
+    let chartWidth = width - (padding * 2)
+    let stepX = data.count > 1 ? chartWidth / CGFloat(data.count - 1) : 0
 
     var path = Path()
 
     for (index, point) in validData.enumerated() {
       // Find the original index in the full data array
       let originalIndex = data.firstIndex { $0.date == point.date } ?? index
-      let x = CGFloat(originalIndex) * stepX
+      let x = padding + (CGFloat(originalIndex) * stepX)
       // Align with grid lines: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
       // Invert the grid level: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at top
       let gridLevel = 4 - (Int(point.difficulty) - 1) // Convert 1-5 to 4-0
@@ -5454,11 +5469,15 @@ struct DifficultyLineChart: View {
   private func dataPoints(in geometry: GeometryProxy) -> some View {
     let width = geometry.size.width
     let height = geometry.size.height
-    let stepX = width / CGFloat(data.count - 1)
+    
+    // Use consistent padding with X-axis labels
+    let padding: CGFloat = 20
+    let chartWidth = width - (padding * 2)
+    let stepX = data.count > 1 ? chartWidth / CGFloat(data.count - 1) : 0
 
     return ForEach(Array(data.enumerated()), id: \.offset) { index, point in
       if point.hasData {
-        let x = CGFloat(index) * stepX
+        let x = padding + (CGFloat(index) * stepX)
         // Align with grid lines: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at
         // top
         // Invert the grid level: difficulty 1 (very easy) at bottom, difficulty 5 (very hard) at
