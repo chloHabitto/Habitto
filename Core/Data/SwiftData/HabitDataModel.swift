@@ -246,10 +246,17 @@ final class HabitData {
   // MARK: - SkippedDays Encoding/Decoding
   
   private static func encodeSkippedDays(_ skippedDays: [String: HabitSkip]) -> String {
-    guard !skippedDays.isEmpty else { return "{}" }
+    guard !skippedDays.isEmpty else {
+      print("⏭️ [ENCODE_SKIP] No skipped days to encode")
+      return "{}"
+    }
+    
+    print("⏭️ [ENCODE_SKIP] Encoding \(skippedDays.count) skipped day(s)")
+    
     // Convert HabitSkip to a simpler dictionary for JSON encoding
     var jsonDict: [String: [String: Any]] = [:]
     for (dateKey, skip) in skippedDays {
+      print("   ⏭️ Encoding skip: \(dateKey) -> \(skip.reason.rawValue)")
       jsonDict[dateKey] = [
         "habitId": skip.habitId.uuidString,
         "dateKey": skip.dateKey,
@@ -258,19 +265,36 @@ final class HabitData {
         "createdAt": ISO8601DateFormatter().string(from: skip.createdAt)
       ]
     }
+    
     if let data = try? JSONSerialization.data(withJSONObject: jsonDict),
        let string = String(data: data, encoding: .utf8) {
+      print("⏭️ [ENCODE_SKIP] SUCCESS: \(string.prefix(100))...")
       return string
     }
+    
+    print("❌ [ENCODE_SKIP] FAILED to serialize JSON")
     return "{}"
   }
   
   private static func decodeSkippedDays(_ json: String, habitId: UUID) -> [String: HabitSkip] {
-    guard json != "{}", !json.isEmpty,
-          let data = json.data(using: .utf8),
-          let dict = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] else {
+    print("⏭️ [DECODE_SKIP] Input JSON: \(json.prefix(100))...")
+    
+    guard json != "{}", !json.isEmpty else {
+      print("⏭️ [DECODE_SKIP] JSON is empty, returning empty dictionary")
       return [:]
     }
+    
+    guard let data = json.data(using: .utf8) else {
+      print("❌ [DECODE_SKIP] Failed to convert JSON to Data")
+      return [:]
+    }
+    
+    guard let dict = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] else {
+      print("❌ [DECODE_SKIP] Failed to deserialize JSON")
+      return [:]
+    }
+    
+    print("⏭️ [DECODE_SKIP] Found \(dict.count) entries in JSON")
     
     var result: [String: HabitSkip] = [:]
     let formatter = ISO8601DateFormatter()
@@ -280,6 +304,7 @@ final class HabitData {
             let reason = SkipReason(rawValue: reasonRaw),
             let createdAtString = skipDict["createdAt"] as? String,
             let createdAt = formatter.date(from: createdAtString) else {
+        print("⚠️ [DECODE_SKIP] Skipping invalid entry for \(dateKey)")
         continue
       }
       
@@ -292,7 +317,10 @@ final class HabitData {
         customNote: customNote,
         createdAt: createdAt
       )
+      print("   ⏭️ Decoded skip: \(dateKey) -> \(reason.rawValue)")
     }
+    
+    print("⏭️ [DECODE_SKIP] SUCCESS: Decoded \(result.count) skipped day(s) for habit \(habitId.uuidString.prefix(8))...")
     return result
   }
 
@@ -312,6 +340,9 @@ final class HabitData {
 
   @MainActor
   func updateFromHabit(_ habit: Habit) async {
+    print("⏭️ [UPDATE_FROM_HABIT] Updating HabitData for '\(habit.name)'")
+    print("⏭️ [UPDATE_FROM_HABIT] Habit has \(habit.skippedDays.count) skipped day(s)")
+    
     name = habit.name
     habitDescription = habit.description
     icon = habit.icon
@@ -326,7 +357,11 @@ final class HabitData {
     baseline = habit.baseline
     target = habit.target
     goalHistoryJSON = Self.encodeGoalHistory(habit.goalHistory)
+    
+    // ⏭️ SKIP FEATURE: Encode and save skipped days
     skippedDaysJSON = Self.encodeSkippedDays(habit.skippedDays)
+    print("⏭️ [UPDATE_FROM_HABIT] Saved skippedDaysJSON: \(skippedDaysJSON.prefix(100))...")
+    
     updatedAt = Date()
     // Note: isCompleted and streak are now computed properties
     

@@ -795,6 +795,10 @@ class HabitRepository: ObservableObject {
   func updateHabit(_ habit: Habit) async throws {
     debugLog("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
     debugLog("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
+    debugLog("⏭️ HabitRepository: Habit has \(habit.skippedDays.count) skipped day(s)")
+    if !habit.skippedDays.isEmpty {
+      debugLog("⏭️ HabitRepository: Skipped days: \(Array(habit.skippedDays.keys).sorted())")
+    }
     debugLog("🔄 HabitRepository: Current habits count before update: \(habits.count)")
     debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
 

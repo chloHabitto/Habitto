@@ -359,6 +359,12 @@ final actor HabitStore {
 
   func updateHabit(_ habit: Habit) async throws {
     logger.info("Updating habit: \(habit.name) (ID: \(habit.id))")
+    logger.info("⏭️ HabitStore.updateHabit: Habit has \(habit.skippedDays.count) skipped day(s)")
+    if !habit.skippedDays.isEmpty {
+      for (dateKey, skip) in habit.skippedDays {
+        logger.info("⏭️   - \(dateKey): \(skip.reason.rawValue)")
+      }
+    }
 
     // Validate habit before updating
     let validationResult = validationService.validateHabit(habit)

@@ -934,6 +934,9 @@ struct Habit: Identifiable, Codable, Equatable {
   ///   - note: Optional custom note for additional context
   mutating func skip(for date: Date, reason: SkipReason, note: String? = nil) {
     let dateKey = Self.dateKey(for: date)
+    print("⏭️ [HABIT.SKIP] Adding skip for '\(name)' on \(dateKey)")
+    print("⏭️ [HABIT.SKIP] Reason: \(reason.rawValue)")
+    
     let habitSkip = HabitSkip(
       habitId: id,
       dateKey: dateKey,
@@ -941,7 +944,10 @@ struct Habit: Identifiable, Codable, Equatable {
       customNote: note,
       createdAt: Date()
     )
+    
     skippedDays[dateKey] = habitSkip
+    print("⏭️ [HABIT.SKIP] Skip added. Total skipped days: \(skippedDays.count)")
+    print("⏭️ [HABIT.SKIP] All skipped days: \(Array(skippedDays.keys).sorted())")
     
     print("✅ SKIP: Habit '\(name)' skipped on \(dateKey) - Reason: \(reason.rawValue)")
   }
