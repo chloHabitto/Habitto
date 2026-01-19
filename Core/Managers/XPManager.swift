@@ -124,8 +124,6 @@ class XPManager {
   /// The observer will eventually sync with the database value.
   @MainActor
   func publishXP(completedDaysCount: Int) {
-    let timestamp = Date()
-    let oldXP = totalXP
     let newXP = recalculateXP(completedDaysCount: completedDaysCount)
     
     // Only update if changed
@@ -134,7 +132,7 @@ class XPManager {
     }
     
     // ✅ CRITICAL FIX: Track when publishXP() was called to prevent observer from overwriting
-    lastPublishXPTime = timestamp
+    lastPublishXPTime = Date()
     
     // ✅ Update properties directly (@Observable triggers automatic UI update)
     totalXP = newXP
@@ -289,10 +287,11 @@ class XPManager {
       print("🔧 [XP_SET] self.totalXP BEFORE setting: \(self.totalXP)")
 
       // Update XPManager with the calculated XP
-      let timestamp = Date()
       // ✅ Update @Observable properties directly (triggers instant UI update)
       self.totalXP = totalXP
       self.dailyXP = 0
+      
+      let timestamp = Date()
       
       // Keep userProgress in sync
       var updatedProgress = userProgress

@@ -1394,6 +1394,14 @@ actor SyncEngine {
             let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
             
             if let existingHabit = try? modelContext.fetch(descriptor).first {
+                // ✅ CRITICAL FIX: Don't update soft-deleted habits
+                // If a habit was soft-deleted locally but still exists in Firestore,
+                // we should NOT restore it via sync
+                if existingHabit.deletedAt != nil {
+                    logger.info("⏭️ SyncEngine: Skipping update for soft-deleted habit \(habitId.uuidString.prefix(8))... (deletedAt: \(existingHabit.deletedAt!))")
+                    return
+                }
+                
                 // Update existing habit (last-write-wins based on updatedAt)
                 let remoteUpdatedAt = (data["lastSyncedAt"] as? Timestamp)?.dateValue() ?? Date()
                 let localUpdatedAt = existingHabit.updatedAt
@@ -1416,6 +1424,18 @@ actor SyncEngine {
                 // If a habit was deleted but still exists in Firestore (deletion didn't complete),
                 // we should NOT recreate it on sync - this causes deleted habits to reappear
                 if Self.isHabitDeleted(habitId) {
+                    return
+                }
+                
+                // ✅ ADDITIONAL CHECK: Look for soft-deleted version in SwiftData
+                // This catches cases where the in-memory deleted cache was cleared
+                // but the habit is actually soft-deleted in the database
+                let softDeletedPredicate = #Predicate<HabitData> { habit in
+                    habit.id == habitId && habit.deletedAt != nil
+                }
+                let softDeletedDescriptor = FetchDescriptor<HabitData>(predicate: softDeletedPredicate)
+                if let softDeleted = try? modelContext.fetch(softDeletedDescriptor).first {
+                    logger.info("⏭️ SyncEngine: Habit \(habitId.uuidString.prefix(8))... is soft-deleted locally (deletedAt: \(softDeleted.deletedAt!)) - skipping recreation from Firestore")
                     return
                 }
                 

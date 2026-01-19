@@ -583,18 +583,6 @@ class HabitRepository: ObservableObject {
         }
       }
       
-      // ✅ DIAGNOSTIC: Compare with SwiftData to find missing habits
-      // Reuse currentUserId from above (line 666)
-      do {
-        let modelContext = SwiftDataContainer.shared.modelContext
-        let habitPredicate = #Predicate<HabitData> { habit in
-          habit.userId == currentUserId
-        }
-        let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
-        let swiftDataHabits = try modelContext.fetch(habitDescriptor)
-        
-      } catch {
-      }
 
       // Update on main thread and notify observers
       // ✅ FIX: Reuse currentUserId from above (already declared)
