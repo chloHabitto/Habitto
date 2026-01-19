@@ -1370,7 +1370,7 @@ final actor HabitStore {
       logger.info("🎯 XP_CHECK: All habits skipped for \(dateKey) - treating as complete day")
       
       // Check for existing award and process accordingly
-      let (awardExists, xpToReverse): (Bool, Int) = await MainActor.run {
+      let (awardExists, _): (Bool, Int) = await MainActor.run {
         let modelContext = SwiftDataContainer.shared.modelContext
         
         let awardPredicate = #Predicate<DailyAward> { award in

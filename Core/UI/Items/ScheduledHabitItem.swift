@@ -35,6 +35,20 @@ struct ScheduledHabitItem: View {
             .truncationMode(.tail)
 
           reminderIcon
+          
+          // ⏭️ SKIP FEATURE: Show skip reason badge
+          if isSkipped, let reason = habit.skipReason(for: selectedDate) {
+            HStack(spacing: 4) {
+              Image(systemName: reason.icon)
+                .font(.system(size: 10))
+              Text(reason.shortLabel)
+                .font(.appLabelSmall)
+            }
+            .foregroundColor(.text05)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(Color.text05.opacity(0.1)))
+          }
         }
 
         Text(progressDisplayText)
@@ -85,6 +99,7 @@ struct ScheduledHabitItem: View {
         .stroke(Color("appOutline1Variant"), lineWidth: 1))
     .contentShape(Rectangle())
     .offset(x: dragOffset)
+    .opacity(isSkipped ? 0.6 : 1.0) // ⏭️ SKIP FEATURE: Dim skipped habits
     .overlay(
       // Progress indicator during swipe
       HStack {
@@ -335,6 +350,11 @@ struct ScheduledHabitItem: View {
   private var isVacationDay: Bool {
     VacationManager.shared.isActive && VacationManager.shared.isVacationDay(selectedDate)
   }
+  
+  /// ⏭️ SKIP FEATURE: Check if habit is skipped for the selected date
+  private var isSkipped: Bool {
+    habit.isSkipped(for: selectedDate)
+  }
 
   /// Computed property to check if habit has reminders
   private var hasReminders: Bool {
@@ -364,17 +384,33 @@ struct ScheduledHabitItem: View {
 
   /// Computed property for completion button using animated checkbox
   private var completionButton: some View {
-    AnimatedCheckbox(
-      isChecked: isHabitCompleted(),
-      accentColor: isVacationDay ? .grey400 : habit.color.color,
-      isAnimating: isCompletingAnimation,
-      action: {
-        if !isVacationDay {
-          toggleHabitCompletion()
+    Group {
+      if isSkipped {
+        // ⏭️ SKIP FEATURE: Show skip indicator instead of checkbox
+        VStack(spacing: 2) {
+          Image(systemName: "forward.fill")
+            .font(.system(size: 16))
+            .foregroundColor(.text04)
+          Text("Skipped")
+            .font(.appLabelSmall)
+            .foregroundColor(.text05)
         }
-      })
-      .disabled(isVacationDay)
-      .opacity(isVacationDay ? 0.6 : 1.0)
+        .frame(width: 44, height: 44)
+      } else {
+        // Normal state - show checkbox
+        AnimatedCheckbox(
+          isChecked: isHabitCompleted(),
+          accentColor: isVacationDay ? .grey400 : habit.color.color,
+          isAnimating: isCompletingAnimation,
+          action: {
+            if !isVacationDay {
+              toggleHabitCompletion()
+            }
+          })
+          .disabled(isVacationDay)
+          .opacity(isVacationDay ? 0.6 : 1.0)
+      }
+    }
   }
 
   /// Computed property for reminder icon
