@@ -27,26 +27,17 @@ struct HabitDetailView: View {
         .background(.appSurface01Variant02)
       }
       .onAppear {
-        // ✅ FIX: Reload habit from repository to ensure we have the latest version
-        // This fixes the issue where edited habit changes don't show when reopening the detail view
-        Task {
-          // Try to find the latest version from HabitRepository
-          if let latestHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
-            await MainActor.run {
-              // Only update if the habit actually changed to avoid unnecessary re-renders
-              if latestHabit.name != habit.name || 
-                 latestHabit.icon != habit.icon ||
-                 latestHabit.description != habit.description ||
-                 latestHabit.reminder != habit.reminder ||
-                 latestHabit.reminders != habit.reminders {
-                habit = latestHabit
-              }
-            }
-          }
+        // ⏭️ SKIP FIX: Always refresh habit from repository to get latest skip status
+        // This fixes stale skip data when reopening the detail view
+        if let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
+          habit = freshHabit
+          isHabitSkipped = freshHabit.isSkipped(for: selectedDate)
+          print("⏭️ [HABIT_DETAIL] Refreshed habit '\(habit.name)' - skipped: \(isHabitSkipped)")
+        } else {
+          isHabitSkipped = habit.isSkipped(for: selectedDate)
         }
         
         todayProgress = habit.getProgress(for: selectedDate)
-        isHabitSkipped = habit.isSkipped(for: selectedDate)
         
         // Always recalculate active state based on current habit's dates
         let calendar = Calendar.current
@@ -128,6 +119,10 @@ struct HabitDetailView: View {
       let newDay = calendar.startOfDay(for: newDate)
 
       if oldDay != newDay {
+        // ⏭️ SKIP FIX: Refresh habit from repository when date changes
+        if let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
+          habit = freshHabit
+        }
         todayProgress = habit.getProgress(for: selectedDate)
         isHabitSkipped = habit.isSkipped(for: selectedDate)
       }
