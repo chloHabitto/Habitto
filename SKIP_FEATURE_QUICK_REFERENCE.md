@@ -1,17 +1,20 @@
 # Skip Feature - Quick Reference Card
 
-## ✅ Phase 3 Implementation Complete
+## ✅ Phase 4 & 5 Implementation Complete
 
 ### Files Modified/Created
 
 ```
-✅ Core/Models/SkipReason.swift          (NEW - 110 lines)
-✅ Core/Models/Habit.swift               (UPDATED - added skip support)
-✅ Tests/SkipFeatureTest.swift           (NEW - 224 lines, FIXED warning)
-✅ Views/Modals/SkipHabitSheet.swift     (NEW - 147 lines)
-📄 SKIP_FEATURE_IMPLEMENTATION_SUMMARY.md (NEW - documentation)
-📄 SKIP_FEATURE_PHASE_2_VERIFICATION.md   (NEW - verification guide)
-📄 SKIP_FEATURE_PHASE_3_IMPLEMENTATION.md (NEW - UI documentation)
+✅ Core/Models/SkipReason.swift               (NEW - 110 lines)
+✅ Core/Models/Habit.swift                    (UPDATED - skip support)
+✅ Tests/SkipFeatureTest.swift                (NEW - 224 lines)
+✅ Views/Modals/SkipHabitSheet.swift          (NEW - 147 lines)
+✅ Core/UI/Components/CompletionRingView.swift (UPDATED - skip states)
+✅ Views/Screens/HabitDetailView.swift        (UPDATED - skip wiring)
+📄 SKIP_FEATURE_IMPLEMENTATION_SUMMARY.md     (NEW - documentation)
+📄 SKIP_FEATURE_PHASE_2_VERIFICATION.md       (NEW - verification guide)
+📄 SKIP_FEATURE_PHASE_3_IMPLEMENTATION.md     (NEW - UI documentation)
+📄 SKIP_FEATURE_PHASE_4_5_IMPLEMENTATION.md   (NEW - integration guide)
 ```
 
 ---
@@ -142,9 +145,9 @@ When streak is calculated with skips:
 
 ---
 
-## UI Component (Phase 3)
+## UI Components (Phase 3-5)
 
-### SkipHabitSheet
+### SkipHabitSheet (Phase 3)
 ```swift
 // Present the skip sheet
 .sheet(isPresented: $showSkipSheet) {
@@ -152,32 +155,49 @@ When streak is calculated with skips:
     habitName: habit.name,
     habitColor: habit.colorValue,
     onSkip: { reason in
-      var updatedHabit = habit
-      updatedHabit.skip(for: Date(), reason: reason)
-      // Save habit
+      skipHabit(reason: reason)
     }
   )
   .presentationDetents([.height(340)])
 }
 ```
 
-**Features:**
-- Compact 340pt height
-- 4-column grid of skip reasons
-- Haptic feedback on selection
-- Auto-dismiss after selection
-- Custom drag handle
-- Cancel button
+### CompletionRingView (Phase 4)
+```swift
+CompletionRingView(
+  progress: 0.67,
+  currentValue: 2,
+  goalValue: 3,
+  unit: "times",
+  habitColor: .blue,
+  onTap: { /* log progress */ },
+  isSkipped: isHabitSkipped,  // NEW
+  onSkip: {                   // NEW
+    if isHabitSkipped {
+      unskipHabit()
+    } else {
+      showingSkipSheet = true
+    }
+  }
+)
+```
+
+**CompletionRing States:**
+1. **In-Progress**: Shows "Tap to log • Skip" link
+2. **Completed**: Shows checkmark + "Completed ✓"
+3. **Skipped**: Shows forward icon + "Undo Skip"
+
+### HabitDetailView Integration (Phase 5)
+- Fully wired skip functionality
+- State management with date navigation
+- Haptic feedback (success + impact)
+- Debug logging enabled
 
 ## Next Steps
 
-### Phase 3.1: UI Integration
-- [ ] Add skip button to habit cards
-- [ ] Add skip option to habit detail view
+### Phase 6: Extended UI
+- [ ] Add skip button to habit cards (quick action)
 - [ ] Add skip to calendar long-press menu
-- [ ] Wire up onSkip callbacks
-
-### Phase 3.2: Enhanced UI
 - [ ] Add note/comment field
 - [ ] Calendar visualization for skipped days
 - [ ] Skip history view
@@ -213,6 +233,15 @@ When streak is calculated with skips:
 - [x] Preview included
 - [x] Design system compliance
 
+### Phase 4 & 5: Integration
+- [x] CompletionRingView updated with skip states
+- [x] Three visual states (in-progress, completed, skipped)
+- [x] HabitDetailView wired up
+- [x] State management implemented
+- [x] Date navigation support
+- [x] Haptic feedback (skip + unskip)
+- [x] Debug logging added
+
 ### Quality
 - [x] No linter errors
 - [x] Backward compatible
@@ -222,11 +251,13 @@ When streak is calculated with skips:
 
 ## Important Notes
 
-⚠️ **Integration Needed**: UI component ready but not integrated into views yet
+⚠️ **Calendar Integration**: Skip indicators not yet in calendar views
 ⚠️ **No Firestore Sync**: Local storage only (UserDefaults via Habit encoding)
 ⚠️ **Debug Builds Only**: Test functions wrapped in `#if DEBUG`
 
-✅ **UI Component Ready**: SkipHabitSheet can be integrated into any view
+✅ **Fully Functional**: Skip feature working in HabitDetailView
+✅ **State Management**: Proper synchronization with date navigation
+✅ **Haptic Feedback**: Success (skip) + Impact (unskip)
 ✅ **Fully Tested**: Comprehensive test suite included
 ✅ **Production Ready**: Code quality verified, no errors
 ✅ **Design System**: Follows app's typography and color patterns
@@ -234,4 +265,5 @@ When streak is calculated with skips:
 ---
 
 Last Updated: 2026-01-19
-Implementation: Phase 1, 2 & 3 Complete ✅
+Implementation: Phase 1-5 Complete ✅
+Working: HabitDetailView Integration ✅

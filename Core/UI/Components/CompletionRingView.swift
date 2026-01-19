@@ -11,56 +11,118 @@ struct CompletionRingView: View {
   let unit: String // e.g., "times", "min", "pages"
   let habitColor: Color
   let onTap: () -> Void
+  let isSkipped: Bool
+  let onSkip: (() -> Void)?
   
   var body: some View {
-    Button(action: {
-      onTap()
-    }) {
-      VStack(spacing: 12) {
-        // Ring with center content
-        ZStack {
-          // Background ring
-          Circle()
-            .stroke(habitColor.opacity(0.15), lineWidth: 10)
-            .frame(width: 120, height: 120)
-          
-          // Progress ring
-          Circle()
-            .trim(from: 0, to: min(progress, 1.0))
-            .stroke(
-              habitColor,
-              style: StrokeStyle(lineWidth: 10, lineCap: .round)
-            )
-            .frame(width: 120, height: 120)
-            .rotationEffect(.degrees(-90))
-            .animation(.easeInOut(duration: 0.3), value: progress)
-          
-          // Center content
-          VStack(spacing: 4) {
-            if isCompleted {
-              Image(systemName: "checkmark")
-                .font(.system(size: 32, weight: .bold))
-                .foregroundColor(habitColor)
-            } else {
-              Text(valueText)
-                .font(.appTitleLargeEmphasised)
-                .foregroundColor(.text01)
+    VStack(spacing: 12) {
+      if isSkipped {
+        // Skipped state
+        Button(action: {
+          onSkip?()
+        }) {
+          VStack(spacing: 12) {
+            // Ring with skipped indicator
+            ZStack {
+              // Background ring (muted)
+              Circle()
+                .stroke(Color.text05.opacity(0.2), lineWidth: 10)
+                .frame(width: 120, height: 120)
               
-              Text(unit)
+              // Center content - skipped icon
+              VStack(spacing: 4) {
+                Image(systemName: "forward.fill")
+                  .font(.system(size: 32, weight: .bold))
+                  .foregroundColor(.text04)
+                
+                Text("Skipped")
+                  .font(.appBodySmall)
+                  .foregroundColor(.text04)
+              }
+            }
+            .contentShape(Circle())
+            
+            // Undo Skip button
+            Text("Undo Skip")
+              .font(.appBodySmall)
+              .foregroundColor(.primary)
+          }
+        }
+        .buttonStyle(ScaleButtonStyle())
+      } else {
+        // Normal or completed state
+        Button(action: {
+          onTap()
+        }) {
+          VStack(spacing: 12) {
+            // Ring with center content
+            ZStack {
+              // Background ring
+              Circle()
+                .stroke(habitColor.opacity(0.15), lineWidth: 10)
+                .frame(width: 120, height: 120)
+              
+              // Progress ring
+              Circle()
+                .trim(from: 0, to: min(progress, 1.0))
+                .stroke(
+                  habitColor,
+                  style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                )
+                .frame(width: 120, height: 120)
+                .rotationEffect(.degrees(-90))
+                .animation(.easeInOut(duration: 0.3), value: progress)
+              
+              // Center content
+              VStack(spacing: 4) {
+                if isCompleted {
+                  Image(systemName: "checkmark")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(habitColor)
+                } else {
+                  Text(valueText)
+                    .font(.appTitleLargeEmphasised)
+                    .foregroundColor(.text01)
+                  
+                  Text(unit)
+                    .font(.appBodySmall)
+                    .foregroundColor(.text05)
+                }
+              }
+            }
+            .contentShape(Circle())
+            
+            // Label below ring
+            if isCompleted {
+              Text("Completed ✓")
                 .font(.appBodySmall)
-                .foregroundColor(.text05)
+                .foregroundColor(.text04)
+            } else {
+              // In-progress state - show "Tap to log • Skip"
+              HStack(spacing: 4) {
+                Text("Tap to log")
+                  .font(.appBodySmall)
+                  .foregroundColor(.text04)
+                
+                if let onSkip = onSkip {
+                  Text("•")
+                    .font(.appBodySmall)
+                    .foregroundColor(.text05)
+                  
+                  Button(action: onSkip) {
+                    Text("Skip")
+                      .font(.appBodySmall)
+                      .foregroundColor(.text04)
+                  }
+                  .buttonStyle(PlainButtonStyle())
+                }
+              }
             }
           }
         }
-        .contentShape(Circle())
-        
-        // Label below ring
-        Text(isCompleted ? "Completed ✓" : "Tap to log")
-          .font(.appBodySmall)
-          .foregroundColor(.text04)
+        .buttonStyle(ScaleButtonStyle())
       }
     }
-    .buttonStyle(ScaleButtonStyle())
   }
   
   // MARK: Private
@@ -95,7 +157,9 @@ private struct ScaleButtonStyle: SwiftUI.ButtonStyle {
       goalValue: 3,
       unit: "times",
       habitColor: .blue,
-      onTap: { print("Tapped") }
+      onTap: { print("Tapped") },
+      isSkipped: false,
+      onSkip: { print("Skip tapped") }
     )
     
     // Complete state
@@ -105,7 +169,21 @@ private struct ScaleButtonStyle: SwiftUI.ButtonStyle {
       goalValue: 30,
       unit: "min",
       habitColor: .green,
-      onTap: { print("Tapped") }
+      onTap: { print("Tapped") },
+      isSkipped: false,
+      onSkip: nil
+    )
+    
+    // Skipped state
+    CompletionRingView(
+      progress: 0.0,
+      currentValue: 0,
+      goalValue: 3,
+      unit: "times",
+      habitColor: .blue,
+      onTap: { print("Tapped") },
+      isSkipped: true,
+      onSkip: { print("Unskip tapped") }
     )
   }
   .padding()
