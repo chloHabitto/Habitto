@@ -72,6 +72,7 @@ final actor HabitStore {
     
     // ✅ CRITICAL FIX: Log current userId before loading to verify filtering
     let currentUserId = await CurrentUser().idOrGuest
+    let userIdForLogging = currentUserId.isEmpty ? "EMPTY (guest)" : String(currentUserId.prefix(8)) + "..."
     
     var habits = try await activeStorage.loadHabits(force: force)
     

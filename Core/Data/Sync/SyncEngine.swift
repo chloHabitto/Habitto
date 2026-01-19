@@ -1648,6 +1648,7 @@ actor SyncEngine {
         
         // If award already exists locally, skip (idempotent)
         guard !awardExists else {
+            logger.info("⏭️ Award already exists locally for \(dateKey), skipping import")
             return
         }
         
