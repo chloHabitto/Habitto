@@ -179,15 +179,38 @@ class DailyAwardIntegrityService {
             )
         }
         
+        // ✅ SKIP FEATURE: Filter out skipped habits from award validation
+        let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: date) }
+        let skippedCount = scheduledHabits.count - activeHabits.count
+        
+        if skippedCount > 0 {
+            logger.info("⏭️ SKIP_FILTER: Excluded \(skippedCount) skipped habit(s) from award validation")
+            for habit in scheduledHabits where habit.isSkipped(for: date) {
+                let reasonLabel = habit.skipReason(for: date)?.shortLabel ?? "unknown"
+                logger.info("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
+            }
+        }
+        
+        // If all habits were skipped, award is valid (user completed what they could)
+        if activeHabits.isEmpty && !scheduledHabits.isEmpty {
+            return ValidationResult(
+                isValid: true,
+                reason: "All habits were skipped - day counts as complete",
+                scheduledHabitsCount: scheduledHabits.count,
+                completedHabitsCount: 0,
+                missingHabits: []
+            )
+        }
+        
         // ✅ STREAK MODE: Use meetsStreakCriteria to validate awards (respects Streak Mode)
         let currentMode = CompletionMode.current
         logger.info("🔍 INTEGRITY_CHECK: Using streak mode: \(currentMode.rawValue)")
         
-        // Check each scheduled habit using meetsStreakCriteria (respects Streak Mode)
+        // Check each active (non-skipped) habit using meetsStreakCriteria (respects Streak Mode)
         var completedHabits: [Habit] = []
         var missingHabits: [String] = []
         
-        for habit in scheduledHabits {
+        for habit in activeHabits {
             let meetsCriteria = habit.meetsStreakCriteria(for: date)
             logger.info("🔍 INTEGRITY_CHECK: Habit '\(habit.name)' meetsStreakCriteria=\(meetsCriteria)")
             

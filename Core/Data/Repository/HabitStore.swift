@@ -1351,13 +1351,76 @@ final actor HabitStore {
       return
     }
     
+    // ✅ SKIP FEATURE: Filter out skipped habits from daily completion check
+    let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: date) }
+    let skippedCount = scheduledHabits.count - activeHabits.count
+    
+    logger.info("🎯 XP_CHECK: Found \(scheduledHabits.count) scheduled habits, \(skippedCount) skipped, \(activeHabits.count) active for \(dateKey)")
+    
+    if skippedCount > 0 {
+      logger.info("⏭️ SKIP_FILTER: Excluded \(skippedCount) skipped habit(s) from daily completion check")
+      for habit in scheduledHabits where habit.isSkipped(for: date) {
+        let reasonLabel = habit.skipReason(for: date)?.shortLabel ?? "unknown"
+        logger.info("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
+      }
+    }
+    
+    guard !activeHabits.isEmpty else {
+      // All habits were skipped - treat as complete day
+      logger.info("🎯 XP_CHECK: All habits skipped for \(dateKey) - treating as complete day")
+      // Continue to award XP logic (all active habits complete = true)
+      let (allCompleted, incompleteHabits): (Bool, [String]) = (true, [])
+      
+      // Check for existing award and process accordingly
+      let (awardExists, xpToReverse): (Bool, Int) = await MainActor.run {
+        let modelContext = SwiftDataContainer.shared.modelContext
+        
+        let awardPredicate = #Predicate<DailyAward> { award in
+          award.userId == userId && award.dateKey == dateKey
+        }
+        var awardDescriptor = FetchDescriptor<DailyAward>(predicate: awardPredicate)
+        awardDescriptor.includePendingChanges = true
+        let awards = (try? modelContext.fetch(awardDescriptor)) ?? []
+        let exists = !awards.isEmpty
+        let xpAmount = awards.first?.xpGranted ?? 50
+        
+        return (exists, xpAmount)
+      }
+      
+      if !awardExists {
+        // Award XP for all-skipped day
+        logger.info("🎯 XP_CHECK: ✅ Awarding XP for all-skipped day on \(dateKey)")
+        let xpAmount = 50
+        do {
+          let awardReason = "All habits skipped on \(dateKey) - day complete"
+          try await DailyAwardService.shared.awardXP(
+            delta: xpAmount,
+            dateKey: dateKey,
+            reason: awardReason
+          )
+          logger.info("🎯 XP_CHECK: ✅ Awarded \(xpAmount) XP for all-skipped day")
+          
+          await MainActor.run {
+            FirebaseBackupService.shared.backupDailyAward(
+              dateKey: dateKey,
+              xpGranted: xpAmount,
+              allHabitsCompleted: true
+            )
+          }
+        } catch {
+          logger.error("❌ XP_CHECK: Failed to award XP: \(error.localizedDescription)")
+        }
+      }
+      return
+    }
+    
     // ✅ STREAK MODE: Use meetsStreakCriteria to check completion for XP purposes
     let currentMode = CompletionMode.current
     logger.info("💰 XP_AWARD_CHECK: Using streak mode: \(currentMode.rawValue)")
     
     let (allCompleted, incompleteHabits): (Bool, [String]) = await MainActor.run {
-      // Check each scheduled habit using meetsStreakCriteria (respects Streak Mode)
-      let incompleteHabits = scheduledHabits
+      // Check each active (non-skipped) habit using meetsStreakCriteria (respects Streak Mode)
+      let incompleteHabits = activeHabits
         .filter { !$0.meetsStreakCriteria(for: date) }
         .map(\.name)
       let allDone = incompleteHabits.isEmpty

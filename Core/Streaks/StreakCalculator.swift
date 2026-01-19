@@ -63,12 +63,33 @@ enum StreakCalculator {
         continue
       }
 
+      // ✅ SKIP FEATURE: Filter out skipped habits from streak calculation
+      let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: checkDate) }
+      let skippedCount = scheduledHabits.count - activeHabits.count
+      
+      if skippedCount > 0 {
+        let dateKey = Habit.dateKey(for: checkDate)
+        print("⏭️ SKIP_FILTER: \(dateKey) - Excluded \(skippedCount) skipped habit(s) from streak check")
+        for habit in scheduledHabits where habit.isSkipped(for: checkDate) {
+          let reasonLabel = habit.skipReason(for: checkDate)?.shortLabel ?? "unknown"
+          print("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
+        }
+      }
+      
+      guard !activeHabits.isEmpty else {
+        // All habits were skipped - treat as "no habits scheduled" (neutral day)
+        // Doesn't break streak, doesn't count towards streak
+        skippedUnsheduledDays += 1
+        checkDate = calendar.date(byAdding: .day, value: -1, to: checkDate) ?? checkDate
+        continue
+      }
+
       processedDays += 1
 
       // ✅ CRITICAL FIX: Use habit.meetsStreakCriteria(for:) which respects Streak Mode setting
       // This method respects the user's CompletionMode (full vs partial) for streak calculation
       // while isCompleted(for:) remains for UI display purposes only
-      let allComplete = scheduledHabits.allSatisfy { habit in
+      let allComplete = activeHabits.allSatisfy { habit in
         habit.meetsStreakCriteria(for: checkDate)
       }
 
@@ -147,11 +168,29 @@ enum StreakCalculator {
         continue
       }
       
-      // Check completion status for each scheduled habit
+      // ✅ SKIP FEATURE: Filter out skipped habits from longest streak calculation
+      let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: checkDate) }
+      let skippedCount = scheduledHabits.count - activeHabits.count
+      
+      if skippedCount > 0 {
+        print("⏭️ SKIP_FILTER: \(dateKey) - Excluded \(skippedCount) skipped habit(s) from longest streak check")
+        for habit in scheduledHabits where habit.isSkipped(for: checkDate) {
+          let reasonLabel = habit.skipReason(for: checkDate)?.shortLabel ?? "unknown"
+          print("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
+        }
+      }
+      
+      guard !activeHabits.isEmpty else {
+        // All habits were skipped - doesn't break streak, but doesn't count either
+        checkDate = calendar.date(byAdding: .day, value: 1, to: checkDate) ?? checkDate
+        continue
+      }
+      
+      // Check completion status for each active (non-skipped) habit
       var completedHabits: [String] = []
       var incompleteHabits: [String] = []
       
-      for habit in scheduledHabits {
+      for habit in activeHabits {
         let isComplete = habit.meetsStreakCriteria(for: checkDate)
         if isComplete {
           completedHabits.append(habit.name)
