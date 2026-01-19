@@ -484,7 +484,6 @@ struct HeatmapCellView: View {
           RoundedRectangle(cornerRadius: cornerRadius)
             .fill(heatmapColor(for: completionPercentage))
             .frame(width: cellSize, height: cellSize)
-            .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         } else {
           // Show empty circle outline when not scheduled
           RoundedRectangle(cornerRadius: cornerRadius)
@@ -510,7 +509,7 @@ struct HeatmapCellView: View {
     // If habit color is provided, use it with varying opacity
     if let baseColor = habitColor {
       let selectedColor: Color = if clampedPercentage == 0.0 {
-        .primaryContainer
+        Color("appOutline02Bright")
       } else if clampedPercentage >= 100.0 {
         baseColor.opacity(1.0)
       } else if clampedPercentage >= 90.0 {
@@ -524,7 +523,7 @@ struct HeatmapCellView: View {
       } else if clampedPercentage >= 20.0 {
         baseColor.opacity(0.3)
       } else {
-        .primaryContainer
+        Color("appOutline02Bright")
       }
       
       return selectedColor
@@ -532,11 +531,11 @@ struct HeatmapCellView: View {
     
     // Fallback to green colors if no habit color is provided
     // Map completion percentage to modern color intensity with better contrast
-    // 0% = primaryContainer (lightest)
+    // 0% = appOutline02Bright (lightest)
     // 100% = green600 (darkest)
 
     let selectedColor: Color = if clampedPercentage == 0.0 {
-      .primaryContainer
+      Color("appOutline02Bright")
     } else if clampedPercentage >= 100.0 {
       Color("green600")
     } else if clampedPercentage >= 90.0 {
@@ -550,7 +549,7 @@ struct HeatmapCellView: View {
     } else if clampedPercentage >= 20.0 {
       Color("green100")
     } else {
-      .primaryContainer
+      Color("appOutline02Bright")
     }
 
     // Debug: Print color selection for troubleshooting
