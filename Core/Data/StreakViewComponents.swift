@@ -437,7 +437,8 @@ struct HeatmapCellView: View {
     completionPercentage: Double,
     rectangleSizePercentage: Double = 0.5,
     isVacationDay: Bool = false,
-    habitColor: Color? = nil)
+    habitColor: Color? = nil,
+    cornerRadius: CGFloat = 12)
   {
     self.intensity = intensity
     self.isScheduled = isScheduled
@@ -445,6 +446,7 @@ struct HeatmapCellView: View {
     self.rectangleSizePercentage = rectangleSizePercentage
     self.isVacationDay = isVacationDay
     self.habitColor = habitColor
+    self.cornerRadius = cornerRadius
   }
 
   // MARK: Internal
@@ -455,6 +457,7 @@ struct HeatmapCellView: View {
   let rectangleSizePercentage: Double
   let isVacationDay: Bool
   let habitColor: Color?
+  let cornerRadius: CGFloat
 
   var body: some View {
     GeometryReader { geometry in
@@ -469,22 +472,22 @@ struct HeatmapCellView: View {
 
         if isVacationDay {
           // Show vacation day styling - prominent blue fill
-          RoundedRectangle(cornerRadius: 2)
+          RoundedRectangle(cornerRadius: cornerRadius)
             .fill(Color.blue.opacity(0.4))
             .frame(width: cellSize, height: cellSize)
             .overlay(
-              RoundedRectangle(cornerRadius: 2)
+              RoundedRectangle(cornerRadius: cornerRadius)
                 .stroke(Color.blue.opacity(0.7), lineWidth: 1)
                 .frame(width: cellSize, height: cellSize))
         } else if isScheduled {
           // Show heatmap when scheduled with modern rounded design
-          RoundedRectangle(cornerRadius: 2)
+          RoundedRectangle(cornerRadius: cornerRadius)
             .fill(heatmapColor(for: completionPercentage))
             .frame(width: cellSize, height: cellSize)
             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         } else {
           // Show empty circle outline when not scheduled
-          RoundedRectangle(cornerRadius: 2)
+          RoundedRectangle(cornerRadius: cornerRadius)
             .stroke(.appOutline02, lineWidth: 1)
             .frame(width: cellSize, height: cellSize)
         }
