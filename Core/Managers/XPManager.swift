@@ -291,8 +291,6 @@ class XPManager {
       self.totalXP = totalXP
       self.dailyXP = 0
       
-      let timestamp = Date()
-      
       // Keep userProgress in sync
       var updatedProgress = userProgress
       updatedProgress.totalXP = totalXP
