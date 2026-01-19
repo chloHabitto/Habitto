@@ -93,6 +93,13 @@ struct MonthlyCompletionBarChart_iOS17: View {
           .padding(.bottom, 20)
       }
     }
+    .contentShape(Rectangle()) // Make entire card tappable
+    .onTapGesture {
+      // Tapping outside bars clears selection
+      withAnimation(.easeInOut(duration: 0.2)) {
+        selectedMonthName = nil
+      }
+    }
     .background(
       RoundedRectangle(cornerRadius: 24)
         .fill(Color.surface01)
@@ -156,17 +163,20 @@ struct MonthlyCompletionBarChart_iOS17: View {
                     endPoint: .trailing
                   )
                 )
-                .frame(width: max(4, geometry.size.width * item.completionRate))
+                .frame(width: item.completionRate > 0 ? max(4, geometry.size.width * item.completionRate) : 0)
                 .opacity(selectedMonthName == nil || selectedMonthName == item.month ? 1.0 : 0.3)
             }
           }
           .frame(height: 20)
           .contentShape(Rectangle())
-          .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.2)) {
-              selectedMonthName = selectedMonthName == item.month ? nil : item.month
-            }
-          }
+          .highPriorityGesture(
+            TapGesture()
+              .onEnded {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                  selectedMonthName = selectedMonthName == item.month ? nil : item.month
+                }
+              }
+          )
         }
       }
 
@@ -301,16 +311,19 @@ struct MonthlyCompletionBarChart_iOS16: View {
                       endPoint: .trailing
                     )
                   )
-                  .frame(width: max(4, geometry.size.width * item.completionRate), height: 16)
+                  .frame(width: item.completionRate > 0 ? max(4, geometry.size.width * item.completionRate) : 0, height: 16)
                   .opacity(selectedIndex == nil || selectedIndex == index ? 1.0 : 0.3)
               }
             }
             .frame(height: 16)
-            .onTapGesture {
-              withAnimation(.easeInOut(duration: 0.2)) {
-                selectedIndex = selectedIndex == index ? nil : index
-              }
-            }
+            .highPriorityGesture(
+              TapGesture()
+                .onEnded {
+                  withAnimation(.easeInOut(duration: 0.2)) {
+                    selectedIndex = selectedIndex == index ? nil : index
+                  }
+                }
+            )
 
             // Percentage label
             Text("\(item.percentage)%")
@@ -362,6 +375,13 @@ struct MonthlyCompletionBarChart_iOS16: View {
           .foregroundColor(.text05)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.bottom, 20)
+      }
+    }
+    .contentShape(Rectangle()) // Make entire card tappable
+    .onTapGesture {
+      // Tapping outside bars clears selection
+      withAnimation(.easeInOut(duration: 0.2)) {
+        selectedIndex = nil
       }
     }
     .background(

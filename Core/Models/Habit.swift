@@ -152,6 +152,10 @@ struct Habit: Identifiable, Codable, Equatable {
     // Decode with defaults for backward compatibility
     self.lastSyncedAt = try container.decodeIfPresent(Date.self, forKey: .lastSyncedAt)
     self.syncStatus = try container.decodeIfPresent(FirestoreSyncStatus.self, forKey: .syncStatus) ?? .pending
+    
+    // MARK: - Skip Feature (Phase 1)
+    self.skippedDays = try container.decodeIfPresent([String: HabitSkip].self, forKey: .skippedDays) ?? [:]
+    
     ensureGoalHistoryInitialized()
   }
 
@@ -180,7 +184,8 @@ struct Habit: Identifiable, Codable, Equatable {
     actualUsage: [String: Int] = [:],
     goalHistory: [String: String] = [:],
     lastSyncedAt: Date? = nil,
-    syncStatus: FirestoreSyncStatus = .pending)
+    syncStatus: FirestoreSyncStatus = .pending,
+    skippedDays: [String: HabitSkip] = [:])
   {
     self.id = id
     self.name = name
@@ -209,6 +214,8 @@ struct Habit: Identifiable, Codable, Equatable {
     // Sync metadata
     self.lastSyncedAt = lastSyncedAt
     self.syncStatus = syncStatus
+    // Skip feature
+    self.skippedDays = skippedDays
     ensureGoalHistoryInitialized()
   }
 
@@ -309,6 +316,8 @@ struct Habit: Identifiable, Codable, Equatable {
     // Sync metadata (Phase 1: Dual-Write)
     case lastSyncedAt
     case syncStatus
+    // Skip feature (Phase 1)
+    case skippedDays
   }
 
   let id: UUID
@@ -342,6 +351,11 @@ struct Habit: Identifiable, Codable, Equatable {
   var baseline = 0 // Current average usage
   var target = 0 // Target reduced amount
   var actualUsage: [String: Int] = [:] // Track actual usage: "yyyy-MM-dd" -> Int
+  
+  // MARK: - Skip Feature (Phase 1)
+  
+  /// Track skipped days with reasons: "yyyy-MM-dd" -> HabitSkip
+  var skippedDays: [String: HabitSkip] = [:]
   
   // MARK: - Sync Metadata (Phase 1: Dual-Write)
   
@@ -552,6 +566,9 @@ struct Habit: Identifiable, Codable, Equatable {
     // MARK: - Sync Metadata (Phase 1: Dual-Write)
     try container.encodeIfPresent(lastSyncedAt, forKey: .lastSyncedAt)
     try container.encode(syncStatus, forKey: .syncStatus)
+    
+    // MARK: - Skip Feature (Phase 1)
+    try container.encode(skippedDays, forKey: .skippedDays)
   }
 
   // MARK: - Completion History Methods
@@ -879,6 +896,52 @@ struct Habit: Identifiable, Codable, Equatable {
 
     print(
       "🔄 MIGRATION: Completed migration for habit '\(name)' - \(completionStatus.count) days migrated")
+  }
+  
+  // MARK: - Skip Feature Methods (Phase 1: Data Models Only)
+  
+  /// Check if a habit was skipped on a specific date
+  /// - Parameter date: The date to check
+  /// - Returns: true if the habit was skipped on this date
+  func isSkipped(for date: Date) -> Bool {
+    let dateKey = Self.dateKey(for: date)
+    return skippedDays[dateKey] != nil
+  }
+  
+  /// Get the skip reason for a specific date
+  /// - Parameter date: The date to check
+  /// - Returns: The skip reason if the habit was skipped, nil otherwise
+  func skipReason(for date: Date) -> SkipReason? {
+    let dateKey = Self.dateKey(for: date)
+    return skippedDays[dateKey]?.reason
+  }
+  
+  /// Mark a habit as skipped for a specific date
+  /// - Parameters:
+  ///   - date: The date to skip
+  ///   - reason: The reason for skipping
+  ///   - note: Optional custom note for additional context
+  mutating func skip(for date: Date, reason: SkipReason, note: String? = nil) {
+    let dateKey = Self.dateKey(for: date)
+    let habitSkip = HabitSkip(
+      habitId: id,
+      dateKey: dateKey,
+      reason: reason,
+      customNote: note,
+      createdAt: Date()
+    )
+    skippedDays[dateKey] = habitSkip
+    
+    print("✅ SKIP: Habit '\(name)' skipped on \(dateKey) - Reason: \(reason.rawValue)")
+  }
+  
+  /// Remove a skip entry for a specific date
+  /// - Parameter date: The date to unskip
+  mutating func unskip(for date: Date) {
+    let dateKey = Self.dateKey(for: date)
+    if skippedDays.removeValue(forKey: dateKey) != nil {
+      print("✅ UNSKIP: Habit '\(name)' unskipped on \(dateKey)")
+    }
   }
 
   // MARK: Private
