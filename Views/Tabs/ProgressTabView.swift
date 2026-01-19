@@ -1988,12 +1988,10 @@ struct ProgressTabView: View {
   }
 
   private var isTodaySelected: Bool {
-    let _ = print("🔄 isTodaySelected computed - calling Date()")
     return Calendar.current.isDate(selectedProgressDate, inSameDayAs: Date())
   }
 
   private var isThisWeekSelected: Bool {
-    let _ = print("🔄 isThisWeekSelected computed - calling Date()")
     let calendar = AppDateFormatter.shared.getUserCalendar()
     let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: Date())?.start ?? Date()
     let selectedWeekStart = calendar.dateInterval(of: .weekOfYear, for: selectedWeekStartDate)?
