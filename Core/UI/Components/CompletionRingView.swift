@@ -42,8 +42,8 @@ struct CompletionRingView: View {
             }
             .contentShape(Circle())
             
-            // Undo Skip button
-            Text("Undo Skip")
+            // View Skip button
+            Text("View Skip")
               .font(.appBodySmall)
               .foregroundColor(.primary)
           }

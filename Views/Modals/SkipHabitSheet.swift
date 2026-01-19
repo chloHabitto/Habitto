@@ -7,6 +7,7 @@ struct SkipHabitSheet: View {
   
   let habitName: String
   let habitColor: Color
+  let initialSelectedReason: SkipReason? // NEW - optional pre-selected reason
   let onSkip: (SkipReason) -> Void
   
   @Environment(\.dismiss) private var dismiss
@@ -32,6 +33,12 @@ struct SkipHabitSheet: View {
     .background(Color.appSurface01Variant)
     .ignoresSafeArea(edges: .bottom)
     .presentationDetents([.height(540)])
+    .onAppear {
+      // Pre-select the reason if provided
+      if selectedReason == nil, let initial = initialSelectedReason {
+        selectedReason = initial
+      }
+    }
   }
   
   // MARK: - Header Section
@@ -189,6 +196,7 @@ struct SkipReasonChip: View {
   SkipHabitSheet(
     habitName: "Morning Run",
     habitColor: .blue,
+    initialSelectedReason: nil, // NEW parameter
     onSkip: { reason in
       print("Skipped with reason: \(reason.rawValue)")
     }

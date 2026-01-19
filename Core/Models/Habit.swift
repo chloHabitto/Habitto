@@ -927,6 +927,14 @@ struct Habit: Identifiable, Codable, Equatable {
     return skippedDays[dateKey]?.reason
   }
   
+  /// Get the skip reason for a specific date
+  /// - Parameter date: The date to check
+  /// - Returns: The SkipReason if the habit is skipped on that date, nil otherwise
+  func getSkipReason(for date: Date) -> SkipReason? {
+    let dateKey = Self.dateKey(for: date)
+    return skippedDays[dateKey]?.reason
+  }
+  
   /// Mark a habit as skipped for a specific date
   /// - Parameters:
   ///   - date: The date to skip
