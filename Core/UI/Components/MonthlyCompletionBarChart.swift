@@ -80,7 +80,6 @@ struct MonthlyCompletionBarChart_iOS17: View {
 
       // Chart
       chartSection
-        .frame(height: 340)
         .padding(.horizontal, 20)
 
       // Selected month details OR hint text
@@ -152,6 +151,10 @@ struct MonthlyCompletionBarChart_iOS17: View {
     }
     .chartYSelection(value: $selectedMonthName)
     .chartXScale(domain: 0 ... 1)
+    .chartPlotStyle { plotArea in
+      plotArea
+        .frame(height: 340)
+    }
     .chartXAxis {
       AxisMarks(position: .bottom, values: [0.0, 0.25, 0.5, 0.75, 1.0]) { value in
         AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
@@ -168,13 +171,14 @@ struct MonthlyCompletionBarChart_iOS17: View {
     }
     .chartYAxis {
       AxisMarks(position: .leading) { value in
-        AxisValueLabel {
+        AxisValueLabel(horizontalSpacing: 8) {
           if let month = value.as(String.self) {
             Text(month)
               .font(.appLabelSmallEmphasised)
               .foregroundColor(
                 selectedMonthName == month ? .text01 : .text04
               )
+              .frame(width: 32, alignment: .trailing)
           }
         }
       }
