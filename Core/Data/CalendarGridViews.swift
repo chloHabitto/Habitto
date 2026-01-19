@@ -1747,9 +1747,9 @@ struct IndividualHabitWeeklyProgressView: View {
                     .fill(habit.color.color)
                     .frame(width: 32, height: 32)
                 } else {
-                  // Scheduled but not completed: Fill with appOutline02
+                  // Scheduled but not completed: Fill with appOutline02Bright
                   RoundedRectangle(cornerRadius: 8)
-                    .fill(Color("appOutline02"))
+                    .fill(Color("appOutline02Bright"))
                     .frame(width: 32, height: 32)
                 }
               } else {
@@ -2658,7 +2658,7 @@ struct IndividualHabitHeatmapCellView: View {
       } else {
         // Show empty outline when not scheduled but in month
         RoundedRectangle(cornerRadius: 4)
-          .stroke(Color("appOutline02"), lineWidth: 1)
+          .stroke(Color("appOutline02Bright"), lineWidth: 1)
           .frame(width: innerSize, height: innerSize)
       }
     }
