@@ -469,22 +469,22 @@ struct HeatmapCellView: View {
 
         if isVacationDay {
           // Show vacation day styling - prominent blue fill
-          RoundedRectangle(cornerRadius: 12)
+          RoundedRectangle(cornerRadius: 2)
             .fill(Color.blue.opacity(0.4))
             .frame(width: cellSize, height: cellSize)
             .overlay(
-              RoundedRectangle(cornerRadius: 12)
+              RoundedRectangle(cornerRadius: 2)
                 .stroke(Color.blue.opacity(0.7), lineWidth: 1)
                 .frame(width: cellSize, height: cellSize))
         } else if isScheduled {
           // Show heatmap when scheduled with modern rounded design
-          RoundedRectangle(cornerRadius: 12)
+          RoundedRectangle(cornerRadius: 2)
             .fill(heatmapColor(for: completionPercentage))
             .frame(width: cellSize, height: cellSize)
             .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
         } else {
           // Show empty circle outline when not scheduled
-          RoundedRectangle(cornerRadius: 12)
+          RoundedRectangle(cornerRadius: 2)
             .stroke(.appOutline02, lineWidth: 1)
             .frame(width: cellSize, height: cellSize)
         }
