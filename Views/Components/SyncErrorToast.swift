@@ -15,16 +15,16 @@ struct SyncErrorToast: TopPopup, View {
     HStack(spacing: 12) {
       Image(systemName: "exclamationmark.triangle.fill")
         .font(.system(size: 20))
-        .foregroundColor(.red600)
+        .foregroundColor(.appText01Inverse)
       
       VStack(alignment: .leading, spacing: 4) {
         Text("Sync Error")
           .font(.system(size: 14, weight: .semibold))
-          .foregroundColor(.text01)
+          .foregroundColor(.appText01Inverse)
         
         Text(message)
           .font(.system(size: 12, weight: .regular))
-          .foregroundColor(.text02)
+          .foregroundColor(.appText01Inverse)
           .lineLimit(2)
       }
       
@@ -36,18 +36,19 @@ struct SyncErrorToast: TopPopup, View {
         }) {
           Text("Retry")
             .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.red600)
+            .foregroundColor(.appText01Inverse)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color.red600.opacity(0.1))
+            .background(Color.white.opacity(0.2))
             .cornerRadius(8)
         }
       }
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
-    .background(Color.surface)
-    .cornerRadius(12)
+    .background(Color.appInverseSurface70)
+    .background(.ultraThinMaterial)
+    .clipShape(RoundedRectangle(cornerRadius: 12))
     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
     .padding(.horizontal, 20)
   }
@@ -72,18 +73,19 @@ struct SyncSuccessToast: TopPopup, View {
     HStack(spacing: 12) {
       Image(systemName: "checkmark.circle.fill")
         .font(.system(size: 20))
-        .foregroundColor(.green)
+        .foregroundColor(.appText01Inverse)
       
       Text(message)
         .font(.system(size: 14, weight: .medium))
-        .foregroundColor(.text01)
+        .foregroundColor(.appText01Inverse)
       
       Spacer()
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
-    .background(Color.surface)
-    .cornerRadius(12)
+    .background(Color.appInverseSurface70)
+    .background(.ultraThinMaterial)
+    .clipShape(RoundedRectangle(cornerRadius: 12))
     .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
     .padding(.horizontal, 20)
   }
