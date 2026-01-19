@@ -564,6 +564,7 @@ final class HabitData {
       // Query ALL CompletionRecords for this habitId
       allRecords = try context.fetch(allRecordsDescriptor)
       
+      #if DEBUG
       // ✅ DIAGNOSTIC: Log what records were found
       if !allRecords.isEmpty {
         let recordsByUserId = Dictionary(grouping: allRecords) { $0.userId }
@@ -575,6 +576,7 @@ final class HabitData {
           print("     Records with userId '\(userIdDisplay)': \(records.count)")
         }
       }
+      #endif
       
       // Now filter by userId with fallback logic
       var fetchedRecords: [CompletionRecord]
@@ -600,7 +602,9 @@ final class HabitData {
       // ✅ CRITICAL FIX: If no records found with HabitData.userId, but records exist, use them with fallback logic
       // This handles cases where CompletionRecord was saved with different userId due to timing issues
       if fetchedRecords.isEmpty && !allRecords.isEmpty {
+        #if DEBUG
         print("⚠️ [HABIT_TO_HABIT] No records found with userId '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...', but \(allRecords.count) records exist - using all records as fallback")
+        #endif
         // ✅ FIX: For authenticated users, still use records if they exist (likely userId mismatch)
         // This prevents data loss when userId doesn't match exactly
         fetchedRecords = allRecords
@@ -608,12 +612,14 @@ final class HabitData {
       
       completionRecords = fetchedRecords
       
+      #if DEBUG
       // ✅ DIAGNOSTIC: Log final filtered records
       if !completionRecords.isEmpty {
         print("✅ [HABIT_TO_HABIT] Habit '\(self.name)' - Using \(completionRecords.count) completion records after filtering")
       } else if !allRecords.isEmpty {
         print("⚠️ [HABIT_TO_HABIT] Habit '\(self.name)' - Filtered out all \(allRecords.count) records (userId mismatch?)")
       }
+      #endif
     } catch {
       // Fallback to relationship if query fails
       completionRecords = completionHistory
@@ -625,7 +631,9 @@ final class HabitData {
     let filteredRecords: [CompletionRecord]
     if completionRecords.isEmpty && !allRecords.isEmpty {
       // If no records matched userId but records exist, use all records (userId mismatch)
+      #if DEBUG
       print("⚠️ [HABIT_TO_HABIT] Using ALL \(allRecords.count) records due to userId mismatch - will repair userId later")
+      #endif
       filteredRecords = allRecords
     } else if !completionRecords.isEmpty {
       // Use records that matched userId
