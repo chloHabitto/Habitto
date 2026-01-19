@@ -1368,8 +1368,6 @@ final actor HabitStore {
     guard !activeHabits.isEmpty else {
       // All habits were skipped - treat as complete day
       logger.info("🎯 XP_CHECK: All habits skipped for \(dateKey) - treating as complete day")
-      // Continue to award XP logic (all active habits complete = true)
-      let (allCompleted, incompleteHabits): (Bool, [String]) = (true, [])
       
       // Check for existing award and process accordingly
       let (awardExists, xpToReverse): (Bool, Int) = await MainActor.run {

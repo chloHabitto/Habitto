@@ -65,6 +65,7 @@ final class HabitData {
   var reminder: String
   var remindersData: Data?  // JSON-encoded [ReminderItem] array
   var goalHistoryJSON: String = "{}"
+  var skippedDaysJSON: String = "{}"  // JSON-encoded skipped days dictionary
   var startDate: Date
   var endDate: Date?
   var createdAt: Date
@@ -241,6 +242,59 @@ final class HabitData {
 
     return (try? JSONDecoder().decode([String: String].self, from: data)) ?? [:]
   }
+  
+  // MARK: - SkippedDays Encoding/Decoding
+  
+  private static func encodeSkippedDays(_ skippedDays: [String: HabitSkip]) -> String {
+    guard !skippedDays.isEmpty else { return "{}" }
+    // Convert HabitSkip to a simpler dictionary for JSON encoding
+    var jsonDict: [String: [String: Any]] = [:]
+    for (dateKey, skip) in skippedDays {
+      jsonDict[dateKey] = [
+        "habitId": skip.habitId.uuidString,
+        "dateKey": skip.dateKey,
+        "reason": skip.reason.rawValue,
+        "customNote": skip.customNote as Any,
+        "createdAt": ISO8601DateFormatter().string(from: skip.createdAt)
+      ]
+    }
+    if let data = try? JSONSerialization.data(withJSONObject: jsonDict),
+       let string = String(data: data, encoding: .utf8) {
+      return string
+    }
+    return "{}"
+  }
+  
+  private static func decodeSkippedDays(_ json: String, habitId: UUID) -> [String: HabitSkip] {
+    guard json != "{}", !json.isEmpty,
+          let data = json.data(using: .utf8),
+          let dict = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] else {
+      return [:]
+    }
+    
+    var result: [String: HabitSkip] = [:]
+    let formatter = ISO8601DateFormatter()
+    
+    for (dateKey, skipDict) in dict {
+      guard let reasonRaw = skipDict["reason"] as? String,
+            let reason = SkipReason(rawValue: reasonRaw),
+            let createdAtString = skipDict["createdAt"] as? String,
+            let createdAt = formatter.date(from: createdAtString) else {
+        continue
+      }
+      
+      let customNote = skipDict["customNote"] as? String
+      
+      result[dateKey] = HabitSkip(
+        habitId: habitId,
+        dateKey: dateKey,
+        reason: reason,
+        customNote: customNote,
+        createdAt: createdAt
+      )
+    }
+    return result
+  }
 
   // MARK: - Reminders Encoding/Decoding
 
@@ -272,6 +326,7 @@ final class HabitData {
     baseline = habit.baseline
     target = habit.target
     goalHistoryJSON = Self.encodeGoalHistory(habit.goalHistory)
+    skippedDaysJSON = Self.encodeSkippedDays(habit.skippedDays)
     updatedAt = Date()
     // Note: isCompleted and streak are now computed properties
     
@@ -706,7 +761,7 @@ final class HabitData {
     })
     
 
-    return Habit(
+    var habit = Habit(
       id: id,
       name: name,
       description: habitDescription,
@@ -728,6 +783,20 @@ final class HabitData {
       difficultyHistory: difficultyHistoryDict,
       actualUsage: actualUsageDict,
       goalHistory: Self.decodeGoalHistory(goalHistoryJSON))
+    
+    // ✅ SKIP FEATURE: Load skipped days from storage
+    habit.skippedDays = Self.decodeSkippedDays(skippedDaysJSON, habitId: self.id)
+    
+    #if DEBUG
+    if !habit.skippedDays.isEmpty {
+      print("⏭️ [HABIT_LOAD] Loaded \(habit.skippedDays.count) skipped day(s) for habit '\(habit.name)'")
+      for (dateKey, skip) in habit.skippedDays {
+        print("   ⏭️ \(dateKey): \(skip.reason.shortLabel)")
+      }
+    }
+    #endif
+    
+    return habit
   }
 
   // MARK: Private
