@@ -322,7 +322,7 @@ final class HabitData {
         print("⚠️ [DECODE_SKIP] Missing or invalid 'reason' for \(dateKey) (value: \(skipDict["reason"] ?? "nil"))")
         continue
       }
-      guard let reason = SkipReason(rawValue: reasonRaw) else {
+      guard let reason = SkipReason.allCases.first(where: { $0.rawValue == reasonRaw }) else {
         print("⚠️ [DECODE_SKIP] Unknown reason '\(reasonRaw)' for \(dateKey)")
         continue
       }
