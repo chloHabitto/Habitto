@@ -80,7 +80,6 @@ struct MonthlyCompletionBarChart_iOS17: View {
 
       // Chart
       chartSection
-        .padding(.horizontal, 20)
 
       // Selected month details OR hint text
       if let selected = selectedMonthData {
@@ -132,58 +131,67 @@ struct MonthlyCompletionBarChart_iOS17: View {
   // MARK: - Chart Section
 
   private var chartSection: some View {
-    Chart {
-      ForEach(data) { item in
-        BarMark(
-          x: .value("Completion", item.completionRate),
-          y: .value("Month", item.month)
-        )
-        .foregroundStyle(
-          LinearGradient(
-            colors: [accentColor.opacity(0.7), accentColor],
-            startPoint: .leading,
-            endPoint: .trailing
-          )
-        )
-        .cornerRadius(4)
-        .opacity(barOpacity(for: item))
-      }
-    }
-    .chartYSelection(value: $selectedMonthName)
-    .chartXScale(domain: 0 ... 1)
-    .chartPlotStyle { plotArea in
-      plotArea
-        .frame(height: 340)
-    }
-    .chartXAxis {
-      AxisMarks(position: .bottom, values: [0.0, 0.25, 0.5, 0.75, 1.0]) { value in
-        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5, dash: [4, 4]))
-          .foregroundStyle(Color.text05.opacity(0.3))
+    VStack(spacing: 6) {
+      ForEach(Array(data.enumerated()), id: \.element.id) { index, item in
+        HStack(spacing: 8) {
+          // Month label - LEFT of the bar
+          Text(item.month)
+            .font(.appLabelSmallEmphasised)
+            .foregroundColor(selectedMonthName == item.month ? .text01 : .text04)
+            .frame(width: 32, alignment: .trailing)
 
-        AxisValueLabel {
-          if let rate = value.as(Double.self) {
-            Text("\(Int(rate * 100))%")
-              .font(.appLabelSmall)
-              .foregroundColor(.text05)
+          // Bar with gradient
+          GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+              // Background track (subtle)
+              RoundedRectangle(cornerRadius: 4)
+                .fill(Color.outline3.opacity(0.2))
+
+              // Filled bar
+              RoundedRectangle(cornerRadius: 4)
+                .fill(
+                  LinearGradient(
+                    colors: [accentColor.opacity(0.7), accentColor],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                  )
+                )
+                .frame(width: max(4, geometry.size.width * item.completionRate))
+                .opacity(selectedMonthName == nil || selectedMonthName == item.month ? 1.0 : 0.3)
+            }
+          }
+          .frame(height: 20)
+          .contentShape(Rectangle())
+          .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.2)) {
+              selectedMonthName = selectedMonthName == item.month ? nil : item.month
+            }
           }
         }
       }
-    }
-    .chartYAxis {
-      AxisMarks(position: .leading) { value in
-        AxisValueLabel(horizontalSpacing: 8) {
-          if let month = value.as(String.self) {
-            Text(month)
-              .font(.appLabelSmallEmphasised)
-              .foregroundColor(
-                selectedMonthName == month ? .text01 : .text04
-              )
-              .frame(width: 32, alignment: .trailing)
-          }
+
+      // X-axis labels
+      HStack {
+        Text("")
+          .frame(width: 32) // Spacer to align with month labels
+
+        HStack {
+          Text("0%")
+          Spacer()
+          Text("25%")
+          Spacer()
+          Text("50%")
+          Spacer()
+          Text("75%")
+          Spacer()
+          Text("100%")
         }
+        .font(.appLabelSmall)
+        .foregroundColor(.text05)
       }
+      .padding(.top, 8)
     }
-    .animation(.easeInOut(duration: 0.2), value: selectedMonthName)
+    .padding(.horizontal, 20)
   }
 
   // MARK: - Selected Month Section
@@ -224,11 +232,6 @@ struct MonthlyCompletionBarChart_iOS17: View {
   }
 
   // MARK: - Helpers
-
-  private func barOpacity(for item: MonthlyCompletionData) -> Double {
-    guard selectedMonthName != nil else { return 1.0 }
-    return item.month == selectedMonthName ? 1.0 : 0.3
-  }
 
   private func fullMonthName(for shortName: String) -> String {
     let shortToFull: [String: String] = [
