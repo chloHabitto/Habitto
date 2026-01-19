@@ -255,42 +255,56 @@ final class HabitData {
     
     // Convert HabitSkip to a simpler dictionary for JSON encoding
     var jsonDict: [String: [String: Any]] = [:]
+    let formatter = ISO8601DateFormatter()
+    
     for (dateKey, skip) in skippedDays {
       print("   ⏭️ Encoding skip: \(dateKey) -> \(skip.reason.rawValue)")
-      jsonDict[dateKey] = [
+      
+      var entry: [String: Any] = [
         "habitId": skip.habitId.uuidString,
         "dateKey": skip.dateKey,
         "reason": skip.reason.rawValue,
-        "customNote": skip.customNote as Any,
-        "createdAt": ISO8601DateFormatter().string(from: skip.createdAt)
+        "createdAt": formatter.string(from: skip.createdAt)
       ]
+      
+      // Only add customNote if it has a value (avoid null in JSON)
+      if let note = skip.customNote, !note.isEmpty {
+        entry["customNote"] = note
+        print("   ⏭️ Including customNote: \(note.prefix(20))...")
+      } else {
+        print("   ⏭️ Omitting customNote (nil or empty)")
+      }
+      
+      jsonDict[dateKey] = entry
     }
     
-    if let data = try? JSONSerialization.data(withJSONObject: jsonDict),
-       let string = String(data: data, encoding: .utf8) {
-      print("⏭️ [ENCODE_SKIP] SUCCESS: \(string.prefix(100))...")
-      return string
+    guard let data = try? JSONSerialization.data(withJSONObject: jsonDict),
+          let string = String(data: data, encoding: .utf8) else {
+      print("❌ [ENCODE_SKIP] Failed to serialize JSON")
+      return "{}"
     }
     
-    print("❌ [ENCODE_SKIP] FAILED to serialize JSON")
-    return "{}"
+    print("⏭️ [ENCODE_SKIP] SUCCESS: \(string.prefix(100))...")
+    return string
   }
   
   private static func decodeSkippedDays(_ json: String, habitId: UUID) -> [String: HabitSkip] {
-    print("⏭️ [DECODE_SKIP] Input JSON: \(json.prefix(100))...")
+    print("⏭️ [DECODE_SKIP] Input JSON: \(json.prefix(150))...")
     
     guard json != "{}", !json.isEmpty else {
-      print("⏭️ [DECODE_SKIP] JSON is empty, returning empty dictionary")
+      print("⏭️ [DECODE_SKIP] Empty JSON, returning empty dictionary")
       return [:]
     }
     
     guard let data = json.data(using: .utf8) else {
-      print("❌ [DECODE_SKIP] Failed to convert JSON to Data")
+      print("❌ [DECODE_SKIP] Failed to convert JSON string to Data")
       return [:]
     }
     
+    // Use [String: [String: Any]] to handle null values and different types
     guard let dict = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] else {
-      print("❌ [DECODE_SKIP] Failed to deserialize JSON")
+      print("❌ [DECODE_SKIP] Failed to parse JSON as dictionary")
+      print("❌ [DECODE_SKIP] Raw data: \(String(data: data, encoding: .utf8) ?? "unable to decode")")
       return [:]
     }
     
@@ -300,24 +314,63 @@ final class HabitData {
     let formatter = ISO8601DateFormatter()
     
     for (dateKey, skipDict) in dict {
-      guard let reasonRaw = skipDict["reason"] as? String,
-            let reason = SkipReason(rawValue: reasonRaw),
-            let createdAtString = skipDict["createdAt"] as? String,
-            let createdAt = formatter.date(from: createdAtString) else {
-        print("⚠️ [DECODE_SKIP] Skipping invalid entry for \(dateKey)")
+      print("⏭️ [DECODE_SKIP] Processing entry for \(dateKey)...")
+      print("⏭️ [DECODE_SKIP]   Keys in entry: \(skipDict.keys.joined(separator: ", "))")
+      
+      // Extract reason (required)
+      guard let reasonRaw = skipDict["reason"] as? String else {
+        print("⚠️ [DECODE_SKIP] Missing or invalid 'reason' for \(dateKey) (value: \(skipDict["reason"] ?? "nil"))")
+        continue
+      }
+      guard let reason = SkipReason(rawValue: reasonRaw) else {
+        print("⚠️ [DECODE_SKIP] Unknown reason '\(reasonRaw)' for \(dateKey)")
         continue
       }
       
-      let customNote = skipDict["customNote"] as? String
+      // Extract createdAt (required)
+      guard let createdAtString = skipDict["createdAt"] as? String else {
+        print("⚠️ [DECODE_SKIP] Missing or invalid 'createdAt' for \(dateKey) (value: \(skipDict["createdAt"] ?? "nil"))")
+        continue
+      }
+      guard let createdAt = formatter.date(from: createdAtString) else {
+        print("⚠️ [DECODE_SKIP] Failed to parse createdAt '\(createdAtString)' for \(dateKey)")
+        continue
+      }
       
-      result[dateKey] = HabitSkip(
-        habitId: habitId,
+      // Extract customNote (optional - can be null, missing, or empty string)
+      let customNote: String?
+      if let noteValue = skipDict["customNote"] {
+        if let noteString = noteValue as? String, !noteString.isEmpty {
+          customNote = noteString
+          print("⏭️ [DECODE_SKIP]   customNote: '\(noteString.prefix(20))...'")
+        } else {
+          customNote = nil
+          print("⏭️ [DECODE_SKIP]   customNote: null or empty (value type: \(type(of: noteValue)))")
+        }
+      } else {
+        customNote = nil
+        print("⏭️ [DECODE_SKIP]   customNote: missing key")
+      }
+      
+      // Extract habitId from JSON or use the provided one
+      let skipHabitId: UUID
+      if let habitIdString = skipDict["habitId"] as? String,
+         let parsedId = UUID(uuidString: habitIdString) {
+        skipHabitId = parsedId
+      } else {
+        skipHabitId = habitId
+      }
+      
+      let skip = HabitSkip(
+        habitId: skipHabitId,
         dateKey: dateKey,
         reason: reason,
         customNote: customNote,
         createdAt: createdAt
       )
-      print("   ⏭️ Decoded skip: \(dateKey) -> \(reason.rawValue)")
+      
+      result[dateKey] = skip
+      print("   ⏭️ Decoded skip: \(dateKey) -> \(reason.shortLabel)")
     }
     
     print("⏭️ [DECODE_SKIP] SUCCESS: Decoded \(result.count) skipped day(s) for habit \(habitId.uuidString.prefix(8))...")
