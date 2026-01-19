@@ -1347,8 +1347,17 @@ final actor HabitStore {
       return
     }
     
-    // Load only the habits scheduled for this date
-    let scheduledHabits = try await scheduledHabits(for: date)
+    // ✅ FIX: Force reload habits from storage to get fresh data after save
+    logger.info("🔄 XP_CHECK: Reloading habits from storage to get fresh data")
+    let freshHabits = try await loadHabits(force: true)
+    
+    // Get scheduled habits from fresh data
+    let scheduledHabits = freshHabits.filter { habit in
+      StreakDataCalculator.shouldShowHabitOnDate(habit, date: date)
+    }
+    
+    // Clear cache since we just loaded fresh
+    scheduledHabitsCache = (dateKey: dateKey, habits: scheduledHabits)
     
     logger.info("🎯 XP_CHECK: Found \(scheduledHabits.count) scheduled habits for \(dateKey)")
     
