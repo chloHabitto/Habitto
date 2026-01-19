@@ -32,9 +32,11 @@ struct HabitDetailView: View {
         if let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
           habit = freshHabit
           isHabitSkipped = freshHabit.isSkipped(for: selectedDate)
+          currentSkipReason = freshHabit.getSkipReason(for: selectedDate) // NEW
           print("⏭️ [HABIT_DETAIL] Refreshed habit '\(habit.name)' - skipped: \(isHabitSkipped)")
         } else {
           isHabitSkipped = habit.isSkipped(for: selectedDate)
+          currentSkipReason = habit.getSkipReason(for: selectedDate) // NEW
         }
         
         todayProgress = habit.getProgress(for: selectedDate)
@@ -125,6 +127,7 @@ struct HabitDetailView: View {
         }
         todayProgress = habit.getProgress(for: selectedDate)
         isHabitSkipped = habit.isSkipped(for: selectedDate)
+        currentSkipReason = habit.getSkipReason(for: selectedDate) // NEW
       }
     }
     .sheet(isPresented: $showingEditView) {
@@ -150,6 +153,7 @@ struct HabitDetailView: View {
       SkipHabitSheet(
         habitName: habit.name,
         habitColor: habit.color.color,
+        initialSelectedReason: currentSkipReason, // NEW - pass current reason
         onSkip: { reason in
           skipHabit(reason: reason)
         }
@@ -287,6 +291,7 @@ struct HabitDetailView: View {
   @State private var showingNotificationsSettings = false
   @State private var showingSkipSheet = false
   @State private var isHabitSkipped = false
+  @State private var currentSkipReason: SkipReason?
 
   /// Check if habit reminders are globally enabled - using @AppStorage for automatic updates
   @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = true
@@ -813,11 +818,9 @@ struct HabitDetailView: View {
         },
         isSkipped: isHabitSkipped,
         onSkip: {
-          if isHabitSkipped {
-            unskipHabit()
-          } else {
-            showingSkipSheet = true
-          }
+          // CHANGED: Always show sheet (whether skipped or not)
+          // If already skipped, sheet will show current reason pre-selected
+          showingSkipSheet = true
         }
       )
     }
@@ -1338,6 +1341,7 @@ struct HabitDetailView: View {
     
     // Update local state
     isHabitSkipped = true
+    currentSkipReason = reason // NEW - update current reason
     
     // CRITICAL: Persist the change to SwiftData
     print("⏭️ SKIP: Calling onUpdateHabit to persist changes...")
