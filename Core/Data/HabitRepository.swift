@@ -545,7 +545,25 @@ class HabitRepository: ObservableObject {
       }
       debugLog("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
       
+      // ✅ DIAGNOSTIC: Log what was actually loaded
+      print("🎯 [UI_STATE] HabitRepository after load:")
+      print("   habits.count: \(loadedHabits.count)")
+      for habit in loadedHabits {
+        print("   '\(habit.name)': completionHistory.count = \(habit.completionHistory.count), completionStatus.count = \(habit.completionStatus.count)")
+        let todayKey = Habit.dateKey(for: Date())
+        let todayProgress = habit.completionHistory[todayKey] ?? 0
+        let isCompletedToday = habit.completionStatus[todayKey] ?? false
+        print("      Today: progress=\(todayProgress), completed=\(isCompletedToday)")
+      }
+
+      // Debug each loaded habit with progress for today
       let todayKey = Habit.dateKey(for: Date())
+      for (index, habit) in loadedHabits.enumerated() {
+        let progress = habit.completionHistory[todayKey] ?? 0
+        let goalAmount = StreakDataCalculator.parseGoalAmount(from: habit.goal)
+        let isComplete = progress >= goalAmount
+        debugLog("🔄 LOAD_HABITS: [\(index)] \(habit.name) - progress=\(progress)/\(goalAmount) complete=\(isComplete)")
+      }
 
       // ✅ FIX: Get userId once at the top (reused for XP validation and UI update)
       let currentUserId = await CurrentUser().idOrGuest
@@ -569,6 +587,12 @@ class HabitRepository: ObservableObject {
         }
       }
 
+      // ✅ DIAGNOSTIC: Log all loaded habits before deduplication
+      print("🔍 [HABIT_LOAD] Before deduplication: \(loadedHabits.count) habits loaded")
+      for (index, habit) in loadedHabits.enumerated() {
+        print("   [\(index)] '\(habit.name)' (ID: \(habit.id))")
+      }
+      
       // Deduplicate habits by ID to prevent duplicates
       var uniqueHabits: [Habit] = []
       var seenIds: Set<UUID> = []
@@ -580,18 +604,76 @@ class HabitRepository: ObservableObject {
         } else {
           debugLog(
             "⚠️ HabitRepository: Found duplicate habit with ID: \(habit.id), name: \(habit.name) - skipping")
+          print("⚠️ [HABIT_LOAD] Duplicate detected: '\(habit.name)' (ID: \(habit.id)) - excluded from uniqueHabits")
         }
+      }
+      
+      // ✅ DIAGNOSTIC: Log after deduplication and verify against SwiftData
+      print("🔍 [HABIT_LOAD] After deduplication: \(uniqueHabits.count) unique habits")
+      if loadedHabits.count != uniqueHabits.count {
+        print("⚠️ [HABIT_LOAD] WARNING: \(loadedHabits.count - uniqueHabits.count) habit(s) were filtered out as duplicates")
+      }
+      
+      // ✅ DIAGNOSTIC: Compare with SwiftData to find missing habits
+      // Reuse currentUserId from above (line 666)
+      do {
+        let modelContext = SwiftDataContainer.shared.modelContext
+        let habitPredicate = #Predicate<HabitData> { habit in
+          habit.userId == currentUserId
+        }
+        let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
+        let swiftDataHabits = try modelContext.fetch(habitDescriptor)
+        
+        if swiftDataHabits.count != uniqueHabits.count {
+          print("⚠️ [HABIT_LOAD] MISMATCH: SwiftData has \(swiftDataHabits.count) habits, but HabitRepository has \(uniqueHabits.count)")
+          print("   SwiftData habits:")
+          for habitData in swiftDataHabits {
+            print("     - '\(habitData.name)' (ID: \(habitData.id))")
+          }
+          print("   HabitRepository habits:")
+          for habit in uniqueHabits {
+            print("     - '\(habit.name)' (ID: \(habit.id))")
+          }
+          
+          // Find which habits are in SwiftData but not in HabitRepository
+          let loadedHabitIds = Set(uniqueHabits.map { $0.id })
+          let missingHabits = swiftDataHabits.filter { !loadedHabitIds.contains($0.id) }
+          if !missingHabits.isEmpty {
+            print("   ⚠️ Missing habits (in SwiftData but not loaded):")
+            for missing in missingHabits {
+              print("     - '\(missing.name)' (ID: \(missing.id), userId: '\(missing.userId.isEmpty ? "EMPTY" : String(missing.userId.prefix(8)) + "...")')")
+            }
+          }
+        }
+      } catch {
+        print("   ❌ Error comparing with SwiftData: \(error.localizedDescription)")
       }
 
       // Update on main thread and notify observers
       // ✅ FIX: Reuse currentUserId from above (already declared)
       
       await MainActor.run {
+        let beforeCount = self.habits.count
+        debugLog("🔄 LOAD_HABITS: About to update habits array")
+        debugLog("   Current userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8) + "...")'")
+        debugLog("   Loaded habits count: \(uniqueHabits.count)")
+        print("🔄 [HABIT_UPDATE] Updating habits array: \(uniqueHabits.count) habits for userId '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8) + "...")'")
+        
         self.habits = uniqueHabits
+        let afterCount = self.habits.count
         
         // ✅ CRITICAL FIX: Always call objectWillChange.send() to ensure UI updates
         // This is especially important after migration when userId changes
         self.objectWillChange.send()
+        
+        // ✅ DIAGNOSTIC: Log what HabitRepository actually has after assignment
+        let timestamp = Date()
+        print("🎯 [UI_STATE] \(timestamp) HabitRepository after assignment:")
+        print("   habits.count: \(beforeCount) → \(afterCount)")
+        print("   self.habits.count: \(self.habits.count)")
+        print("   Current userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8) + "...")'")
+        for habit in self.habits {
+          print("   '\(habit.name)': completionHistory.count = \(habit.completionHistory.count), completionStatus.count = \(habit.completionStatus.count)")
           let todayKey = Habit.dateKey(for: Date())
           let todayProgress = habit.completionHistory[todayKey] ?? 0
           let isCompletedToday = habit.completionStatus[todayKey] ?? false
