@@ -3,18 +3,18 @@ import UIKit
 
 // MARK: - SuccessToastView
 
-/// A toast notification that appears after habit creation with a success checkmark
+/// A toast notification that appears after habit creation or edit with a success checkmark
 struct SuccessToastView: View {
   // MARK: Lifecycle
   
-  init(habitName: String, onDismiss: @escaping () -> Void) {
-    self.habitName = habitName
+  init(message: String, onDismiss: @escaping () -> Void) {
+    self.message = message
     self.onDismiss = onDismiss
   }
   
   // MARK: Internal
   
-  let habitName: String
+  let message: String
   let onDismiss: () -> Void
   
   var body: some View {
@@ -25,7 +25,7 @@ struct SuccessToastView: View {
         .foregroundColor(.appInverseSuccess)
       
       // Success message
-      Text("\"\(habitName)\" created")
+      Text(message)
         .font(.appBodyLarge)
         .foregroundColor(.appText01Inverse)
         .lineLimit(1)
@@ -63,7 +63,7 @@ struct SuccessToastView: View {
       Spacer()
       
       SuccessToastView(
-        habitName: "Morning Yoga",
+        message: "\"Morning Yoga\" created",
         onDismiss: {
           print("Toast dismissed")
         }

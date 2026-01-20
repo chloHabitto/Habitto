@@ -36,12 +36,12 @@ struct UndoToastView: View {
       }) {
         Text("Undo")
           .font(.appBodyLargeEmphasised)
-          .foregroundColor(.appText01Inverse)
+          .foregroundColor(.appInverseOnPrimary)
           .padding(.horizontal, 10)
           .frame(height: 32)
           .background(
             RoundedRectangle(cornerRadius: 12)
-              .fill(Color.appSurface10)
+              .fill(Color.appInversePrimary)
           )
           .padding(.horizontal, 12)
           .padding(.vertical, 12)
