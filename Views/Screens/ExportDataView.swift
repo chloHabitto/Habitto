@@ -592,7 +592,9 @@ struct ExportDataView: View {
   // MARK: - Data Filtering
 
   private func filterBackupData(_ backupData: Data) async throws -> BackupData {
-    let backup = try JSONDecoder().decode(BackupData.self, from: backupData)
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    let backup = try decoder.decode(BackupData.self, from: backupData)
 
     // Apply date range filtering
     let filteredBackup = try applyDateRangeFilter(backup)

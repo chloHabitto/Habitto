@@ -350,7 +350,9 @@ class BackupManager: ObservableObject {
       userId: authManager.currentUser?.uid ?? "guest",
       backupId: UUID().uuidString), habits: HabitStore.shared.loadHabits())
 
-    return try JSONEncoder().encode(backupData)
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    return try encoder.encode(backupData)
   }
 
   /// Public method to restore from backup data with comprehensive restoration
