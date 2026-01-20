@@ -39,22 +39,22 @@ struct UndoToastView: View {
           .padding(.vertical, 6)
           .background(
             RoundedRectangle(cornerRadius: 8)
-              .fill(Color.white.opacity(0.2))
+              .fill(Color.appInverseSurface10)
           )
       }
     }
     .padding(.horizontal, 16)
     .padding(.vertical, 12)
     .background(
-      RoundedRectangle(cornerRadius: 12)
-        .fill(Color.appInverseSurface70)
+      RoundedRectangle(cornerRadius: 16)
+        .fill(Color.appInverseSurface80)
     )
     .background(.ultraThinMaterial)
-    .clipShape(RoundedRectangle(cornerRadius: 12))
+    .clipShape(RoundedRectangle(cornerRadius: 16))
     .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
     .onAppear {
-      // Auto-dismiss after 5 seconds
-      DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+      // Auto-dismiss after 3.5 seconds
+      DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
         onDismiss()
       }
     }

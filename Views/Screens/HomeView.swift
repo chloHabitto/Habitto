@@ -274,7 +274,9 @@ class HomeViewState: ObservableObject {
     
     // Show toast immediately and remove from local state for instant UI update
     await MainActor.run {
-      self.deletedHabitForUndo = habit
+      withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+        self.deletedHabitForUndo = habit
+      }
       self.habits.removeAll { $0.id == habit.id }
       print("🗑️ DELETE_FLOW: Local state updated, toast shown")
     }
@@ -312,7 +314,9 @@ class HomeViewState: ObservableObject {
     
     // ✅ IMMEDIATELY dismiss toast and add habit to UI (instant feedback)
     await MainActor.run {
-      self.deletedHabitForUndo = nil  // Dismiss toast FIRST
+      withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+        self.deletedHabitForUndo = nil  // Dismiss toast FIRST
+      }
       if !self.habits.contains(where: { $0.id == habit.id }) {
         self.habits.append(habit)
         print("♻️ [RESTORE] Habit added to local UI")
@@ -1460,25 +1464,22 @@ struct HomeView: View {
     .overlay(alignment: .bottom) {
       // ✅ UNDO TOAST: Show toast when habit is deleted
       if let deletedHabit = state.deletedHabitForUndo {
-        VStack {
-          Spacer()
-          
-          UndoToastView(
-            habitName: deletedHabit.name,
-            onUndo: {
-              Task {
-                await state.restoreHabit(deletedHabit)
-              }
-            },
-            onDismiss: {
+        UndoToastView(
+          habitName: deletedHabit.name,
+          onUndo: {
+            Task {
+              await state.restoreHabit(deletedHabit)
+            }
+          },
+          onDismiss: {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
               state.deletedHabitForUndo = nil
             }
-          )
-          .padding(.horizontal, 16)
-          .padding(.bottom, 100) // Above tab bar
-          .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-        .animation(.spring(response: 0.3), value: state.deletedHabitForUndo)
+          }
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 100) // Above tab bar
+        .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
     .onChange(of: state.habits) { oldHabits, newHabits in
