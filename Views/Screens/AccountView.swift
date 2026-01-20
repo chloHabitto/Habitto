@@ -219,6 +219,19 @@ struct AccountView: View {
     } message: {
       Text(repairError ?? "An unknown error occurred")
     }
+    .overlay(alignment: .bottom) {
+      if showNameUpdatedToast {
+        SuccessToastView(message: "Name updated successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            showNameUpdatedToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 100)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showNameUpdatedToast)
   }
 
   // MARK: Private
@@ -258,6 +271,7 @@ struct AccountView: View {
   @State private var showingRepairError = false
   @State private var repairError: String?
   @State private var isRepairing = false
+  @State private var showNameUpdatedToast = false
   
   @StateObject private var deletionService = AccountDeletionService()
   private let repairService = DataRepairService.shared
@@ -834,6 +848,11 @@ struct AccountView: View {
                   }
                 }
                 showingNameEditSheet = false
+                
+                // Show success toast after sheet dismisses
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                  showNameUpdatedToast = true
+                }
               }
             }
           }
@@ -844,6 +863,11 @@ struct AccountView: View {
       UserDefaults.standard.set(newDisplayName, forKey: "GuestName")
       print("✅ Guest name saved: \(newDisplayName)")
       showingNameEditSheet = false
+      
+      // Show success toast after sheet dismisses
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        showNameUpdatedToast = true
+      }
     }
   }
 }

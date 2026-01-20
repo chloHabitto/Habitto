@@ -177,6 +177,12 @@ struct VacationModeView: View {
             impactFeedback.impactOccurred()
 
             vacationManager.endVacation()
+            
+            // Show success toast after sheet dismisses
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+              NotificationCenter.default.post(name: NSNotification.Name("ShowVacationDisabledToast"), object: nil)
+              dismiss()
+            }
           }) {
             HStack(spacing: 8) {
               Image("Icon-Vacation_Filled")
@@ -207,6 +213,12 @@ struct VacationModeView: View {
               impactFeedback.impactOccurred()
 
               vacationManager.startVacation(now: startDate)
+              
+              // Show success toast after sheet dismisses
+              DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                NotificationCenter.default.post(name: NSNotification.Name("ShowVacationEnabledToast"), object: nil)
+                dismiss()
+              }
             })
         }
       }

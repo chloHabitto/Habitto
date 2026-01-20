@@ -116,6 +116,11 @@ struct BackupListView: View {
       await MainActor.run {
         // Show success message
         dismiss()
+        
+        // Show success toast after sheet dismisses
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+          NotificationCenter.default.post(name: NSNotification.Name("ShowBackupRestoredToast"), object: nil)
+        }
       }
     } catch {
       await MainActor.run {

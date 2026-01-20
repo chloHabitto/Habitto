@@ -369,6 +369,19 @@ struct ExportDataView: View {
         Text(error)
       }
     }
+    .overlay(alignment: .bottom) {
+      if showExportSuccessToast {
+        SuccessToastView(message: "Data exported successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            showExportSuccessToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 140)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showExportSuccessToast)
   }
 
   // MARK: Private
@@ -387,6 +400,7 @@ struct ExportDataView: View {
   @State private var showingDataTypePicker = false
   @State private var showingDateRangePicker = false
   @State private var showingFormatPicker = false
+  @State private var showExportSuccessToast = false
 
   private var estimatedTotalSize: String {
     // Calculate actual estimated size based on selected data types and date range
@@ -484,7 +498,12 @@ struct ExportDataView: View {
       await MainActor.run {
         exportFileURL = fileURL
         isExporting = false
-        showingShareSheet = true  // Show share sheet directly
+        showExportSuccessToast = true
+        
+        // Show share sheet after toast
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+          showingShareSheet = true
+        }
       }
 
     } catch {
