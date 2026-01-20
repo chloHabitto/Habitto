@@ -32,7 +32,7 @@ struct SkipHabitSheet: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .background(Color.appSurface01Variant)
     .ignoresSafeArea(edges: .bottom)
-    .presentationDetents([.height(540)])
+    .presentationDetents([.height(580)])
     .onAppear {
       // Pre-select the reason if provided
       if selectedReason == nil, let initial = initialSelectedReason {
@@ -201,5 +201,5 @@ struct SkipReasonChip: View {
       print("Skipped with reason: \(reason.rawValue)")
     }
   )
-  .presentationDetents([.height(540)])
+  .presentationDetents([.height(580)])
 }

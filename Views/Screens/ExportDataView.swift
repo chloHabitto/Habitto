@@ -327,7 +327,12 @@ struct ExportDataView: View {
         }
       }
     }
-    .sheet(isPresented: $showingShareSheet) {
+    .sheet(isPresented: $showingShareSheet, onDismiss: {
+      // Show success toast after share sheet is dismissed
+      withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+        showExportSuccessToast = true
+      }
+    }) {
       if let fileURL = exportFileURL {
         ShareSheet(activityItems: [fileURL])
       }
@@ -498,12 +503,7 @@ struct ExportDataView: View {
       await MainActor.run {
         exportFileURL = fileURL
         isExporting = false
-        showExportSuccessToast = true
-        
-        // Show share sheet after toast
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-          showingShareSheet = true
-        }
+        showingShareSheet = true  // Show share sheet immediately, no toast yet
       }
 
     } catch {
