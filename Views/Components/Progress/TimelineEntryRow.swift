@@ -126,13 +126,14 @@ struct TimelineEntryRow: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
+                .fill(Color.appSurface4)
                 .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(Color.appOutline1Variant, lineWidth: 1)
+                .stroke(Color.appOutline02, lineWidth: 1)
         )
+        .padding(.top, 16)
         .padding(.bottom, isLast ? 0 : 12)
     }
 }

@@ -50,7 +50,7 @@ struct DailyActivityStatsCard: View {
             // Stats Grid
             statsGrid
         }
-        .padding(20)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.appSurface02)

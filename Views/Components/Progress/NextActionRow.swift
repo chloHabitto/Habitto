@@ -62,7 +62,7 @@ struct NextActionRow: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("\(remainingCount) more to reach your goal")
                             .font(.appLabelLargeEmphasised)
-                            .foregroundColor(Color("navy500"))
+                            .foregroundColor(.appText01)
                         
                         Text("Tap to log progress")
                             .font(.appBodySmall)
@@ -93,6 +93,7 @@ struct NextActionRow: View {
                 )
             }
             .buttonStyle(PlainButtonStyle())
+            .padding(.top, 16)
         }
     }
 }
