@@ -53,7 +53,7 @@ struct HabitsTabView: View {
               statsRow
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 0)
-                .padding(.top, 2)
+                .padding(.top, 0)
                 .padding(.bottom, 0)
 
               // Edit button on the right
@@ -73,7 +73,6 @@ struct HabitsTabView: View {
                 .fill(Color.outline2)
                 .frame(height: 1)
             }
-            .frame(maxWidth: .infinity)
           )
         )
       },
@@ -97,7 +96,7 @@ struct HabitsTabView: View {
           List {
             ForEach(filteredHabits) { habit in
               habitListRow(habit)
-                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
             }
@@ -134,7 +133,7 @@ struct HabitsTabView: View {
                   .background(Color(.systemGray6))
                   .cornerRadius(8)
                 }
-                .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                .listRowInsets(EdgeInsets(top: 8, leading: 20, bottom: 8, trailing: 20))
                 .listRowSeparator(.hidden)
                 .listRowBackground(Color.clear)
               }
@@ -148,7 +147,10 @@ struct HabitsTabView: View {
           }
           .listStyle(.plain)
           .scrollContentBackground(.hidden)
-          .padding(.top, 18)
+          .listSectionSpacing(0)
+          .contentMargins(.top, 18, for: .scrollContent)
+          .contentMargins(.vertical, 0, for: .scrollIndicators)
+          .environment(\.defaultMinListRowHeight, 0)
           .animation(.default, value: filteredHabits.map { $0.id })
           .refreshable {
             await refreshHabits()
