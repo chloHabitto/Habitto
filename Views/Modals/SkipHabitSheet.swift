@@ -27,12 +27,11 @@ struct SkipHabitSheet: View {
       actionButtons
     }
     .padding(.horizontal, 24)
-    .padding(.top, 8)
+    .padding(.top, 20)
     .padding(.bottom, 24)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .background(Color.appSurface01Variant)
     .ignoresSafeArea(edges: .bottom)
-    .presentationDetents([.height(750)])
     .onAppear {
       // Pre-select the reason if provided
       if selectedReason == nil, let initial = initialSelectedReason {
@@ -57,9 +56,8 @@ struct SkipHabitSheet: View {
             .foregroundColor(.text07)
             .frame(width: 44, height: 44)
         }
-        .padding(.trailing, -12)
       }
-      .padding(.top, 8)
+      .padding(.top, 16)
       
       // Title
       Text("Skip \"\(habitName)\"")
@@ -212,5 +210,6 @@ struct SkipReasonChip: View {
       print("Skipped with reason: \(reason.rawValue)")
     }
   )
-  .presentationDetents([.height(750)])
+  .presentationDetents([.height(620)])
+  .presentationDragIndicator(.visible)
 }
