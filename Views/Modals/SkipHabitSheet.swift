@@ -27,7 +27,7 @@ struct SkipHabitSheet: View {
       actionButtons
     }
     .padding(.horizontal, 24)
-    .padding(.top, 20)
+    .padding(.top, 8)
     .padding(.bottom, 24)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .background(Color.appSurface01Variant)
@@ -57,7 +57,7 @@ struct SkipHabitSheet: View {
             .frame(width: 44, height: 44)
         }
       }
-      .padding(.top, 16)
+      .padding(.top, 8)
       
       // Title
       Text("Skip \"\(habitName)\"")
@@ -71,13 +71,13 @@ struct SkipHabitSheet: View {
         .foregroundColor(.text05)
         .frame(maxWidth: .infinity, alignment: .center)
     }
-    .padding(.bottom, 16)
+    .padding(.bottom, 20)
   }
   
   // MARK: - Reason Selection Section
   
   private var reasonSelectionSection: some View {
-    VStack(alignment: .leading, spacing: 12) {
+    VStack(alignment: .leading, spacing: 16) {
       Text("Why are you skipping?")
         .font(.appBodyMediumEmphasised)
         .foregroundColor(.text05)
@@ -187,11 +187,11 @@ struct SkipReasonChip: View {
       .frame(maxWidth: .infinity)
       .padding(.vertical, 12)
       .background(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 16)
           .fill(isSelected ? Color.primary : Color.primaryContainer)
       )
       .overlay(
-        RoundedRectangle(cornerRadius: 12)
+        RoundedRectangle(cornerRadius: 16)
           .stroke(isSelected ? Color.primary : Color.outline3.opacity(0.3), lineWidth: isSelected ? 2 : 1)
       )
     }
@@ -210,6 +210,6 @@ struct SkipReasonChip: View {
       print("Skipped with reason: \(reason.rawValue)")
     }
   )
-  .presentationDetents([.height(620)])
+  .presentationDetents([.height(520)])
   .presentationDragIndicator(.visible)
 }
