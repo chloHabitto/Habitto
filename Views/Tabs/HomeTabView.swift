@@ -599,7 +599,7 @@ struct HomeTabView: View {
           .frame(height: 80)
       }
       .padding(.horizontal, 20)
-      .padding(.top, 18)
+      .padding(.top, 22)
       .padding(.bottom, 20)
     }
     .refreshable {
