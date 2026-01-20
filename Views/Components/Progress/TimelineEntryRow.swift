@@ -79,7 +79,7 @@ struct TimelineEntryRow: View {
                 .frame(width: 40, height: 40)
             
             // Content
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 // Header row
                 HStack {
                     Text(entry.deltaDisplayText)
@@ -96,7 +96,7 @@ struct TimelineEntryRow: View {
                         .background(Circle().fill(Color.green))
                 }
                 
-                // Meta row
+                // Meta row with difficulty badge
                 HStack(spacing: 8) {
                     Text("Progress: \(entry.runningTotal)/\(entry.goalAmount)")
                         .font(.appBodySmall)
@@ -106,20 +106,6 @@ struct TimelineEntryRow: View {
                         DifficultyBadge(difficulty: difficulty)
                     }
                 }
-                
-                // Progress bar
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.appSurface03)
-                            .frame(height: 6)
-                        
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(habit.color.color)
-                            .frame(width: geo.size.width * entry.progressPercentage, height: 6)
-                    }
-                }
-                .frame(height: 6)
             }
         }
         .padding(16)
