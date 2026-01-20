@@ -112,6 +112,7 @@ class HomeViewState: ObservableObject {
   @Published var showingNotificationView = false
   @Published var deletedHabitForUndo: Habit? = nil
   @Published var createdHabitName: String?
+  @Published var showHabitUpdatedToast = false
 
   /// Core Data adapter
   let habitRepository = HabitRepository.shared
@@ -1421,6 +1422,11 @@ struct HomeView: View {
           await state.updateHabit(updatedHabit)
           await MainActor.run {
             state.habitToEditSession = nil
+            
+            // ✅ Show success toast after edit sheet dismisses
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+              state.showHabitUpdatedToast = true
+            }
           }
         }
         debugLog("🔄 HomeView: Habit updated and saved successfully")
@@ -1495,7 +1501,7 @@ struct HomeView: View {
     .overlay(alignment: .bottom) {
       // ✅ SUCCESS TOAST: Show toast when habit is created
       if let habitName = state.createdHabitName {
-        SuccessToastView(habitName: habitName) {
+        SuccessToastView(message: "\"\(habitName)\" created") {
           withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             state.createdHabitName = nil
           }
@@ -1505,7 +1511,21 @@ struct HomeView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when habit is updated
+      if state.showHabitUpdatedToast {
+        SuccessToastView(message: "Changes saved") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.showHabitUpdatedToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 100) // Above tab bar
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
     .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.createdHabitName)
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showHabitUpdatedToast)
     .onChange(of: state.habits) { oldHabits, newHabits in
       // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
       // DO NOT call publishXP() here - it overwrites the database value with calculated value
