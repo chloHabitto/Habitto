@@ -13,7 +13,7 @@ struct TimelineEntryRow: View {
     let isLast: Bool
     
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: 12) {
             // Time Column
             timeColumn
             
@@ -41,7 +41,7 @@ struct TimelineEntryRow: View {
                 .font(.system(size: 12))
                 .foregroundColor(.appText04)
         }
-        .frame(width: 55)
+        .frame(width: 45)
         .padding(.top, 16)
     }
     

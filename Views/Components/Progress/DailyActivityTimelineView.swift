@@ -42,7 +42,8 @@ struct DailyActivityTimelineView: View {
                 timelineContent
             }
         }
-        .padding(16)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 16)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.appSurface02)
@@ -84,6 +85,7 @@ struct DailyActivityTimelineView: View {
                 .font(.system(size: 18))
                 .foregroundColor(.appText04)
         }
+        .padding(.horizontal, 8)
     }
     
     // MARK: - Timeline Content
