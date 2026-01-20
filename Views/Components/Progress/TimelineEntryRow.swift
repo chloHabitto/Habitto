@@ -98,7 +98,7 @@ struct TimelineEntryRow: View {
                 }
                 
                 // Meta row with difficulty badge
-                HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Progress: \(entry.runningTotal)/\(entry.goalAmount)")
                         .font(.appBodySmall)
                         .foregroundColor(.appText03)
