@@ -148,7 +148,7 @@ struct HabitsTabView: View {
           .listStyle(.plain)
           .scrollContentBackground(.hidden)
           .listSectionSpacing(0)
-          .contentMargins(.top, 18, for: .scrollContent)
+          .contentMargins(.top, 12, for: .scrollContent)
           .contentMargins(.vertical, 0, for: .scrollIndicators)
           .environment(\.defaultMinListRowHeight, 0)
           .animation(.default, value: filteredHabits.map { $0.id })
