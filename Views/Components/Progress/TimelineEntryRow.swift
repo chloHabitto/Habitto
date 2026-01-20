@@ -106,6 +106,20 @@ struct TimelineEntryRow: View {
                         DifficultyBadge(difficulty: difficulty)
                     }
                 }
+                
+                // Progress bar
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(Color.appSurface03)
+                            .frame(height: 6)
+                        
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(habit.color.color)
+                            .frame(width: geo.size.width * entry.progressPercentage, height: 6)
+                    }
+                }
+                .frame(height: 6)
             }
         }
         .padding(16)
