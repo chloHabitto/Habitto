@@ -81,8 +81,8 @@ struct SkipHabitSheet: View {
     VStack(alignment: .leading, spacing: 12) {
       Text("Why are you skipping?")
         .font(.appBodyMediumEmphasised)
-        .foregroundColor(.text03)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundColor(.text05)
+        .frame(maxWidth: .infinity, alignment: .center)
       
       // Reason Grid
       LazyVGrid(columns: [
@@ -127,7 +127,7 @@ struct SkipHabitSheet: View {
           handleSkip(reason)
         }
       }) {
-        Text("Skip")
+        Text("Save")
           .font(Font.appButtonText1)
           .foregroundColor(.onPrimary)
           .frame(maxWidth: .infinity)
@@ -176,11 +176,11 @@ struct SkipReasonChip: View {
               .font(.system(size: 20))
           }
         }
-        .foregroundColor(isSelected ? .appOnPrimary : .appIcon)
+        .foregroundColor(isSelected ? .onPrimary : .appIconColor)
         
         Text(reason.shortLabel)
           .font(.appLabelSmall)
-          .foregroundColor(isSelected ? .appOnPrimary : .appOnPrimaryContainer)
+          .foregroundColor(isSelected ? .onPrimary : .onPrimaryContainer)
           .lineLimit(1)
           .minimumScaleFactor(0.8)
       }
@@ -188,7 +188,7 @@ struct SkipReasonChip: View {
       .padding(.vertical, 12)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(isSelected ? Color.appPrimary : Color.appPrimaryContainer)
+          .fill(isSelected ? Color.primary : Color.primaryContainer)
       )
       .overlay(
         RoundedRectangle(cornerRadius: 12)
