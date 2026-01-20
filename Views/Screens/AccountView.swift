@@ -231,7 +231,20 @@ struct AccountView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
+    .overlay(alignment: .bottom) {
+      if showBirthdayUpdatedToast {
+        SuccessToastView(message: "Birthday saved successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            showBirthdayUpdatedToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 40)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
     .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showNameUpdatedToast)
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showBirthdayUpdatedToast)
   }
 
   // MARK: Private
@@ -272,6 +285,7 @@ struct AccountView: View {
   @State private var repairError: String?
   @State private var isRepairing = false
   @State private var showNameUpdatedToast = false
+  @State private var showBirthdayUpdatedToast = false
   
   @StateObject private var deletionService = AccountDeletionService()
   private let repairService = DataRepairService.shared
@@ -805,13 +819,15 @@ struct AccountView: View {
   }
   
   private func saveBirthday() {
-    // Mark that birthday has been set
     hasSetBirthday = true
-    // Save birthday logic - can be implemented later (e.g., to UserDefaults or backend)
-    print("✅ Birthday saved: \(selectedBirthday)")
-    // Optionally save to UserDefaults
     UserDefaults.standard.set(selectedBirthday, forKey: "UserBirthday")
+    print("✅ Birthday saved: \(selectedBirthday)")
     showingBirthdayView = false
+    
+    // Show success toast after sheet dismisses
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      showBirthdayUpdatedToast = true
+    }
   }
   
   private var formattedBirthday: String {

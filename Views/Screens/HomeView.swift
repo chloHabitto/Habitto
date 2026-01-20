@@ -74,11 +74,15 @@ class HomeViewState: ObservableObject {
     
     // ✅ Listen for vacation toast notifications
     NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowVacationEnabledToast"), object: nil, queue: .main) { [weak self] _ in
-      self?.showVacationEnabledToast = true
+      Task { @MainActor in
+        self?.showVacationEnabledToast = true
+      }
     }
     
     NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowVacationDisabledToast"), object: nil, queue: .main) { [weak self] _ in
-      self?.showVacationDisabledToast = true
+      Task { @MainActor in
+        self?.showVacationDisabledToast = true
+      }
     }
     
     // ✅ FIX: Listen for streak updates from completion flow
