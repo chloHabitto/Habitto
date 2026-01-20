@@ -34,11 +34,79 @@ struct FirestoreHabit: Codable, Identifiable {
   var completionTimestamps: [String: [Date]]
   var difficultyHistory: [String: Int]
   var actualUsage: [String: Int]
+  var skippedDaysJSON: String  // JSON-encoded skipped days dictionary
   var isActive: Bool
   
   // MARK: - Sync Metadata (Phase 1: Dual-Write)
   var lastSyncedAt: Date?
   var syncStatus: String? // Store as string: "pending", "syncing", "synced", "failed" (optional for backward compatibility)
+  
+  // MARK: - Skip Data Encoding/Decoding
+  
+  /// Encode skipped days dictionary to JSON string for Firestore storage
+  private static func encodeSkippedDays(_ skippedDays: [String: HabitSkip]) -> String {
+    guard !skippedDays.isEmpty else { return "{}" }
+    
+    var jsonDict: [String: [String: Any]] = [:]
+    let formatter = ISO8601DateFormatter()
+    
+    for (dateKey, skip) in skippedDays {
+      var entry: [String: Any] = [
+        "habitId": skip.habitId.uuidString,
+        "dateKey": skip.dateKey,
+        "reason": skip.reason.rawValue,
+        "createdAt": formatter.string(from: skip.createdAt)
+      ]
+      if let note = skip.customNote, !note.isEmpty {
+        entry["customNote"] = note
+      }
+      jsonDict[dateKey] = entry
+    }
+    
+    guard let data = try? JSONSerialization.data(withJSONObject: jsonDict),
+          let string = String(data: data, encoding: .utf8) else {
+      return "{}"
+    }
+    return string
+  }
+  
+  /// Decode skipped days from JSON string to dictionary
+  private static func decodeSkippedDays(_ json: String, habitId: UUID) -> [String: HabitSkip] {
+    guard json != "{}", !json.isEmpty,
+          let data = json.data(using: .utf8),
+          let dict = try? JSONSerialization.jsonObject(with: data) as? [String: [String: Any]] else {
+      return [:]
+    }
+    
+    var result: [String: HabitSkip] = [:]
+    let formatter = ISO8601DateFormatter()
+    
+    for (dateKey, skipDict) in dict {
+      guard let reasonRaw = skipDict["reason"] as? String,
+            let reason = SkipReason.allCases.first(where: { $0.rawValue == reasonRaw }),
+            let createdAtString = skipDict["createdAt"] as? String,
+            let createdAt = formatter.date(from: createdAtString) else {
+        continue
+      }
+      
+      let customNote = skipDict["customNote"] as? String
+      let skipHabitId: UUID
+      if let idString = skipDict["habitId"] as? String, let parsed = UUID(uuidString: idString) {
+        skipHabitId = parsed
+      } else {
+        skipHabitId = habitId
+      }
+      
+      result[dateKey] = HabitSkip(
+        habitId: skipHabitId,
+        dateKey: dateKey,
+        reason: reason,
+        customNote: customNote,
+        createdAt: createdAt
+      )
+    }
+    return result
+  }
   
   // MARK: Firestore conversion
   
@@ -62,6 +130,7 @@ struct FirestoreHabit: Codable, Identifiable {
       "completionTimestamps": completionTimestamps,
       "difficultyHistory": difficultyHistory,
       "actualUsage": actualUsage,
+      "skippedDaysJSON": skippedDaysJSON,
       "isActive": isActive,
       "syncStatus": syncStatus ?? "pending"  // Default for backward compatibility
     ]
@@ -101,6 +170,8 @@ struct FirestoreHabit: Codable, Identifiable {
     self.completionTimestamps = habit.completionTimestamps
     self.difficultyHistory = habit.difficultyHistory
     self.actualUsage = habit.actualUsage
+    // Encode skipped days to JSON for Firestore storage
+    self.skippedDaysJSON = Self.encodeSkippedDays(habit.skippedDays)
     self.isActive = true
     // Sync metadata
     self.lastSyncedAt = habit.lastSyncedAt
@@ -128,6 +199,7 @@ struct FirestoreHabit: Codable, Identifiable {
     completionTimestamps: [String: [Date]],
     difficultyHistory: [String: Int],
     actualUsage: [String: Int],
+    skippedDaysJSON: String = "{}",
     isActive: Bool,
     lastSyncedAt: Date? = nil,
     syncStatus: String? = "pending"
@@ -152,6 +224,7 @@ struct FirestoreHabit: Codable, Identifiable {
     self.completionTimestamps = completionTimestamps
     self.difficultyHistory = difficultyHistory
     self.actualUsage = actualUsage
+    self.skippedDaysJSON = skippedDaysJSON
     self.isActive = isActive
     self.lastSyncedAt = lastSyncedAt
     self.syncStatus = syncStatus
@@ -183,7 +256,7 @@ struct FirestoreHabit: Codable, Identifiable {
       firestoreStatus: completionStatus
     )
     
-    return Habit(
+    var habit = Habit(
       id: uuid,
       name: name,
       description: description,
@@ -207,6 +280,11 @@ struct FirestoreHabit: Codable, Identifiable {
       lastSyncedAt: lastSyncedAt,
       syncStatus: status
     )
+    
+    // ✅ SKIP FEATURE: Restore skipped days from Firestore
+    habit.skippedDays = Self.decodeSkippedDays(skippedDaysJSON, habitId: uuid)
+    
+    return habit
   }
   
   /// Query CompletionRecords from SwiftData to get source of truth
@@ -276,6 +354,9 @@ struct FirestoreHabit: Codable, Identifiable {
     let lastSyncedAt = data["lastSyncedAt"] as? Date
     let syncStatus = data["syncStatus"] as? String ?? "pending"
     
+    // Parse skip data with default for backward compatibility
+    let skippedDaysJSON = data["skippedDaysJSON"] as? String ?? "{}"
+    
     return FirestoreHabit(
       id: id,
       name: name,
@@ -297,6 +378,7 @@ struct FirestoreHabit: Codable, Identifiable {
       completionTimestamps: completionTimestamps,
       difficultyHistory: difficultyHistory,
       actualUsage: actualUsage,
+      skippedDaysJSON: skippedDaysJSON,
       isActive: isActive,
       lastSyncedAt: lastSyncedAt,
       syncStatus: syncStatus
