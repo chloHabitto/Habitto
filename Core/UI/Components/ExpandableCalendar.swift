@@ -185,6 +185,7 @@ struct ExpandableCalendar: View {
     }
     .frame(height: 72)
     .padding(.horizontal, 20)
+    .padding(.bottom, 12)
   }
 
   // MARK: - Monthly Calendar View
