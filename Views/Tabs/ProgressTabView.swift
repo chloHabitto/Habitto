@@ -668,15 +668,19 @@ struct ProgressTabView: View {
         yearlyAllHabitsContent
       }
 
-      // Today's Progress Card - Show when "Daily" tab is active (both "All habits" and individual
-      // habits)
-      if selectedTimePeriod == 0 {
+      // Today's Progress Card - Show when "Daily" tab is active and "All habits" is selected
+      if selectedHabit == nil, selectedTimePeriod == 0 {
         todayProgressCard
       }
-
-      // Difficulty Section - Only show when individual habit is selected and scheduled for the date
-      if selectedHabit != nil, selectedTimePeriod == 0, getScheduledHabitsCount() > 0 {
-        difficultySection
+      
+      // Daily Activity Stats Card - Show when a specific habit is selected on Daily tab
+      if let selectedHabit = selectedHabit, selectedTimePeriod == 0 {
+        DailyActivityStatsCard(
+          habit: selectedHabit,
+          entries: timelineEntries,
+          selectedDate: selectedProgressDate
+        )
+        .padding(.horizontal, 20)
       }
       
       // Daily Activity Timeline - Show when a specific habit is selected on Daily tab
@@ -1848,6 +1852,11 @@ struct ProgressTabView: View {
     let dateKey = Habit.dateKey(for: date)
     let goalAmount = habit.goalAmount(for: date)
     
+    // Get difficulty for the day (if recorded)
+    let dayDifficulty = habit.getDifficulty(for: date)
+    print("🔍 TIMELINE DEBUG: Loading entries for '\(habit.name)' on \(dateKey)")
+    print("   → Day difficulty: \(dayDifficulty != nil ? String(dayDifficulty!) : "nil")")
+    
     // Try ProgressEvents first (preferred - has exact timestamps)
     let modelContext = SwiftDataContainer.shared.modelContext
     let descriptor = ProgressEvent.eventsForHabitDate(habitId: habit.id, dateKey: dateKey)
@@ -1857,7 +1866,7 @@ struct ProgressTabView: View {
       let sortedEvents = events.sorted { $0.occurredAt < $1.occurredAt }
       
       var runningTotal = 0
-      return sortedEvents.map { event in
+      let entries = sortedEvents.map { event in
         runningTotal += event.progressDelta
         runningTotal = max(0, runningTotal) // Don't go negative
         
@@ -1867,29 +1876,36 @@ struct ProgressTabView: View {
           progressDelta: event.progressDelta,
           runningTotal: runningTotal,
           goalAmount: goalAmount,
-          difficulty: habit.getDifficulty(for: date),
+          difficulty: dayDifficulty,
           eventType: event.eventType
         )
       }
+      
+      print("   → Created \(entries.count) entries from ProgressEvents, difficulty on each: \(dayDifficulty != nil ? String(dayDifficulty!) : "nil")")
+      return entries
     }
     
     // Fallback to completionTimestamps
     guard let timestamps = habit.completionTimestamps[dateKey], !timestamps.isEmpty else {
+      print("   → No ProgressEvents or completionTimestamps found")
       return []
     }
     
     let sortedTimestamps = timestamps.sorted()
-    return sortedTimestamps.enumerated().map { index, timestamp in
+    let entries = sortedTimestamps.enumerated().map { index, timestamp in
       DailyProgressEntry(
         id: UUID(),
         timestamp: timestamp,
         progressDelta: 1, // Legacy system always incremented by 1
         runningTotal: index + 1,
         goalAmount: goalAmount,
-        difficulty: habit.getDifficulty(for: date),
+        difficulty: dayDifficulty,
         eventType: "INCREMENT"
       )
     }
+    
+    print("   → Created \(entries.count) entries from completionTimestamps (fallback), difficulty on each: \(dayDifficulty != nil ? String(dayDifficulty!) : "nil")")
+    return entries
   }
   
   /// Load timeline data for the currently selected habit and date

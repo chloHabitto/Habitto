@@ -38,13 +38,17 @@ struct DifficultyBadge: View {
                 .font(.system(size: 11))
             Text(label)
                 .font(.appLabelSmall)
-                .foregroundColor(.appText03)
+                .foregroundColor(.appText04)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
         .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(Color.appSurface02)
+            RoundedRectangle(cornerRadius: 6)
+                .fill(Color.appSurface03)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(Color.appOutline02, lineWidth: 1)
         )
     }
 }

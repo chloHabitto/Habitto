@@ -1338,6 +1338,9 @@ final actor HabitStore {
   func checkDailyCompletionAndAwardXP(dateKey: String, userId: String) async throws {
     logger.info("🎯 XP_CHECK: Checking daily completion for \(dateKey)")
     
+    // ✅ CRITICAL: Clear cache to avoid stale progress values
+    scheduledHabitsCache = nil
+    
     // Parse date from dateKey
     let dateFormatter = DateFormatter()
     dateFormatter.dateFormat = "yyyy-MM-dd"
