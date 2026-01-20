@@ -845,7 +845,7 @@ class BackupManager: ObservableObject {
       userSettings: userSettings,
       legacyData: legacyData,
       id: backupId ?? UUID(), // ✅ FIX: Use provided backupId to match filename
-      habitsLegacy: habits)
+      habitsLegacy: nil) // ✅ FIX: Don't include raw Habit objects with Color properties
   }
 
   /// Get legacy data from UserDefaults and other sources
