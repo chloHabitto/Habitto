@@ -2,6 +2,7 @@ import AVKit
 import Charts
 import MijickPopups
 import SwiftUI
+import SwiftData
 
 // MARK: - HabitDifficulty
 
@@ -204,6 +205,9 @@ struct ProgressTabView: View {
   
   /// Refresh ID to force views to update when habits change
   @State private var refreshID = UUID()
+  
+  /// Timeline entries for daily activity timeline
+  @State private var timelineEntries: [DailyProgressEntry] = []
   
   /// Habit to show in detail view
   @State private var habitForDetailView: Habit?
@@ -674,6 +678,24 @@ struct ProgressTabView: View {
       if selectedHabit != nil, selectedTimePeriod == 0, getScheduledHabitsCount() > 0 {
         difficultySection
       }
+      
+      // Daily Activity Timeline - Show when a specific habit is selected on Daily tab
+      if let selectedHabit = selectedHabit, selectedTimePeriod == 0 {
+        DailyActivityTimelineView(
+          habit: selectedHabit,
+          selectedDate: selectedProgressDate,
+          entries: timelineEntries,
+          onLogProgress: {
+            // Increment progress by 1
+            Task {
+              let currentProgress = habitRepository.getProgress(for: selectedHabit, date: selectedProgressDate)
+              try? await habitRepository.setProgress(for: selectedHabit, date: selectedProgressDate, progress: currentProgress + 1)
+              loadTimelineData()
+            }
+          }
+        )
+        .padding(.horizontal, 20)
+      }
 
       // Reminders Section - Only show when "All habits" is selected and "Daily" tab is active
       if selectedHabit == nil, selectedTimePeriod == 0 {
@@ -888,6 +910,9 @@ struct ProgressTabView: View {
 
       // Update time base completion data when view appears
       updateTimeBaseCompletionData()
+      
+      // Load timeline data when view appears
+      loadTimelineData()
     }
     .onChange(of: habitRepository.habits) { oldHabits, newHabits in
       // Clear message caches when habits change (progress data changes)
@@ -911,12 +936,16 @@ struct ProgressTabView: View {
       updateDifficultyData()
       // Update time base completion data when habits change
       updateTimeBaseCompletionData()
+      // Load timeline data when habits change (e.g., progress logged)
+      loadTimelineData()
     }
     .onChange(of: selectedHabit) { _, _ in
       // Update difficulty data when selected habit changes
       updateDifficultyData()
       // Update time base completion data when selected habit changes
       updateTimeBaseCompletionData()
+      // Load timeline data when selected habit changes
+      loadTimelineData()
     }
     .onChange(of: selectedWeekStartDate) {
       // Clear weekly message cache to regenerate on next access
@@ -937,6 +966,8 @@ struct ProgressTabView: View {
       updateDifficultyData()
       // Update time base completion data when month changes
       updateTimeBaseCompletionData()
+      // Load timeline data when date changes
+      loadTimelineData()
     }
     .onChange(of: selectedYear) {
       // Reload yearly data when year changes
@@ -1809,6 +1840,72 @@ struct ProgressTabView: View {
   }
 
   // MARK: - Helper Functions
+  
+  // MARK: Timeline Data Fetching
+  
+  /// Fetch timeline entries for a habit on a specific date
+  private func getTimelineEntries(for habit: Habit, on date: Date) async -> [DailyProgressEntry] {
+    let dateKey = Habit.dateKey(for: date)
+    let goalAmount = habit.goalAmount(for: date)
+    
+    // Try ProgressEvents first (preferred - has exact timestamps)
+    let modelContext = SwiftDataContainer.shared.modelContext
+    let descriptor = ProgressEvent.eventsForHabitDate(habitId: habit.id, dateKey: dateKey)
+    
+    if let events = try? modelContext.fetch(descriptor), !events.isEmpty {
+      // Sort by occurredAt timestamp
+      let sortedEvents = events.sorted { $0.occurredAt < $1.occurredAt }
+      
+      var runningTotal = 0
+      return sortedEvents.map { event in
+        runningTotal += event.progressDelta
+        runningTotal = max(0, runningTotal) // Don't go negative
+        
+        return DailyProgressEntry(
+          id: UUID(),
+          timestamp: event.occurredAt,
+          progressDelta: event.progressDelta,
+          runningTotal: runningTotal,
+          goalAmount: goalAmount,
+          difficulty: habit.getDifficulty(for: date),
+          eventType: event.eventType
+        )
+      }
+    }
+    
+    // Fallback to completionTimestamps
+    guard let timestamps = habit.completionTimestamps[dateKey], !timestamps.isEmpty else {
+      return []
+    }
+    
+    let sortedTimestamps = timestamps.sorted()
+    return sortedTimestamps.enumerated().map { index, timestamp in
+      DailyProgressEntry(
+        id: UUID(),
+        timestamp: timestamp,
+        progressDelta: 1, // Legacy system always incremented by 1
+        runningTotal: index + 1,
+        goalAmount: goalAmount,
+        difficulty: habit.getDifficulty(for: date),
+        eventType: "INCREMENT"
+      )
+    }
+  }
+  
+  /// Load timeline data for the currently selected habit and date
+  private func loadTimelineData() {
+    guard let habit = selectedHabit else {
+      timelineEntries = []
+      return
+    }
+    
+    Task {
+      let entries = await getTimelineEntries(for: habit, on: selectedProgressDate)
+      await MainActor.run {
+        timelineEntries = entries
+      }
+    }
+  }
 
   private func getActiveHabits() -> [Habit] {
     let calendar = Calendar.current

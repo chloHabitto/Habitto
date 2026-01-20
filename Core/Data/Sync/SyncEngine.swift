@@ -1993,6 +1993,12 @@ actor SyncEngine {
         if let target = data["target"] as? Int {
             habitData.target = target
         }
+        
+        // ⏭️ SKIP FEATURE: Update skipped days from Firestore
+        if let skippedDaysJSON = data["skippedDaysJSON"] as? String {
+            habitData.skippedDaysJSON = skippedDaysJSON
+            print("⏭️ [SYNC_UPDATE] Updated skippedDaysJSON for habit: \(skippedDaysJSON.prefix(50))...")
+        }
     }
     
     /// Create HabitData from Firestore data
@@ -2035,6 +2041,12 @@ actor SyncEngine {
         }
         if let updatedAt = (data["lastSyncedAt"] as? Timestamp)?.dateValue() {
             habitData.updatedAt = updatedAt
+        }
+        
+        // ⏭️ SKIP FEATURE: Copy skipped days from Firestore
+        if let skippedDaysJSON = data["skippedDaysJSON"] as? String {
+            habitData.skippedDaysJSON = skippedDaysJSON
+            print("⏭️ [SYNC_CREATE] Set skippedDaysJSON for new habit: \(skippedDaysJSON.prefix(50))...")
         }
         
         return habitData
