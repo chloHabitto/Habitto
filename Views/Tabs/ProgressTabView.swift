@@ -1858,9 +1858,16 @@ struct ProgressTabView: View {
       let sortedEvents = events.sorted { $0.occurredAt < $1.occurredAt }
       
       var runningTotal = 0
+      var goalReached = false
       let entries = sortedEvents.map { event in
         runningTotal += event.progressDelta
         runningTotal = max(0, runningTotal) // Don't go negative
+        
+        // Only show difficulty on the entry that first completed the goal
+        let showDifficulty = !goalReached && runningTotal >= goalAmount
+        if showDifficulty {
+          goalReached = true
+        }
         
         return DailyProgressEntry(
           id: UUID(),
@@ -1868,12 +1875,12 @@ struct ProgressTabView: View {
           progressDelta: event.progressDelta,
           runningTotal: runningTotal,
           goalAmount: goalAmount,
-          difficulty: dayDifficulty,
+          difficulty: showDifficulty ? dayDifficulty : nil,
           eventType: event.eventType
         )
       }
       
-      print("   → Created \(entries.count) entries from ProgressEvents, difficulty on each: \(dayDifficulty != nil ? String(dayDifficulty!) : "nil")")
+      print("   → Created \(entries.count) entries from ProgressEvents, difficulty shown on goal-completing entry: \(goalReached)")
       return entries
     }
     
@@ -1884,19 +1891,28 @@ struct ProgressTabView: View {
     }
     
     let sortedTimestamps = timestamps.sorted()
+    var goalReached = false
     let entries = sortedTimestamps.enumerated().map { index, timestamp in
-      DailyProgressEntry(
+      let runningTotal = index + 1
+      
+      // Only show difficulty on the entry that first completed the goal
+      let showDifficulty = !goalReached && runningTotal >= goalAmount
+      if showDifficulty {
+        goalReached = true
+      }
+      
+      return DailyProgressEntry(
         id: UUID(),
         timestamp: timestamp,
         progressDelta: 1, // Legacy system always incremented by 1
-        runningTotal: index + 1,
+        runningTotal: runningTotal,
         goalAmount: goalAmount,
-        difficulty: dayDifficulty,
+        difficulty: showDifficulty ? dayDifficulty : nil,
         eventType: "INCREMENT"
       )
     }
     
-    print("   → Created \(entries.count) entries from completionTimestamps (fallback), difficulty on each: \(dayDifficulty != nil ? String(dayDifficulty!) : "nil")")
+    print("   → Created \(entries.count) entries from completionTimestamps (fallback), difficulty shown on goal-completing entry: \(goalReached)")
     return entries
   }
   
