@@ -53,7 +53,7 @@ struct DailyActivityStatsCard: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(Color.appSurface01)
+                .fill(Color.appSurface02)
                 .overlay(
                     LinearGradient(
                         stops: [

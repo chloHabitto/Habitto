@@ -14,14 +14,14 @@ struct NextActionRow: View {
     @State private var isPulsing = false
     
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: 12) {
             // Time Column
             VStack {
                 Text("Now")
                     .font(.appLabelMedium)
                     .foregroundColor(.appText04)
             }
-            .frame(width: 55)
+            .frame(width: 45)
             .padding(.top, 16)
             
             // Connector with pulsing dot
