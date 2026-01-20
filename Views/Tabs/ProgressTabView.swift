@@ -764,7 +764,7 @@ struct ProgressTabView: View {
         scrollOffset: displayHeaderHeight) {
           ScrollView {
             mainContentView
-              .padding(.top, 19)
+              .padding(.top, 21)
               .padding(.bottom, 20)
               .background(
                 GeometryReader { geometry in
