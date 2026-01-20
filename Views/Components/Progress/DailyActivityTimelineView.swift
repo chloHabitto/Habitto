@@ -68,21 +68,13 @@ struct DailyActivityTimelineView: View {
     // MARK: - Header
     
     private var timelineHeader: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Today's Activity")
-                    .font(.appTitleMediumEmphasised)
-                    .foregroundColor(.appText02)
-                
-                Text("Your progress journey today")
-                    .font(.appBodySmall)
-                    .foregroundColor(.appText04)
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Today's Activity")
+                .font(.appTitleMediumEmphasised)
+                .foregroundColor(.appText02)
             
-            Spacer()
-            
-            Image(systemName: "clock")
-                .font(.system(size: 18))
+            Text("Your progress journey today")
+                .font(.appBodySmall)
                 .foregroundColor(.appText04)
         }
         .padding(.horizontal, 8)
