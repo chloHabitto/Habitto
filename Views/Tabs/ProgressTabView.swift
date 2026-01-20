@@ -688,15 +688,7 @@ struct ProgressTabView: View {
         DailyActivityTimelineView(
           habit: selectedHabit,
           selectedDate: selectedProgressDate,
-          entries: timelineEntries,
-          onLogProgress: {
-            // Increment progress by 1
-            Task {
-              let currentProgress = habitRepository.getProgress(for: selectedHabit, date: selectedProgressDate)
-              try? await habitRepository.setProgress(for: selectedHabit, date: selectedProgressDate, progress: currentProgress + 1)
-              loadTimelineData()
-            }
-          }
+          entries: timelineEntries
         )
         .padding(.horizontal, 20)
       }

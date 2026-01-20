@@ -12,7 +12,6 @@ struct DailyActivityTimelineView: View {
     let habit: Habit
     let selectedDate: Date
     let entries: [DailyProgressEntry]
-    let onLogProgress: () -> Void
     
     private var currentProgress: Int {
         entries.last?.runningTotal ?? 0
@@ -93,10 +92,7 @@ struct DailyActivityTimelineView: View {
             }
             
             if !isGoalComplete {
-                NextActionRow(
-                    remainingCount: goalAmount - currentProgress,
-                    onTap: onLogProgress
-                )
+                NextActionRow(remainingCount: goalAmount - currentProgress)
             } else {
                 GoalCompleteCelebration(streak: streak)
             }
@@ -126,28 +122,11 @@ struct DailyActivityTimelineView: View {
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.appText01)
                 
-                Text("Complete your first session to start\nbuilding today's timeline")
+                Text("Complete this habit from Home to start\nbuilding today's timeline")
                     .font(.appBodyMedium)
                     .foregroundColor(.appText03)
                     .multilineTextAlignment(.center)
             }
-            
-            Button(action: onLogProgress) {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("Log Progress")
-                        .font(.appLabelLargeEmphasised)
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color("navy500"))
-                )
-            }
-            .buttonStyle(PlainButtonStyle())
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 32)

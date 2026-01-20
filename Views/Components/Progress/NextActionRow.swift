@@ -9,7 +9,6 @@ import SwiftUI
 
 struct NextActionRow: View {
     let remainingCount: Int
-    let onTap: () -> Void
     
     @State private var isPulsing = false
     
@@ -44,54 +43,52 @@ struct NextActionRow: View {
             }
             .frame(width: 24)
             
-            // Action Card
-            Button(action: onTap) {
-                HStack(alignment: .top, spacing: 12) {
-                    // Plus icon
-                    Image(systemName: "plus")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.blue)
-                        .frame(width: 40, height: 40)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.white)
-                                .shadow(color: Color.blue.opacity(0.15), radius: 4, y: 2)
-                        )
+            // Info Card
+            HStack(alignment: .top, spacing: 12) {
+                // Info icon
+                Image(systemName: "info.circle.fill")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.blue)
+                    .frame(width: 40, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.white)
+                            .shadow(color: Color.blue.opacity(0.15), radius: 4, y: 2)
+                    )
+                
+                // Text
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(remainingCount) more to reach your goal")
+                        .font(.appLabelLargeEmphasised)
+                        .foregroundColor(.appText01)
                     
-                    // Text
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("\(remainingCount) more to reach your goal")
-                            .font(.appLabelLargeEmphasised)
-                            .foregroundColor(.appText01)
-                        
-                        Text("Tap to log progress")
-                            .font(.appBodySmall)
-                            .foregroundColor(.appText03)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    // Pending circle
-                    Circle()
-                        .stroke(Color.blue, lineWidth: 2)
-                        .frame(width: 24, height: 24)
+                    Text("Complete this habit from Home")
+                        .font(.appBodySmall)
+                        .foregroundColor(.appText03)
                 }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(
-                            LinearGradient(
-                                colors: [Color.blue.opacity(0.08), Color.blue.opacity(0.03)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
-                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                // Chevron arrow
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.appText04)
+                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.blue.opacity(0.08), Color.blue.opacity(0.03)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+            )
             .padding(.top, 16)
         }
     }
@@ -100,9 +97,7 @@ struct NextActionRow: View {
 // MARK: - Preview
 
 #Preview {
-    NextActionRow(remainingCount: 3, onTap: {
-        print("Tapped to log progress")
-    })
-    .padding()
-    .background(Color.appSurface01Variant02)
+    NextActionRow(remainingCount: 3)
+        .padding()
+        .background(Color.appSurface01Variant02)
 }
