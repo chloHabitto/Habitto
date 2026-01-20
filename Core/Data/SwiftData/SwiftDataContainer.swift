@@ -72,7 +72,7 @@ final class SwiftDataContainer: ObservableObject {
           }
           
           logger.info("✅ SwiftData: CloudKit database removed successfully")
-          logger.info("✅ SwiftData: Fresh local-only database will be created")
+          logger.info("✅ SwiftData: New local-only database will be created (CloudKit migration)")
           UserDefaults.standard.set(true, forKey: cloudKitMigrationFlagKey)
           
           // ✅ CRITICAL: Set skip flag to skip database creation this session
@@ -253,15 +253,15 @@ final class SwiftDataContainer: ObservableObject {
           }
         }
       } else {
-        logger.info("🔧 SwiftData: No existing database, creating new one (fresh install)")
+        logger.info("🔧 SwiftData: Database file not found - creating new database")
         
         // Clear corruption flag if no database exists
         UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
         
-        // Mark migration flag as complete immediately on fresh install
+        // Mark migration flag as complete immediately when creating new database
         // This should never trigger on fresh installs anyway (due to databaseExists check above)
         UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
-        logger.info("✅ SwiftData: Fresh install - marking migration flag as complete")
+        logger.info("✅ SwiftData: New database - marking migration flag as complete")
       }
 
       // ✅ FIX #5: Check if we should skip database creation this session
@@ -347,22 +347,22 @@ final class SwiftDataContainer: ObservableObject {
       logger.info("🔧 SwiftData: Creating ModelContext...")
       self.modelContext = ModelContext(modelContainer)
       
-      // ✅ FIX #8: Disable autosave on fresh databases to prevent Persistent History issues
+      // ✅ FIX #8: Disable autosave on new databases to prevent Persistent History issues
       if !finalDatabaseExists {
         modelContext.autosaveEnabled = false
-        logger.info("🔧 SwiftData: Fresh database - autosave disabled to prevent history truncation")
+        logger.info("🔧 SwiftData: New database detected - autosave disabled to prevent history truncation")
       }
 
       logger.info("✅ SwiftData: Container initialized successfully")
       logger.info("✅ SwiftData: Database URL: \(modelConfiguration.url.absoluteString)")
 
-      // ✅ FIX #7 & #8: Force table creation on fresh database
+      // ✅ FIX #7 & #8: Force table creation on new database
       // SwiftData doesn't always auto-create tables on first fetch
       // We insert a dummy HabitData and immediately delete it to force schema creation
       // Autosave is disabled during this process to prevent Persistent History from deleting tables
       if !finalDatabaseExists {
         do {
-          logger.info("🔧 SwiftData: Fresh database - forcing table creation...")
+          logger.info("🔧 SwiftData: New database - forcing table creation...")
           
           let dummyHabit = HabitData(
             userId: "_dummy_",
@@ -393,10 +393,29 @@ final class SwiftDataContainer: ObservableObject {
         }
       }
 
-      // Test if we can access the CompletionRecord table
+      // Test if we can access the CompletionRecord table and check for existing data
       let testRequest = FetchDescriptor<CompletionRecord>()
       let testCount = (try? modelContext.fetchCount(testRequest)) ?? -1
       logger.info("🔧 SwiftData: CompletionRecord table test - count: \(testCount)")
+      
+      // Log actual data state to help with debugging
+      if testCount > 0 {
+        logger.info("✅ SwiftData: Existing database found with \(testCount) completion records")
+      } else if testCount == 0 {
+        // Check other tables to confirm this is truly fresh
+        let habitCount = (try? modelContext.fetchCount(FetchDescriptor<HabitData>())) ?? 0
+        let awardCount = (try? modelContext.fetchCount(FetchDescriptor<DailyAward>())) ?? 0
+        
+        if habitCount > 0 || awardCount > 0 {
+          logger.info("✅ SwiftData: Existing database found (habits: \(habitCount), awards: \(awardCount))")
+        } else if !finalDatabaseExists {
+          logger.info("✅ SwiftData: Fresh install - no existing data found")
+        } else {
+          logger.info("✅ SwiftData: Empty database - no data found (database file existed)")
+        }
+      } else {
+        logger.warning("⚠️ SwiftData: Could not determine data state (fetch failed)")
+      }
 
       // ✅ CRITICAL FIX: DO NOT perform health check on startup
       // The health check deletes the database while it's in use, causing corruption
