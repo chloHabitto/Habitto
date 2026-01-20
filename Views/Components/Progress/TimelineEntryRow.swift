@@ -37,8 +37,9 @@ struct TimelineEntryRow: View {
                 .font(.appLabelSmall)
                 .foregroundColor(.appText04)
             
-            Text(entry.timePeriodIcon)
+            Image(systemName: entry.timePeriodIcon)
                 .font(.system(size: 12))
+                .foregroundColor(.appText04)
         }
         .frame(width: 55)
         .padding(.top, 16)

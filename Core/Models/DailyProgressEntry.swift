@@ -45,14 +45,14 @@ struct DailyProgressEntry: Identifiable {
         return formatter.string(from: timestamp)
     }
     
-    /// Icon representing time of day
+    /// SF Symbol name representing time of day
     var timePeriodIcon: String {
         let hour = Calendar.current.component(.hour, from: timestamp)
         switch hour {
-        case 5..<12: return "☀️"   // Morning
-        case 12..<14: return "☕"  // Lunch
-        case 14..<20: return "🌅"  // Evening
-        default: return "🌙"       // Night
+        case 5..<12: return "sun.max.fill"      // Morning
+        case 12..<17: return "sun.haze.fill"    // Afternoon
+        case 17..<20: return "sunset.fill"      // Evening
+        default: return "moon.stars.fill"       // Night
         }
     }
     
