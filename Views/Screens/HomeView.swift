@@ -72,6 +72,15 @@ class HomeViewState: ObservableObject {
       }
       .store(in: &cancellables)
     
+    // ✅ Listen for vacation toast notifications
+    NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowVacationEnabledToast"), object: nil, queue: .main) { [weak self] _ in
+      self?.showVacationEnabledToast = true
+    }
+    
+    NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowVacationDisabledToast"), object: nil, queue: .main) { [weak self] _ in
+      self?.showVacationDisabledToast = true
+    }
+    
     // ✅ FIX: Listen for streak updates from completion flow
     NotificationCenter.default.publisher(for: NSNotification.Name("StreakUpdated"))
       .receive(on: DispatchQueue.main)
@@ -113,6 +122,8 @@ class HomeViewState: ObservableObject {
   @Published var deletedHabitForUndo: Habit? = nil
   @Published var createdHabitName: String?
   @Published var showHabitUpdatedToast = false
+  @Published var showVacationEnabledToast = false
+  @Published var showVacationDisabledToast = false
 
   /// Core Data adapter
   let habitRepository = HabitRepository.shared
@@ -1501,7 +1512,7 @@ struct HomeView: View {
     .overlay(alignment: .bottom) {
       // ✅ SUCCESS TOAST: Show toast when habit is created
       if let habitName = state.createdHabitName {
-        SuccessToastView(message: "\"\(habitName)\" created") {
+        SuccessToastView(message: "\"\(habitName)\" created successfully") {
           withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             state.createdHabitName = nil
           }
@@ -1514,7 +1525,7 @@ struct HomeView: View {
     .overlay(alignment: .bottom) {
       // ✅ SUCCESS TOAST: Show toast when habit is updated
       if state.showHabitUpdatedToast {
-        SuccessToastView(message: "Changes saved") {
+        SuccessToastView(message: "Changes saved successfully") {
           withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             state.showHabitUpdatedToast = false
           }
@@ -1524,8 +1535,36 @@ struct HomeView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when vacation mode is enabled
+      if state.showVacationEnabledToast {
+        SuccessToastView(message: "Vacation mode enabled successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.showVacationEnabledToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 100) // Above tab bar
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when vacation mode is disabled
+      if state.showVacationDisabledToast {
+        SuccessToastView(message: "Vacation mode disabled successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.showVacationDisabledToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 100) // Above tab bar
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
     .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.createdHabitName)
     .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showHabitUpdatedToast)
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationEnabledToast)
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationDisabledToast)
     .onChange(of: state.habits) { oldHabits, newHabits in
       // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
       // DO NOT call publishXP() here - it overwrites the database value with calculated value

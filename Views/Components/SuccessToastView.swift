@@ -28,7 +28,7 @@ struct SuccessToastView: View {
       Text(message)
         .font(.appBodyLarge)
         .foregroundColor(.appText01Inverse)
-        .lineLimit(1)
+        .lineLimit(2)
       
       Spacer()
     }

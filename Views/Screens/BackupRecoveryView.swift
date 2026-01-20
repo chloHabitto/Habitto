@@ -17,6 +17,8 @@ struct BackupRecoveryView: View {
   @State private var isBackingUp = false
   @State private var showingBackupList = false
   @State private var firestoreSyncStatus: FirestoreSyncStatus = .checking
+  @State private var showBackupCreatedToast = false
+  @State private var showBackupRestoredToast = false
 
   let backupFrequencies = ["Daily", "Weekly", "Monthly", "Manual Only"]
   @State private var showingTestingView = false
@@ -121,6 +123,9 @@ struct BackupRecoveryView: View {
         loadBackupSettings()
         checkFirestoreSyncStatus()
       }
+      .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowBackupRestoredToast"))) { _ in
+        showBackupRestoredToast = true
+      }
       .sheet(isPresented: $showingBackupList) {
         BackupListView()
       }
@@ -128,6 +133,32 @@ struct BackupRecoveryView: View {
         BackupTestingView()
       }
       .backupNotifications()
+      .overlay(alignment: .bottom) {
+        if showBackupCreatedToast {
+          SuccessToastView(message: "Backup created successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              showBackupCreatedToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .padding(.bottom, 140)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+      }
+      .overlay(alignment: .bottom) {
+        if showBackupRestoredToast {
+          SuccessToastView(message: "Backup restored successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              showBackupRestoredToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .padding(.bottom, 140)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+      }
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showBackupCreatedToast)
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showBackupRestoredToast)
     }
   }
 
@@ -162,6 +193,7 @@ struct BackupRecoveryView: View {
 
       await MainActor.run {
         notificationService.showBackupSuccess(backupSize: "Unknown", habitCount: 0)
+        showBackupCreatedToast = true
       }
     } catch {
       await MainActor.run {

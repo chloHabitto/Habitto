@@ -149,6 +149,11 @@ struct HomeTabView: View {
         Button("Cancel", role: .cancel) { }
         Button("End Vacation", role: .destructive) {
           VacationManager.shared.endVacation()
+          
+          // Show success toast after alert dismisses
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            NotificationCenter.default.post(name: NSNotification.Name("ShowVacationDisabledToast"), object: nil)
+          }
         }
       } message: {
         Text("Are you sure you want to end vacation mode? All habits will resume immediately.")
