@@ -71,6 +71,20 @@ struct TimelineEntryRow: View {
         .frame(width: 24)
     }
     
+    // MARK: - Status Icon
+    
+    @ViewBuilder
+    private var statusIcon: some View {
+        if entry.runningTotal >= entry.goalAmount {
+            // Goal completed - green checkmark
+            Image(systemName: "checkmark")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.white)
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(Color.green))
+        }
+    }
+    
     // MARK: - Entry Card
     
     private var entryCard: some View {
@@ -89,12 +103,8 @@ struct TimelineEntryRow: View {
                     
                     Spacer()
                     
-                    // Checkmark
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 24, height: 24)
-                        .background(Circle().fill(Color.green))
+                    // Status icon (checkmark/plus/minus based on entry type)
+                    statusIcon
                 }
                 
                 // Meta row with difficulty badge
