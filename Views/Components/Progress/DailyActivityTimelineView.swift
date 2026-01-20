@@ -42,10 +42,10 @@ struct DailyActivityTimelineView: View {
                 timelineContent
             }
         }
-        .padding(20)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 24)
-                .fill(Color.appSurface01)
+                .fill(Color.appSurface02)
                 .overlay(
                     LinearGradient(
                         stops: [
