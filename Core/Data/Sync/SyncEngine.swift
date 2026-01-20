@@ -47,6 +47,11 @@ actor SyncEngine {
     private var isSyncing: Bool = false
     private let logger = Logger(subsystem: "com.habitto.app", category: "SyncEngine")
     
+    // Circuit breaker properties
+    private var consecutiveFailures: Int = 0
+    private let maxConsecutiveFailures: Int = 5
+    private(set) var isCircuitBroken: Bool = false
+    
     // ✅ CRITICAL BUG FIX: Track recently deleted habits to prevent resurrection
     private static var recentlyDeletedHabitIds: Set<UUID> = []
     private static let deletedHabitsLock = NSLock()
@@ -450,6 +455,11 @@ actor SyncEngine {
             return
         }
         
+        // Circuit breaker check - log warning but still attempt sync to allow recovery
+        if isCircuitBroken {
+            logger.warning("⚠️ CIRCUIT_BREAKER: Attempting sync despite circuit being broken (allows recovery)")
+        }
+        
         logger.info("🔄 Starting full sync cycle for user: \(userId)")
         
         // Notify HabitRepository that sync started
@@ -485,6 +495,29 @@ actor SyncEngine {
                     HabitRepository.shared.syncCompleted()
                 } else if let error = finalError {
                     HabitRepository.shared.syncFailed(error: error)
+                }
+            }
+            
+            // Circuit breaker: track consecutive failures
+            if success {
+                // Success - reset circuit breaker
+                self.consecutiveFailures = 0
+                self.isCircuitBroken = false
+            } else {
+                // Failure - increment counter
+                self.consecutiveFailures += 1
+                
+                // Break circuit if threshold reached
+                if self.consecutiveFailures >= self.maxConsecutiveFailures && !self.isCircuitBroken {
+                    self.isCircuitBroken = true
+                    self.logger.error("🚨 CIRCUIT_BREAKER: Sync broken after \(self.consecutiveFailures) consecutive failures")
+                    
+                    Task { @MainActor in
+                        NotificationCenter.default.post(
+                            name: NSNotification.Name("SyncCircuitBroken"),
+                            object: nil
+                        )
+                    }
                 }
             }
         }
@@ -553,6 +586,13 @@ actor SyncEngine {
         logger.info("⏹️ Stopping periodic sync")
         syncTask?.cancel()
         syncTask = nil
+    }
+    
+    /// Manually reset the circuit breaker
+    func resetCircuitBreaker() {
+        consecutiveFailures = 0
+        isCircuitBroken = false
+        logger.info("🔄 CIRCUIT_BREAKER: Manually reset")
     }
     
     // MARK: - Award Sync
