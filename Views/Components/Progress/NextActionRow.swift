@@ -46,7 +46,7 @@ struct NextActionRow: View {
             
             // Action Card
             Button(action: onTap) {
-                HStack(spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
                     // Plus icon
                     Image(systemName: "plus")
                         .font(.system(size: 18, weight: .semibold))
@@ -68,8 +68,7 @@ struct NextActionRow: View {
                             .font(.appBodySmall)
                             .foregroundColor(.appText03)
                     }
-                    
-                    Spacer()
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     
                     // Pending circle
                     Circle()
