@@ -40,6 +40,19 @@ struct StreakModeView: View {
           }
         }
       }
+      .overlay(alignment: .bottom) {
+        if showSavedToast {
+          SuccessToastView(message: "Streak mode saved successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              showSavedToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .padding(.bottom, 40)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+      }
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showSavedToast)
     }
   }
 
@@ -47,6 +60,7 @@ struct StreakModeView: View {
 
   @Environment(\.dismiss) private var dismiss
   @State private var selectedMode: CompletionMode
+  @State private var showSavedToast = false
   
   init() {
     // Initialize with current preference from CompletionMode
@@ -121,9 +135,15 @@ struct StreakModeView: View {
   }
   
   private func saveStreakMode() {
-    // Save to CompletionMode.current (which persists to UserDefaults and posts notification)
     CompletionMode.current = selectedMode
-    dismiss()
+    
+    // Show success toast
+    showSavedToast = true
+    
+    // Dismiss after toast shows
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+      dismiss()
+    }
   }
 }
 
