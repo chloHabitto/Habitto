@@ -32,7 +32,7 @@ struct SkipHabitSheet: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     .background(Color.appSurface01Variant)
     .ignoresSafeArea(edges: .bottom)
-    .presentationDetents([.height(580)])
+    .presentationDetents([.height(620)])
     .onAppear {
       // Pre-select the reason if provided
       if selectedReason == nil, let initial = initialSelectedReason {
@@ -44,7 +44,7 @@ struct SkipHabitSheet: View {
   // MARK: - Header Section
   
   private var headerSection: some View {
-    VStack(spacing: 4) {
+    VStack(spacing: 8) {
       // Close button
       HStack {
         Spacer()
@@ -57,9 +57,8 @@ struct SkipHabitSheet: View {
             .foregroundColor(.text07)
             .frame(width: 44, height: 44)
         }
-        .padding(.trailing, -12)
       }
-      .padding(.top, 8)
+      .padding(.top, 16)
       
       // Title
       Text("Skip \"\(habitName)\"")
@@ -73,6 +72,7 @@ struct SkipHabitSheet: View {
         .foregroundColor(.text05)
         .frame(maxWidth: .infinity, alignment: .center)
     }
+    .padding(.bottom, 16)
   }
   
   // MARK: - Reason Selection Section
@@ -165,13 +165,22 @@ struct SkipReasonChip: View {
   var body: some View {
     Button(action: action) {
       VStack(spacing: 8) {
-        Image(systemName: reason.icon)
-          .font(.system(size: 20))
-          .foregroundColor(isSelected ? .primary : .text01)
+        Group {
+          if reason.isCustomIcon {
+            Image(reason.icon)
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 20, height: 20)
+          } else {
+            Image(systemName: reason.icon)
+              .font(.system(size: 20))
+          }
+        }
+        .foregroundColor(isSelected ? .appOnPrimary : .appIcon)
         
         Text(reason.shortLabel)
           .font(.appLabelSmall)
-          .foregroundColor(isSelected ? .primary : .text01)
+          .foregroundColor(isSelected ? .appOnPrimary : .appOnPrimaryContainer)
           .lineLimit(1)
           .minimumScaleFactor(0.8)
       }
@@ -179,7 +188,7 @@ struct SkipReasonChip: View {
       .padding(.vertical, 12)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(isSelected ? Color.primary.opacity(0.1) : Color.surfaceContainer)
+          .fill(isSelected ? Color.appPrimary : Color.appPrimaryContainer)
       )
       .overlay(
         RoundedRectangle(cornerRadius: 12)
@@ -201,5 +210,5 @@ struct SkipReasonChip: View {
       print("Skipped with reason: \(reason.rawValue)")
     }
   )
-  .presentationDetents([.height(580)])
+  .presentationDetents([.height(620)])
 }
