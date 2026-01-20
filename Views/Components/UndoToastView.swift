@@ -19,32 +19,34 @@ struct UndoToastView: View {
   let onDismiss: () -> Void
   
   var body: some View {
-    HStack(spacing: 12) {
-      // Deleted message
+    HStack(spacing: 0) {
+      // Deleted message with its own padding
       Text("\"\(habitName)\" deleted")
         .font(.appBodyLarge)
         .foregroundColor(.appText01Inverse)
         .lineLimit(1)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
       
-      Spacer()
+      Spacer(minLength: 0)
       
-      // Undo button
+      // Undo button with outer padding as part of touch area
       Button(action: {
         onUndo()
       }) {
         Text("Undo")
           .font(.appBodyLargeEmphasised)
           .foregroundColor(.appText01Inverse)
-          .padding(.horizontal, 12)
-          .padding(.vertical, 6)
+          .padding(.horizontal, 10)
+          .frame(height: 32)
           .background(
-            RoundedRectangle(cornerRadius: 8)
-              .fill(Color.appInverseSurface10)
+            RoundedRectangle(cornerRadius: 12)
+              .fill(Color.appSurface10)
           )
+          .padding(.horizontal, 12)
+          .padding(.vertical, 12)
       }
     }
-    .padding(.horizontal, 16)
-    .padding(.vertical, 12)
     .background(
       RoundedRectangle(cornerRadius: 16)
         .fill(Color.appInverseSurface80)

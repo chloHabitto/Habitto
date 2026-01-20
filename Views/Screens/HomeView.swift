@@ -111,6 +111,7 @@ class HomeViewState: ObservableObject {
   @Published var showingOverviewView = false
   @Published var showingNotificationView = false
   @Published var deletedHabitForUndo: Habit? = nil
+  @Published var createdHabitName: String?
 
   /// Core Data adapter
   let habitRepository = HabitRepository.shared
@@ -1402,6 +1403,11 @@ struct HomeView: View {
           debugLog("  → Habit creation completed, dismissing sheet")
           #endif
           state.showingCreateHabit = false
+          
+          // Show success toast after sheet dismisses
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            state.createdHabitName = habit.name
+          }
         }
       })
     }
@@ -1442,7 +1448,11 @@ struct HomeView: View {
         }
       }
     } message: {
-      Text("Are you sure you want to delete this habit? This action cannot be undone.")
+      if let habit = state.habitToDelete {
+        Text("Are you sure you want to delete \"\(habit.name)\"? This action cannot be undone.")
+      } else {
+        Text("Are you sure you want to delete this habit? This action cannot be undone.")
+      }
     }
 
     .sheet(isPresented: $state.showingOverviewView) {
@@ -1482,6 +1492,20 @@ struct HomeView: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when habit is created
+      if let habitName = state.createdHabitName {
+        SuccessToastView(habitName: habitName) {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.createdHabitName = nil
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 100) // Above tab bar
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.createdHabitName)
     .onChange(of: state.habits) { oldHabits, newHabits in
       // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
       // DO NOT call publishXP() here - it overwrites the database value with calculated value

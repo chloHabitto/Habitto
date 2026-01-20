@@ -170,7 +170,7 @@ struct HabitDetailView: View {
         dismiss()
       }
     } message: {
-      Text("Are you sure you want to delete this habit? This action cannot be undone.")
+      Text("Are you sure you want to delete \"\(habit.name)\"? This action cannot be undone.")
     }
     .alert("Make Habit Inactive", isPresented: $showingInactiveConfirmation) {
       Button("Cancel", role: .cancel) {
