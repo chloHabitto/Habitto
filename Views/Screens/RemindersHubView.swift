@@ -29,6 +29,11 @@ struct RemindersHubView: View {
   
   @State private var showingNotificationsSettings = false
   
+  // MARK: - Add Reminder Sheet
+  
+  @State private var showingAddReminderSheet = false
+  @State private var habitToAddReminder: Habit? = nil
+  
   // MARK: - Global Reminder Setting
   
   @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = true
@@ -172,6 +177,19 @@ struct RemindersHubView: View {
       }
       .sheet(isPresented: $showingNotificationsSettings) {
         NotificationsView()
+      }
+      .sheet(isPresented: $showingAddReminderSheet) {
+        if let habit = habitToAddReminder {
+          AddReminderSheet(
+            initialTime: defaultReminderTime(),
+            isEditing: false,
+            onSave: { selectedTime in
+              addReminderToHabit(habit, time: selectedTime)
+            }
+          )
+          .presentationDetents([.medium])
+          .presentationDragIndicator(.visible)
+        }
       }
       .alert("Skip Reminder", isPresented: $showingSkipConfirmation) {
         Button("Cancel", role: .cancel) {
@@ -535,69 +553,74 @@ struct RemindersHubView: View {
   }
   
   private func habitReminderRow(habit: Habit) -> some View {
-    Button(action: {
-      navigateToHabitDetail(habit)
-    }) {
-      HStack(spacing: 16) {
-        // Left: Habit icon
-        ZStack {
-          RoundedRectangle(cornerRadius: 12)
-            .fill(habit.color.color.opacity(0.15))
-            .frame(width: 40, height: 40)
-          
-          if habit.icon.hasPrefix("Icon-") {
-            Image(habit.icon)
-              .resizable()
-              .frame(width: 18, height: 18)
-              .foregroundColor(habit.color.color)
-          } else if habit.icon == "None" {
-            RoundedRectangle(cornerRadius: 4)
-              .fill(habit.color.color)
-              .frame(width: 18, height: 18)
-          } else {
-            Text(habit.icon)
-              .font(.system(size: 18))
-          }
-        }
+    HStack(spacing: 16) {
+      // Left: Habit icon
+      ZStack {
+        RoundedRectangle(cornerRadius: 12)
+          .fill(habit.color.color.opacity(0.15))
+          .frame(width: 40, height: 40)
         
-        // Middle: Habit name and reminder info
-        VStack(alignment: .leading, spacing: 4) {
-          Text(habit.name)
-            .font(.appBodyMediumEmphasised)
-            .foregroundColor(.onPrimaryContainer)
-            .lineLimit(1)
-          
-          Text(formatReminderInfo(for: habit))
-            .font(.appBodySmall)
-            .foregroundColor(.text04)
-            .lineLimit(1)
-        }
-        
-        Spacer()
-        
-        // Right: Toggle or Add button
-        if habit.reminders.isEmpty {
-          Text("Add")
-            .font(.appBodySmallEmphasised)
-            .foregroundColor(.appPrimary)
+        if habit.icon.hasPrefix("Icon-") {
+          Image(habit.icon)
+            .resizable()
+            .frame(width: 18, height: 18)
+            .foregroundColor(habit.color.color)
+        } else if habit.icon == "None" {
+          RoundedRectangle(cornerRadius: 4)
+            .fill(habit.color.color)
+            .frame(width: 18, height: 18)
         } else {
-          Toggle("", isOn: Binding(
-            get: { areRemindersActive(for: habit) },
-            set: { enabled in toggleHabitReminders(habit, enabled: enabled) }
-          ))
-          .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
-          .controlSize(.mini)
-          .scaleEffect(0.75)
-          .labelsHidden()
-          .onTapGesture {
-            // Prevent row tap when toggle is tapped
-          }
+          Text(habit.icon)
+            .font(.system(size: 18))
         }
       }
-      .padding(16)
-      .contentShape(Rectangle())
+      
+      // Middle: Habit name and reminder info
+      VStack(alignment: .leading, spacing: 4) {
+        Text(habit.name)
+          .font(.appBodyMediumEmphasised)
+          .foregroundColor(.onPrimaryContainer)
+          .lineLimit(1)
+        
+        Text(formatReminderInfo(for: habit))
+          .font(.appBodySmall)
+          .foregroundColor(.text04)
+          .lineLimit(1)
+      }
+      
+      Spacer()
+      
+      // Right: Toggle or Add button
+      if habit.reminders.isEmpty {
+        Button(action: {
+          habitToAddReminder = habit
+          showingAddReminderSheet = true
+          UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }) {
+          Text("Add")
+            .font(.appBodyMediumEmphasised)
+            .foregroundColor(.appPrimary)
+        }
+      } else {
+        Toggle("", isOn: Binding(
+          get: { areRemindersActive(for: habit) },
+          set: { enabled in toggleHabitReminders(habit, enabled: enabled) }
+        ))
+        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
+        .controlSize(.mini)
+        .scaleEffect(0.75)
+        .labelsHidden()
+        .onTapGesture {
+          // Prevent row tap when toggle is tapped
+        }
+      }
     }
-    .buttonStyle(PlainButtonStyle())
+    .padding(16)
+    .contentShape(Rectangle())
+    .onTapGesture {
+      UIImpactFeedbackGenerator(style: .light).impactOccurred()
+      navigateToHabitDetail(habit)
+    }
   }
   
   // MARK: - Skip Reminder Helpers
@@ -659,12 +682,8 @@ struct RemindersHubView: View {
   
   /// Cancel notification for a specific reminder on a specific date
   private func cancelNotificationForReminder(_ reminder: ReminderItem, on date: Date) {
-    // TODO: Implement actual notification cancellation if needed
-    // For now, the visual skip state is the main feature
-    // Pattern: "habit_reminder_{habitId}_{reminderId}_{dateKey}"
-    // let dateKey = formatDateKey(date)
-    // let notificationId = "habit_reminder_\(habitId.uuidString)_\(reminder.id.uuidString)_\(dateKey)"
-    // UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
+    // Visual skip state is the main feature
+    // Actual notification cancellation can be implemented later if needed
   }
   
   /// Optional: Clean up old skip states to keep memory clean for long sessions
@@ -826,6 +845,75 @@ struct RemindersHubView: View {
     
     // Haptic feedback
     UIImpactFeedbackGenerator(style: .light).impactOccurred()
+  }
+  
+  /// Get a sensible default time for new reminders (e.g., 9:00 AM or next hour)
+  private func defaultReminderTime() -> Date {
+    let calendar = Calendar.current
+    let now = Date()
+    
+    // Round up to the next hour
+    let components = calendar.dateComponents([.hour], from: now)
+    let nextHour = (components.hour ?? 9) + 1
+    
+    return calendar.date(bySettingHour: nextHour, minute: 0, second: 0, of: now) ?? now
+  }
+  
+  /// Add a new reminder to a habit and save
+  private func addReminderToHabit(_ habit: Habit, time: Date) {
+    // Create new reminder
+    let newReminder = ReminderItem(time: time, isActive: true)
+    let updatedReminders = habit.reminders + [newReminder]
+    
+    // Create updated habit with new reminder
+    let updatedHabit = Habit(
+      id: habit.id,
+      name: habit.name,
+      description: habit.description,
+      icon: habit.icon,
+      color: habit.color,
+      habitType: habit.habitType,
+      schedule: habit.schedule,
+      goal: habit.goal,
+      reminder: habit.reminder,
+      startDate: habit.startDate,
+      endDate: habit.endDate,
+      createdAt: habit.createdAt,
+      reminders: updatedReminders,
+      baseline: habit.baseline,
+      target: habit.target,
+      completionHistory: habit.completionHistory,
+      completionStatus: habit.completionStatus,
+      completionTimestamps: habit.completionTimestamps,
+      difficultyHistory: habit.difficultyHistory,
+      actualUsage: habit.actualUsage,
+      goalHistory: habit.goalHistory,
+      lastSyncedAt: habit.lastSyncedAt,
+      syncStatus: habit.syncStatus,
+      skippedDays: habit.skippedDays
+    )
+    
+    // Save to repository
+    Task {
+      do {
+        try await habitRepository.updateHabit(updatedHabit)
+        
+        // Update notifications
+        NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
+        
+        // Haptic feedback for success
+        await MainActor.run {
+          UINotificationFeedbackGenerator().notificationOccurred(.success)
+        }
+        
+        print("✅ RemindersHubView: Added reminder to habit '\(habit.name)' at \(time)")
+      } catch {
+        print("❌ RemindersHubView: Failed to add reminder: \(error)")
+      }
+    }
+    
+    // Clear state
+    habitToAddReminder = nil
   }
   
   private func navigateToHabitDetail(_ habit: Habit) {

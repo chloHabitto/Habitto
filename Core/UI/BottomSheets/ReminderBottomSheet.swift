@@ -259,7 +259,8 @@ struct AddReminderSheet: View {
           Image(.iconLeftArrow)
             .resizable()
             .frame(width: 24, height: 24)
-            .foregroundColor(.text01)
+            .fontWeight(.heavy)
+            .foregroundColor(.appText07)
         }
         .frame(width: 48, height: 48)
 
