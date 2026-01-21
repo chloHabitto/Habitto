@@ -1721,7 +1721,7 @@ struct ProgressTabView: View {
         Toggle("", isOn: Binding(
           get: { isEnabled },
           set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }))
-          .toggleStyle(SwitchToggleStyle())
+          .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
           .controlSize(.mini)
           .scaleEffect(0.75)
           .labelsHidden()

@@ -121,7 +121,7 @@ struct ReminderBottomSheet: View {
                         .frame(width: 32, height: 32)
                     } else {
                       Toggle("", isOn: $reminders[index].isActive)
-                        .toggleStyle(SwitchToggleStyle(tint: .primary))
+                        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
                     }
                   }
                   .padding(.leading, 24)

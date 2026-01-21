@@ -155,8 +155,8 @@ struct RemindersHubView: View {
         ToolbarItem(placement: .navigationBarLeading) {
           Button(action: { dismiss() }) {
             Image(systemName: "xmark")
-              .font(.system(size: 14, weight: .semibold))
-              .foregroundColor(.text01)
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
           }
         }
         
@@ -164,9 +164,9 @@ struct RemindersHubView: View {
           Button(action: {
             showingNotificationsSettings = true
           }) {
-            Image(systemName: "gearshape")
-              .font(.system(size: 16, weight: .medium))
-              .foregroundColor(.text01)
+            Image(systemName: "gearshape.fill")
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
           }
         }
       }
@@ -284,78 +284,91 @@ struct RemindersHubView: View {
   private func scheduleReminderRow(for reminderWithHabit: ReminderWithHabit) -> some View {
     let isSkipped = isReminderSkipped(reminderWithHabit.reminder)
     
-    return HStack(spacing: 12) {
-      // Habit icon
-      ZStack {
-        RoundedRectangle(cornerRadius: 12)
-          .fill(reminderWithHabit.habit.color.color.opacity(0.15))
-          .frame(width: 44, height: 44)
-        
-        if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
-          Image(reminderWithHabit.habit.icon)
-            .resizable()
-            .frame(width: 22, height: 22)
-            .foregroundColor(reminderWithHabit.habit.color.color)
-        } else if reminderWithHabit.habit.icon == "None" {
-          RoundedRectangle(cornerRadius: 4)
-            .fill(reminderWithHabit.habit.color.color)
-            .frame(width: 22, height: 22)
-        } else {
-          Text(reminderWithHabit.habit.icon)
-            .font(.system(size: 22))
-        }
-      }
-      
-      // Habit name + time + skipped status
-      VStack(alignment: .leading, spacing: 2) {
-        Text(reminderWithHabit.habit.name)
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(isSkipped ? .text04 : .onPrimaryContainer)
-        
-        HStack(spacing: 4) {
-          Text(formatTime(reminderWithHabit.reminder.time))
-            .font(.appBodySmall)
-            .foregroundColor(.text04)
+    return Button(action: {
+      // Navigate to habit detail
+      UIImpactFeedbackGenerator(style: .light).impactOccurred()
+      navigateToHabitDetail(reminderWithHabit.habit)
+    }) {
+      HStack(spacing: 12) {
+        // Habit icon
+        ZStack {
+          RoundedRectangle(cornerRadius: 12)
+            .fill(reminderWithHabit.habit.color.color.opacity(0.15))
+            .frame(width: 44, height: 44)
           
-          if isSkipped {
-            Text("·")
+          if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
+            Image(reminderWithHabit.habit.icon)
+              .resizable()
+              .frame(width: 22, height: 22)
+              .foregroundColor(reminderWithHabit.habit.color.color)
+          } else if reminderWithHabit.habit.icon == "None" {
+            RoundedRectangle(cornerRadius: 4)
+              .fill(reminderWithHabit.habit.color.color)
+              .frame(width: 22, height: 22)
+          } else {
+            Text(reminderWithHabit.habit.icon)
+              .font(.system(size: 22))
+          }
+        }
+        
+        // Habit name + time + skipped status
+        VStack(alignment: .leading, spacing: 2) {
+          Text(reminderWithHabit.habit.name)
+            .font(.appBodyMediumEmphasised)
+            .foregroundColor(isSkipped ? .text04 : .onPrimaryContainer)
+          
+          HStack(spacing: 4) {
+            Text(formatTime(reminderWithHabit.reminder.time))
               .font(.appBodySmall)
               .foregroundColor(.text04)
             
-            Text("Skipped")
-              .font(.appBodySmall)
-              .foregroundColor(.orange)
+            if isSkipped {
+              Text("·")
+                .font(.appBodySmall)
+                .foregroundColor(.text04)
+              
+              Text("Skipped")
+                .font(.appBodySmall)
+                .foregroundColor(.orange)
+            }
           }
         }
+        
+        Spacer()
+        
+        // Completion checkmark (if completed on selected date)
+        if isHabitCompletedOnDate(reminderWithHabit.habit) {
+          Image(systemName: "checkmark.circle.fill")
+            .foregroundColor(.green)
+            .font(.system(size: 22))
+        }
+        
+        // Toggle for skip/enable reminder
+        Toggle("", isOn: Binding(
+          get: { !isSkipped },  // Toggle is ON when NOT skipped
+          set: { newValue in
+            if !newValue {
+              // User is turning OFF (skipping)
+              toggleSkipReminder(reminderWithHabit)
+            } else {
+              // User is turning ON (un-skipping) - no confirmation needed
+              let key = skipKey(for: reminderWithHabit.reminder, on: selectedDate)
+              skippedReminders.remove(key)
+              UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
+          }
+        ))
+        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
+        .labelsHidden()
+        .scaleEffect(0.8)  // Slightly smaller to fit nicely
+        .onTapGesture {
+          // Prevent row tap when toggle is tapped
+        }
       }
-      
-      Spacer()
-      
-      // Completion checkmark (if completed on selected date)
-      if isHabitCompletedOnDate(reminderWithHabit.habit) {
-        Image(systemName: "checkmark.circle.fill")
-          .foregroundColor(.green)
-          .font(.system(size: 22))
-      }
-      
-      // Skip toggle button
-      Button(action: {
-        toggleSkipReminder(reminderWithHabit)
-      }) {
-        Image(systemName: isSkipped ? "bell.slash.fill" : "bell.fill")
-          .font(.system(size: 18))
-          .foregroundColor(isSkipped ? .text04 : Color("navy500"))
-      }
-      .buttonStyle(PlainButtonStyle())
+      .padding(16)
+      .opacity(isSkipped ? 0.7 : 1.0)
     }
-    .padding(16)
-    .opacity(isSkipped ? 0.6 : 1.0)
-    .contentShape(Rectangle())
-    .onTapGesture {
-      // Navigate to habit detail (not the toggle area)
-      UIImpactFeedbackGenerator(style: .light).impactOccurred()
-      navigateToHabitDetail(reminderWithHabit.habit)
-    }
+    .buttonStyle(PlainButtonStyle())
   }
   
   private var emptyStateForSchedule: some View {
@@ -571,7 +584,7 @@ struct RemindersHubView: View {
             get: { areRemindersActive(for: habit) },
             set: { enabled in toggleHabitReminders(habit, enabled: enabled) }
           ))
-          .toggleStyle(SwitchToggleStyle())
+          .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
           .controlSize(.mini)
           .scaleEffect(0.75)
           .labelsHidden()
@@ -645,16 +658,11 @@ struct RemindersHubView: View {
   
   /// Cancel notification for a specific reminder on a specific date
   private func cancelNotificationForReminder(_ reminder: ReminderItem, on date: Date) {
-    let dateKey = formatDateKey(date)
-    // Match the notification ID pattern used in NotificationManager
+    // TODO: Implement actual notification cancellation if needed
+    // For now, the visual skip state is the main feature
     // Pattern: "habit_reminder_{habitId}_{reminderId}_{dateKey}"
-    // We need the habit ID too, so we should pass the full ReminderWithHabit
-    
-    // For now, we'll use a simpler approach - the visual skip is the main feature
-    // The notification may still fire, but user sees it's "skipped" in the UI
-    
-    // TODO: If you want to actually cancel the notification:
-    // let notificationId = "habit_reminder_\(habitId)_\(reminder.id.uuidString)_\(dateKey)"
+    // let dateKey = formatDateKey(date)
+    // let notificationId = "habit_reminder_\(habitId.uuidString)_\(reminder.id.uuidString)_\(dateKey)"
     // UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
   }
   

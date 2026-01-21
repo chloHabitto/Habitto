@@ -114,7 +114,8 @@ struct BackupRecoveryView: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 12, weight: .bold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }
@@ -239,6 +240,7 @@ struct BackupRecoveryView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         
         Toggle("", isOn: $isAutomaticBackupEnabled)
+          .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
           .fixedSize(horizontal: true, vertical: false)
           .disabled(firestoreSyncStatus != .active)
           .onChange(of: isAutomaticBackupEnabled) {
@@ -311,6 +313,7 @@ struct BackupRecoveryView: View {
           .frame(maxWidth: .infinity, alignment: .leading)
           
           Toggle("", isOn: $wifiOnlyBackup)
+            .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
             .fixedSize(horizontal: true, vertical: false)
             .onChange(of: wifiOnlyBackup) {
               Task {

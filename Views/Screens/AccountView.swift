@@ -82,7 +82,8 @@ struct AccountView: View {
             dismiss()
           }) {
             Image(systemName: "chevron.left")
-              .font(.system(size: 16, weight: .medium))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }

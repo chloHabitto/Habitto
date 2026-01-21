@@ -48,7 +48,8 @@ struct MyDevicesView: View {
             dismiss()
           }) {
             Image(systemName: "chevron.left")
-              .font(.system(size: 16, weight: .semibold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }
@@ -58,7 +59,8 @@ struct MyDevicesView: View {
             loadDevices()
           }) {
             Image(systemName: "arrow.clockwise")
-              .font(.system(size: 16, weight: .semibold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
           .disabled(isLoading)

@@ -44,7 +44,8 @@ struct NotificationCenterView: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 14, weight: .semibold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }
