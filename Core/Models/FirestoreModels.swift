@@ -26,7 +26,8 @@ struct FirestoreHabit: Codable, Identifiable {
   var startDate: Date
   var endDate: Date?
   var createdAt: Date
-  var reminders: [String] // Store as array of strings
+  var reminders: [String] // DEPRECATED: Store as array of strings (kept for backward compatibility)
+  var remindersJSON: String? // ✅ NEW: Full reminder data as JSON (time + isActive)
   var baseline: Int
   var target: Int
   var completionHistory: [String: Int]
@@ -40,6 +41,48 @@ struct FirestoreHabit: Codable, Identifiable {
   // MARK: - Sync Metadata (Phase 1: Dual-Write)
   var lastSyncedAt: Date?
   var syncStatus: String? // Store as string: "pending", "syncing", "synced", "failed" (optional for backward compatibility)
+  
+  // MARK: - Reminder Encoding/Decoding
+  
+  /// Encode reminders array to JSON string for Firestore storage
+  /// ✅ FIX: Store full reminder data (time, isActive, id) instead of just UUIDs
+  private static func encodeReminders(_ reminders: [ReminderItem]) -> String {
+    guard !reminders.isEmpty else { return "[]" }
+    
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    
+    guard let data = try? encoder.encode(reminders),
+          let string = String(data: data, encoding: .utf8) else {
+      print("⚠️ FirestoreHabit: Failed to encode reminders, returning empty array")
+      return "[]"
+    }
+    
+    return string
+  }
+  
+  /// Decode reminders from JSON string
+  /// ✅ FIX: Restore full reminder data (time, isActive, id)
+  private static func decodeReminders(_ json: String?) -> [ReminderItem] {
+    guard let json = json, json != "[]", !json.isEmpty else {
+      return []
+    }
+    
+    guard let data = json.data(using: .utf8) else {
+      print("⚠️ FirestoreHabit: Failed to convert reminders JSON to data")
+      return []
+    }
+    
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    
+    guard let reminders = try? decoder.decode([ReminderItem].self, from: data) else {
+      print("⚠️ FirestoreHabit: Failed to decode reminders from JSON")
+      return []
+    }
+    
+    return reminders
+  }
   
   // MARK: - Skip Data Encoding/Decoding
   
@@ -122,7 +165,7 @@ struct FirestoreHabit: Codable, Identifiable {
       "reminder": reminder,
       "startDate": startDate,
       "createdAt": createdAt,
-      "reminders": reminders,
+      "reminders": reminders, // DEPRECATED: Keep for backward compatibility
       "baseline": baseline,
       "target": target,
       "completionHistory": completionHistory,
@@ -134,6 +177,11 @@ struct FirestoreHabit: Codable, Identifiable {
       "isActive": isActive,
       "syncStatus": syncStatus ?? "pending"  // Default for backward compatibility
     ]
+    
+    // ✅ NEW: Store full reminder data as JSON
+    if let remindersJSON = remindersJSON {
+      data["remindersJSON"] = remindersJSON
+    }
     
     if let endDate = endDate {
       data["endDate"] = endDate
@@ -162,7 +210,11 @@ struct FirestoreHabit: Codable, Identifiable {
     self.startDate = habit.startDate
     self.endDate = habit.endDate
     self.createdAt = habit.createdAt
-    self.reminders = habit.reminders.map { $0.id.uuidString }
+    
+    // ✅ FIX: Store full reminder data as JSON instead of just UUIDs
+    self.reminders = habit.reminders.map { $0.id.uuidString } // DEPRECATED: Keep for backward compatibility
+    self.remindersJSON = Self.encodeReminders(habit.reminders) // ✅ NEW: Full data (time + isActive)
+    
     self.baseline = habit.baseline
     self.target = habit.target
     self.completionHistory = habit.completionHistory
@@ -192,6 +244,7 @@ struct FirestoreHabit: Codable, Identifiable {
     endDate: Date?,
     createdAt: Date,
     reminders: [String],
+    remindersJSON: String? = nil, // ✅ NEW: Full reminder data
     baseline: Int,
     target: Int,
     completionHistory: [String: Int],
@@ -217,6 +270,7 @@ struct FirestoreHabit: Codable, Identifiable {
     self.endDate = endDate
     self.createdAt = createdAt
     self.reminders = reminders
+    self.remindersJSON = remindersJSON // ✅ NEW
     self.baseline = baseline
     self.target = target
     self.completionHistory = completionHistory
@@ -240,8 +294,21 @@ struct FirestoreHabit: Codable, Identifiable {
     
     let color = Color(hex: self.color)
     
-    let reminderItems = reminders.compactMap { reminderId in
-      ReminderItem(id: UUID(uuidString: reminderId) ?? UUID(), time: Date(), isActive: true)
+    // ✅ FIX: Decode full reminder data from JSON instead of creating dummy reminders
+    let reminderItems: [ReminderItem]
+    if let remindersJSON = remindersJSON, !remindersJSON.isEmpty {
+      // ✅ NEW FORMAT: Decode full reminder data (time + isActive)
+      reminderItems = Self.decodeReminders(remindersJSON)
+      print("✅ FirestoreHabit.toHabit(): Decoded \(reminderItems.count) reminders from JSON for '\(self.name)'")
+    } else if !reminders.isEmpty {
+      // ⚠️ BACKWARD COMPATIBILITY: Old format with only UUIDs
+      // Create dummy reminders (this is the bug we're fixing)
+      reminderItems = reminders.compactMap { reminderId in
+        ReminderItem(id: UUID(uuidString: reminderId) ?? UUID(), time: Date(), isActive: true)
+      }
+      print("⚠️ FirestoreHabit.toHabit(): Using legacy format (UUIDs only) for '\(self.name)' - reminders will have incorrect times")
+    } else {
+      reminderItems = []
     }
     
     // Convert syncStatus string back to enum (with default for backward compatibility)
@@ -357,6 +424,9 @@ struct FirestoreHabit: Codable, Identifiable {
     // Parse skip data with default for backward compatibility
     let skippedDaysJSON = data["skippedDaysJSON"] as? String ?? "{}"
     
+    // ✅ NEW: Parse full reminder data (with backward compatibility)
+    let remindersJSON = data["remindersJSON"] as? String
+    
     return FirestoreHabit(
       id: id,
       name: name,
@@ -371,6 +441,7 @@ struct FirestoreHabit: Codable, Identifiable {
       endDate: endDate,
       createdAt: createdAt,
       reminders: reminders,
+      remindersJSON: remindersJSON, // ✅ NEW: Full reminder data
       baseline: baseline,
       target: target,
       completionHistory: completionHistory,
