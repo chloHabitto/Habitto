@@ -1999,6 +1999,21 @@ actor SyncEngine {
             habitData.skippedDaysJSON = skippedDaysJSON
             print("⏭️ [SYNC_UPDATE] Updated skippedDaysJSON for habit: \(skippedDaysJSON.prefix(50))...")
         }
+        
+        // ✅ FIX: Update reminders from Firestore (prevents data loss on reinstall)
+        if let remindersJSON = data["remindersJSON"] as? String, !remindersJSON.isEmpty, remindersJSON != "[]" {
+            if let jsonData = remindersJSON.data(using: .utf8) {
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                if let reminders = try? decoder.decode([ReminderItem].self, from: jsonData) {
+                    // Re-encode for SwiftData storage (uses default date encoding)
+                    habitData.remindersData = try? JSONEncoder().encode(reminders)
+                    print("✅ [SYNC_UPDATE] Restored \(reminders.count) reminders from Firestore for habit \(habitData.id.uuidString.prefix(8))...")
+                } else {
+                    print("⚠️ [SYNC_UPDATE] Failed to decode remindersJSON for habit \(habitData.id.uuidString.prefix(8))...")
+                }
+            }
+        }
     }
     
     /// Create HabitData from Firestore data
@@ -2047,6 +2062,21 @@ actor SyncEngine {
         if let skippedDaysJSON = data["skippedDaysJSON"] as? String {
             habitData.skippedDaysJSON = skippedDaysJSON
             print("⏭️ [SYNC_CREATE] Set skippedDaysJSON for new habit: \(skippedDaysJSON.prefix(50))...")
+        }
+        
+        // ✅ FIX: Copy reminders from Firestore (prevents data loss on reinstall)
+        if let remindersJSON = data["remindersJSON"] as? String, !remindersJSON.isEmpty, remindersJSON != "[]" {
+            if let jsonData = remindersJSON.data(using: .utf8) {
+                let decoder = JSONDecoder()
+                decoder.dateDecodingStrategy = .iso8601
+                if let reminders = try? decoder.decode([ReminderItem].self, from: jsonData) {
+                    // Re-encode for SwiftData storage (uses default date encoding)
+                    habitData.remindersData = try? JSONEncoder().encode(reminders)
+                    print("✅ [SYNC_CREATE] Restored \(reminders.count) reminders from Firestore for habit \(habitId.uuidString.prefix(8))...")
+                } else {
+                    print("⚠️ [SYNC_CREATE] Failed to decode remindersJSON for habit \(habitId.uuidString.prefix(8))...")
+                }
+            }
         }
         
         return habitData
