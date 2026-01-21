@@ -1155,6 +1155,7 @@ struct HabitDetailView: View {
       showingReminderSheet = true
     }) {
       Image("Icon-Pen_Filled")
+        .renderingMode(.template)
         .resizable()
         .frame(width: 18, height: 18)
         .foregroundColor(habitRemindersEnabled ? .appText01 : .text05)
@@ -1168,6 +1169,7 @@ struct HabitDetailView: View {
       showingReminderDeleteConfirmation = true
     }) {
       Image("Icon-TrashBin3_Filled")
+        .renderingMode(.template)
         .resizable()
         .frame(width: 18, height: 18)
         .foregroundColor(.red)
