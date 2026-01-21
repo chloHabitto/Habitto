@@ -138,17 +138,15 @@ struct HabitDetailView: View {
       })
     }
     .sheet(isPresented: $showingReminderSheet) {
-      ReminderEditSheet(
-        habit: habit,
-        reminder: selectedReminder,
-        onSave: { updatedHabit in
-          habit = updatedHabit
-          onUpdateHabit?(updatedHabit)
-          selectedReminder = nil
-        },
-        onCancel: {
-          selectedReminder = nil
-        })
+      AddReminderSheet(
+        initialTime: selectedReminder?.time ?? defaultReminderTime(),
+        isEditing: selectedReminder != nil,
+        onSave: { selectedTime in
+          saveReminderTime(selectedTime)
+        }
+      )
+      .presentationDetents([.medium])
+      .presentationDragIndicator(.visible)
     }
     .sheet(isPresented: $showingSkipSheet) {
       SkipHabitSheet(
@@ -1367,6 +1365,81 @@ struct HabitDetailView: View {
     print("⏭️ UNSKIP: Habit '\(habit.name)' unskipped for \(Habit.dateKey(for: selectedDate))")
   }
 
+  /// Get a sensible default time for new reminders (e.g., 9:00 AM or next hour)
+  private func defaultReminderTime() -> Date {
+    let calendar = Calendar.current
+    let now = Date()
+    
+    // Round up to the next hour
+    let components = calendar.dateComponents([.hour], from: now)
+    let nextHour = (components.hour ?? 9) + 1
+    
+    return calendar.date(bySettingHour: nextHour, minute: 0, second: 0, of: now) ?? now
+  }
+  
+  /// Save reminder time (either add new or update existing)
+  private func saveReminderTime(_ time: Date) {
+    let updatedReminders: [ReminderItem]
+    
+    if let existingReminder = selectedReminder {
+      // Update existing reminder
+      updatedReminders = habit.reminders.map { reminder in
+        if reminder.id == existingReminder.id {
+          var updated = reminder
+          updated.time = time
+          return updated
+        }
+        return reminder
+      }
+    } else {
+      // Add new reminder
+      let newReminder = ReminderItem(time: time, isActive: true)
+      updatedReminders = habit.reminders + [newReminder]
+    }
+    
+    // Create updated habit
+    let updatedHabit = Habit(
+      id: habit.id,
+      name: habit.name,
+      description: habit.description,
+      icon: habit.icon,
+      color: habit.color,
+      habitType: habit.habitType,
+      schedule: habit.schedule,
+      goal: habit.goal,
+      reminder: habit.reminder,
+      startDate: habit.startDate,
+      endDate: habit.endDate,
+      createdAt: habit.createdAt,
+      reminders: updatedReminders,
+      baseline: habit.baseline,
+      target: habit.target,
+      completionHistory: habit.completionHistory,
+      completionTimestamps: habit.completionTimestamps,
+      difficultyHistory: habit.difficultyHistory,
+      actualUsage: habit.actualUsage,
+      goalHistory: habit.goalHistory,
+      lastSyncedAt: habit.lastSyncedAt,
+      syncStatus: habit.syncStatus,
+      skippedDays: habit.skippedDays
+    )
+    
+    // Update local state
+    habit = updatedHabit
+    
+    // Update notifications
+    NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
+    
+    // Notify parent
+    onUpdateHabit?(updatedHabit)
+    
+    // Clear selected reminder
+    selectedReminder = nil
+    
+    // Haptic feedback
+    UINotificationFeedbackGenerator().notificationOccurred(.success)
+  }
+  
   /// Helper function to sort goal text chronologically
   private func sortGoalChronologically(_ goal: String) -> String {
     // Goal strings are like "1 time on every friday, every monday" (both habit types now use "on")
@@ -1611,154 +1684,6 @@ struct HabitDetailView: View {
     }
 
     return goal // Fallback to original goal if format is unexpected
-  }
-}
-
-// MARK: - ReminderEditSheet
-
-struct ReminderEditSheet: View {
-  // MARK: Lifecycle
-
-  init(
-    habit: Habit,
-    reminder: ReminderItem?,
-    onSave: @escaping (Habit) -> Void,
-    onCancel: @escaping () -> Void)
-  {
-    self.habit = habit
-    self.reminder = reminder
-    self.onSave = onSave
-    self.onCancel = onCancel
-    // Initialize selectedTime with reminder's time or current time
-    _selectedTime = State(initialValue: reminder?.time ?? Date())
-  }
-
-  // MARK: Internal
-
-  let habit: Habit
-  let reminder: ReminderItem?
-  let onSave: (Habit) -> Void
-  let onCancel: () -> Void
-
-  var body: some View {
-    NavigationView {
-      VStack(spacing: 24) {
-        // Time picker
-        VStack(alignment: .leading, spacing: 16) {
-          Text("Reminder Time")
-            .font(.appTitleSmallEmphasised)
-            .foregroundColor(.text01)
-
-          DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
-            .datePickerStyle(WheelDatePickerStyle())
-            .labelsHidden()
-        }
-        .padding(.horizontal, 20)
-
-        Spacer()
-      }
-      .padding(.top, 20)
-      .navigationTitle(reminder == nil ? "Add Reminder" : "Edit Reminder")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .navigationBarLeading) {
-          Button("Cancel") {
-            onCancel()
-            dismiss()
-          }
-          .foregroundColor(.text03)
-        }
-
-        ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Save") {
-            saveReminder()
-          }
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(.primary)
-        }
-      }
-    }
-  }
-
-  // MARK: Private
-
-  @Environment(\.dismiss) private var dismiss
-  @State private var selectedTime: Date
-
-  /// Computed property to determine if we're editing
-  private var isEditing: Bool {
-    reminder != nil
-  }
-
-  private func saveReminder() {
-    if isEditing, let reminder {
-      // Update existing reminder - preserve the original ID
-      print("📝 ReminderEditSheet: Updating existing reminder with ID: \(reminder.id)")
-      let updatedReminders = habit.reminders.map { existingReminder in
-        if existingReminder.id == reminder.id {
-          var updatedReminder = existingReminder
-          updatedReminder.time = selectedTime
-          print("✅ ReminderEditSheet: Updated reminder time to \(selectedTime)")
-          return updatedReminder
-        }
-        return existingReminder
-      }
-
-      let updatedHabit = Habit(
-        id: habit.id,
-        name: habit.name,
-        description: habit.description,
-        icon: habit.icon,
-        color: habit.color,
-        habitType: habit.habitType,
-        schedule: habit.schedule,
-        goal: habit.goal,
-        reminder: habit.reminder,
-        startDate: habit.startDate,
-        endDate: habit.endDate,
-        createdAt: habit.createdAt,
-        reminders: updatedReminders,
-        baseline: habit.baseline,
-        target: habit.target,
-        completionHistory: habit.completionHistory,
-        actualUsage: habit.actualUsage)
-
-      // Update notifications for the habit
-      NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
-
-      onSave(updatedHabit)
-    } else {
-      // Create new reminder
-      print("➕ ReminderEditSheet: Creating new reminder at \(selectedTime)")
-      let newReminder = ReminderItem(time: selectedTime, isActive: true)
-      let updatedReminders = habit.reminders + [newReminder]
-
-      let updatedHabit = Habit(
-        id: habit.id,
-        name: habit.name,
-        description: habit.description,
-        icon: habit.icon,
-        color: habit.color,
-        habitType: habit.habitType,
-        schedule: habit.schedule,
-        goal: habit.goal,
-        reminder: habit.reminder,
-        startDate: habit.startDate,
-        endDate: habit.endDate,
-        createdAt: habit.createdAt,
-        reminders: updatedReminders,
-        baseline: habit.baseline,
-        target: habit.target,
-        completionHistory: habit.completionHistory,
-        actualUsage: habit.actualUsage)
-
-      // Update notifications for the habit
-      NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
-
-      onSave(updatedHabit)
-    }
-
-    dismiss()
   }
 }
 
