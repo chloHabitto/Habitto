@@ -129,103 +129,79 @@ struct RemindersHubView: View {
   }
   
   private var todayRemindersList: some View {
-    VStack(alignment: .leading, spacing: 0) {
+    VStack(spacing: 0) {
       ForEach(Array(todaysReminders.enumerated()), id: \.element.id) { index, reminderWithHabit in
-        timelineReminderRow(
-          for: reminderWithHabit,
-          isLast: index == todaysReminders.count - 1
-        )
-      }
-    }
-  }
-  
-  @ViewBuilder
-  private func timelineReminderRow(
-    for reminderWithHabit: ReminderWithHabit,
-    isLast: Bool
-  ) -> some View {
-    HStack(alignment: .top, spacing: 12) {
-      // Left: Timeline indicator (dot + line)
-      VStack(spacing: 0) {
-        // Dot: filled (●) if time passed, hollow (○) if upcoming
-        Circle()
-          .fill(isReminderTimePassed(reminderWithHabit.reminder) ? Color("navy500") : Color.clear)
-          .frame(width: 12, height: 12)
-          .overlay(
-            Circle()
-              .stroke(Color("navy500"), lineWidth: 2)
-          )
+        todayReminderRow(reminderWithHabit: reminderWithHabit)
         
-        // Connecting line (hide for last item)
-        if !isLast {
-          Rectangle()
-            .fill(Color("appOutline1Variant"))
-            .frame(width: 2)
-            .frame(minHeight: 60) // Minimum height for spacing
+        // Divider between rows (not after last row)
+        if index < todaysReminders.count - 1 {
+          Divider()
+            .background(Color("appOutline1Variant"))
+            .padding(.horizontal, 16)
         }
       }
-      .frame(width: 12)
-      
-      // Right: Content card
-      VStack(alignment: .leading, spacing: 8) {
-        // Time label
-        Text(formatTime(reminderWithHabit.reminder.time))
-          .font(.appBodySmallEmphasised)
-          .foregroundColor(isReminderTimePassed(reminderWithHabit.reminder) ? .text04 : .text01)
-        
-        // Habit info row
-        HStack(spacing: 12) {
-          // Habit icon (40x40 with colored background)
-          ZStack {
-            RoundedRectangle(cornerRadius: 12)
-              .fill(reminderWithHabit.habit.color.color.opacity(0.15))
-              .frame(width: 40, height: 40)
-            
-            if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
-              Image(reminderWithHabit.habit.icon)
-                .resizable()
-                .frame(width: 18, height: 18)
-                .foregroundColor(reminderWithHabit.habit.color.color)
-            } else if reminderWithHabit.habit.icon == "None" {
-              RoundedRectangle(cornerRadius: 4)
-                .fill(reminderWithHabit.habit.color.color)
-                .frame(width: 18, height: 18)
-            } else {
-              Text(reminderWithHabit.habit.icon)
-                .font(.system(size: 18))
-            }
-          }
+    }
+    .background(Color("appSurface02Variant"))
+    .cornerRadius(16)
+    .overlay(
+      RoundedRectangle(cornerRadius: 16)
+        .stroke(Color("appOutline1Variant"), lineWidth: 1)
+    )
+  }
+  
+  private func todayReminderRow(reminderWithHabit: ReminderWithHabit) -> some View {
+    Button(action: {
+      UIImpactFeedbackGenerator(style: .light).impactOccurred()
+      navigateToHabitDetail(reminderWithHabit.habit)
+    }) {
+      HStack(spacing: 16) {
+        // Left: Habit icon
+        ZStack {
+          RoundedRectangle(cornerRadius: 12)
+            .fill(reminderWithHabit.habit.color.color.opacity(0.15))
+            .frame(width: 44, height: 44)
           
-          // Habit name
+          if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
+            Image(reminderWithHabit.habit.icon)
+              .resizable()
+              .frame(width: 24, height: 24)
+              .foregroundColor(reminderWithHabit.habit.color.color)
+          } else if reminderWithHabit.habit.icon == "None" {
+            RoundedRectangle(cornerRadius: 4)
+              .fill(reminderWithHabit.habit.color.color)
+              .frame(width: 24, height: 24)
+          } else {
+            Text(reminderWithHabit.habit.icon)
+              .font(.system(size: 22))
+          }
+        }
+        
+        // Middle: Habit name and reminder time
+        VStack(alignment: .leading, spacing: 4) {
           Text(reminderWithHabit.habit.name)
             .font(.appBodyMediumEmphasised)
             .foregroundColor(.onPrimaryContainer)
-            .lineLimit(2)
+            .lineLimit(1)
           
-          Spacer()
-          
-          // Completion status (checkmark if habit completed today)
-          if isHabitCompletedToday(reminderWithHabit.habit) {
-            Image(systemName: "checkmark.circle.fill")
-              .foregroundColor(.green)
-              .font(.system(size: 20))
-          }
+          Text(formatTime(reminderWithHabit.reminder.time))
+            .font(.appBodySmall)
+            .foregroundColor(.text04)
+            .lineLimit(1)
+        }
+        
+        Spacer()
+        
+        // Right: Completion checkmark
+        if isHabitCompletedToday(reminderWithHabit.habit) {
+          Image(systemName: "checkmark.circle.fill")
+            .foregroundColor(.green)
+            .font(.system(size: 20))
         }
       }
       .padding(16)
-      .background(
-        RoundedRectangle(cornerRadius: 16)
-          .fill(Color("appSurface02Variant"))
-      )
-      .overlay(
-        RoundedRectangle(cornerRadius: 16)
-          .stroke(Color("appOutline1Variant"), lineWidth: 1)
-      )
+      .contentShape(Rectangle())
     }
-    .contentShape(Rectangle())
-    .onTapGesture {
-      navigateToHabitDetail(reminderWithHabit.habit)
-    }
+    .buttonStyle(PlainButtonStyle())
   }
   
   // MARK: - All Habit Reminders Section
