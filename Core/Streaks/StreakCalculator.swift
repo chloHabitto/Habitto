@@ -130,12 +130,10 @@ enum StreakCalculator {
     calendar: Calendar = .current
   ) -> Int {
     guard !habits.isEmpty else {
-      print("📊 LONGEST_STREAK: No habits provided, returning 0")
       return 0
     }
     
     let currentMode = CompletionMode.current
-    print("📊 LONGEST_STREAK: Computing with mode: \(currentMode.rawValue)")
     
     let today = DateUtils.startOfDay(for: Date())
     let defaultStartDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
@@ -143,11 +141,6 @@ enum StreakCalculator {
       .map { calendar.startOfDay(for: $0.startDate) }
       .min() ?? defaultStartDate
     let startDate = max(defaultStartDate, earliestHabitStart)
-    
-    print("📊 LONGEST_STREAK: Starting calculation")
-    print("   Habits count: \(habits.count)")
-    print("   CompletionRecords count: \(completionRecords.count)")
-    print("   Date range: \(Habit.dateKey(for: startDate)) to \(Habit.dateKey(for: today))")
     
     var longestStreak = 0
     var currentStreak = 0
@@ -172,14 +165,6 @@ enum StreakCalculator {
       let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: checkDate) }
       let skippedCount = scheduledHabits.count - activeHabits.count
       
-      if skippedCount > 0 {
-        print("⏭️ SKIP_FILTER: \(dateKey) - Excluded \(skippedCount) skipped habit(s) from longest streak check")
-        for habit in scheduledHabits where habit.isSkipped(for: checkDate) {
-          let reasonLabel = habit.skipReason(for: checkDate)?.shortLabel ?? "unknown"
-          print("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
-        }
-      }
-      
       guard !activeHabits.isEmpty else {
         // All habits were skipped - doesn't break streak, but doesn't count either
         checkDate = calendar.date(byAdding: .day, value: 1, to: checkDate) ?? checkDate
@@ -203,13 +188,8 @@ enum StreakCalculator {
       let completionCount = completedHabits.count
       let totalCount = scheduledHabits.count
       
-      // Log detailed completion status for each day
+      // Check completion status
       if allComplete {
-        print("   ✅ Day \(dateKey): \(completionCount)/\(totalCount) habits complete - STREAK CONTINUES")
-        for habitName in completedHabits {
-          print("      ✅ \(habitName)")
-        }
-        
         currentStreak += 1
         completedDates.append(dateKey)
         
@@ -217,23 +197,8 @@ enum StreakCalculator {
           longestStreak = currentStreak
           longestStreakEndDate = checkDate
           longestStreakStartDate = calendar.date(byAdding: .day, value: -(currentStreak - 1), to: checkDate)
-          print("      🎯 NEW_LONGEST: Streak now \(currentStreak) days")
         }
       } else {
-        print("   ❌ Day \(dateKey): \(completionCount)/\(totalCount) habits complete - STREAK BROKEN")
-        for habitName in completedHabits {
-          print("      ✅ \(habitName)")
-        }
-        for habitName in incompleteHabits {
-          // Check if there's a CompletionRecord for this habit+date
-          let hasRecord = scheduledHabits.first(where: { $0.name == habitName })?.isCompleted(for: checkDate) ?? false
-          let recordStatus = hasRecord ? " (incomplete)" : " (no CompletionRecord)"
-          print("      ❌ \(habitName)\(recordStatus)")
-        }
-        
-        if currentStreak > 0 {
-          print("   ⏸️ STREAK_BROKEN: Streak of \(currentStreak) days ended on \(dateKey)")
-        }
         currentStreak = 0
       }
       

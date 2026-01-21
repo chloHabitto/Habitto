@@ -65,10 +65,7 @@ struct TabBarAppearanceModifier: ViewModifier {
   
   private func findAndConfigureTabBar(in view: UIView, unselectedColor: UIColor, selectedColor: UIColor) {
     if let tabBar = view as? UITabBar {
-      print("🎨 [TAB_BAR] Found UITabBar with \(tabBar.items?.count ?? 0) items")
-      
       tabBar.items?.enumerated().forEach { index, item in
-        print("🎨 [TAB_BAR] Configuring item \(index): \(item.title ?? "no title")")
         
         if let originalImage = item.image {
           // Unselected: Bake the color in with .alwaysOriginal
@@ -81,8 +78,6 @@ struct TabBarAppearanceModifier: ViewModifier {
           
           item.image = unselectedImage
           item.selectedImage = selectedImage
-          
-          print("🎨 [TAB_BAR] ✅ Applied colors to item \(index)")
         }
       }
       

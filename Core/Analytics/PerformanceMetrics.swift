@@ -37,8 +37,6 @@ class PerformanceMetrics: ObservableObject {
         await self?.updateMetrics()
       }
     }
-
-    print("📊 PerformanceMetrics: Started monitoring")
   }
 
   /// Stop monitoring performance metrics
@@ -49,16 +47,12 @@ class PerformanceMetrics: ObservableObject {
 
     // Save final metrics
     saveCurrentMetrics()
-
-    print("📊 PerformanceMetrics: Stopped monitoring")
   }
 
   /// Record a specific event
   func recordEvent(_ event: PerformanceEvent) {
     // Skip performance monitoring during vacation mode
     if VacationManager.shared.isActive {
-      print(
-        "📊 PerformanceMetrics: Skipping event during vacation mode - \(event.type.rawValue): \(event.description)")
       return
     }
 
@@ -79,16 +73,12 @@ class PerformanceMetrics: ObservableObject {
     case .userAction:
       currentMetrics.userActionCount += 1
     }
-
-    print("📊 PerformanceMetrics: Recorded event - \(event.type.rawValue): \(event.description)")
   }
 
   /// Record timing for a specific operation
   func recordTiming(_ operation: String, duration: TimeInterval) {
     // Skip performance monitoring during vacation mode
     if VacationManager.shared.isActive {
-      print(
-        "📊 PerformanceMetrics: Skipping timing during vacation mode - \(operation): \(String(format: "%.3f", duration))s")
       return
     }
 
@@ -98,15 +88,12 @@ class PerformanceMetrics: ObservableObject {
     // Update average timing if it's a known operation
     updateAverageTiming(for: operation, duration: duration)
 
-    print(
-      "📊 PerformanceMetrics: Recorded timing - \(operation): \(String(format: "%.3f", duration))s")
   }
 
   /// Record memory usage
   func recordMemoryUsage() {
     // Skip performance monitoring during vacation mode
     if VacationManager.shared.isActive {
-      print("📊 PerformanceMetrics: Skipping memory monitoring during vacation mode")
       return
     }
 
@@ -114,15 +101,12 @@ class PerformanceMetrics: ObservableObject {
     currentMetrics.memoryUsage = memoryInfo.used
     currentMetrics.peakMemoryUsage = max(currentMetrics.peakMemoryUsage, memoryInfo.used)
 
-    print(
-      "📊 PerformanceMetrics: Memory usage - \(memoryInfo.used)MB (Peak: \(currentMetrics.peakMemoryUsage)MB)")
   }
 
   /// Record storage usage
   func recordStorageUsage() {
     // Skip performance monitoring during vacation mode
     if VacationManager.shared.isActive {
-      print("📊 PerformanceMetrics: Skipping storage monitoring during vacation mode")
       return
     }
 
@@ -130,8 +114,6 @@ class PerformanceMetrics: ObservableObject {
     currentMetrics.storageUsage = storageInfo.used
     currentMetrics.habitsCount = storageInfo.habitsCount
 
-    print(
-      "📊 PerformanceMetrics: Storage usage - \(storageInfo.used)MB (\(storageInfo.habitsCount) habits)")
   }
 
   /// Get performance summary
