@@ -82,7 +82,6 @@ struct HabitDetailView: View {
               } icon: {
                 Image("Icon-Pen_Filled")
                   .renderingMode(.template)
-                  .frame(width: 8, height: 8)
               }
             }
             .tint(.appText01)
@@ -96,7 +95,6 @@ struct HabitDetailView: View {
               } icon: {
                 Image("Icon-TrashBin3_Filled")
                   .renderingMode(.template)
-                  .frame(width: 14, height: 14)
               }
             }
             .tint(.red)
