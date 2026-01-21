@@ -79,7 +79,7 @@ struct AllRemindersPopup: View {
             toggleReminder(reminderWithHabit.reminder, selectedDate)
           }
         }))
-        .toggleStyle(SwitchToggleStyle(tint: .primaryFocus))
+        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
         .scaleEffect(0.8)
         .disabled(isTimePassed)
     }

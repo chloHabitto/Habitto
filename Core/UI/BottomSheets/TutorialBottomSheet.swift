@@ -220,8 +220,8 @@ struct TutorialBottomSheet: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(.text01)
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
           }
         }
       }

@@ -51,7 +51,8 @@ struct SettingsView: View {
             dismiss()
           }) {
             Image(systemName: "chevron.left")
-              .font(.system(size: 12, weight: .bold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }

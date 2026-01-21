@@ -66,7 +66,8 @@ struct HabitDetailView: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 12, weight: .bold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }
@@ -1134,7 +1135,7 @@ struct HabitDetailView: View {
               .fixedSize(horizontal: false, vertical: true)
           }
         }
-        .toggleStyle(SwitchToggleStyle(tint: .green))
+        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
     }
     .padding(16)
     .background(.appSurface01Variant)

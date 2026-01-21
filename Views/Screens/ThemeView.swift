@@ -37,7 +37,8 @@ struct ThemeView: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 12, weight: .bold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }

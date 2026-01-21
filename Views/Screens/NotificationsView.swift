@@ -40,7 +40,8 @@ struct NotificationsView: View {
             dismiss()
           }) {
             Image(systemName: "xmark")
-              .font(.system(size: 12, weight: .bold))
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
               .foregroundColor(.text01)
           }
         }
@@ -174,7 +175,7 @@ struct NotificationsView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
 
       Toggle("", isOn: $planReminderEnabled)
-        .toggleStyle(SwitchToggleStyle(tint: .primary))
+        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
         .scaleEffect(0.8)
         .padding(.trailing, 0)
         .fixedSize()
@@ -222,7 +223,7 @@ struct NotificationsView: View {
             habitReminderEnabled = newValue
           }
         }))
-        .toggleStyle(SwitchToggleStyle(tint: .primary))
+        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
         .scaleEffect(0.8)
         .padding(.trailing, 0)
         .fixedSize()
@@ -273,7 +274,7 @@ struct NotificationsView: View {
       .frame(maxWidth: .infinity, alignment: .leading)
 
       Toggle("", isOn: $completionReminderEnabled)
-        .toggleStyle(SwitchToggleStyle(tint: .primary))
+        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
         .scaleEffect(0.8)
         .padding(.trailing, 0)
         .fixedSize()

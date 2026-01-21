@@ -103,7 +103,7 @@ struct FeatureFlagsDebugView: View {
                         .foregroundColor(.secondary)
                 }
             }
-            .tint(.blue)
+            .tint(.appPrimary)
         } header: {
             Label("Master Switch", systemImage: "switch.2")
         } footer: {
@@ -126,7 +126,7 @@ struct FeatureFlagsDebugView: View {
                 }
             }
             .disabled(flags.useNewArchitecture)
-            .tint(.green)
+            .tint(.appPrimary)
             
             Toggle(isOn: $flags.useNewStreakCalculation) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -138,7 +138,7 @@ struct FeatureFlagsDebugView: View {
                 }
             }
             .disabled(flags.useNewArchitecture)
-            .tint(.orange)
+            .tint(.appPrimary)
             
             Toggle(isOn: $flags.useNewXPSystem) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -150,7 +150,7 @@ struct FeatureFlagsDebugView: View {
                 }
             }
             .disabled(flags.useNewArchitecture)
-            .tint(.purple)
+            .tint(.appPrimary)
         } header: {
             Label("Individual Features", systemImage: "slider.horizontal.3")
         } footer: {

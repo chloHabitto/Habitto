@@ -43,7 +43,7 @@ struct VacationModeSheet: View {
                     showingEndVacationAlert = true
                   }
                 }))
-                .toggleStyle(SwitchToggleStyle(tint: .primary))
+                .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
 
               Text(vacationManager.isActive ? "ON" : "OFF")
                 .font(.caption2)
@@ -85,7 +85,7 @@ struct VacationModeSheet: View {
                   Spacer()
 
                   Toggle("", isOn: $excludeToday)
-                    .toggleStyle(SwitchToggleStyle(tint: .primary))
+                    .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
