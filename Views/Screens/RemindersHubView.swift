@@ -25,6 +25,14 @@ struct RemindersHubView: View {
   
   @State private var selectedTab: ReminderTab = .schedule
   
+  // MARK: - Settings Sheet
+  
+  @State private var showingNotificationsSettings = false
+  
+  // MARK: - Global Reminder Setting
+  
+  @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = true
+  
   // MARK: - Date Selection
   
   @State private var selectedDate: Date = Date()
@@ -58,6 +66,53 @@ struct RemindersHubView: View {
     }
   }
   
+  // MARK: - Warning Banner
+  
+  @ViewBuilder
+  private var remindersDisabledBanner: some View {
+    if !habitRemindersEnabled {
+      Button(action: {
+        showingNotificationsSettings = true
+      }) {
+        HStack(spacing: 12) {
+          // Warning icon
+          Image(systemName: "exclamationmark.triangle.fill")
+            .font(.system(size: 18))
+            .foregroundColor(.orange)
+          
+          // Text content
+          VStack(alignment: .leading, spacing: 2) {
+            Text("Habit reminders are off")
+              .font(.appBodyMediumEmphasised)
+              .foregroundColor(.text01)
+            
+            Text("Turn on in Settings")
+              .font(.appBodySmall)
+              .foregroundColor(.text04)
+          }
+          
+          Spacer()
+          
+          // Arrow
+          Image(systemName: "chevron.right")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.text04)
+        }
+        .padding(16)
+        .background(
+          RoundedRectangle(cornerRadius: 16)
+            .fill(Color.orange.opacity(0.1))
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: 16)
+            .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+        )
+      }
+      .buttonStyle(PlainButtonStyle())
+      .padding(.horizontal, 20)
+    }
+  }
+  
   // MARK: - Body
   
   var body: some View {
@@ -67,9 +122,14 @@ struct RemindersHubView: View {
           .ignoresSafeArea()
         
         VStack(spacing: 0) {
+          // Warning banner (only shows when reminders disabled)
+          remindersDisabledBanner
+            .padding(.top, 8)
+            .padding(.bottom, habitRemindersEnabled ? 0 : 8)
+          
           // Tab segmented control
           tabSegmentedControl
-            .padding(.top, 16)
+            .padding(.top, habitRemindersEnabled ? 16 : 8)
             .padding(.bottom, 12)
           
           // Tab content
@@ -90,6 +150,19 @@ struct RemindersHubView: View {
               .foregroundColor(.text01)
           }
         }
+        
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Button(action: {
+            showingNotificationsSettings = true
+          }) {
+            Image(systemName: "gearshape")
+              .font(.system(size: 16, weight: .medium))
+              .foregroundColor(.text01)
+          }
+        }
+      }
+      .sheet(isPresented: $showingNotificationsSettings) {
+        NotificationsView()
       }
     }
   }
