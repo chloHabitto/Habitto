@@ -129,101 +129,102 @@ struct RemindersHubView: View {
   }
   
   private var todayRemindersList: some View {
-    VStack(spacing: 0) {
+    VStack(alignment: .leading, spacing: 0) {
       ForEach(Array(todaysReminders.enumerated()), id: \.element.id) { index, reminderWithHabit in
-        todayReminderRow(reminderWithHabit: reminderWithHabit)
-        
-        // Divider between rows (not after last row)
-        if index < todaysReminders.count - 1 {
-          Divider()
-            .background(Color("appOutline1Variant"))
-            .padding(.horizontal, 16)
-        }
+        timelineReminderRow(
+          for: reminderWithHabit,
+          isLast: index == todaysReminders.count - 1
+        )
       }
     }
-    .background(Color("appSurface02Variant"))
-    .cornerRadius(16)
-    .overlay(
-      RoundedRectangle(cornerRadius: 16)
-        .stroke(Color("appOutline1Variant"), lineWidth: 1)
-    )
-  }
-  
-  private func todayReminderRow(reminderWithHabit: ReminderWithHabit) -> some View {
-    HStack(spacing: 16) {
-      // Left: Time and status badge
-      VStack(alignment: .leading, spacing: 8) {
-        Text(formatTime(reminderWithHabit.reminder.time))
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(.text01)
-        
-        statusBadge(for: reminderWithHabit)
-      }
-      .frame(width: 100, alignment: .leading)
-      
-      Spacer()
-      
-      // Right: Habit icon and name
-      HStack(spacing: 12) {
-        // Habit icon
-        ZStack {
-          RoundedRectangle(cornerRadius: 12)
-            .fill(reminderWithHabit.habit.color.color.opacity(0.15))
-            .frame(width: 40, height: 40)
-          
-          if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
-            Image(reminderWithHabit.habit.icon)
-              .resizable()
-              .frame(width: 18, height: 18)
-              .foregroundColor(reminderWithHabit.habit.color.color)
-          } else if reminderWithHabit.habit.icon == "None" {
-            RoundedRectangle(cornerRadius: 4)
-              .fill(reminderWithHabit.habit.color.color)
-              .frame(width: 18, height: 18)
-          } else {
-            Text(reminderWithHabit.habit.icon)
-              .font(.system(size: 18))
-          }
-        }
-        
-        // Habit name
-        Text(reminderWithHabit.habit.name)
-          .font(.appBodyMedium)
-          .foregroundColor(.text01)
-          .lineLimit(2)
-      }
-    }
-    .padding(16)
   }
   
   @ViewBuilder
-  private func statusBadge(for reminderWithHabit: ReminderWithHabit) -> some View {
-    let isPassed = isReminderTimePassed(reminderWithHabit.reminder)
-    let isCompleted = isHabitCompletedToday(reminderWithHabit.habit)
-    
-    if isPassed && isCompleted {
-      // Completed
-      HStack(spacing: 4) {
-        Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 12))
-        Text("Completed")
-          .font(.appBodySmall)
+  private func timelineReminderRow(
+    for reminderWithHabit: ReminderWithHabit,
+    isLast: Bool
+  ) -> some View {
+    HStack(alignment: .top, spacing: 12) {
+      // Left: Timeline indicator (dot + line)
+      VStack(spacing: 0) {
+        // Dot: filled (●) if time passed, hollow (○) if upcoming
+        Circle()
+          .fill(isReminderTimePassed(reminderWithHabit.reminder) ? Color("navy500") : Color.clear)
+          .frame(width: 12, height: 12)
+          .overlay(
+            Circle()
+              .stroke(Color("navy500"), lineWidth: 2)
+          )
+        
+        // Connecting line (hide for last item)
+        if !isLast {
+          Rectangle()
+            .fill(Color("appOutline1Variant"))
+            .frame(width: 2)
+            .frame(minHeight: 60) // Minimum height for spacing
+        }
       }
-      .foregroundColor(.green)
-    } else if isPassed && !isCompleted {
-      // Missed
-      HStack(spacing: 4) {
-        Text("Missed")
-          .font(.appBodySmall)
+      .frame(width: 12)
+      
+      // Right: Content card
+      VStack(alignment: .leading, spacing: 8) {
+        // Time label
+        Text(formatTime(reminderWithHabit.reminder.time))
+          .font(.appBodySmallEmphasised)
+          .foregroundColor(isReminderTimePassed(reminderWithHabit.reminder) ? .text04 : .text01)
+        
+        // Habit info row
+        HStack(spacing: 12) {
+          // Habit icon (40x40 with colored background)
+          ZStack {
+            RoundedRectangle(cornerRadius: 12)
+              .fill(reminderWithHabit.habit.color.color.opacity(0.15))
+              .frame(width: 40, height: 40)
+            
+            if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
+              Image(reminderWithHabit.habit.icon)
+                .resizable()
+                .frame(width: 18, height: 18)
+                .foregroundColor(reminderWithHabit.habit.color.color)
+            } else if reminderWithHabit.habit.icon == "None" {
+              RoundedRectangle(cornerRadius: 4)
+                .fill(reminderWithHabit.habit.color.color)
+                .frame(width: 18, height: 18)
+            } else {
+              Text(reminderWithHabit.habit.icon)
+                .font(.system(size: 18))
+            }
+          }
+          
+          // Habit name
+          Text(reminderWithHabit.habit.name)
+            .font(.appBodyMediumEmphasised)
+            .foregroundColor(.onPrimaryContainer)
+            .lineLimit(2)
+          
+          Spacer()
+          
+          // Completion status (checkmark if habit completed today)
+          if isHabitCompletedToday(reminderWithHabit.habit) {
+            Image(systemName: "checkmark.circle.fill")
+              .foregroundColor(.green)
+              .font(.system(size: 20))
+          }
+        }
       }
-      .foregroundColor(.red.opacity(0.8))
-    } else {
-      // Upcoming
-      HStack(spacing: 4) {
-        Text("Upcoming")
-          .font(.appBodySmall)
-      }
-      .foregroundColor(.text04)
+      .padding(16)
+      .background(
+        RoundedRectangle(cornerRadius: 16)
+          .fill(Color("appSurface02Variant"))
+      )
+      .overlay(
+        RoundedRectangle(cornerRadius: 16)
+          .stroke(Color("appOutline1Variant"), lineWidth: 1)
+      )
+    }
+    .contentShape(Rectangle())
+    .onTapGesture {
+      navigateToHabitDetail(reminderWithHabit.habit)
     }
   }
   
