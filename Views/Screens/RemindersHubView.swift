@@ -138,8 +138,8 @@ struct RemindersHubView: View {
           
           // Tab segmented control
           tabSegmentedControl
-            .padding(.top, habitRemindersEnabled ? 16 : 8)
-            .padding(.bottom, 12)
+            .padding(.top, habitRemindersEnabled ? 24 : 8)
+            .padding(.bottom, 20)
           
           // Tab content
           if selectedTab == .schedule {
@@ -427,6 +427,7 @@ struct RemindersHubView: View {
         
         Spacer()
       }
+      .padding(.top, 8)
       .padding(.horizontal, 20)
     }
   }
@@ -578,7 +579,7 @@ struct RemindersHubView: View {
         if habit.reminders.isEmpty {
           Text("Add")
             .font(.appBodySmallEmphasised)
-            .foregroundColor(Color("navy500"))
+            .foregroundColor(.appPrimary)
         } else {
           Toggle("", isOn: Binding(
             get: { areRemindersActive(for: habit) },
