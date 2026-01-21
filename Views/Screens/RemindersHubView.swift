@@ -34,9 +34,20 @@ struct RemindersHubView: View {
   @State private var showingAddReminderSheet = false
   @State private var habitToAddReminder: Habit? = nil
   
-  // MARK: - Habit Reminders Sheet
+  // MARK: - Expandable Habit Rows
   
-  @State private var selectedHabitForReminders: Habit? = nil
+  @State private var expandedHabitId: UUID? = nil
+  
+  // MARK: - Edit Reminder
+  
+  @State private var reminderToEdit: ReminderItem? = nil
+  @State private var showingEditReminderSheet = false
+  
+  // MARK: - Delete Reminder
+  
+  @State private var reminderToDelete: ReminderItem? = nil
+  @State private var habitForReminderDeletion: Habit? = nil
+  @State private var showingReminderDeleteConfirmation = false
   
   // MARK: - Global Reminder Setting
   
@@ -195,22 +206,31 @@ struct RemindersHubView: View {
           .presentationDragIndicator(.visible)
         }
       }
-      .sheet(item: $selectedHabitForReminders) { habit in
-        HabitRemindersSheet(
-          habit: habit,
-          onUpdate: { updatedHabit in
-            // Update the habit in repository
-            Task {
-              do {
-                try await habitRepository.updateHabit(updatedHabit)
-              } catch {
-                print("❌ Failed to update habit: \(error.localizedDescription)")
-              }
+      .sheet(isPresented: $showingEditReminderSheet) {
+        if let reminder = reminderToEdit, let habit = habitToAddReminder {
+          AddReminderSheet(
+            initialTime: reminder.time,
+            isEditing: true,
+            onSave: { newTime in
+              updateReminder(reminder, in: habit, newTime: newTime)
             }
+          )
+          .presentationDetents([.height(500)])
+          .presentationDragIndicator(.visible)
+        }
+      }
+      .alert("Delete Reminder", isPresented: $showingReminderDeleteConfirmation) {
+        Button("Cancel", role: .cancel) {
+          reminderToDelete = nil
+          habitForReminderDeletion = nil
+        }
+        Button("Delete", role: .destructive) {
+          if let reminder = reminderToDelete, let habit = habitForReminderDeletion {
+            deleteReminder(reminder, from: habit)
           }
-        )
-        .presentationDetents([.large])
-        .presentationDragIndicator(.visible)
+        }
+      } message: {
+        Text("Are you sure you want to delete this reminder?")
       }
       .alert("Skip Reminder", isPresented: $showingSkipConfirmation) {
         Button("Cancel", role: .cancel) {
@@ -552,78 +572,176 @@ struct RemindersHubView: View {
   }
   
   private var habitsRemindersList: some View {
-    VStack(spacing: 0) {
-      ForEach(Array(allActiveHabits.enumerated()), id: \.element.id) { index, habit in
-        habitReminderRow(habit: habit)
-        
-        // Divider between rows (not after last row)
-        if index < allActiveHabits.count - 1 {
-          Divider()
-            .background(Color("appOutline1Variant"))
-            .padding(.horizontal, 16)
+    VStack(spacing: 12) {
+      ForEach(allActiveHabits) { habit in
+        expandableHabitReminderRow(habit)
+      }
+    }
+    .padding(.horizontal, 20)
+  }
+  
+  private func expandableHabitReminderRow(_ habit: Habit) -> some View {
+    let isExpanded = expandedHabitId == habit.id
+    
+    return VStack(spacing: 0) {
+      // Main row (always visible)
+      Button(action: {
+        withAnimation(.easeInOut(duration: 0.25)) {
+          if expandedHabitId == habit.id {
+            expandedHabitId = nil  // Collapse
+          } else {
+            expandedHabitId = habit.id  // Expand
+          }
         }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+      }) {
+        HStack(spacing: 12) {
+          // Habit icon
+          habitIconView(for: habit)
+          
+          // Info
+          VStack(alignment: .leading, spacing: 2) {
+            Text(habit.name)
+              .font(.appBodyMediumEmphasised)
+              .foregroundColor(.text01)
+            
+            let count = habit.reminders.count
+            Text(count == 0 ? "No reminders" : 
+                 count == 1 ? "1 reminder" : 
+                 "\(count) reminders")
+              .font(.appBodySmall)
+              .foregroundColor(.text04)
+          }
+          
+          Spacer()
+          
+          // Chevron (rotates when expanded)
+          Image(systemName: "chevron.down")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.text04)
+            .rotationEffect(.degrees(isExpanded ? -180 : 0))
+        }
+        .padding(16)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(PlainButtonStyle())
+      
+      // Expanded content (reminders list)
+      if isExpanded {
+        expandedRemindersList(for: habit)
+          .transition(.opacity.combined(with: .move(edge: .top)))
       }
     }
     .background(Color("appSurface02Variant"))
-    .cornerRadius(16)
+    .clipShape(RoundedRectangle(cornerRadius: 16))
     .overlay(
       RoundedRectangle(cornerRadius: 16)
         .stroke(Color("appOutline1Variant"), lineWidth: 1)
     )
-    .padding(.horizontal, 20)
   }
   
-  private func habitReminderRow(habit: Habit) -> some View {
-    Button(action: {
-      selectedHabitForReminders = habit
-      UIImpactFeedbackGenerator(style: .light).impactOccurred()
-    }) {
-      HStack(spacing: 16) {
-        // Left: Habit icon
-        ZStack {
-          RoundedRectangle(cornerRadius: 12)
-            .fill(habit.color.color.opacity(0.15))
-            .frame(width: 40, height: 40)
-          
-          if habit.icon.hasPrefix("Icon-") {
-            Image(habit.icon)
-              .resizable()
-              .frame(width: 18, height: 18)
-              .foregroundColor(habit.color.color)
-          } else if habit.icon == "None" {
-            RoundedRectangle(cornerRadius: 4)
-              .fill(habit.color.color)
-              .frame(width: 18, height: 18)
-          } else {
-            Text(habit.icon)
-              .font(.system(size: 18))
+  private func habitIconView(for habit: Habit) -> some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: 12)
+        .fill(habit.color.color.opacity(0.15))
+        .frame(width: 40, height: 40)
+      
+      if habit.icon.hasPrefix("Icon-") {
+        Image(habit.icon)
+          .resizable()
+          .frame(width: 18, height: 18)
+          .foregroundColor(habit.color.color)
+      } else if habit.icon == "None" {
+        RoundedRectangle(cornerRadius: 4)
+          .fill(habit.color.color)
+          .frame(width: 18, height: 18)
+      } else {
+        Text(habit.icon)
+          .font(.system(size: 18))
+      }
+    }
+  }
+  
+  @ViewBuilder
+  private func expandedRemindersList(for habit: Habit) -> some View {
+    VStack(spacing: 0) {
+      Divider()
+        .padding(.horizontal, 16)
+      
+      VStack(spacing: 8) {
+        // Existing reminders
+        if !habit.reminders.isEmpty {
+          ForEach(habit.reminders) { reminder in
+            reminderItemRow(reminder, habit: habit)
           }
         }
         
-        // Middle: Habit name and reminder count
-        VStack(alignment: .leading, spacing: 4) {
-          Text(habit.name)
-            .font(.appBodyMediumEmphasised)
-            .foregroundColor(.onPrimaryContainer)
-            .lineLimit(1)
-          
-          Text(formatReminderCount(for: habit))
-            .font(.appBodySmall)
-            .foregroundColor(.text04)
-            .lineLimit(1)
+        // Add button
+        Button(action: {
+          habitToAddReminder = habit
+          showingAddReminderSheet = true
+          UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }) {
+          HStack {
+            Image(systemName: "plus.circle.fill")
+              .foregroundColor(.appPrimary)
+            Text("Add Reminder")
+              .font(.appBodyMedium)
+              .foregroundColor(.appPrimary)
+            Spacer()
+          }
+          .padding(.vertical, 12)
+          .padding(.horizontal, 16)
         }
-        
-        Spacer()
-        
-        // Right: Chevron
-        Image(systemName: "chevron.right")
-          .font(.system(size: 14, weight: .medium))
-          .foregroundColor(.text04)
+        .buttonStyle(PlainButtonStyle())
       }
-      .padding(16)
-      .contentShape(Rectangle())
+      .padding(.vertical, 8)
     }
-    .buttonStyle(PlainButtonStyle())
+  }
+  
+  private func reminderItemRow(_ reminder: ReminderItem, habit: Habit) -> some View {
+    HStack(spacing: 12) {
+      // Time
+      Text(formatTime(reminder.time))
+        .font(.appBodyMedium)
+        .foregroundColor(.text01)
+      
+      Spacer()
+      
+      // Edit button
+      Button(action: {
+        reminderToEdit = reminder
+        habitToAddReminder = habit
+        showingEditReminderSheet = true
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+      }) {
+        Image("Icon-Pen_Filled")
+          .renderingMode(.template)
+          .resizable()
+          .frame(width: 18, height: 18)
+          .foregroundColor(.appText01)
+          .padding(8)
+      }
+      .buttonStyle(PlainButtonStyle())
+      
+      // Delete button
+      Button(action: {
+        reminderToDelete = reminder
+        habitForReminderDeletion = habit
+        showingReminderDeleteConfirmation = true
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+      }) {
+        Image("Icon-TrashBin3_Filled")
+          .renderingMode(.template)
+          .resizable()
+          .frame(width: 18, height: 18)
+          .foregroundColor(.red)
+          .padding(8)
+      }
+      .buttonStyle(PlainButtonStyle())
+    }
+    .padding(.horizontal, 16)
+    .padding(.vertical, 4)
   }
   
   // MARK: - Skip Reminder Helpers
@@ -722,17 +840,6 @@ struct RemindersHubView: View {
   }
   
   // MARK: - Helper Functions
-  
-  private func formatReminderCount(for habit: Habit) -> String {
-    let count = habit.reminders.count
-    if count == 0 {
-      return "No reminders"
-    } else if count == 1 {
-      return "1 reminder"
-    } else {
-      return "\(count) reminders"
-    }
-  }
   
   private func formatReminderInfo(for habit: Habit) -> String {
     if habit.reminders.isEmpty {
@@ -879,7 +986,48 @@ struct RemindersHubView: View {
     let newReminder = ReminderItem(time: time, isActive: true)
     let updatedReminders = habit.reminders + [newReminder]
     
-    // Create updated habit with new reminder
+    saveUpdatedReminders(updatedReminders, for: habit)
+    
+    // Clear state
+    habitToAddReminder = nil
+    
+    print("✅ RemindersHubView: Added reminder to habit '\(habit.name)' at \(time)")
+  }
+  
+  /// Update an existing reminder with new time
+  private func updateReminder(_ reminder: ReminderItem, in habit: Habit, newTime: Date) {
+    let updatedReminders = habit.reminders.map { r in
+      if r.id == reminder.id {
+        var updated = r
+        updated.time = newTime
+        return updated
+      }
+      return r
+    }
+    
+    saveUpdatedReminders(updatedReminders, for: habit)
+    
+    // Clear state
+    reminderToEdit = nil
+    habitToAddReminder = nil
+    
+    print("✅ RemindersHubView: Updated reminder in habit '\(habit.name)' to \(newTime)")
+  }
+  
+  /// Delete a reminder from a habit
+  private func deleteReminder(_ reminder: ReminderItem, from habit: Habit) {
+    let updatedReminders = habit.reminders.filter { $0.id != reminder.id }
+    saveUpdatedReminders(updatedReminders, for: habit)
+    
+    // Clear state
+    reminderToDelete = nil
+    habitForReminderDeletion = nil
+    
+    print("✅ RemindersHubView: Deleted reminder from habit '\(habit.name)'")
+  }
+  
+  /// Save updated reminders to a habit
+  private func saveUpdatedReminders(_ reminders: [ReminderItem], for habit: Habit) {
     let updatedHabit = Habit(
       id: habit.id,
       name: habit.name,
@@ -893,7 +1041,7 @@ struct RemindersHubView: View {
       startDate: habit.startDate,
       endDate: habit.endDate,
       createdAt: habit.createdAt,
-      reminders: updatedReminders,
+      reminders: reminders,
       baseline: habit.baseline,
       target: habit.target,
       completionHistory: habit.completionHistory,
@@ -907,27 +1055,21 @@ struct RemindersHubView: View {
       skippedDays: habit.skippedDays
     )
     
-    // Save to repository
     Task {
       do {
         try await habitRepository.updateHabit(updatedHabit)
         
         // Update notifications
-        NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: updatedReminders)
+        NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: reminders)
         
         // Haptic feedback for success
         await MainActor.run {
           UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
-        
-        print("✅ RemindersHubView: Added reminder to habit '\(habit.name)' at \(time)")
       } catch {
-        print("❌ RemindersHubView: Failed to add reminder: \(error)")
+        print("❌ RemindersHubView: Failed to update reminders: \(error)")
       }
     }
-    
-    // Clear state
-    habitToAddReminder = nil
   }
   
   private func navigateToHabitDetail(_ habit: Habit) {
