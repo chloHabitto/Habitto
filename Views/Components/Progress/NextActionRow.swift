@@ -25,22 +25,24 @@ struct NextActionRow: View {
             
             // Connector with pulsing dot
             VStack(spacing: 0) {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 12, height: 12)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 3)
-                            .scaleEffect(isPulsing ? 1.8 : 1.0)
-                            .opacity(isPulsing ? 0 : 1)
-                    )
-                    .clipShape(Rectangle())  // Clip animation to prevent overflow
-                    .padding(.top, 18)
-                    .onAppear {
-                        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
-                            isPulsing = true
-                        }
+                ZStack {
+                    Circle()
+                        .fill(Color.blue)
+                        .frame(width: 12, height: 12)
+                    
+                    Circle()
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 3)
+                        .scaleEffect(isPulsing ? 1.8 : 1.0)
+                        .opacity(isPulsing ? 0 : 1)
+                }
+                .frame(width: 24, height: 24)  // ✅ Explicit container size
+                .clipped()  // ✅ Clips ALL content including the animation
+                .padding(.top, 18)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
+                        isPulsing = true
                     }
+                }
             }
             .frame(width: 24)
             
