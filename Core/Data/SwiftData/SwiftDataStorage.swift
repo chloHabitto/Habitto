@@ -146,13 +146,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
               difficulty: difficulty)
             container.modelContext.insert(difficultyRecord)
             existingHabitData.difficultyHistory.append(difficultyRecord)
-            if let parsedDate = normalized.date {
-              print("✅ SAVE DIFFICULTY: Saved difficulty \(difficulty) for \(normalized.key) (parsed as \(parsedDate))")
-            } else {
+            if normalized.date == nil {
               print("⚠️ SAVE DIFFICULTY: Saved difficulty \(difficulty) for \(normalized.key) (raw source '\(dateString)')")
             }
           }
-          print("✅ SAVE DIFFICULTY: Synced \(existingHabitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
           
           // ✅ CRITICAL FIX: Sync usage history from habit.actualUsage
           existingHabitData.usageHistory.removeAll()
@@ -187,8 +184,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
           // Problem was: old code checked `progress == 1` which was wrong
           // Solution: Check if `progress >= goal` to determine actual completion
           
-          logger.info("✅ MIGRATION: Creating CompletionRecords from Firestore data for habit '\(habit.name)'")
-          
           for (dateString, progress) in habit.completionHistory {
             if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
               let dateKey = Habit.dateKey(for: date)
@@ -205,8 +200,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
                 progress: progress)  // Store actual progress too
               
               habitData.completionHistory.append(completionRecord)
-              
-              logger.info("  📝 Created CompletionRecord for \(dateString): progress=\(progress), goal=\(goalInt), completed=\(isCompleted)")
             }
           }
 
@@ -220,13 +213,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
               difficulty: difficulty)
             container.modelContext.insert(difficultyRecord)
             habitData.difficultyHistory.append(difficultyRecord)
-            if let parsedDate = normalized.date {
-              print("✅ CREATE DIFFICULTY: Created difficulty \(difficulty) for \(normalized.key) (parsed as \(parsedDate))")
-            } else {
+            if normalized.date == nil {
               print("⚠️ CREATE DIFFICULTY: Created difficulty \(difficulty) for \(normalized.key) (raw source '\(dateString)')")
             }
           }
-          print("✅ CREATE DIFFICULTY: Created \(habitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
 
           // Add usage history
           for (key, value) in habit.actualUsage {
@@ -280,7 +270,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
           .info(
             "  ✅ SUCCESS! Saved \(habitsToSave.count) habits in \(String(format: "%.3f", timeElapsed))s")
         #endif
-        print("        ✅ SWIFTDATA_SUCCESS: Saved \(habitsToSave.count) habits to database")
       } catch {
         let errorDesc = error.localizedDescription
         print("        ❌ SWIFTDATA_SAVE_FAILED: modelContext.save() threw error")
@@ -391,8 +380,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
         logger.info("   Auth.auth().currentUser = nil (confirmed signed out)")
       }
     }
-    
-    logger.info("Loading habits from SwiftData for user: \(currentUserId ?? "guest")")
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -470,10 +457,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
           habitDataArray = allHabits.filter { $0.userId.isEmpty }
           if !habitDataArray.isEmpty {
             logger.info("✅ Found \(habitDataArray.count) guest habits (Firebase not configured)")
-            print("✅ [GUEST_MODE] Found \(habitDataArray.count) habits - Firebase not configured, showing guest data")
           } else {
             logger.info("ℹ️ No guest habits found in database")
-            print("ℹ️ [GUEST_MODE] No habits found with userId = \"\"")
           }
         } else {
           // ✅ CRITICAL FIX: Only check for authenticated habits if Firebase Auth shows a user
@@ -572,27 +557,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       if habits.isEmpty {
         // Check if habits exist with different userIds
         await diagnosticCheckForHabits()
-      } else {
-        
-        // ✅ DIAGNOSTIC: Log completion records per habit
-        for habit in habits {
-          let completions = habit.completionHistory.count
-          let completionStatusCount = habit.completionStatus.count
-          let todayKey = DateUtils.dateKey(for: Date())
-          let isCompletedToday = habit.completionStatus[todayKey] ?? false
-          let todayProgress = habit.completionHistory[todayKey] ?? 0
-          
-          print("   🔍 Habit: '\(habit.name)'")
-          print("      Completion Records: \(completions)")
-          print("      Completion Status entries: \(completionStatusCount)")
-          print("      Today completed: \(isCompletedToday), progress: \(todayProgress)")
-          
-          // Show recent completion dates
-          let recentDates = Array(habit.completionHistory.keys.sorted().suffix(5))
-          if !recentDates.isEmpty {
-            print("      Recent completion dates: \(recentDates.joined(separator: ", "))")
-          }
-        }
       }
 
       return habits
@@ -631,8 +595,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       logger.info("⏭️ SwiftDataStorage: Skipping save for deleted habit '\(habit.name)'")
       return
     }
-    
-    logger.info("Saving single habit: \(habit.name)")
 
     do {
       if let existingHabitData = try await loadHabitData(by: habit.id) {
@@ -655,13 +617,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
             difficulty: difficulty)
           container.modelContext.insert(difficultyRecord)
           existingHabitData.difficultyHistory.append(difficultyRecord)
-          if let parsedDate = normalized.date {
-            print("✅ SAVE_HABIT DIFFICULTY: Saved difficulty \(difficulty) for \(normalized.key) (parsed as \(parsedDate))")
-          } else {
+          if normalized.date == nil {
             print("⚠️ SAVE_HABIT DIFFICULTY: Saved difficulty \(difficulty) for \(normalized.key) (raw source '\(dateString)')")
           }
         }
-        print("✅ SAVE_HABIT DIFFICULTY: Synced \(existingHabitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
 
         // Update usage history
         existingHabitData.usageHistory.removeAll()
@@ -696,8 +655,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
         // Problem was: old code checked `progress == 1` which was wrong
         // Solution: Check if `progress >= goal` to determine actual completion
         
-        logger.info("✅ MIGRATION: Creating CompletionRecords from Firestore data for habit '\(habit.name)'")
-        
         for (dateString, progress) in habit.completionHistory {
           if let date = ISO8601DateHelper.shared.dateWithFallback(from: dateString) {
             let dateKey = Habit.dateKey(for: date)
@@ -714,8 +671,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
               progress: progress)  // Store actual progress too
             
             habitData.completionHistory.append(completionRecord)
-            
-            logger.info("  📝 Created CompletionRecord for \(dateString): progress=\(progress), goal=\(goalInt), completed=\(isCompleted)")
           }
         }
 
@@ -729,13 +684,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
             difficulty: difficulty)
           container.modelContext.insert(difficultyRecord)
           habitData.difficultyHistory.append(difficultyRecord)
-          if let parsedDate = normalized.date {
-            print("✅ SAVE_HABIT CREATE DIFFICULTY: Created difficulty \(difficulty) for \(normalized.key) (parsed as \(parsedDate))")
-          } else {
+          if normalized.date == nil {
             print("⚠️ SAVE_HABIT CREATE DIFFICULTY: Created difficulty \(difficulty) for \(normalized.key) (raw source '\(dateString)')")
           }
         }
-        print("✅ SAVE_HABIT CREATE DIFFICULTY: Created \(habitData.difficultyHistory.count) difficulty records for habit '\(habit.name)'")
 
         // Add usage history
         for (key, value) in habit.actualUsage {
@@ -751,7 +703,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       }
 
       try container.modelContext.save()
-      logger.info("Successfully saved habit: \(habit.name)")
 
     } catch {
       logger.error("Failed to save habit: \(error.localizedDescription)")
@@ -763,16 +714,12 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   func loadHabit(id: UUID) async throws -> Habit? {
-    logger.info("Loading habit with ID: \(id)")
-
     do {
       guard let habitData = try await loadHabitData(by: id) else {
-        logger.info("Habit not found with ID: \(id)")
         return nil
       }
 
       let habit = habitData.toHabit()
-      logger.info("Successfully loaded habit: \(habit.name)")
       return habit
 
     } catch {
@@ -1096,10 +1043,8 @@ final class SwiftDataStorage: HabitStorageProtocol {
     // This ensures consistency and proper handling of sign-out state
     let userId = await CurrentUser().idOrGuest
     if userId.isEmpty {
-      logger.info("🔍 getCurrentUserId: Guest mode - returning nil (empty string)")
       return nil // Return nil for guest mode (becomes "" with ?? "")
     } else {
-      logger.info("🔍 getCurrentUserId: Authenticated user - returning: \(userId.prefix(8))...")
       return userId
     }
   }

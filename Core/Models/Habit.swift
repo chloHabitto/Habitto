@@ -822,10 +822,6 @@ struct Habit: Identifiable, Codable, Equatable {
       currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate) ?? currentDate
     }
 
-    #if DEBUG
-    debugLog("🔍 HABIT_STREAK: '\(name)' individual streak=\(calculatedStreak) (cached completionHistory data, UI uses global streak)")
-    #endif
-
     return calculatedStreak
   }
 
