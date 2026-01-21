@@ -77,14 +77,14 @@ struct HabitDetailView: View {
             Button(action: {
               showingEditView = true
             }) {
-              Label("Edit", systemImage: "pencil")
+              Label("Edit", image: "Icon-Pen_Filled")
             }
 
             Button(role: .destructive, action: {
               print("🗑️ DELETE_FLOW: HabitDetailView - Delete button tapped for habit: \(habit.name) (ID: \(habit.id))")
               showingDeleteConfirmation = true
             }) {
-              Label("Delete", systemImage: "trash")
+              Label("Delete", image: "Icon-TrashBin3_Filled")
             }
           } label: {
             Image(systemName: "ellipsis.circle.fill")
