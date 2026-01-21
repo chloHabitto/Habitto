@@ -473,7 +473,6 @@ final class HabitData {
     }
     
     if !requiresSync && parsedEntries.count == existingRecordsByDate.count {
-      debugLog("ℹ️ syncCompletionRecordsFromHabit: Habit '\(habit.name)' already synced - skipping")
       return
     }
     
@@ -564,9 +563,7 @@ final class HabitData {
     // Save changes
     do {
       try context.save()
-      if syncedCount > 0 {
-        print("✅ syncCompletionRecordsFromHabit: Synced \(syncedCount) CompletionRecords for habit '\(habit.name)' (created: \(createdCount), updated: \(updatedCount))")
-      } else if !habit.completionHistory.isEmpty {
+      if syncedCount == 0 && !habit.completionHistory.isEmpty {
         print("⚠️ syncCompletionRecordsFromHabit: No CompletionRecords synced for habit '\(habit.name)' despite \(habit.completionHistory.count) entries in completionHistory")
       }
     } catch {
