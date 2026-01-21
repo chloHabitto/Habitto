@@ -80,13 +80,12 @@ struct HabitDetailView: View {
               Label("Edit", systemImage: "pencil")
             }
 
-            Button(action: {
+            Button(role: .destructive, action: {
               print("🗑️ DELETE_FLOW: HabitDetailView - Delete button tapped for habit: \(habit.name) (ID: \(habit.id))")
               showingDeleteConfirmation = true
             }) {
               Label("Delete", systemImage: "trash")
             }
-            .foregroundColor(.red)
           } label: {
             Image(systemName: "ellipsis.circle.fill")
               .font(.system(size: 14, weight: .heavy))
@@ -1150,31 +1149,31 @@ struct HabitDetailView: View {
 
       Spacer()
 
-      // Edit button
-      Button(action: {
-        selectedReminder = reminder
-        showingReminderSheet = true
-      }) {
-        Image("Icon-Pen_Outlined")
-          .resizable()
-          .frame(width: 18, height: 18)
-          .foregroundColor(habitRemindersEnabled ? .text03 : .text05)
-          .padding(8)
-      }
-      .disabled(!habitRemindersEnabled)
+    // Edit button
+    Button(action: {
+      selectedReminder = reminder
+      showingReminderSheet = true
+    }) {
+      Image("Icon-Pen_Filled")
+        .resizable()
+        .frame(width: 18, height: 18)
+        .foregroundColor(habitRemindersEnabled ? .appText01 : .text05)
+        .padding(8)
+    }
+    .disabled(!habitRemindersEnabled)
 
-      // Delete button
-      Button(action: {
-        reminderToDelete = reminder
-        showingReminderDeleteConfirmation = true
-      }) {
-        Image("Icon-TrashBin3_Filled")
-          .resizable()
-          .frame(width: 18, height: 18)
-          .foregroundColor(habitRemindersEnabled ? .red : .text05)
-          .padding(8)
-      }
-      .disabled(!habitRemindersEnabled)
+    // Delete button
+    Button(action: {
+      reminderToDelete = reminder
+      showingReminderDeleteConfirmation = true
+    }) {
+      Image("Icon-TrashBin3_Filled")
+        .resizable()
+        .frame(width: 18, height: 18)
+        .foregroundColor(.red)
+        .padding(8)
+    }
+    .disabled(!habitRemindersEnabled)
     }
     .padding(.vertical, 12)
     .padding(.horizontal, 16)
