@@ -747,20 +747,6 @@ struct MonthlyCalendarGridView: View {
       value: (weekIndex * 7) + dayIndex,
       to: firstWeekdayOfMonth) ?? monthStart
 
-    // Debug: Print monthly heatmap calculation details
-    let dateKey = DateUtils.dateKey(for: targetDate)
-    let weekday = calendar.component(.weekday, from: targetDate)
-    let weekdayName = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday"
-    ][weekday - 1]
-    // Debug logging removed to prevent excessive console output
-    
     // Check if the target date is within the selected month
     let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
     if targetDate >= monthEnd {
