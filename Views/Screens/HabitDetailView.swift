@@ -82,7 +82,7 @@ struct HabitDetailView: View {
               } icon: {
                 Image("Icon-Pen_Filled")
                   .renderingMode(.template)
-                  .frame(width: 12, height: 12)
+                  .frame(width: 8, height: 8)
               }
             }
             .tint(.appText01)
