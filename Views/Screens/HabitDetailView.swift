@@ -78,6 +78,7 @@ struct HabitDetailView: View {
               showingEditView = true
             }) {
               Label("Edit", systemImage: "pencil")
+                .foregroundColor(.primary)
             }
 
             Button(role: .destructive, action: {
@@ -85,6 +86,7 @@ struct HabitDetailView: View {
               showingDeleteConfirmation = true
             }) {
               Label("Delete", systemImage: "trash")
+                .foregroundColor(.red)
             }
           } label: {
             Image(systemName: "ellipsis.circle.fill")
