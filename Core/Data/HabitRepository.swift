@@ -570,14 +570,48 @@ class HabitRepository: ObservableObject {
           let snapshot = try await docRef.getDocument()
           
           if snapshot.exists {
-            if let remindersField = snapshot.data()?["reminders"] as? [String] {
-              print("    ✓ Firestore.reminders: \(remindersField.count) UUID strings")
-              for (reminderIndex, reminderUUID) in remindersField.enumerated() {
-                print("      [\(reminderIndex + 1)] \(reminderUUID)")
+            let hasRemindersJSON = snapshot.data()?["remindersJSON"] != nil
+            let hasReminders = snapshot.data()?["reminders"] != nil
+            
+            // Check which format is being used
+            if hasRemindersJSON {
+              print("    ✅ FORMAT: NEW (remindersJSON with full data)")
+              
+              if let remindersJSON = snapshot.data()?["remindersJSON"] as? String {
+                print("    ✓ Firestore.remindersJSON: \(remindersJSON.count) characters")
+                
+                // Try to decode and display the reminder times
+                if let data = remindersJSON.data(using: .utf8),
+                   let decodedReminders = try? JSONDecoder().decode([ReminderItem].self, from: data) {
+                  print("    ✓ Decoded \(decodedReminders.count) reminders from Firestore JSON:")
+                  for (reminderIndex, reminder) in decodedReminders.enumerated() {
+                    let timeStr = DateFormatter.localizedString(from: reminder.time, dateStyle: .none, timeStyle: .short)
+                    print("      [\(reminderIndex + 1)] Time: \(timeStr), Active: \(reminder.isActive), ID: \(reminder.id)")
+                  }
+                } else {
+                  print("    ⚠️  Failed to decode remindersJSON from Firestore")
+                }
               }
-              print("    ⚠️  NOTE: Firestore only stores UUIDs, not times/status!")
+              
+              // Also show old format if present
+              if let remindersField = snapshot.data()?["reminders"] as? [String] {
+                print("    ℹ️  Legacy reminders field also present: \(remindersField.count) UUIDs (kept for backward compatibility)")
+              }
+              
+            } else if hasReminders {
+              print("    ⚠️  FORMAT: LEGACY (reminders with UUIDs only)")
+              
+              if let remindersField = snapshot.data()?["reminders"] as? [String] {
+                print("    ✓ Firestore.reminders: \(remindersField.count) UUID strings")
+                for (reminderIndex, reminderUUID) in remindersField.enumerated() {
+                  print("      [\(reminderIndex + 1)] \(reminderUUID)")
+                }
+                print("    ⚠️  WARNING: Times/status will be LOST on sync-down!")
+                print("    💡 SOLUTION: Update habit to trigger new format sync")
+              }
+              
             } else {
-              print("    ⚠️  Firestore.reminders: field missing or wrong type")
+              print("    ℹ️  No reminders stored in Firestore")
             }
           } else {
             print("    ℹ️  Habit not found in Firestore (may not be synced yet)")
