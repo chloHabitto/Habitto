@@ -96,14 +96,26 @@ struct AddedHabitItem: View {
               Button(action: {
                 onEdit?()
               }) {
-                Label("Edit", systemImage: "pencil")
+                Label {
+                  Text("Edit")
+                } icon: {
+                  Image("Icon-Pen_Filled")
+                    .renderingMode(.template)
+                }
               }
+              .tint(.appText01)
 
               Button(role: .destructive, action: {
                 onDelete?()
               }) {
-                Label("Delete", systemImage: "trash")
+                Label {
+                  Text("Delete")
+                } icon: {
+                  Image("Icon-TrashBin3_Filled")
+                    .renderingMode(.template)
+                }
               }
+              .tint(.red)
             } label: {
               Image(.iconMoreVert)
                 .resizable()
