@@ -200,9 +200,6 @@ final class ProgressEventService {
         goalAmount: Int,
         legacyProgress: Int? = nil
     ) async -> (progress: Int, isCompleted: Bool) {
-        // ✅ STEP 3: Enhanced logging for manual testing workflow
-        logger.info("🔍 calculateProgressFromEvents: habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey)")
-        logger.info("   → goalAmount=\(goalAmount), legacyProgress=\(legacyProgress ?? 0)")
         
         // Access ModelContext directly since we're @MainActor
         let modelContext = SwiftDataContainer.shared.modelContext
@@ -219,9 +216,7 @@ final class ProgressEventService {
             let descriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
             let events = (try? modelContext.fetch(descriptor)) ?? []
             
-            logger.info("🔍 calculateProgressFromEvents: Found \(events.count) events")
             if !events.isEmpty {
-                logger.info("   → Event details:")
                 for (index, event) in events.enumerated().prefix(5) {
                     logger.info("      [\(index)] type=\(event.eventType), delta=\(event.progressDelta), createdAt=\(event.createdAt)")
                 }

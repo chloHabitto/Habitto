@@ -48,7 +48,6 @@ class HomeViewState: ObservableObject {
       if existingStreak > 0 {
         // Keep existing value until we calculate the real one
         self.currentStreak = existingStreak
-        debugLog("📱 WIDGET_SYNC: Preserved existing streak value from UserDefaults: \(existingStreak)")
       }
     }
     self.updateStreak()
@@ -66,7 +65,6 @@ class HomeViewState: ObservableObject {
         self?.isLoadingHabits = false
         // ✅ CRASH FIX: Update streak when habits change
         self?.updateStreak()
-        // ✅ WIDGET SYNC: Sync habits to widget storage
         WidgetDataSync.shared.syncHabitsToWidget(habits)
         self?.objectWillChange.send()
       }
@@ -190,8 +188,7 @@ class HomeViewState: ObservableObject {
           let loadedStreak = streak.currentStreak
           currentStreak = loadedStreak
           
-          // ✅ WIDGET SYNC: Update UserDefaults for widget extension IMMEDIATELY
-          // This ensures the widget can read the value even if the app is not running
+          // Update UserDefaults for widget extension
           syncStreakToWidget(loadedStreak)
           
           // ✅ FIX: Also broadcast via notification for consistency
@@ -253,11 +250,9 @@ class HomeViewState: ObservableObject {
       try await habitRepository.toggleHabitCompletion(habit, for: targetDate)
       debugLog("✅ GUARANTEED: Completion toggled and persisted")
       
-      // ✅ WIDGET SYNC: Sync updated habit to widget storage immediately after completion toggle
-      // Get the updated habit from the repository (it should have the latest completionStatus/completionHistory)
+      // Sync updated habit to widget storage
       if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {
         WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
-        debugLog("📱 WIDGET_SYNC: Synced updated habit '\(updatedHabit.name)' to widget storage")
       } else {
         debugLog("⚠️ WIDGET_SYNC: Could not find updated habit in repository, syncing original habit")
         WidgetDataSync.shared.syncHabitToWidget(habit)
@@ -379,7 +374,6 @@ class HomeViewState: ObservableObject {
     do {
       try await habitRepository.updateHabit(updatedHabit)
       debugLog("✅ GUARANTEED: Habit updated and persisted")
-      // ✅ WIDGET SYNC: Sync updated habit to widget storage
       WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
     } catch {
       debugLog("❌ Failed to update habit: \(error.localizedDescription)")
@@ -404,11 +398,9 @@ class HomeViewState: ObservableObject {
       debugLog("✅ GUARANTEED: Progress saved and persisted in \(String(format: "%.3f", duration))s")
       debugLog("═══════════════════════════════════════════════════════")
       
-      // ✅ WIDGET SYNC: Sync updated habit to widget storage immediately after progress update
-      // Get the updated habit from the repository (it should have the latest completionStatus/completionHistory)
+      // Sync updated habit to widget storage
       if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {
         WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
-        debugLog("📱 WIDGET_SYNC: Synced updated habit '\(updatedHabit.name)' to widget storage")
       } else {
         debugLog("⚠️ WIDGET_SYNC: Could not find updated habit in repository, syncing original habit")
         WidgetDataSync.shared.syncHabitToWidget(habit)
@@ -731,7 +723,6 @@ class HomeViewState: ObservableObject {
 
         try modelContext.save()
         
-        // ✅ WIDGET SYNC: Update UserDefaults for widget extension
         syncStreakToWidget(computation.currentStreak)
 
         debugLog("")
@@ -869,13 +860,11 @@ class HomeViewState: ObservableObject {
       // ✅ FIX: Always sync, even if streak is 0, so widget knows the value is valid
       sharedDefaults.set(streak, forKey: "widgetCurrentStreak")
       sharedDefaults.synchronize()
-      debugLog("📱 WIDGET_SYNC: Updated widget streak to \(streak) (key now exists in UserDefaults)")
       
       // ✅ CRITICAL FIX: Reload widget timeline immediately to show updated streak
       // This ensures the widget displays the latest streak value right away
       #if canImport(WidgetKit)
       WidgetCenter.shared.reloadAllTimelines()
-      debugLog("📱 WIDGET_SYNC: Triggered widget timeline reload")
       #endif
     } else {
       debugLog("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
