@@ -586,7 +586,7 @@ struct RemindersHubView: View {
     return VStack(spacing: 0) {
       // Main row (always visible)
       Button(action: {
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
           if expandedHabitId == habit.id {
             expandedHabitId = nil  // Collapse
           } else {
@@ -620,6 +620,7 @@ struct RemindersHubView: View {
             .font(.system(size: 12, weight: .semibold))
             .foregroundColor(.text04)
             .rotationEffect(.degrees(isExpanded ? -180 : 0))
+            .animation(.spring(response: 0.3, dampingFraction: 0.85), value: isExpanded)
         }
         .padding(16)
         .contentShape(Rectangle())
@@ -629,7 +630,7 @@ struct RemindersHubView: View {
       // Expanded content (reminders list)
       if isExpanded {
         expandedRemindersList(for: habit)
-          .transition(.opacity.combined(with: .move(edge: .top)))
+          .transition(.opacity)
       }
     }
     .background(Color("appSurface02Variant"))

@@ -1162,17 +1162,13 @@ final actor HabitStore {
         // Database corruption is now handled gracefully with UserDefaults fallback
 
         // Check if CompletionRecord already exists
-        logger.info("🎯 createCompletionRecordIfNeeded: Creating predicate...")
         let predicate = #Predicate<CompletionRecord> { record in
           record.userId == userId &&
             record.habitId == habit.id &&
             record.dateKey == dateKey
         }
         let request = FetchDescriptor<CompletionRecord>(predicate: predicate)
-        logger.info("🎯 createCompletionRecordIfNeeded: Fetching existing records...")
         let existingRecords: [CompletionRecord] = try modelContext.fetch(request)
-        logger
-          .info("🎯 createCompletionRecordIfNeeded: Found \(existingRecords.count) existing records")
 
         // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
         // Prefer the recorded completion status for this date to avoid retroactively changing history.
@@ -1208,7 +1204,6 @@ final actor HabitStore {
         
         // Always create a fresh record with current state (ensures exactly one record)
         // Create new record (or recreate after deletion)
-        logger.info("🎯 createCompletionRecordIfNeeded: Creating fresh CompletionRecord...")
         let completionRecord = CompletionRecord(
           userId: userId,
           habitId: habit.id,
@@ -1216,12 +1211,10 @@ final actor HabitStore {
           dateKey: dateKey,
           isCompleted: isCompleted,
           progress: progress)  // ✅ CRITICAL FIX: Store progress count
-        logger.info("🎯 createCompletionRecordIfNeeded: Inserting record into context... habitId=\(habit.id), isCompleted=\(isCompleted), progress=\(progress)")
         
         // ✅ CRITICAL FIX: Always insert CompletionRecord first, then link to HabitData
         // This ensures the record exists even if HabitData lookup fails
         modelContext.insert(completionRecord)
-        logger.info("✅ Inserted CompletionRecord into context")
         
         // ✅ FIX: Explicitly link CompletionRecord to HabitData for cascade delete
         // Fetch the HabitData and append to its completionHistory
@@ -1259,9 +1252,7 @@ final actor HabitStore {
             "✅ Created CompletionRecord for habit '\(habit.name)' (id=\(habit.id)) on \(dateKey): completed=\(isCompleted), progress=\(progress)")
 
         // Save the context
-        logger.info("🎯 createCompletionRecordIfNeeded: Saving context...")
         try modelContext.save()
-        logger.info("✅ createCompletionRecordIfNeeded: Context saved successfully")
         
         // ✅ CRITICAL FIX: Verify CompletionRecord was actually saved
         let verifyPredicate = #Predicate<CompletionRecord> { record in
@@ -1283,8 +1274,8 @@ final actor HabitStore {
     } catch {
       logger
         .error(
-          "❌ createCompletionRecordIfNeeded: Failed to create/update CompletionRecord: \(error)")
-      logger.error("❌ createCompletionRecordIfNeeded: Error details: \(error.localizedDescription)")
+          "❌ Failed to create/update CompletionRecord: \(error)")
+      logger.error("❌ Error details: \(error.localizedDescription)")
 
       // ✅ CRITICAL FIX: If database is corrupted, handle gracefully
       if error.localizedDescription.contains("no such table") ||

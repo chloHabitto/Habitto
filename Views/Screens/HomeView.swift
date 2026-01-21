@@ -649,7 +649,6 @@ class HomeViewState: ObservableObject {
         let habits = habitRepository.habits
         
         guard !habits.isEmpty else {
-          debugLog("ℹ️ STREAK_RECALC: No habits found - resetting streak to 0")
           streak.currentStreak = 0
           streak.lastCompleteDate = nil
           try modelContext.save()
@@ -673,8 +672,6 @@ class HomeViewState: ObservableObject {
         let today = DateUtils.startOfDay(for: Date())
         let calendar = Calendar.current
 
-        debugLog("🔄 STREAK_RECALC: Starting from TODAY (\(Habit.dateKey(for: today))) and counting backwards")
-
         let computation = StreakCalculator.computeCurrentStreak(
           habits: habits,
           completionRecords: filteredCompletionRecords,
@@ -690,9 +687,6 @@ class HomeViewState: ObservableObject {
         let oldStreak = streak.currentStreak
         let storedLongestBefore = streak.longestStreak
         let mismatchDetected = oldStreak != computation.currentStreak
-
-        debugLog("🔍 STREAK_END: Calculated streak = \(computation.currentStreak), saving to GlobalStreakModel")
-        debugLog("📊 STREAK_LONGEST: Stored longestStreak before: \(storedLongestBefore), calculated from history: \(calculatedLongestStreak)")
         
         streak.currentStreak = computation.currentStreak
         // ✅ HIGH-WATER MARK: Only update longestStreak if the newly calculated value is GREATER
@@ -709,17 +703,6 @@ class HomeViewState: ObservableObject {
         try modelContext.save()
         
         syncStreakToWidget(computation.currentStreak)
-
-        debugLog("")
-        debugLog(String(repeating: "=", count: 60))
-        debugLog("✅ STREAK_RECALC: Recalculation COMPLETE")
-        debugLog("   Old streak: \(oldStreak) day(s)")
-        debugLog("   New streak: \(computation.currentStreak) day(s)")
-        debugLog("   Last complete date: \(computation.lastCompleteDate.map { Habit.dateKey(for: $0) } ?? "none")")
-        debugLog("   Longest streak: \(streak.longestStreak) day(s) (stored: \(storedLongestBefore), calculated: \(calculatedLongestStreak))")
-        debugLog("   ✅ GLOBAL_STREAK_FINAL: Saved to GlobalStreakModel and UI: \(computation.currentStreak)")
-        debugLog(String(repeating: "=", count: 60))
-        debugLog("")
 
         let userFingerprint = userId.isEmpty ? "guest" : String(userId.prefix(6))
         TelemetryService.shared.logEvent(
@@ -756,7 +739,6 @@ class HomeViewState: ObservableObject {
         
       } catch {
         TelemetryService.shared.logError("streak.update.failed", error: error)
-        debugLog("❌ STREAK_RECALC: Failed to recalculate streak: \(error)")
       }
     }
   }
