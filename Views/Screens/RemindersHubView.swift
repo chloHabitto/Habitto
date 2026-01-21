@@ -307,26 +307,27 @@ struct RemindersHubView: View {
       }
       UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }) {
-      VStack(spacing: 4) {
-        // Day name (Mon, Tue, etc.)
-        Text(formatDayName(date))
-          .font(.appBodySmall)
-          .foregroundColor(isSelected ? .appOnPrimaryContainer : .text04)
+      VStack(spacing: 0) {
+        // Day name (SUN, MON, etc.) - matches Home screen styling
+        Text(formatDayName(date).uppercased())
+          .font(.system(size: 10, weight: .bold))
+          .frame(height: 16)
+          .foregroundColor(isSelected ? .appOnPrimary80 : .appText06)
         
         // Day number
         Text(formatDayNumber(date))
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(isSelected ? .appOnPrimaryContainer : .text01)
+          .font(.appBodyMedium)
+          .foregroundColor(isSelected ? .onPrimary : .text04)
         
         // Today indicator dot
         Circle()
-          .fill(isToday ? (isSelected ? Color.appOnPrimaryContainer : Color("navy500")) : Color.clear)
+          .fill(isToday ? (isSelected ? Color.onPrimary : Color.primary) : Color.clear)
           .frame(width: 6, height: 6)
       }
       .frame(width: 44, height: 64)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(isSelected ? Color("navy500") : Color.clear)
+          .fill(isSelected ? Color.primary : Color.clear)
       )
     }
     .buttonStyle(PlainButtonStyle())
