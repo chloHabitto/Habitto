@@ -184,10 +184,8 @@ class DailyAwardIntegrityService {
         let skippedCount = scheduledHabits.count - activeHabits.count
         
         if skippedCount > 0 {
-            logger.info("⏭️ SKIP_FILTER: Excluded \(skippedCount) skipped habit(s) from award validation")
             for habit in scheduledHabits where habit.isSkipped(for: date) {
                 let reasonLabel = habit.skipReason(for: date)?.shortLabel ?? "unknown"
-                logger.info("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
             }
         }
         

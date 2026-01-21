@@ -999,7 +999,6 @@ final actor HabitStore {
   /// ✅ GUEST-ONLY MODE: Using SwiftData only, no Firestore sync
   private var activeStorage: any HabitStorageProtocol {
     get {
-      logger.info("📱 HabitStore: Guest-only mode - using SwiftData only (no cloud sync)")
       return swiftDataStorage
     }
   }
@@ -1153,16 +1152,10 @@ final actor HabitStore {
       }
     }
     
-    logger
-      .info(
-        "🎯 createCompletionRecordIfNeeded: Starting for habit '\(habit.name)' on \(dateKey), userId: '\(userId.isEmpty ? "guest" : userId)'")
-
     do {
       // Perform all SwiftData operations on the main actor to avoid concurrency issues
       try await MainActor.run {
-        logger.info("🎯 createCompletionRecordIfNeeded: Getting modelContext...")
         let modelContext = SwiftDataContainer.shared.modelContext
-        logger.info("🎯 createCompletionRecordIfNeeded: Got modelContext successfully")
 
         // ✅ CRITICAL FIX: Removed database health check to prevent corruption
         // Health check was deleting database while in use
@@ -1331,8 +1324,6 @@ final actor HabitStore {
   ///   - userId: The user identifier
   /// - Throws: Error if award check or creation fails
   func checkDailyCompletionAndAwardXP(dateKey: String, userId: String) async throws {
-    logger.info("🎯 XP_CHECK: Checking daily completion for \(dateKey)")
-    
     // ✅ CRITICAL: Clear cache to avoid stale progress values
     scheduledHabitsCache = nil
     
@@ -1346,7 +1337,6 @@ final actor HabitStore {
     }
     
     // ✅ FIX: Force reload habits from storage to get fresh data after save
-    logger.info("🔄 XP_CHECK: Reloading habits from storage to get fresh data")
     let freshHabits = try await loadHabits(force: true)
     
     // Get scheduled habits from fresh data
@@ -1357,10 +1347,7 @@ final actor HabitStore {
     // Clear cache since we just loaded fresh
     scheduledHabitsCache = (dateKey: dateKey, habits: scheduledHabits)
     
-    logger.info("🎯 XP_CHECK: Found \(scheduledHabits.count) scheduled habits for \(dateKey)")
-    
     guard !scheduledHabits.isEmpty else {
-      logger.info("🎯 XP_CHECK: No scheduled habits, skipping XP check")
       return
     }
     
@@ -1368,19 +1355,14 @@ final actor HabitStore {
     let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: date) }
     let skippedCount = scheduledHabits.count - activeHabits.count
     
-    logger.info("🎯 XP_CHECK: Found \(scheduledHabits.count) scheduled habits, \(skippedCount) skipped, \(activeHabits.count) active for \(dateKey)")
-    
     if skippedCount > 0 {
-      logger.info("⏭️ SKIP_FILTER: Excluded \(skippedCount) skipped habit(s) from daily completion check")
       for habit in scheduledHabits where habit.isSkipped(for: date) {
         let reasonLabel = habit.skipReason(for: date)?.shortLabel ?? "unknown"
-        logger.info("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
       }
     }
     
     guard !activeHabits.isEmpty else {
       // All habits were skipped - treat as complete day
-      logger.info("🎯 XP_CHECK: All habits skipped for \(dateKey) - treating as complete day")
       
       // Check for existing award and process accordingly
       let (awardExists, _): (Bool, Int) = await MainActor.run {
@@ -1400,7 +1382,6 @@ final actor HabitStore {
       
       if !awardExists {
         // Award XP for all-skipped day
-        logger.info("🎯 XP_CHECK: ✅ Awarding XP for all-skipped day on \(dateKey)")
         let xpAmount = 50
         do {
           let awardReason = "All habits skipped on \(dateKey) - day complete"
@@ -1409,7 +1390,6 @@ final actor HabitStore {
             dateKey: dateKey,
             reason: awardReason
           )
-          logger.info("🎯 XP_CHECK: ✅ Awarded \(xpAmount) XP for all-skipped day")
           
           await MainActor.run {
             FirebaseBackupService.shared.backupDailyAward(
@@ -1438,10 +1418,6 @@ final actor HabitStore {
       return (allDone, incompleteHabits)
     }
     
-    for habitName in incompleteHabits {
-      logger.info("🎯 XP_CHECK: Habit '\(habitName)' not completed")
-    }
-    
     // Check if award already exists (synchronous MainActor work)
     // ✅ FIX: Only return Sendable types (Bool, Int) to avoid concurrency warnings
     // ✅ FIX: Include pending changes to see DailyAward that was just created/deleted
@@ -1460,11 +1436,8 @@ final actor HabitStore {
       return (exists, xpAmount)  // Return Sendable types only
     }
     
-    logger.info("🎯 XP_CHECK: All completed: \(allCompleted), Award exists: \(awardExists)")
-    
     if allCompleted && !awardExists {
       // All habits complete AND award doesn't exist → award XP
-      logger.info("🎯 XP_CHECK: ✅ Awarding XP for daily completion on \(dateKey)")
       
       // ✅ FIX: DailyAwardService creates DailyAward record and recalculates XP
       // DailyAward is the immutable ledger entry (source of truth)
@@ -1477,7 +1450,6 @@ final actor HabitStore {
           dateKey: dateKey,
           reason: awardReason
         )
-        logger.info("🎯 XP_CHECK: ✅ Awarded \(xpAmount) XP - DailyAward created, XP recalculated from ledger")
         
         // ✅ CLOUD BACKUP: Backup daily award to Firestore (non-blocking)
         await MainActor.run {
@@ -1496,7 +1468,6 @@ final actor HabitStore {
       
     } else if !allCompleted && awardExists {
       // NOT all complete AND award exists → reverse XP
-      logger.info("🎯 XP_CHECK: ❌ Reversing XP for \(dateKey) (habits uncompleted)")
       
       // ✅ FIX: DailyAwardService deletes DailyAward record and recalculates XP
       // This ensures ledger and state stay in sync
@@ -1507,11 +1478,9 @@ final actor HabitStore {
           dateKey: dateKey,
           reason: reversalReason
         )
-        logger.info("🎯 XP_CHECK: ✅ Reversed \(xpToReverse) XP - DailyAward deleted, XP recalculated from ledger")
         
         // ✅ FIX: Delete invalid award from Firestore so it doesn't get re-imported
         // This prevents the flickering issue where invalid awards are re-imported during sync
-        logger.info("🔄 XP_CHECK: Deleting invalid award from Firestore to prevent re-import...")
         Task.detached(priority: .utility) { [self] in
           await self.deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
           logger.info("✅ XP_CHECK: Invalid award deleted from Firestore - will not be re-imported")
@@ -1524,8 +1493,6 @@ final actor HabitStore {
       
       // ✅ REMOVED: DailyAward deletion - handled by DailyAwardService.awardXP() now
       
-    } else {
-      logger.info("🎯 XP_CHECK: ℹ️ No change needed (allCompleted: \(allCompleted), awardExists: \(awardExists))")
     }
   }
   
