@@ -669,9 +669,9 @@ struct RemindersHubView: View {
         .padding(.horizontal, 16)
       
       VStack(spacing: 8) {
-        // Existing reminders
+        // Existing reminders (sorted by time)
         if !habit.reminders.isEmpty {
-          ForEach(habit.reminders) { reminder in
+          ForEach(habit.reminders.sorted { $0.time < $1.time }) { reminder in
             reminderItemRow(reminder, habit: habit)
           }
         }
@@ -704,7 +704,7 @@ struct RemindersHubView: View {
       // Time
       Text(formatTime(reminder.time))
         .font(.appBodyMedium)
-        .foregroundColor(.text01)
+        .foregroundColor(habitRemindersEnabled ? .text01 : .text04)
       
       Spacer()
       
@@ -719,10 +719,11 @@ struct RemindersHubView: View {
           .renderingMode(.template)
           .resizable()
           .frame(width: 18, height: 18)
-          .foregroundColor(.appText01)
+          .foregroundColor(habitRemindersEnabled ? .appText01 : .text05)
           .padding(8)
       }
       .buttonStyle(PlainButtonStyle())
+      .disabled(!habitRemindersEnabled)
       
       // Delete button
       Button(action: {
@@ -739,9 +740,13 @@ struct RemindersHubView: View {
           .padding(8)
       }
       .buttonStyle(PlainButtonStyle())
+      .disabled(!habitRemindersEnabled)
     }
+    .padding(.vertical, 12)
     .padding(.horizontal, 16)
-    .padding(.vertical, 4)
+    .background(Color.surfaceContainer.opacity(habitRemindersEnabled ? 0.5 : 0.3))
+    .clipShape(RoundedRectangle(cornerRadius: 12))
+    .opacity(habitRemindersEnabled ? 1.0 : 0.6)
   }
   
   // MARK: - Skip Reminder Helpers
@@ -984,7 +989,8 @@ struct RemindersHubView: View {
   private func addReminderToHabit(_ habit: Habit, time: Date) {
     // Create new reminder
     let newReminder = ReminderItem(time: time, isActive: true)
-    let updatedReminders = habit.reminders + [newReminder]
+    // Sort reminders by time after adding
+    let updatedReminders = (habit.reminders + [newReminder]).sorted { $0.time < $1.time }
     
     saveUpdatedReminders(updatedReminders, for: habit)
     
@@ -1028,6 +1034,9 @@ struct RemindersHubView: View {
   
   /// Save updated reminders to a habit
   private func saveUpdatedReminders(_ reminders: [ReminderItem], for habit: Habit) {
+    // Sort reminders by time before saving
+    let sortedReminders = reminders.sorted { $0.time < $1.time }
+    
     let updatedHabit = Habit(
       id: habit.id,
       name: habit.name,
@@ -1041,7 +1050,7 @@ struct RemindersHubView: View {
       startDate: habit.startDate,
       endDate: habit.endDate,
       createdAt: habit.createdAt,
-      reminders: reminders,
+      reminders: sortedReminders,
       baseline: habit.baseline,
       target: habit.target,
       completionHistory: habit.completionHistory,
@@ -1060,7 +1069,7 @@ struct RemindersHubView: View {
         try await habitRepository.updateHabit(updatedHabit)
         
         // Update notifications
-        NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: reminders)
+        NotificationManager.shared.updateNotifications(for: updatedHabit, reminders: sortedReminders)
         
         // Haptic feedback for success
         await MainActor.run {
