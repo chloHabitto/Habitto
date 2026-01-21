@@ -266,12 +266,6 @@ class StreakDataCalculator {
     // Get completion percentage for this date
     let completionPercentage = calculateCompletionPercentage(for: habit, date: targetDate)
 
-    // Debug: Print heatmap data for troubleshooting
-    let dateKey = DateUtils.dateKey(for: targetDate)
-    let actualProgress = habit.getProgress(for: targetDate)
-    let weekday = calendar.component(.weekday, from: targetDate)
-    // Debug logging removed to prevent excessive console output
-    
     // If not scheduled, return 0 intensity and 0% completion
     if !isScheduled {
       return (intensity: 0, isScheduled: false, completionPercentage: 0.0)

@@ -1481,7 +1481,8 @@ struct HomeView: View {
         .environmentObject(state)
     }
     .sheet(isPresented: $state.showingNotificationView) {
-      NotificationCenterView()
+      RemindersHubView()
+        .environmentObject(state.habitRepository)
     }
     .sheet(isPresented: Binding(
       get: { HabitRepository.shared.shouldShowMigrationView },
