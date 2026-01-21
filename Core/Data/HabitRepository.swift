@@ -126,10 +126,7 @@ class HabitRepository: ObservableObject {
 
   /// Debug method to check if repository is working
   func debugRepositoryState() {
-    debugLog("🔍 HabitRepository: Debug State")
-    debugLog("  - habits.count: \(habits.count)")
-    debugLog("  - habits: \(habits.map { "\($0.name) (ID: \($0.id))" })")
-    debugLog("  - habitStore: \(habitStore)")
+    // Debug logs removed for production
   }
 
   // MARK: - Guest Data Migration
@@ -323,15 +320,6 @@ class HabitRepository: ObservableObject {
   // MARK: - Debug Methods
 
   func debugHabitsState() {
-    debugLog("🔍 HabitRepository: Debug - Current habits state:")
-    debugLog("  - Published habits count: \(habits.count)")
-
-    // List all published habits
-    debugLog("📋 Published habits:")
-    for (index, habit) in habits.enumerated() {
-      debugLog("  \(index): \(habit.name) (ID: \(habit.id), reminders: \(habit.reminders.count))")
-    }
-
     // Check for any habits without IDs
     let invalidHabits = habits.filter { $0.id == UUID() }
     if !invalidHabits.isEmpty {
@@ -355,15 +343,10 @@ class HabitRepository: ObservableObject {
         debugLog("    - \(duplicate.name) (ID: \(duplicate.id))")
       }
     }
-
-    debugLog("✅ HabitRepository: Debug completed")
   }
 
   func debugCreateHabitFlow(_ habit: Habit) {
-    debugLog("🔍 HabitRepository: Debug Create Habit Flow")
-    debugLog("  - Habit to create: \(habit.name) (ID: \(habit.id))")
-    debugLog("  - Current habits count: \(habits.count)")
-    debugLog("  - Current habits: \(habits.map { $0.name })")
+    // Debug logs removed for production
   }
 
   /// Emergency recovery method

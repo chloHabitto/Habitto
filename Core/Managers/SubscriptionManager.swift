@@ -191,30 +191,7 @@ class SubscriptionManager: ObservableObject {
     
     // First verify StoreKit can fetch products (basic connectivity check)
     do {
-      print("🔍 ============================================")
-      print("🔍 STOREKIT PRODUCT FETCH - Detailed Logging")
-      print("🔍 ============================================")
-      print("🔍 Requesting product IDs:")
-      for (index, productID) in ProductID.all.enumerated() {
-        print("   \(index + 1). \(productID)")
-      }
-      print("🔍 Total product IDs requested: \(ProductID.all.count)")
-      
-      // Detect environment
-      #if DEBUG
-      print("🔍 Environment: DEBUG (Sandbox)")
-      #else
-      print("🔍 Environment: RELEASE (Production)")
-      #endif
-      
-      print("🔍 Calling Product.products(for:)...")
       let testProducts = try await Product.products(for: ProductID.all)
-      
-      print("🔍 ============================================")
-      print("🔍 STOREKIT RESPONSE RECEIVED")
-      print("🔍 ============================================")
-      print("✅ StoreKit connectivity OK")
-      print("📊 Products found: \(testProducts.count) / \(ProductID.all.count) requested")
       
       if testProducts.isEmpty {
         print("⚠️ WARNING: StoreKit returned 0 products!")
@@ -224,20 +201,6 @@ class SubscriptionManager: ObservableObject {
         print("   3. Network connectivity issues")
         print("   4. StoreKit not ready yet")
       } else {
-        print("📦 Product Details:")
-        for (index, product) in testProducts.enumerated() {
-          print("   Product #\(index + 1):")
-          print("      ID: \(product.id)")
-          print("      Display Name: \(product.displayName)")
-          print("      Display Price: \(product.displayPrice)")
-          print("      Description: \(product.description)")
-          print("      Type: \(product.type)")
-          if let subscription = product.subscription {
-            print("      Subscription Period: \(formatSubscriptionPeriod(subscription.subscriptionPeriod))")
-            print("      Introductory Offer: \(subscription.introductoryOffer != nil ? "Yes" : "No")")
-          }
-        }
-        
         // Check for missing products
         let foundIDs = Set(testProducts.map { $0.id })
         let requestedIDs = Set(ProductID.all)
@@ -250,7 +213,6 @@ class SubscriptionManager: ObservableObject {
           }
         }
       }
-      print("🔍 ============================================")
     } catch {
       print("❌ ============================================")
       print("❌ STOREKIT ERROR")

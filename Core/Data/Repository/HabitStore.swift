@@ -43,7 +43,6 @@ final actor HabitStore {
 
   func loadHabits(force: Bool = false) async throws -> [Habit] {
     let startTime = CFAbsoluteTimeGetCurrent()
-    logger.info("Loading habits from storage (force: \(force))")
 
     // Check if migration is needed
     let migrationMgr = await migrationManager
@@ -68,7 +67,6 @@ final actor HabitStore {
     }
 
     // Use active storage (SwiftData or DualWrite based on feature flags)
-    logger.info("HabitStore: Loading habits from active storage (force: \(force))...")
     
     // ✅ CRITICAL FIX: Log current userId before loading to verify filtering
     let currentUserId = await CurrentUser().idOrGuest
@@ -143,9 +141,6 @@ final actor HabitStore {
     }
 
     let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-    logger
-      .info(
-        "Successfully loaded \(habits.count) habits from SwiftData in \(String(format: "%.3f", timeElapsed))s")
 
     // Record performance metrics
     let metrics = await performanceMetrics

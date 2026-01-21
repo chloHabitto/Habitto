@@ -34,6 +34,10 @@ struct RemindersHubView: View {
   @State private var showingAddReminderSheet = false
   @State private var habitToAddReminder: Habit? = nil
   
+  // MARK: - Habit Reminders Sheet
+  
+  @State private var selectedHabitForReminders: Habit? = nil
+  
   // MARK: - Global Reminder Setting
   
   @AppStorage("habitReminderEnabled") private var habitRemindersEnabled = true
@@ -187,9 +191,26 @@ struct RemindersHubView: View {
               addReminderToHabit(habit, time: selectedTime)
             }
           )
-          .presentationDetents([.medium])
+          .presentationDetents([.height(500)])
           .presentationDragIndicator(.visible)
         }
+      }
+      .sheet(item: $selectedHabitForReminders) { habit in
+        HabitRemindersSheet(
+          habit: habit,
+          onUpdate: { updatedHabit in
+            // Update the habit in repository
+            Task {
+              do {
+                try await habitRepository.updateHabit(updatedHabit)
+              } catch {
+                print("❌ Failed to update habit: \(error.localizedDescription)")
+              }
+            }
+          }
+        )
+        .presentationDetents([.large])
+        .presentationDragIndicator(.visible)
       }
       .alert("Skip Reminder", isPresented: $showingSkipConfirmation) {
         Button("Cancel", role: .cancel) {
@@ -553,74 +574,56 @@ struct RemindersHubView: View {
   }
   
   private func habitReminderRow(habit: Habit) -> some View {
-    HStack(spacing: 16) {
-      // Left: Habit icon
-      ZStack {
-        RoundedRectangle(cornerRadius: 12)
-          .fill(habit.color.color.opacity(0.15))
-          .frame(width: 40, height: 40)
-        
-        if habit.icon.hasPrefix("Icon-") {
-          Image(habit.icon)
-            .resizable()
-            .frame(width: 18, height: 18)
-            .foregroundColor(habit.color.color)
-        } else if habit.icon == "None" {
-          RoundedRectangle(cornerRadius: 4)
-            .fill(habit.color.color)
-            .frame(width: 18, height: 18)
-        } else {
-          Text(habit.icon)
-            .font(.system(size: 18))
-        }
-      }
-      
-      // Middle: Habit name and reminder info
-      VStack(alignment: .leading, spacing: 4) {
-        Text(habit.name)
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(.onPrimaryContainer)
-          .lineLimit(1)
-        
-        Text(formatReminderInfo(for: habit))
-          .font(.appBodySmall)
-          .foregroundColor(.text04)
-          .lineLimit(1)
-      }
-      
-      Spacer()
-      
-      // Right: Toggle or Add button
-      if habit.reminders.isEmpty {
-        Button(action: {
-          habitToAddReminder = habit
-          showingAddReminderSheet = true
-          UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        }) {
-          Text("Add")
-            .font(.appBodyMediumEmphasised)
-            .foregroundColor(.appPrimary)
-        }
-      } else {
-        Toggle("", isOn: Binding(
-          get: { areRemindersActive(for: habit) },
-          set: { enabled in toggleHabitReminders(habit, enabled: enabled) }
-        ))
-        .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
-        .controlSize(.mini)
-        .scaleEffect(0.75)
-        .labelsHidden()
-        .onTapGesture {
-          // Prevent row tap when toggle is tapped
-        }
-      }
-    }
-    .padding(16)
-    .contentShape(Rectangle())
-    .onTapGesture {
+    Button(action: {
+      selectedHabitForReminders = habit
       UIImpactFeedbackGenerator(style: .light).impactOccurred()
-      navigateToHabitDetail(habit)
+    }) {
+      HStack(spacing: 16) {
+        // Left: Habit icon
+        ZStack {
+          RoundedRectangle(cornerRadius: 12)
+            .fill(habit.color.color.opacity(0.15))
+            .frame(width: 40, height: 40)
+          
+          if habit.icon.hasPrefix("Icon-") {
+            Image(habit.icon)
+              .resizable()
+              .frame(width: 18, height: 18)
+              .foregroundColor(habit.color.color)
+          } else if habit.icon == "None" {
+            RoundedRectangle(cornerRadius: 4)
+              .fill(habit.color.color)
+              .frame(width: 18, height: 18)
+          } else {
+            Text(habit.icon)
+              .font(.system(size: 18))
+          }
+        }
+        
+        // Middle: Habit name and reminder count
+        VStack(alignment: .leading, spacing: 4) {
+          Text(habit.name)
+            .font(.appBodyMediumEmphasised)
+            .foregroundColor(.onPrimaryContainer)
+            .lineLimit(1)
+          
+          Text(formatReminderCount(for: habit))
+            .font(.appBodySmall)
+            .foregroundColor(.text04)
+            .lineLimit(1)
+        }
+        
+        Spacer()
+        
+        // Right: Chevron
+        Image(systemName: "chevron.right")
+          .font(.system(size: 14, weight: .medium))
+          .foregroundColor(.text04)
+      }
+      .padding(16)
+      .contentShape(Rectangle())
     }
+    .buttonStyle(PlainButtonStyle())
   }
   
   // MARK: - Skip Reminder Helpers
@@ -719,6 +722,17 @@ struct RemindersHubView: View {
   }
   
   // MARK: - Helper Functions
+  
+  private func formatReminderCount(for habit: Habit) -> String {
+    let count = habit.reminders.count
+    if count == 0 {
+      return "No reminders"
+    } else if count == 1 {
+      return "1 reminder"
+    } else {
+      return "\(count) reminders"
+    }
+  }
   
   private func formatReminderInfo(for habit: Habit) -> String {
     if habit.reminders.isEmpty {
