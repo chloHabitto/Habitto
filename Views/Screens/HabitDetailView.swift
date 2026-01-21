@@ -77,25 +77,29 @@ struct HabitDetailView: View {
             Button(action: {
               showingEditView = true
             }) {
-              HStack {
+              Label {
+                Text("Edit")
+              } icon: {
                 Image("Icon-Pen_Filled")
                   .renderingMode(.template)
-                Text("Edit")
+                  .frame(width: 12, height: 12)
               }
             }
+            .tint(.appText01)
 
             Button(role: .destructive, action: {
               print("🗑️ DELETE_FLOW: HabitDetailView - Delete button tapped for habit: \(habit.name) (ID: \(habit.id))")
               showingDeleteConfirmation = true
             }) {
-              HStack {
+              Label {
+                Text("Delete")
+              } icon: {
                 Image("Icon-TrashBin3_Filled")
                   .renderingMode(.template)
-                  .foregroundColor(.red)
-                Text("Delete")
-                  .foregroundColor(.red)
+                  .frame(width: 14, height: 14)
               }
             }
+            .tint(.red)
           } label: {
             Image(systemName: "ellipsis.circle.fill")
               .font(.system(size: 14, weight: .heavy))
