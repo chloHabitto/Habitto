@@ -759,9 +759,8 @@ struct MonthlyCalendarGridView: View {
       "Friday",
       "Saturday"
     ][weekday - 1]
-    print(
-      "🔍 MONTHLY HEATMAP DEBUG - Habit: '\(habit.name)' | Week: \(weekIndex) | Day: \(dayIndex) | Date: \(dateKey) | Weekday: \(weekdayName) | MonthStart: \(DateUtils.dateKey(for: monthStart)) | FirstWeekday: \(DateUtils.dateKey(for: firstWeekdayOfMonth))")
-
+    // Debug logging removed to prevent excessive console output
+    
     // Check if the target date is within the selected month
     let monthEnd = calendar.dateInterval(of: .month, for: selectedMonth)?.end ?? selectedMonth
     if targetDate >= monthEnd {

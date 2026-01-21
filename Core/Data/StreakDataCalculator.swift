@@ -270,15 +270,8 @@ class StreakDataCalculator {
     let dateKey = DateUtils.dateKey(for: targetDate)
     let actualProgress = habit.getProgress(for: targetDate)
     let weekday = calendar.component(.weekday, from: targetDate)
-    print(
-      "🔍 HEATMAP DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | DayIndex: \(dayIndex) | Weekday: \(weekday) | Scheduled: \(isScheduled) | Progress: \(completionPercentage)% | ActualProgress: \(actualProgress) | CompletionHistory: \(habit.completionHistory[dateKey] ?? 0)")
-
-    // Additional debug for color mapping
-    if isScheduled, completionPercentage > 0 {
-      print(
-        "🔍 COLOR MAPPING DEBUG - Habit: '\(habit.name)' | Date: \(dateKey) | Completion: \(completionPercentage)% | Will show color for: \(completionPercentage >= 100.0 ? "100% (green600)" : "\(completionPercentage)% (gradient)")")
-    }
-
+    // Debug logging removed to prevent excessive console output
+    
     // If not scheduled, return 0 intensity and 0% completion
     if !isScheduled {
       return (intensity: 0, isScheduled: false, completionPercentage: 0.0)

@@ -12,6 +12,7 @@ struct DailyActivityStatsCard: View {
     let habit: Habit
     let entries: [DailyProgressEntry]
     let selectedDate: Date
+    let streak: Int
     
     private var currentProgress: Int {
         entries.last?.runningTotal ?? 0
@@ -19,10 +20,6 @@ struct DailyActivityStatsCard: View {
     
     private var goalAmount: Int {
         habit.goalAmount(for: selectedDate)
-    }
-    
-    private var streak: Int {
-        habit.calculateTrueStreak()
     }
     
     private var averageDifficulty: String {
@@ -84,6 +81,8 @@ struct DailyActivityStatsCard: View {
                 Text(habit.name)
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.appText01)
+                    .lineLimit(2)
+                    .truncationMode(.tail)
                 
                 // Streak Badge
                 HStack(spacing: 4) {
@@ -194,7 +193,8 @@ struct DailyActivityStatsCard: View {
                     eventType: "INCREMENT"
                 )
             ],
-            selectedDate: Date()
+            selectedDate: Date(),
+            streak: 12
         )
         
         // Empty state (no entries)
@@ -212,7 +212,8 @@ struct DailyActivityStatsCard: View {
                 endDate: nil
             ),
             entries: [],
-            selectedDate: Date()
+            selectedDate: Date(),
+            streak: 5
         )
     }
     .padding()

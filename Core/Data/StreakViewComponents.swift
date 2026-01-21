@@ -493,11 +493,7 @@ struct HeatmapCellView: View {
       }
     }
     .aspectRatio(1, contentMode: .fit)
-    .onAppear {
-      // Debug: Print cell information for troubleshooting
-      print(
-        "🔍 HEATMAP CELL DEBUG - Intensity: \(intensity) | Scheduled: \(isScheduled) | Completion: \(completionPercentage)%")
-    }
+    // Debug logging removed to prevent excessive console output during scroll
   }
 
   // MARK: Private

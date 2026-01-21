@@ -14,6 +14,8 @@ struct SettingsView: View {
   @State private var showingExportData = false
   @State private var showingBackupRecovery = false
   @State private var showingDeleteData = false
+  @State private var showDateCalendarSavedToast = false
+  @State private var showStreakModeSavedToast = false
 
   private var iconColor: Color {
     Color.appIconColor
@@ -56,6 +58,38 @@ struct SettingsView: View {
       }
     }
     .preferredColorScheme(themeManager.preferredColorScheme)
+    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowDateCalendarSavedToast"))) { _ in
+      showDateCalendarSavedToast = true
+    }
+    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowStreakModeSavedToast"))) { _ in
+      showStreakModeSavedToast = true
+    }
+    .overlay(alignment: .bottom) {
+      if showDateCalendarSavedToast {
+        SuccessToastView(message: "Settings saved successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            showDateCalendarSavedToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 40)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showDateCalendarSavedToast)
+    .overlay(alignment: .bottom) {
+      if showStreakModeSavedToast {
+        SuccessToastView(message: "Streak mode saved successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            showStreakModeSavedToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 40)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showStreakModeSavedToast)
     .sheet(isPresented: $showingNotifications) {
       NotificationsView()
     }

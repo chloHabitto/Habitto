@@ -13,9 +13,7 @@ struct HeaderView: View {
   @EnvironmentObject var authManager: AuthenticationManager
   @EnvironmentObject var vacationManager: VacationManager
   @ObservedObject private var avatarManager = AvatarManager.shared
-  @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   @State private var showingProfileView = false
-  @State private var showingSubscriptionView = false
   @State private var guestName: String = ""
 
   var body: some View {
@@ -174,45 +172,20 @@ struct HeaderView: View {
       if showProfile {
         // Profile button - sign-in functionality removed
       } else {
-        // Crown button and Add button with advanced glass effect
+        // Notification button and Add button with advanced glass effect
         HStack(spacing: 12) {
-          // Crown button for subscription - only show for free users
-          // CRITICAL: Use .id() to force view recreation when isPremium changes
-          if !subscriptionManager.isPremium {
-            #if DEBUG
-            let _ = print("🔍 HeaderView: Showing crown icon - isPremium: \(subscriptionManager.isPremium)")
-            #endif
-            Button(action: {
-              showingSubscriptionView = true
-            }) {
-              Image("Icon-crown_Filled")
-                .renderingMode(.template)
-                .resizable()
-                .frame(width: 20, height: 20)
-                .foregroundColor(Color(hex: "FCD884"))
-            }
-            .frame(width: 32, height: 32)
-            .background {
-              Circle()
-                .fill(.surfaceFixed20)
-//                .overlay {
-//                  // Liquid glass effect with gradient opacity stroke
-//                  Circle()
-//                    .stroke(
-//                      LinearGradient(
-//                        stops: [
-//                          .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
-//                          .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
-//                          .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
-//                        ],
-//                        startPoint: .topLeading,
-//                        endPoint: .bottomTrailing
-//                      ),
-//                      lineWidth: 1.5
-//                    )
-//                }
-            }
-            .id("crown-\(subscriptionManager.isPremium)") // Force recreation when isPremium changes
+          // Notification button - shown for all users
+          Button(action: onNotificationTap) {
+            Image("Icon-Bell_Filled")
+              .renderingMode(.template)
+              .resizable()
+              .frame(width: 20, height: 20)
+              .foregroundColor(.onSurfaceFixed)
+          }
+          .frame(width: 32, height: 32)
+          .background {
+            Circle()
+              .fill(.surfaceFixed20)
           }
           
           // Add icon with advanced glass effect
@@ -225,22 +198,6 @@ struct HeaderView: View {
           .background {
             Circle()
               .fill(.surfaceFixed20)
-//              .overlay {
-//                // Liquid glass effect with gradient opacity stroke
-//                Circle()
-//                  .stroke(
-//                    LinearGradient(
-//                      stops: [
-//                        .init(color: Color.white.opacity(0.4), location: 0.0),  // Top-left: stronger
-//                        .init(color: Color.white.opacity(0.1), location: 0.5),  // Center: weaker
-//                        .init(color: Color.white.opacity(0.4), location: 1.0)   // Bottom-right: stronger
-//                      ],
-//                      startPoint: .topLeading,
-//                      endPoint: .bottomTrailing
-//                    ),
-//                    lineWidth: 1.5
-//                  )
-//              }
           }
         }
       }
@@ -251,8 +208,6 @@ struct HeaderView: View {
     .padding(.top, 8)
     .padding(.bottom, 20)
     .background(.headerBackground)
-    // CRITICAL: Force view to observe isPremium changes by using it in .id()
-    .id("header-premium-\(subscriptionManager.isPremium)")
     .sheet(isPresented: $showingProfileView) {
       AccountView()
     }
@@ -264,9 +219,6 @@ struct HeaderView: View {
       if !isShowing {
         loadGuestName()
       }
-    }
-    .sheet(isPresented: $showingSubscriptionView) {
-      SubscriptionView()
     }
   }
 

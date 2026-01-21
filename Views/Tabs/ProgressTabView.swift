@@ -209,6 +209,9 @@ struct ProgressTabView: View {
   /// Timeline entries for daily activity timeline
   @State private var timelineEntries: [DailyProgressEntry] = []
   
+  /// Cached streak for selected habit to avoid expensive recalculation during scroll
+  @State private var cachedStreak: Int = 0
+  
   /// Habit to show in detail view
   @State private var habitForDetailView: Habit?
   
@@ -678,7 +681,8 @@ struct ProgressTabView: View {
         DailyActivityStatsCard(
           habit: selectedHabit,
           entries: timelineEntries,
-          selectedDate: selectedProgressDate
+          selectedDate: selectedProgressDate,
+          streak: cachedStreak
         )
         .padding(.horizontal, 20)
       }
@@ -688,7 +692,8 @@ struct ProgressTabView: View {
         DailyActivityTimelineView(
           habit: selectedHabit,
           selectedDate: selectedProgressDate,
-          entries: timelineEntries
+          entries: timelineEntries,
+          streak: cachedStreak
         )
         .padding(.horizontal, 20)
       }
@@ -909,6 +914,8 @@ struct ProgressTabView: View {
       
       // Load timeline data when view appears
       loadTimelineData()
+      // Update cached streak when view appears
+      updateCachedStreak()
     }
     .onChange(of: habitRepository.habits) { oldHabits, newHabits in
       // Clear message caches when habits change (progress data changes)
@@ -919,6 +926,8 @@ struct ProgressTabView: View {
       if let selectedId = selectedHabit?.id,
          let updatedHabit = newHabits.first(where: { $0.id == selectedId }) {
         selectedHabit = updatedHabit
+        // Update cached streak when habit data changes
+        updateCachedStreak()
       }
       
       // Force view refresh by updating refresh ID
@@ -942,6 +951,8 @@ struct ProgressTabView: View {
       updateTimeBaseCompletionData()
       // Load timeline data when selected habit changes
       loadTimelineData()
+      // Update cached streak when selected habit changes
+      updateCachedStreak()
     }
     .onChange(of: selectedWeekStartDate) {
       // Clear weekly message cache to regenerate on next access
@@ -1608,6 +1619,8 @@ struct ProgressTabView: View {
               Text(selectedHabit.goal)
                 .font(.appBodySmallEmphasised)
                 .foregroundColor(Color("navy500"))
+                .lineLimit(1)
+                .truncationMode(.tail)
               
               Image(systemName: "chevron.right")
                 .font(.system(size: 10, weight: .semibold))
@@ -1920,6 +1933,7 @@ struct ProgressTabView: View {
   private func loadTimelineData() {
     guard let habit = selectedHabit else {
       timelineEntries = []
+      cachedStreak = 0
       return
     }
     
@@ -1929,6 +1943,17 @@ struct ProgressTabView: View {
         timelineEntries = entries
       }
     }
+  }
+  
+  /// Update cached streak to avoid expensive recalculation during scroll
+  private func updateCachedStreak() {
+    guard let habit = selectedHabit else {
+      cachedStreak = 0
+      return
+    }
+    
+    // Calculate streak once and cache it
+    cachedStreak = habit.calculateTrueStreak()
   }
 
   private func getActiveHabits() -> [Habit] {

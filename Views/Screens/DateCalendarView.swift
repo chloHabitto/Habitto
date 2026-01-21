@@ -52,19 +52,6 @@ struct DateCalendarView: View {
           }
         }
       }
-      .overlay(alignment: .bottom) {
-        if showSuccessToast {
-          SuccessToastView(message: "Settings saved successfully") {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-              showSuccessToast = false
-            }
-          }
-          .padding(.horizontal, 16)
-          .padding(.bottom, 40)
-          .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-      }
-      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showSuccessToast)
     }
   }
 
@@ -80,9 +67,6 @@ struct DateCalendarView: View {
   // Track current selections
   @State private var selectedDateFormat: DateFormatOption
   @State private var selectedFirstDay: FirstDayOption
-
-  /// Toast state
-  @State private var showSuccessToast = false
 
   /// Check if any changes were made
   private var hasChanges: Bool {
@@ -244,13 +228,11 @@ struct DateCalendarView: View {
     datePreferences.firstDayOfWeek = selectedFirstDay
     originalDateFormat = selectedDateFormat
     originalFirstDay = selectedFirstDay
+    dismiss()
     
-    // Show success toast
-    showSuccessToast = true
-    
-    // Dismiss after toast shows
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-      dismiss()
+    // Show toast on parent view after dismiss
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      NotificationCenter.default.post(name: NSNotification.Name("ShowDateCalendarSavedToast"), object: nil)
     }
   }
 }
