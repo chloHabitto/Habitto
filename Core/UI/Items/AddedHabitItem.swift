@@ -99,12 +99,11 @@ struct AddedHabitItem: View {
                 Label("Edit", systemImage: "pencil")
               }
 
-              Button(action: {
+              Button(role: .destructive, action: {
                 onDelete?()
               }) {
                 Label("Delete", systemImage: "trash")
               }
-              .foregroundColor(.red)
             } label: {
               Image(.iconMoreVert)
                 .resizable()

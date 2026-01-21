@@ -539,14 +539,39 @@ class HabitRepository: ObservableObject {
             print("    ✓ SwiftData.remindersData: \(remindersData.count) bytes")
             
             // Try to decode it
-            if let decodedReminders = try? JSONDecoder().decode([ReminderItem].self, from: remindersData) {
-              print("    ✓ Decoded \(decodedReminders.count) reminders from SwiftData:")
+            if let jsonString = String(data: remindersData, encoding: .utf8) {
+              print("    📝 Raw remindersData JSON: \(jsonString.prefix(200))\(jsonString.count > 200 ? "..." : "")")
+            }
+            
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            
+            do {
+              let decodedReminders = try decoder.decode([ReminderItem].self, from: remindersData)
+              print("    ✅ Decoded \(decodedReminders.count) reminders from SwiftData:")
               for (reminderIndex, reminder) in decodedReminders.enumerated() {
                 let timeStr = DateFormatter.localizedString(from: reminder.time, dateStyle: .none, timeStyle: .short)
                 print("      [\(reminderIndex + 1)] Time: \(timeStr), Active: \(reminder.isActive), ID: \(reminder.id)")
               }
-            } else {
-              print("    ⚠️  Failed to decode remindersData from SwiftData")
+            } catch {
+              print("    ❌ Failed to decode remindersData from SwiftData")
+              print("    ❌ Decode error: \(error)")
+              if let decodingError = error as? DecodingError {
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                  print("    ❌ Missing key '\(key.stringValue)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                case .typeMismatch(let type, let context):
+                  print("    ❌ Type mismatch for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                  print("    ❌ Debug: \(context.debugDescription)")
+                case .valueNotFound(let type, let context):
+                  print("    ❌ Value not found for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                case .dataCorrupted(let context):
+                  print("    ❌ Data corrupted at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                  print("    ❌ Debug: \(context.debugDescription)")
+                @unknown default:
+                  print("    ❌ Unknown decoding error")
+                }
+              }
             }
           } else {
             print("    ⚠️  SwiftData.remindersData: nil")
@@ -579,17 +604,42 @@ class HabitRepository: ObservableObject {
               
               if let remindersJSON = snapshot.data()?["remindersJSON"] as? String {
                 print("    ✓ Firestore.remindersJSON: \(remindersJSON.count) characters")
+                print("    📝 Raw remindersJSON: \(remindersJSON.prefix(200))\(remindersJSON.count > 200 ? "..." : "")")
                 
                 // Try to decode and display the reminder times
-                if let data = remindersJSON.data(using: .utf8),
-                   let decodedReminders = try? JSONDecoder().decode([ReminderItem].self, from: data) {
-                  print("    ✓ Decoded \(decodedReminders.count) reminders from Firestore JSON:")
-                  for (reminderIndex, reminder) in decodedReminders.enumerated() {
-                    let timeStr = DateFormatter.localizedString(from: reminder.time, dateStyle: .none, timeStyle: .short)
-                    print("      [\(reminderIndex + 1)] Time: \(timeStr), Active: \(reminder.isActive), ID: \(reminder.id)")
+                if let data = remindersJSON.data(using: .utf8) {
+                  let decoder = JSONDecoder()
+                  decoder.dateDecodingStrategy = .iso8601
+                  
+                  do {
+                    let decodedReminders = try decoder.decode([ReminderItem].self, from: data)
+                    print("    ✅ Decoded \(decodedReminders.count) reminders from Firestore JSON:")
+                    for (reminderIndex, reminder) in decodedReminders.enumerated() {
+                      let timeStr = DateFormatter.localizedString(from: reminder.time, dateStyle: .none, timeStyle: .short)
+                      print("      [\(reminderIndex + 1)] Time: \(timeStr), Active: \(reminder.isActive), ID: \(reminder.id)")
+                    }
+                  } catch {
+                    print("    ❌ Failed to decode remindersJSON from Firestore")
+                    print("    ❌ Decode error: \(error)")
+                    if let decodingError = error as? DecodingError {
+                      switch decodingError {
+                      case .keyNotFound(let key, let context):
+                        print("    ❌ Missing key '\(key.stringValue)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                      case .typeMismatch(let type, let context):
+                        print("    ❌ Type mismatch for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                        print("    ❌ Debug: \(context.debugDescription)")
+                      case .valueNotFound(let type, let context):
+                        print("    ❌ Value not found for type '\(type)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                      case .dataCorrupted(let context):
+                        print("    ❌ Data corrupted at path: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                        print("    ❌ Debug: \(context.debugDescription)")
+                      @unknown default:
+                        print("    ❌ Unknown decoding error")
+                      }
+                    }
                   }
                 } else {
-                  print("    ⚠️  Failed to decode remindersJSON from Firestore")
+                  print("    ❌ Failed to convert remindersJSON string to Data")
                 }
               }
               
