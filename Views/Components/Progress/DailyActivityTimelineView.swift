@@ -12,6 +12,7 @@ struct DailyActivityTimelineView: View {
     let habit: Habit
     let selectedDate: Date
     let entries: [DailyProgressEntry]
+    let streak: Int
     
     private var currentProgress: Int {
         entries.last?.runningTotal ?? 0
@@ -23,10 +24,6 @@ struct DailyActivityTimelineView: View {
     
     private var isGoalComplete: Bool {
         currentProgress >= goalAmount
-    }
-    
-    private var streak: Int {
-        habit.calculateTrueStreak()
     }
     
     var body: some View {

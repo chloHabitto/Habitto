@@ -44,19 +44,6 @@ struct ThemeView: View {
       }
     }
     .preferredColorScheme(themeManager.preferredColorScheme)
-    .overlay(alignment: .bottom) {
-      if showSavedToast {
-        SuccessToastView(message: "Appearance saved successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            showSavedToast = false
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, 40)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showSavedToast)
   }
 
   // MARK: Private
@@ -64,7 +51,6 @@ struct ThemeView: View {
   @Environment(\.dismiss) private var dismiss
   @EnvironmentObject var themeManager: ThemeManager
   @State private var selectedPreference: ColorSchemePreference
-  @State private var showSavedToast = false
   
   init() {
     // Initialize with current preference
@@ -151,11 +137,11 @@ struct ThemeView: View {
   
   private func saveTheme() {
     themeManager.colorSchemePreference = selectedPreference
-    showSavedToast = true
+    dismiss()
     
-    // Dismiss after toast shows
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-      dismiss()
+    // Show toast on parent view after dismiss
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+      NotificationCenter.default.post(name: NSNotification.Name("ShowThemeSavedToast"), object: nil)
     }
   }
 }
