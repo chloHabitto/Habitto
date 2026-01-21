@@ -969,16 +969,7 @@ class HomeViewState: ObservableObject {
 
   /// Debug method to check current state
   func debugCurrentState() {
-    debugLog("🔍 HomeViewState: === DEBUG STATE ===")
-    debugLog("🔍 HomeViewState: Current habits count: \(habits.count)")
-    debugLog("🔍 HomeViewState: HabitRepository habits count: \(habitRepository.habits.count)")
-    debugLog("🔍 HomeViewState: Current selectedDate: \(selectedDate)")
-
-    for (index, habit) in habits.enumerated() {
-      debugLog("🔍 HomeViewState: Habit \(index): \(habit.name) (ID: \(habit.id))")
-    }
-
-    debugLog("🔍 HomeViewState: === END DEBUG ===")
+    // Debug logs removed for production
   }
 
   /// Debug method to track habit updates
@@ -1359,13 +1350,6 @@ struct HomeView: View {
       authManager.ensureAuthListenerSetup()
       
       loadHabitsOptimized()
-
-      // Add additional debugging
-      debugLog("🔍 HomeView: Current habits count: \(state.habits.count)")
-      debugLog("🔍 HomeView: HabitRepository habits count: \(HabitRepository.shared.habits.count)")
-
-      // Debug Core Data state
-      HabitRepository.shared.debugHabitsState()
       
       // ✅ FIX: Recalculate streak from CompletionRecords when app launches
       state.requestStreakRecalculation(reason: "HomeView onAppear")

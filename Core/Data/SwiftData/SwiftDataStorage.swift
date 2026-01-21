@@ -550,9 +550,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       }
 
       let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
-      logger
-        .info(
-          "Successfully loaded \(habits.count) habits for user: \(currentUserId ?? "guest") in \(String(format: "%.3f", timeElapsed))s")
       
       if habits.isEmpty {
         // Check if habits exist with different userIds
