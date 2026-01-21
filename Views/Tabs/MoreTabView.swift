@@ -472,7 +472,6 @@ struct MoreTabView: View {
         print("      → userId: \(award.userId)")
       }
       
-      print("📊 ===================================")
       
     } catch {
       print("❌ SWIFTDATA AUDIT FAILED: \(error)")

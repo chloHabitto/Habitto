@@ -128,7 +128,6 @@ class DailyAwardService: ObservableObject {
                         allHabitsCompleted: true
                     )
                     modelContext.insert(award)
-                    logger.info("✅ DailyAwardService: Created DailyAward record for \(dateKey): \(delta) XP")
                 } else {
                     // Award already exists - update it (shouldn't happen, but handle gracefully)
                     if let existing = existingAwards.first {
@@ -146,7 +145,6 @@ class DailyAwardService: ObservableObject {
                 
                 for award in awardsToDelete {
                     modelContext.delete(award)
-                    logger.info("✅ DailyAwardService: Deleted DailyAward record for \(dateKey): \(award.xpGranted) XP reversed")
                 }
                 
                 if awardsToDelete.isEmpty {
@@ -348,7 +346,6 @@ class DailyAwardService: ObservableObject {
     /// Recalculates totalXP and level from DailyAward records (source of truth).
     /// Safe to call if integrity check fails.
     func repairIntegrity() async throws {
-        logger.info("🔧 DailyAwardService: Repairing XP integrity...")
         
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = await CurrentUser().idOrGuest
@@ -422,7 +419,6 @@ class DailyAwardService: ObservableObject {
     func refreshXPState() async {
         // Debounce: Skip if called too recently
         if let lastRefresh = lastRefreshTime, Date().timeIntervalSince(lastRefresh) < refreshDebounceInterval {
-            logger.debug("⏭️ DailyAwardService: Skipping XP refresh (debounced - last refresh was \(Date().timeIntervalSince(lastRefresh))s ago)")
             return
         }
         
@@ -603,7 +599,6 @@ class DailyAwardService: ObservableObject {
             let recentSyncThreshold: TimeInterval = 5 * 60 // 5 minutes
             
             if timeSinceUpdate < recentSyncThreshold {
-                logger.info("⏭️ DailyAwardService: Skipping reconciliation for \(recordIdentifier) - recently synced (\(Int(timeSinceUpdate))s ago)")
                 return true
             }
         }
@@ -642,7 +637,6 @@ class DailyAwardService: ObservableObject {
     /// - Returns: ReconciliationResult with statistics
     /// - Note: Safe to run multiple times (idempotent)
     func reconcileCompletionRecords() async throws -> ReconciliationResult {
-        logger.info("🔧 DailyAwardService: Starting CompletionRecord reconciliation...")
         
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = await CurrentUser().idOrGuest
@@ -654,7 +648,6 @@ class DailyAwardService: ObservableObject {
         let recordDescriptor = FetchDescriptor<CompletionRecord>(predicate: recordPredicate)
         let allRecords = try modelContext.fetch(recordDescriptor)
         
-        logger.info("🔧 DailyAwardService: Found \(allRecords.count) CompletionRecords to reconcile")
         
         let totalRecords = allRecords.count
         var mismatchesFound = 0
@@ -729,7 +722,6 @@ class DailyAwardService: ObservableObject {
             if calculatedProgress != currentProgress {
                 mismatchesFound += 1
                 
-                logger.info("🔧 DailyAwardService: Mismatch detected for \(recordIdentifier)")
                 logger.info("   CompletionRecord.progress: \(currentProgress)")
                 logger.info("   Calculated from ProgressEvents: \(calculatedProgress)")
                 logger.info("   Delta: \(calculatedProgress - currentProgress)")
@@ -743,7 +735,6 @@ class DailyAwardService: ObservableObject {
                     recordProgress: currentProgress,
                     recordIdentifier: recordIdentifier
                 ) {
-                    logger.info("⏭️ DailyAwardService: Skipping reconciliation for \(recordIdentifier) - recently synced or local events appear stale")
                     continue
                 }
                 

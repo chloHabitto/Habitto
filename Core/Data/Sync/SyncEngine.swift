@@ -2087,7 +2087,6 @@ actor SyncEngine {
     /// 2. Delete from Local: habits that exist locally but not remotely (deleted on another device)
     /// Call this after pullHabits() completes to clean up orphaned habits
     private func reconcileDeletedHabits(userId: String, remoteHabitIds: Set<UUID>) async {
-        logger.info("🔄 RECONCILE: Starting with \(remoteHabitIds.count) remote habit IDs")
         
         // Get local habit IDs (excluding soft-deleted habits)
         let localHabitIds: Set<UUID> = await MainActor.run {
@@ -2101,9 +2100,6 @@ actor SyncEngine {
             return Set(localHabits.map { $0.id })
         }
         
-        logger.info("🔄 RECONCILE: Found \(localHabitIds.count) local habit IDs")
-        logger.info("🔄 RECONCILE: Remote IDs: \(remoteHabitIds.map { String($0.uuidString.prefix(8)) }.sorted())")
-        logger.info("🔄 RECONCILE: Local IDs: \(localHabitIds.map { String($0.uuidString.prefix(8)) }.sorted())")
         
         // DIRECTION 1: Delete from Firestore habits that were deleted locally
         // (exist in Firestore but not locally)
@@ -2120,7 +2116,6 @@ actor SyncEngine {
                 return Set(allLocalHabits.filter { $0.deletedAt != nil }.map { $0.id })
             }
             
-            logger.info("🔄 RECONCILE: Found \(softDeletedIds.count) soft-deleted habits locally")
             
             for habitId in deletedLocallyButInFirestore {
                 // Check if it's soft-deleted locally

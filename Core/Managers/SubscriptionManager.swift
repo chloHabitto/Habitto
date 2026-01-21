@@ -144,7 +144,6 @@ class SubscriptionManager: ObservableObject {
     // Check if this is one of our subscription products
     if ProductID.all.contains(transaction.productID) {
       if transaction.revocationDate == nil {
-        print("✅ SubscriptionManager: Active subscription detected - enabling premium")
         
         // Update on MainActor since we're called from Task.detached (background thread)
         await MainActor.run {
@@ -155,7 +154,6 @@ class SubscriptionManager: ObservableObject {
         // Finish the transaction to acknowledge receipt
         await transaction.finish()
         
-        print("✅ SubscriptionManager: Premium status enabled via transaction listener")
       } else {
         print("⚠️ SubscriptionManager: Transaction was revoked")
         // Update on MainActor since we're called from Task.detached (background thread)
@@ -174,7 +172,6 @@ class SubscriptionManager: ObservableObject {
   
   /// Check subscription status using StoreKit
   private func checkSubscriptionStatus() async {
-    print("🔍 SubscriptionManager: Checking subscription status...")
     
     // Check if user is signed into App Store
     #if DEBUG
@@ -246,7 +243,6 @@ class SubscriptionManager: ObservableObject {
       print("❌ ============================================")
     }
     
-    print("🔍 SubscriptionManager: Iterating through Transaction.currentEntitlements...")
     
     var hasActiveSubscription = false
     var activeProductID: String? = nil
@@ -255,7 +251,6 @@ class SubscriptionManager: ObservableObject {
     // Check for active entitlements (subscriptions and non-consumables)
     for await result in Transaction.currentEntitlements {
       checkedCount += 1
-      print("🔍 SubscriptionManager: Checking entitlement #\(checkedCount)")
       
       if case .verified(let transaction) = result {
         print("   ✓ Verified transaction found")
@@ -268,7 +263,6 @@ class SubscriptionManager: ObservableObject {
         if productIDs.contains(transaction.productID) {
           // Check if subscription is still active (not revoked)
           if transaction.revocationDate == nil {
-            print("✅ SubscriptionManager: Found active subscription/product: \(transaction.productID)")
             hasActiveSubscription = true
             activeProductID = transaction.productID
             break
@@ -279,15 +273,13 @@ class SubscriptionManager: ObservableObject {
       }
     }
     
-    print("🔍 SubscriptionManager: Checked \(checkedCount) entitlement(s)")
     
     // Direct assignment - class is @MainActor so this is already on main thread
     self.isPremium = hasActiveSubscription
     self.currentSubscriptionProductID = activeProductID
     if hasActiveSubscription {
-      print("✅ SubscriptionManager: Premium status enabled")
       if let productID = activeProductID {
-        print("✅ SubscriptionManager: Current subscription: \(productID)")
+        // Premium status enabled
       }
     } else {
       print("ℹ️ SubscriptionManager: No active subscription found - free user")
@@ -308,86 +300,40 @@ class SubscriptionManager: ObservableObject {
   /// Restore previous purchases
   /// - Returns: A result indicating success or failure with a message
   func restorePurchases() async -> (success: Bool, message: String) {
-    print("🔄 ============================================")
-    print("🔄 RESTORE PURCHASES - Starting...")
-    print("🔄 ============================================")
-    print("🔄 Initial isPremium status: \(isPremium)")
-    
-    print("\n🔄 Step 1: Checking Transaction.currentEntitlements...")
+    // Restore purchases logs removed for cleaner console output
     await checkSubscriptionStatus()
-    let isPremiumAfterStep1 = await MainActor.run { self.isPremium }
-    print("🔄 After Step 1: isPremium = \(isPremiumAfterStep1)")
     
-    print("\n🔄 Step 2: Checking Transaction.all (all transactions, including finished)...")
     var allTransactionCount = 0
     var foundOurProduct = false
     for await result in Transaction.all {
       allTransactionCount += 1
       if case .verified(let transaction) = result {
-        print("   Transaction #\(allTransactionCount):")
-        print("      Product ID: \(transaction.productID)")
-        print("      Transaction ID: \(transaction.id)")
-        print("      Purchase Date: \(transaction.purchaseDate)")
-        print("      Revoked: \(transaction.revocationDate != nil)")
-        
         if ProductID.all.contains(transaction.productID) {
-          print("      ✅ Found our product!")
           foundOurProduct = true
           // Process it through the handler to update isPremium
           await handleTransactionUpdate(result)
-        } else {
-          print("      ℹ️ Not our product (skipping)")
         }
-      } else {
-        print("   Transaction #\(allTransactionCount): ⚠️ Unverified (skipped)")
       }
     }
-    print("🔄 Checked \(allTransactionCount) total transactions")
-    let isPremiumAfterStep2 = await MainActor.run { self.isPremium }
-    print("🔄 After Step 2: isPremium = \(isPremiumAfterStep2)")
     
-    print("\n🔄 Step 3: Final check of Transaction.currentEntitlements...")
     var entitlementCount = 0
     var foundActiveEntitlement = false
     for await result in Transaction.currentEntitlements {
       entitlementCount += 1
       if case .verified(let transaction) = result {
-        print("   Entitlement #\(entitlementCount):")
-        print("      Product ID: \(transaction.productID)")
-        print("      Transaction ID: \(transaction.id)")
-        
         if ProductID.all.contains(transaction.productID) {
-          print("      ✅ Found active entitlement for our product!")
           foundActiveEntitlement = true
         }
       }
     }
-    print("🔄 Found \(entitlementCount) current entitlement(s)")
     
-    print("\n🔄 Step 4: Final status check...")
     let finalPremiumStatus = await MainActor.run { self.isPremium }
-    print("   Final isPremium: \(finalPremiumStatus)")
     
     // Summary
-    print("\n📊 ============================================")
-    print("📊 RESTORE SUMMARY")
-    print("📊 ============================================")
-    print("   Total transactions found: \(allTransactionCount)")
-    print("   Our products found: \(foundOurProduct ? "YES" : "NO")")
-    print("   Current entitlements: \(entitlementCount)")
-    print("   Active entitlement for our product: \(foundActiveEntitlement ? "YES" : "NO")")
-    print("   Final isPremium: \(finalPremiumStatus)")
-    print("📊 ============================================")
-    
     if finalPremiumStatus {
-      print("\n✅ ============================================")
-      print("✅ RESTORE SUCCESS - Premium enabled!")
-      print("✅ ============================================")
       return (true, "Your subscription has been restored successfully!")
     } else {
-      print("\n❌ ============================================")
       print("❌ RESTORE FAILED - No purchases found")
-      print("❌ ============================================")
       print("ℹ️ This could mean:")
       print("   1. Purchase hasn't synced yet (sandbox can take hours)")
       print("   2. Different Apple ID was used for purchase")
@@ -548,15 +494,7 @@ class SubscriptionManager: ObservableObject {
   /// Verify current subscription status with detailed logging
   /// Use this on the device that made the purchase
   func verifyPurchaseStatus() async {
-    print("🔍 ============================================")
-    print("🔍 PURCHASE VERIFICATION - Detailed Check")
-    print("🔍 ============================================")
-    
-    print("\n📱 Device Info:")
-    print("   Model: \(UIDevice.current.model)")
-    print("   System: \(UIDevice.current.systemName) \(UIDevice.current.systemVersion)")
-    
-    print("\n🎫 Checking ALL transactions (not just current entitlements)...")
+    // Verification logs removed for cleaner console output
     
     // Check ALL transactions (including finished ones)
     var allTransactionCount = 0
@@ -577,9 +515,6 @@ class SubscriptionManager: ObservableObject {
       }
     }
     
-    print("\n📊 Total transactions found: \(allTransactionCount)")
-    
-    print("\n🎫 Checking CURRENT entitlements (active subscriptions)...")
     
     var entitlementCount = 0
     for await result in Transaction.currentEntitlements {
@@ -594,18 +529,9 @@ class SubscriptionManager: ObservableObject {
       }
     }
     
-    print("\n📊 Total current entitlements: \(entitlementCount)")
-    
     if entitlementCount == 0 {
-      print("\n⚠️ WARNING: No current entitlements found!")
-      print("   This means:")
-      print("   1. Purchase may not have been completed")
-      print("   2. Transaction may have been revoked")
-      print("   3. Subscription may have expired (if using sandbox tester)")
+      print("⚠️ WARNING: No current entitlements found!")
     }
-    
-    print("\n💎 Current Premium Status: \(isPremium ? "PREMIUM" : "FREE")")
-    print("🔍 ============================================\n")
   }
   
   /// Purchase a subscription product
@@ -616,9 +542,6 @@ class SubscriptionManager: ObservableObject {
     
     do {
       // First, try to fetch ALL products to see if StoreKit is working at all
-      print("🛒 ============================================")
-      print("🛒 PURCHASE FLOW - Product Fetch")
-      print("🛒 ============================================")
       print("🛒 Requesting product ID: \(productID)")
       print("🛒 All product IDs being requested:")
       for (index, id) in ProductID.all.enumerated() {
@@ -635,9 +558,6 @@ class SubscriptionManager: ObservableObject {
       print("🛒 Step 1: Fetching all products for connectivity test...")
       let allProducts = try await Product.products(for: ProductID.all)
       
-      print("🛒 ============================================")
-      print("🛒 ALL PRODUCTS RESPONSE")
-      print("🛒 ============================================")
       print("📊 Found \(allProducts.count) / \(ProductID.all.count) total product(s)")
       
       if allProducts.isEmpty {
@@ -664,9 +584,6 @@ class SubscriptionManager: ObservableObject {
       print("🛒 Step 2: Fetching specific product: \(productID)...")
       let products = try await Product.products(for: [productID])
       
-      print("🛒 ============================================")
-      print("🛒 SPECIFIC PRODUCT RESPONSE")
-      print("🛒 ============================================")
       print("📊 Fetched \(products.count) product(s) for \(productID)")
       
       guard let product = products.first else {
@@ -685,7 +602,6 @@ class SubscriptionManager: ObservableObject {
       if let subscription = product.subscription {
         print("   Subscription Period: \(formatSubscriptionPeriod(subscription.subscriptionPeriod))")
       }
-      print("🛒 ============================================")
       
       // Purchase the product
       print("🛒 SubscriptionManager: Initiating purchase...")
@@ -697,11 +613,9 @@ class SubscriptionManager: ObservableObject {
         // Verify the transaction
         switch verification {
         case .verified(let transaction):
-          print("✅ SubscriptionManager: Purchase successful for \(productID)")
           
           // Finish the transaction FIRST
           await transaction.finish()
-          print("✅ SubscriptionManager: Transaction finished - ID: \(transaction.id)")
           print("   Product ID: \(transaction.productID)")
           
           // Small delay to let StoreKit process
@@ -731,8 +645,6 @@ class SubscriptionManager: ObservableObject {
             // Direct assignment - class is @MainActor so this is already on main thread
             self.isPremium = true
             self.currentSubscriptionProductID = productID
-            print("✅ SubscriptionManager: Premium status enabled (verified in StoreKit)")
-            print("✅ SubscriptionManager: Current subscription set to: \(productID)")
             
             return (true, "Purchase successful! Premium features are now unlocked.")
           } else {
@@ -776,50 +688,13 @@ class SubscriptionManager: ObservableObject {
   /// Get available subscription products
   /// - Returns: Array of Product objects
   func getAvailableProducts() async -> [Product] {
-    print("🔍 ============================================")
-    print("🔍 GET AVAILABLE PRODUCTS - Detailed Logging")
-    print("🔍 ============================================")
-    print("🔍 Requesting product IDs:")
-    for (index, productID) in ProductID.all.enumerated() {
-      print("   \(index + 1). \(productID)")
-    }
-    
-    // Detect environment
-    #if DEBUG
-    print("🔍 Environment: DEBUG (Sandbox)")
-    #else
-    print("🔍 Environment: RELEASE (Production)")
-    #endif
-    
+    // Product fetching logs removed for cleaner console output
     do {
-      print("🔍 Calling Product.products(for:)...")
       let products = try await Product.products(for: ProductID.all)
-      
-      print("🔍 ============================================")
-      print("🔍 PRODUCTS RESPONSE")
-      print("🔍 ============================================")
-      print("✅ Loaded \(products.count) / \(ProductID.all.count) requested products")
       
       if products.isEmpty {
         print("⚠️ WARNING: No products returned!")
-        print("⚠️ This may indicate:")
-        print("   1. StoreKit configuration not loaded")
-        print("   2. Product IDs don't match App Store Connect")
-        print("   3. Network issues")
       } else {
-        print("📦 Product Details:")
-        for (index, product) in products.enumerated() {
-          print("   Product #\(index + 1):")
-          print("      ID: \(product.id)")
-          print("      Display Name: \(product.displayName)")
-          print("      Display Price: \(product.displayPrice)")
-          print("      Description: \(product.description)")
-          print("      Type: \(product.type)")
-          if let subscription = product.subscription {
-            print("      Subscription Period: \(formatSubscriptionPeriod(subscription.subscriptionPeriod))")
-          }
-        }
-        
         // Check for missing products
         let foundIDs = Set(products.map { $0.id })
         let requestedIDs = Set(ProductID.all)
@@ -832,7 +707,6 @@ class SubscriptionManager: ObservableObject {
           }
         }
       }
-      print("🔍 ============================================")
       
       return products
     } catch {
@@ -868,7 +742,6 @@ class SubscriptionManager: ObservableObject {
   func enablePremiumForTesting() {
     print("🧪 SubscriptionManager: DEBUG - Manually enabling premium for testing")
     self.isPremium = true
-    print("✅ SubscriptionManager: Premium enabled (DEBUG MODE)")
   }
   
   /// Temporary debug method to disable premium for testing

@@ -66,7 +66,6 @@ class SyncHealthMonitor {
         // Update aggregated statistics
         updateAggregatedStats(syncRecord: syncRecord, userId: userId)
         
-        logger.info("📊 Sync recorded: operation=\(operation.rawValue), success=\(success), duration=\(String(format: "%.2f", duration))s, items=\(itemsSynced)")
     }
     
     /// Record queue size (unsynced items count)
