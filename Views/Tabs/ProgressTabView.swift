@@ -134,7 +134,6 @@ private struct ScrollOffsetTracker: View {
         // Initialize scroll offset on first change
         if initialScrollOffset == nil {
           initialScrollOffset = newValue
-          print("🔄 SCROLL INIT: initialScrollOffset=\(newValue)")
         }
         
         // Calculate scroll offset from initial position
@@ -150,7 +149,6 @@ private struct ScrollOffsetTracker: View {
         // Only update if changed to avoid redundant updates
         // Use transaction to disable animations and prevent layout flicker
         if displayHeaderHeight != snappedHideAmount {
-          print("🔄 SCROLL: minY=\(newValue), scrollOffset=\(newOffset), headerHeight changing: \(displayHeaderHeight) → \(snappedHideAmount)")
           var transaction = Transaction()
           transaction.disablesAnimations = true
           withTransaction(transaction) {
@@ -655,7 +653,6 @@ struct ProgressTabView: View {
 
   @ViewBuilder
   private var mainContentView: some View {
-    let _ = print("📐 RENDER: mainContentView body evaluated, selectedHabit=\(selectedHabit?.name ?? "nil"), selectedTimePeriod=\(selectedTimePeriod)")
     VStack(spacing: 20) {
       // Date Selection
       dateSelectionSection
@@ -799,7 +796,6 @@ struct ProgressTabView: View {
   }
 
   var body: some View {
-    let _ = print("📐 RENDER: ProgressTabView body, scrollResponsive=\(shouldEnableScrollResponsive)")
     ZStack {
       WhiteSheetContainer(
         headerContent: {

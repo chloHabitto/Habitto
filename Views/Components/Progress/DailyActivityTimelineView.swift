@@ -27,7 +27,6 @@ struct DailyActivityTimelineView: View {
     }
     
     var body: some View {
-        let _ = print("📐 RENDER: DailyActivityTimelineView body evaluated, entries=\(entries.count), habit=\(habit.name)")
         VStack(alignment: .leading, spacing: 16) {
             // Section Header
             timelineHeader

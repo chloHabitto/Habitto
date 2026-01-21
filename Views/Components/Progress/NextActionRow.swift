@@ -56,7 +56,7 @@ struct NextActionRow: View {
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.white)
-                            .shadow(color: Color.blue.opacity(0.15), radius: 4, y: 2)
+                            .shadow(color: Color.blue.opacity(0.15), radius: 2, y: 1)  // ✅ Reduced shadow radius to minimize overflow
                     )
                 
                 // Text
@@ -64,10 +64,12 @@ struct NextActionRow: View {
                     Text("\(remainingCount) more to reach your goal")
                         .font(.appLabelLargeEmphasised)
                         .foregroundColor(.appText01)
+                        .lineLimit(1)  // ✅ Prevent text overflow
                     
                     Text("Complete this habit from Home")
                         .font(.appBodySmall)
                         .foregroundColor(.appText03)
+                        .lineLimit(1)  // ✅ Prevent text overflow
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
@@ -88,12 +90,15 @@ struct NextActionRow: View {
                         )
                     )
             )
+            .clipShape(RoundedRectangle(cornerRadius: 16))  // ✅ Clip card content to bounds
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                    .strokeBorder(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))  // ✅ Use strokeBorder instead of stroke - draws INWARD
             )
             .padding(.top, 16)
         }
+        .frame(maxWidth: .infinity)  // ✅ Constrain to parent width
+        .clipped()  // ✅ Top-level clipping to contain all potential overflow
     }
 }
 
