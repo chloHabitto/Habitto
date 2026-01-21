@@ -97,7 +97,6 @@ final class GlobalStreakModel {
                 // Gap in streak - save old streak to history and reset to 1
                 if currentStreak > 0 {
                     streakHistory.append(currentStreak)
-                    print("📊 STREAK_HISTORY: Saved completed streak of \(currentStreak) days to history")
                 }
                 currentStreak = 1
             } else if daysDiff == 0 {
@@ -130,7 +129,6 @@ final class GlobalStreakModel {
         // Save current streak to history before breaking
         if currentStreak > 0 {
             streakHistory.append(currentStreak)
-            print("📊 STREAK_HISTORY: Saved broken streak of \(currentStreak) days to history")
         }
         currentStreak = 0
         lastUpdated = Date()
@@ -241,15 +239,10 @@ final class GlobalStreakModel {
         // This ensures longestStreak never decreases, even if historical data has issues
         if newlyCalculatedLongest > storedLongestBefore {
             self.longestStreak = newlyCalculatedLongest
-            print("📈 STREAK_HIGH_WATER: Updated longestStreak \(storedLongestBefore) → \(newlyCalculatedLongest)")
-        } else {
-            print("📊 STREAK_HIGH_WATER: Kept longestStreak at \(storedLongestBefore) (calculated: \(newlyCalculatedLongest))")
         }
         self.totalCompleteDays = totalComplete
         self.lastCompleteDate = lastComplete
         self.lastUpdated = Date()
-        
-        print("✅ Streak recalculated: current=\(streak), longest=\(self.longestStreak) (stored: \(storedLongestBefore), calculated: \(newlyCalculatedLongest)), total=\(totalComplete)")
     }
     
     /// Check if only vacation days exist between two dates

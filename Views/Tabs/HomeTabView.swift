@@ -739,20 +739,6 @@ struct HomeTabView: View {
     
     let isUserInitiated = userInfo["isUserInitiated"] as? Bool ?? false
     
-    // ✅ DIAGNOSTIC: Increment and log notification count
-    notificationCount += 1
-    let timestamp = Date()
-    
-    debugLog("")
-    debugLog(String(repeating: "🔔", count: 40))
-    debugLog("🔔 NOTIFICATION_RECEIVED #\(notificationCount) at \(DateFormatter.localizedString(from: timestamp, dateStyle: .none, timeStyle: .medium))")
-    debugLog("   newStreak: \(newStreak)")
-    debugLog("   isUserInitiated: \(isUserInitiated)")
-    debugLog("   BEFORE - milestoneStreakCount: \(milestoneStreakCount)")
-    debugLog("   BEFORE - showStreakMilestone: \(showStreakMilestone)")
-    debugLog("   BEFORE - pendingMilestone: \(pendingMilestone?.description ?? "nil")")
-    debugLog("   BEFORE - showCelebration: \(showCelebration)")
-    debugLog("   BEFORE - lastShownMilestoneStreak: \(lastShownMilestoneStreak)")
     // ✅ FIX: ALWAYS reset milestone tracking when streak goes to 0
     // This must happen BEFORE the isUserInitiated guard!
     // When streak is lost, user should be able to re-earn milestone

@@ -204,7 +204,6 @@ class DailyAwardIntegrityService {
         
         // ✅ STREAK MODE: Use meetsStreakCriteria to validate awards (respects Streak Mode)
         let currentMode = CompletionMode.current
-        logger.info("🔍 INTEGRITY_CHECK: Using streak mode: \(currentMode.rawValue)")
         
         // Check each active (non-skipped) habit using meetsStreakCriteria (respects Streak Mode)
         var completedHabits: [Habit] = []
@@ -212,7 +211,6 @@ class DailyAwardIntegrityService {
         
         for habit in activeHabits {
             let meetsCriteria = habit.meetsStreakCriteria(for: date)
-            logger.info("🔍 INTEGRITY_CHECK: Habit '\(habit.name)' meetsStreakCriteria=\(meetsCriteria)")
             
             if meetsCriteria {
                 completedHabits.append(habit)

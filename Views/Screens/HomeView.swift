@@ -188,23 +188,11 @@ class HomeViewState: ObservableObject {
         
         if let streak = allStreaks.first {
           let loadedStreak = streak.currentStreak
-          let timestamp = Date()
-          let oldStreak = currentStreak
-          
-          print("💰 [STREAK_TRACE] \(timestamp) updateStreak() - START")
-          print("   Source: GlobalStreakModel query")
-          print("   Thread: MainActor")
-          print("   Streak changing from \(oldStreak) to \(loadedStreak)")
-          
-          debugLog("🔍 UI_STREAK: updateStreak() will display streak = \(loadedStreak)")
           currentStreak = loadedStreak
           
           // ✅ WIDGET SYNC: Update UserDefaults for widget extension IMMEDIATELY
           // This ensures the widget can read the value even if the app is not running
           syncStreakToWidget(loadedStreak)
-          
-          print("💰 [STREAK_TRACE] \(Date()) updateStreak() - COMPLETE")
-          print("   Final: currentStreak=\(self.currentStreak)")
           
           // ✅ FIX: Also broadcast via notification for consistency
           // ✅ STEP 1: Include isUserInitiated flag in notification
@@ -216,15 +204,12 @@ class HomeViewState: ObservableObject {
               "isUserInitiated": isUserInitiated
             ]
           )
-          debugLog("📢 STEP1_NOTIFICATION: Posted StreakUpdated notification with newStreak: \(loadedStreak), isUserInitiated: \(isUserInitiated)")
         } else {
-          debugLog("🔍 UI_STREAK: updateStreak() found no GlobalStreakModel, defaulting to 0")
           currentStreak = 0
           // ✅ CRITICAL: Still sync 0 to UserDefaults so widget knows the value is valid
           syncStreakToWidget(0)
         }
       } catch {
-        debugLog("🔍 UI_STREAK: updateStreak() failed to load streak, defaulting to 0 (\(error.localizedDescription))")
         currentStreak = 0
         // ✅ CRITICAL: Still sync 0 to UserDefaults so widget knows the value is valid
         syncStreakToWidget(0)
