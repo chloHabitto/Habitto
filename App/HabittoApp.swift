@@ -639,9 +639,7 @@ struct HabittoApp: App {
                     }
                     
                     if !shouldSkipCleanup {
-                      print("🧹 [DAILY_AWARD_INTEGRITY] Cleaning up \(result.invalidAwards.count) invalid awards...")
                       let removedCount = try await DailyAwardIntegrityService.shared.cleanupInvalidAwards(userId: userId)
-                      print("✅ [DAILY_AWARD_INTEGRITY] Removed \(removedCount) invalid awards. XP has been recalculated.")
                       
                       // Store timestamp of cleanup (time-based instead of one-time flag)
                       UserDefaults.standard.set(now.timeIntervalSince1970, forKey: cleanupKey)
@@ -1768,8 +1766,6 @@ struct HabittoApp: App {
   
   /// Clean up duplicate CompletionRecords - ensures exactly one record per habit/date/user
   private func cleanupDuplicateCompletionRecords() async {
-    print("🧹 [CLEANUP] Starting duplicate CompletionRecord cleanup...")
-    
     let context = SwiftDataContainer.shared.modelContext
     let userId = await CurrentUser().idOrGuest
     
@@ -1780,8 +1776,6 @@ struct HabittoApp: App {
       }
       let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
       let allRecords = try context.fetch(descriptor)
-      
-      print("🧹 [CLEANUP] Found \(allRecords.count) CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
       
       // Group records by (habitId, dateKey) to find duplicates
       let recordsByKey = Dictionary(grouping: allRecords) { record in

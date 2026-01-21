@@ -20,10 +20,6 @@ class CompletionStateManager: ObservableObject {
   func startCompletionFlow(for habitId: UUID) {
     DispatchQueue.main.async {
       self.habitsWithActiveCompletionSheets.insert(habitId)
-      print("🎯 CompletionStateManager: Started completion flow for habit \(habitId)")
-      print(
-        "🎯 CompletionStateManager: Active completion sheets: \(self.habitsWithActiveCompletionSheets)")
-      print("🎯 CompletionStateManager: Thread: \(Thread.isMainThread ? "Main" : "Background")")
     }
   }
 
@@ -31,17 +27,12 @@ class CompletionStateManager: ObservableObject {
   func endCompletionFlow(for habitId: UUID) {
     DispatchQueue.main.async {
       self.habitsWithActiveCompletionSheets.remove(habitId)
-      print("🎯 CompletionStateManager: Ended completion flow for habit \(habitId)")
-      print(
-        "🎯 CompletionStateManager: Active completion sheets: \(self.habitsWithActiveCompletionSheets)")
     }
   }
 
   /// Check if a habit is currently showing a completion sheet
   func isShowingCompletionSheet(for habitId: UUID) -> Bool {
-    let result = habitsWithActiveCompletionSheets.contains(habitId)
-    print("🎯 CompletionStateManager: isShowingCompletionSheet for \(habitId): \(result)")
-    return result
+    return habitsWithActiveCompletionSheets.contains(habitId)
   }
 
   // MARK: Private

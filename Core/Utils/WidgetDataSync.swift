@@ -28,19 +28,6 @@ class WidgetDataSync {
         
         // Convert habits to widget-compatible format
         let widgetHabits = habits.map { habit in
-            let historyCount = habit.completionHistory.count
-            let statusCount = habit.completionStatus.count
-            print("   Habit: \(habit.name)")
-            print("      completionHistory: \(historyCount) entries")
-            print("      completionStatus: \(statusCount) entries")
-            
-            // Print recent completion data
-            let recentKeys = habit.completionStatus.keys.sorted().suffix(7)
-            for key in recentKeys {
-                let status = habit.completionStatus[key] ?? false
-                print("      \(key): \(status ? "✅ completed" : "❌ not completed")")
-            }
-            
             return HabitWidgetData(
                 id: habit.id,
                 name: habit.name,
@@ -90,19 +77,6 @@ class WidgetDataSync {
         guard let sharedDefaults = UserDefaults(suiteName: appGroupID) else {
             print("⚠️ WIDGET_SYNC: Failed to access App Group UserDefaults")
             return
-        }
-        
-        let historyCount = habit.completionHistory.count
-        let statusCount = habit.completionStatus.count
-        print("   Habit: \(habit.name)")
-        print("      completionHistory: \(historyCount) entries")
-        print("      completionStatus: \(statusCount) entries")
-        
-        // Print recent completion data
-        let recentKeys = habit.completionStatus.keys.sorted().suffix(7)
-        for key in recentKeys {
-            let status = habit.completionStatus[key] ?? false
-            print("      \(key): \(status ? "✅ completed" : "❌ not completed")")
         }
         
         let widgetData = HabitWidgetData(

@@ -102,8 +102,6 @@ class DailyAwardService: ObservableObject {
             throw XPError.invalidReason("Date key cannot be empty")
         }
         
-        logger.info("🎖️ DailyAwardService: Awarding \(delta) XP for '\(reason)' on \(dateKey)")
-        
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = await CurrentUser().idOrGuest
         
@@ -165,8 +163,6 @@ class DailyAwardService: ObservableObject {
             let allAwards = try modelContext.fetch(allAwardsDescriptor)
             let calculatedTotalXP = allAwards.reduce(0) { $0 + $1.xpGranted }
             
-            logger.info("🎖️ DailyAwardService: Calculated total XP from \(allAwards.count) DailyAward records: \(calculatedTotalXP)")
-            
             // Get or create UserProgressData
             let progressPredicate = #Predicate<UserProgressData> { progress in
                 progress.userId == userId
@@ -181,24 +177,16 @@ class DailyAwardService: ObservableObject {
                 // Create new UserProgressData for guest/user
                 userProgress = UserProgressData(userId: userId)
                 modelContext.insert(userProgress)
-                logger.info("✅ DailyAwardService: Created new UserProgressData for userId: '\(userId.isEmpty ? "guest" : userId)'")
             }
             
             // Update XP from calculated value (this recalculates level automatically)
             userProgress.updateXP(calculatedTotalXP)
-            
-            logger.info("🎖️ DailyAwardService: Updated UserProgressData - Total: \(calculatedTotalXP), Level: \(userProgress.level)")
             
             // Save UserProgressData
             try modelContext.save()
             
             // ✅ STEP 3: Update xpState for UI reactivity
             await refreshXPState()
-            
-            // ✅ CRITICAL FIX: XPManager is already notified in refreshXPState()
-            if let state = xpState {
-                logger.info("✅ DailyAwardService: XP awarded - Total: \(state.totalXP), Level: \(state.level)")
-            }
             
         } catch {
             logger.error("❌ DailyAwardService: Failed to award XP: \(error.localizedDescription)")
@@ -328,9 +316,7 @@ class DailyAwardService: ObservableObject {
             
             let isValid = calculatedXP == storedXP
             
-            if isValid {
-                logger.info("✅ DailyAwardService: XP integrity verified (calculated: \(calculatedXP), stored: \(storedXP))")
-            } else {
+            if !isValid {
                 logger.warning("⚠️ DailyAwardService: XP integrity mismatch detected (calculated: \(calculatedXP), stored: \(storedXP))")
             }
             
@@ -511,8 +497,6 @@ class DailyAwardService: ObservableObject {
                 lastUpdated: refreshTimestamp
             )
             
-            logger.info("✅ DailyAwardService: XP state refreshed - Total: \(totalXP), Level: \(level)")
-            
             // ✅ CRITICAL FIX: Immediately notify XPManager for instant UI updates
             // Since both DailyAwardService and XPManager are @MainActor, we can call directly
             // Pass fromDirectCall: true to bypass grace period check and ensure immediate update
@@ -559,7 +543,6 @@ class DailyAwardService: ObservableObject {
             lastUpdated: Date()
         )
         XPManager.shared.applyXPState(zeroState, fromDirectCall: true)
-        logger.info("✅ DailyAwardService: State reset complete, XPManager notified with zero state (fromDirectCall: true)")
     }
     
     // MARK: - CompletionRecord Reconciliation
@@ -745,15 +728,12 @@ class DailyAwardService: ObservableObject {
                 record.isCompleted = calculatedProgress >= goalAmount
                 
                 mismatchesFixed += 1
-                
-                logger.info("✅ DailyAwardService: Updated CompletionRecord - progress: \(calculatedProgress), isCompleted: \(calculatedProgress >= goalAmount)")
             }
         }
         
         // Save all changes in batch
         if mismatchesFixed > 0 {
             try modelContext.save()
-            logger.info("✅ DailyAwardService: Saved \(mismatchesFixed) CompletionRecord updates")
         }
         
         let result = ReconciliationResult(
@@ -762,12 +742,6 @@ class DailyAwardService: ObservableObject {
             mismatchesFixed: mismatchesFixed,
             errors: errors
         )
-        
-        logger.info("✅ DailyAwardService: Reconciliation complete")
-        logger.info("   Total records checked: \(totalRecords)")
-        logger.info("   Mismatches found: \(mismatchesFound)")
-        logger.info("   Mismatches fixed: \(mismatchesFixed)")
-        logger.info("   Errors: \(errors)")
         
         return result
     }

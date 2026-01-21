@@ -28,19 +28,16 @@ final class TelemetryService: ObservableObject {
   /// Increment a counter
   func increment(_ key: String) {
     self.counters[key, default: 0] += 1
-    logger.debug("📊 Telemetry: \(key) = \(self.counters[key] ?? 0)")
   }
   
   /// Decrement a counter
   func decrement(_ key: String) {
     self.counters[key, default: 0] = max(0, (self.counters[key] ?? 0) - 1)
-    logger.debug("📊 Telemetry: \(key) = \(self.counters[key] ?? 0)")
   }
   
   /// Set a counter value
   func set(_ key: String, value: Int) {
     counters[key] = value
-    logger.debug("📊 Telemetry: \(key) = \(value)")
   }
   
   /// Get a counter value
@@ -53,7 +50,6 @@ final class TelemetryService: ObservableObject {
   /// Start a timer
   func startTimer(_ key: String) {
     timers[key] = Date()
-    logger.debug("📊 Telemetry: Started timer for \(key)")
   }
   
   /// End a timer and log duration
@@ -66,7 +62,6 @@ final class TelemetryService: ObservableObject {
     let duration = Date().timeIntervalSince(startTime)
     timers.removeValue(forKey: key)
     
-    logger.info("📊 Telemetry: Timer \(key) completed in \(String(format: "%.2f", duration))s")
     return duration
   }
   
@@ -85,9 +80,6 @@ final class TelemetryService: ObservableObject {
   
   /// Log an event with optional data
   func logEvent(_ event: String, data: [String: Any] = [:]) {
-    let dataString = data.isEmpty ? "" : " | Data: \(data)"
-    logger.info("📊 Telemetry Event: \(event)\(dataString)")
-    
     // Also increment counter for the event
     increment(event)
   }

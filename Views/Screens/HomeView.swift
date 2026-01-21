@@ -267,31 +267,24 @@ class HomeViewState: ObservableObject {
   /// ✅ CRITICAL FIX: Made async to await repository save completion
   /// ✅ UNDO TOAST: Shows toast immediately for instant feedback
   func deleteHabit(_ habit: Habit) async {
-    print("🗑️ DELETE_FLOW: HomeViewState.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
-    
     // Show toast immediately and remove from local state for instant UI update
     await MainActor.run {
       withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
         self.deletedHabitForUndo = habit
       }
       self.habits.removeAll { $0.id == habit.id }
-      print("🗑️ DELETE_FLOW: Local state updated, toast shown")
     }
 
     // Delete from storage in background
-    print("🗑️ DELETE_FLOW: Calling habitRepository.deleteHabit()")
     do {
       try await habitRepository.deleteHabit(habit)
-      print("🗑️ DELETE_FLOW: Delete completed successfully")
       debugLog("✅ GUARANTEED: Habit deleted and persisted")
       
       // ✅ Recalculate streak after delete
       await MainActor.run {
-        print("🗑️ DELETE_FLOW: Recalculating streak after deletion")
         self.requestStreakRecalculation(reason: "Habit deleted")
       }
     } catch {
-      print("🗑️ DELETE_FLOW: ERROR: \(error.localizedDescription)")
       debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
       
       // ✅ ERROR RECOVERY: Restore habit to UI and dismiss toast
@@ -302,7 +295,6 @@ class HomeViewState: ObservableObject {
     }
     
     habitToDelete = nil
-    print("🗑️ DELETE_FLOW: END")
   }
   
   /// Restore a soft-deleted habit (called from undo toast)
@@ -473,16 +465,13 @@ class HomeViewState: ObservableObject {
 
   func backupHabits() {
     // Backup is now handled automatically by the HabitStore
-    debugLog("✅ HomeView: Habits are automatically backed up by HabitStore")
   }
 
   func loadHabits() {
     // Core Data adapter automatically loads habits
-    debugLog("🔄 HomeView: Habits loaded from Core Data")
   }
 
   func cleanupDuplicateHabits() {
-    debugLog("🔄 HomeView: Cleaning up duplicate habits...")
     habitRepository.cleanupDuplicateHabits()
   }
 
@@ -579,13 +568,6 @@ class HomeViewState: ObservableObject {
       }
     }
     lastStreakUpdateTime = now
-    
-    let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
-    debugLog("")
-    debugLog(String(repeating: "=", count: 60))
-    debugLog("🔄 STREAK_TRIGGER: updateAllStreaks() called at \(timestamp)")
-    debugLog("   Triggered by: Reactive callback from habit completion/uncompletion")
-    debugLog(String(repeating: "=", count: 60))
     
     // ✅ CRITICAL FIX: Recalculate streak directly from CompletionRecords (legacy system)
     Task { @MainActor in
@@ -693,9 +675,6 @@ class HomeViewState: ObservableObject {
         // This ensures longestStreak never decreases, even if historical data has issues
         if calculatedLongestStreak > storedLongestBefore {
           streak.longestStreak = calculatedLongestStreak
-          debugLog("📈 STREAK_HIGH_WATER: Updated longestStreak \(storedLongestBefore) → \(calculatedLongestStreak)")
-        } else {
-          debugLog("📊 STREAK_HIGH_WATER: Kept longestStreak at \(storedLongestBefore) (calculated: \(calculatedLongestStreak))")
         }
         streak.lastCompleteDate = computation.lastCompleteDate
         streak.lastUpdated = Date()
@@ -1077,55 +1056,34 @@ struct HomeView: View {
           }
         },
         onUpdateHabit: { updatedHabit in
-          debugLog("🔄 HomeView: onUpdateHabit received - \(updatedHabit.name)")
           Task {
             await state.updateHabit(updatedHabit)
           }
-          debugLog("🔄 HomeView: Habit array updated and saved")
         },
         onSetProgress: { habit, date, progress in
-          debugLog("🔄 HomeView: onSetProgress received - \(habit.name), progress: \(progress)")
-          debugLog("🔄 HomeView: Current state.habits count: \(state.habits.count)")
-
           Task {
             // Find the habit by ID from the current state to ensure we have the latest Core
             // Data-synced version
             if let syncedHabit = state.habits.first(where: { $0.id == habit.id }) {
-              debugLog("🔄 HomeView: Found synced habit with ID: \(syncedHabit.id)")
-              debugLog(
-                "🔄 HomeView: Current progress before update: \(syncedHabit.getProgress(for: date))")
               await state.setHabitProgress(syncedHabit, for: date, progress: progress)
-              debugLog("🔄 HomeView: Progress saved to Core Data using synced habit")
             } else {
-              debugLog(
-                "❌ HomeView: No synced habit found for ID: \(habit.id), falling back to original habit")
-              debugLog("❌ HomeView: Available habit IDs: \(state.habits.map { $0.id })")
               await state.setHabitProgress(habit, for: date, progress: progress)
-              debugLog("🔄 HomeView: Progress saved to Core Data using original habit")
             }
           }
         },
         onDeleteHabit: { habit in
-          print("🗑️ DELETE_FLOW: HomeView - onDeleteHabit callback received for habit: \(habit.name) (ID: \(habit.id))")
-          print("🗑️ DELETE_FLOW: HomeView - Setting state.habitToDelete")
           state.habitToDelete = habit
-          print("🗑️ DELETE_FLOW: HomeView - state.habitToDelete set to: \(habit.name) (ID: \(habit.id))")
-          print("🗑️ DELETE_FLOW: HomeView - Setting showingDeleteConfirmation = true")
           state.showingDeleteConfirmation = true
-          print("🗑️ DELETE_FLOW: HomeView - showingDeleteConfirmation set, confirmationDialog should appear")
         },
         onCompletionDismiss: {
           // ✅ FIX: Streak update is handled by onStreakRecalculationNeeded callback with proper flag
           // Don't call updateStreak() here as it bypasses the isUserInitiated flag system
-          debugLog("🔄 HomeView: Habit completion bottom sheet dismissed")
           // Note: Streak will be updated via onStreakRecalculationNeeded callback which sets isUserInitiated=true
         },
         onStreakRecalculationNeeded: { isUserInitiated in
           // ✅ CRITICAL FIX: Recalculate streak immediately when habits are completed/uncompleted
           // This ensures streak updates reactively, just like XP does
-          debugLog("🔄 HomeView: Streak recalculation requested from HomeTabView, isUserInitiated: \(isUserInitiated)")
           state.requestStreakRecalculation(reason: "HomeTabView callback", isUserInitiated: isUserInitiated)
-          debugLog("✅ HomeView: Streak recalculation enqueued with isUserInitiated=\(isUserInitiated)")
         },
         onWaitForPersistence: {
           // ✅ RACE CONDITION FIX: Allow HomeTabView to wait for persistence to complete
@@ -1190,28 +1148,19 @@ struct HomeView: View {
         HabitsTabView(
         state: state,
         onDeleteHabit: { habit in
-          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - onDeleteHabit callback received for habit: \(habit.name) (ID: \(habit.id))")
-          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - Setting state.habitToDelete")
           state.habitToDelete = habit
-          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - state.habitToDelete set to: \(habit.name) (ID: \(habit.id))")
-          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - Setting showingDeleteConfirmation = true")
           state.showingDeleteConfirmation = true
-          print("🗑️ DELETE_FLOW: HomeView (HabitsTabView) - showingDeleteConfirmation set, confirmationDialog should appear")
         },
         onEditHabit: { habit in
-          debugLog("🔄 HomeView: onEditHabit received for habit: \(habit.name)")
-          debugLog("🔄 HomeView: Setting habitToEditSession to open HabitEditView")
           state.habitToEditSession = HabitEditSession(habit: habit)
         },
         onCreateHabit: {
           state.handleCreateHabitRequest()
         },
         onUpdateHabit: { updatedHabit in
-          debugLog("🔄 HomeView: onUpdateHabit received for habit: \(updatedHabit.name)")
           Task {
             await state.updateHabit(updatedHabit)
           }
-          debugLog("🔄 HomeView: Habit updated and saved successfully")
         })
         .frame(maxWidth: .infinity, maxHeight: .infinity)
       }
@@ -1357,7 +1306,6 @@ struct HomeView: View {
     }
     .fullScreenCover(item: $state.habitToEditSession) { session in
       HabitEditView(habit: session.habit, onSave: { updatedHabit in
-        debugLog("🔄 HomeView: HabitEditView save called for habit: \(updatedHabit.name)")
         Task {
           await state.updateHabit(updatedHabit)
           await MainActor.run {
@@ -1369,28 +1317,17 @@ struct HomeView: View {
             }
           }
         }
-        debugLog("🔄 HomeView: Habit updated and saved successfully")
       })
     }
     .alert("Delete Habit", isPresented: $state.showingDeleteConfirmation) {
       Button("Cancel", role: .cancel) {
-        print("🗑️ DELETE_FLOW: HomeView - Delete cancelled in alert")
-        debugLog("❌ Delete cancelled")
         state.habitToDelete = nil
       }
       Button("Delete", role: .destructive) {
-        print("🗑️ DELETE_FLOW: HomeView - Delete button tapped in alert")
         if let habit = state.habitToDelete {
-          print("🗑️ DELETE_FLOW: HomeView - Calling state.deleteHabit() for habit: \(habit.name) (ID: \(habit.id))")
-          debugLog("🗑️ Deleting habit: \(habit.name)")
           Task {
             await state.deleteHabit(habit)
           }
-          print("🗑️ DELETE_FLOW: HomeView - state.deleteHabit() Task started")
-          debugLog("🗑️ Delete completed")
-        } else {
-          print("🗑️ DELETE_FLOW: HomeView - ERROR: No habit to delete (state.habitToDelete is nil)")
-          debugLog("❌ No habit to delete")
         }
       }
     } message: {
@@ -1518,16 +1455,12 @@ struct HomeView: View {
 
   // MARK: - Lifecycle
 
-  private func loadHabits() {
-    debugLog("🏠 HomeView: Loading habits from HabitRepository...")
+  private   func loadHabits() {
     // Use HabitRepository instead of direct Habit.loadHabits()
     // The HabitRepository already loads habits in its init()
-    debugLog("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
 
     // Validate and correct streaks to ensure accuracy
-    debugLog("🏠 HomeView: Validating streaks...")
     state.validateAllStreaks()
-    debugLog("🏠 HomeView: Streak validation completed")
     
     // ✅ FIX: Refresh global streak from database after habits load
     state.updateStreak()
@@ -1549,8 +1482,6 @@ struct HomeView: View {
         let habits = state.habits
         for i in 0 ..< habits.count {
           if !habits[i].validateStreak() {
-            debugLog(
-              "🔄 HomeView: Streak validation failed for habit: \(habits[i].name) - streak is now computed-only")
             // ✅ PHASE 4: Streaks are now computed-only, no need to correct them
           }
         }

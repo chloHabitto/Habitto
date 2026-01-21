@@ -194,20 +194,6 @@ enum StreakCalculator {
       checkDate = calendar.date(byAdding: .day, value: 1, to: checkDate) ?? checkDate
     }
     
-    print("📊 LONGEST_STREAK: Calculation complete")
-    print("   Total completed dates found: \(completedDates.count)")
-    print("   Longest consecutive sequence: \(longestStreak) days")
-    if longestStreak > 0, let start = longestStreakStartDate, let end = longestStreakEndDate {
-      print("   Longest streak period: \(Habit.dateKey(for: start)) to \(Habit.dateKey(for: end))")
-      if longestStreak <= 10 {
-        print("   Dates in longest streak: \(completedDates.suffix(longestStreak).joined(separator: ", "))")
-      } else {
-        let streakDates = completedDates.suffix(longestStreak)
-        print("   First 5 dates: \(streakDates.prefix(5).joined(separator: ", "))")
-        print("   Last 5 dates: \(streakDates.suffix(5).joined(separator: ", "))")
-      }
-    }
-    
     return longestStreak
   }
   
