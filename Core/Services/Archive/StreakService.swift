@@ -20,7 +20,6 @@ class StreakService {
     init(modelContext: ModelContext, progressService: ProgressService) {
         self.modelContext = modelContext
         self.progressService = progressService
-        print("✅ StreakService: Initialized")
     }
     
     // MARK: - Streak Queries
@@ -36,7 +35,6 @@ class StreakService {
         )
         
         if let existing = try modelContext.fetch(descriptor).first {
-            print("🔥 StreakService: Found existing streak for user '\(userId)'")
             return existing
         }
         
@@ -68,7 +66,6 @@ class StreakService {
         }
         
         guard !scheduledHabits.isEmpty else {
-            print("ℹ️ StreakService: No habits scheduled on \(DateUtils.dateKey(for: normalizedDate))")
             return false
         }
         
@@ -76,12 +73,10 @@ class StreakService {
         for habit in scheduledHabits {
             let isComplete = try progressService.isComplete(habit: habit, on: normalizedDate)
             if !isComplete {
-                print("⏸️ StreakService: '\(habit.name)' incomplete on \(DateUtils.dateKey(for: normalizedDate))")
                 return false
             }
         }
         
-        print("✅ StreakService: All \(scheduledHabits.count) habits complete on \(DateUtils.dateKey(for: normalizedDate))")
         return true
     }
     
@@ -172,7 +167,6 @@ class StreakService {
         // ✅ FIX: If habits array is empty, fetch from SwiftData
         var habitsToCheck = habits
         if habitsToCheck.isEmpty {
-            print("🔍 StreakService: No habits provided, fetching from SwiftData...")
             let descriptor = FetchDescriptor<HabitData>(
                 predicate: #Predicate { habit in
                     habit.userId == userId
@@ -180,7 +174,6 @@ class StreakService {
             )
             let habitDataList = try modelContext.fetch(descriptor)
             habitsToCheck = habitDataList.map { HabitModel.fromLegacy($0.toHabit(), userId: userId) }
-            print("✅ StreakService: Fetched \(habitsToCheck.count) habits from SwiftData")
         }
         
         // Get earliest habit start date
@@ -206,7 +199,6 @@ class StreakService {
             
             if isVacation {
                 // Vacation day: don't break streak, don't increment
-                print("🏖️ StreakService: Vacation day on \(DateUtils.dateKey(for: checkDate))")
             } else {
                 let isComplete = try areAllHabitsComplete(on: checkDate, habits: habitsToCheck)
                 

@@ -215,13 +215,10 @@ class XPManager {
 
   /// Load user-specific XP from SwiftData (call this from a view with ModelContext)
   func loadUserXPFromSwiftData(userId: String, modelContext: ModelContext) {
-    print("🔍 [XP_LOAD] Loading XP for userId: \(userId.isEmpty ? "EMPTY STRING" : userId.prefix(8))...")
-    
     do {
       // ✅ DIAGNOSTIC: Query ALL DailyAwards first to see what exists
       let allAwardsDescriptor = FetchDescriptor<DailyAward>()
       let allAwards = try modelContext.fetch(allAwardsDescriptor)
-      print("🔍 [XP_LOAD] Total DailyAwards in database: \(allAwards.count)")
       
       // Group by userId
       let awardsByUserId = Dictionary(grouping: allAwards) { $0.userId }
@@ -237,8 +234,6 @@ class XPManager {
       }
       let request = FetchDescriptor<DailyAward>(predicate: predicate)
       let awards = try modelContext.fetch(request)
-      
-      print("🔍 [XP_LOAD] Predicate query (userId='\(userId.isEmpty ? "EMPTY STRING" : userId.prefix(8))...') returned: \(awards.count) awards")
 
       // ✅ FALLBACK: If predicate returns 0 but we have awards, check for userId mismatches
       if awards.isEmpty && !allAwards.isEmpty {
