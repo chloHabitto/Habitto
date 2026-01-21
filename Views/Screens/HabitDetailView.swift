@@ -87,9 +87,9 @@ struct HabitDetailView: View {
               Label("Delete", systemImage: "trash")
             }
           } label: {
-            Image(systemName: "ellipsis")
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(.text01)
+            Image(systemName: "ellipsis.circle.fill")
+              .font(.system(size: 14, weight: .heavy))
+              .foregroundColor(.appInverseSurface70)
           }
         }
       }

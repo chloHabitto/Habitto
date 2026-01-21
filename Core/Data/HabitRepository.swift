@@ -1,5 +1,6 @@
 import Combine
 import FirebaseAuth
+import FirebaseFirestore
 import SwiftData
 import SwiftUI
 import MijickPopups
@@ -495,6 +496,107 @@ class HabitRepository: ObservableObject {
     debugLog(String(repeating: "=", count: 60) + "\n")
   }
 
+  // MARK: - Reminder Diagnostics
+  
+  /// Diagnostic function to check reminder persistence across all storage layers
+  /// Logs: 1) reminder count in Habit objects, 2) remindersData in SwiftData, 3) Firestore data
+  func diagnoseReminderPersistence() async {
+    print("\n" + String(repeating: "=", count: 80))
+    print("🔍 REMINDER DIAGNOSTIC REPORT")
+    print(String(repeating: "=", count: 80) + "\n")
+    
+    let currentUserId = await CurrentUser().idOrGuest
+    print("Current User ID: \(currentUserId.isEmpty ? "(guest)" : String(currentUserId.prefix(12)))...")
+    print("Total habits loaded: \(habits.count)\n")
+    
+    // Get SwiftData context
+    let modelContext = SwiftDataContainer.shared.modelContext
+    
+    for (index, habit) in habits.enumerated() {
+      print("[\(index + 1)] Habit: \(habit.name)")
+      print("    ID: \(habit.id)")
+      
+      // 1. Check Habit object reminders
+      print("    ✓ Habit.reminders count: \(habit.reminders.count)")
+      if !habit.reminders.isEmpty {
+        for (reminderIndex, reminder) in habit.reminders.enumerated() {
+          let timeStr = DateFormatter.localizedString(from: reminder.time, dateStyle: .none, timeStyle: .short)
+          print("      [\(reminderIndex + 1)] Time: \(timeStr), Active: \(reminder.isActive), ID: \(reminder.id)")
+        }
+      } else {
+        print("      (No reminders in Habit object)")
+      }
+      
+      // 2. Check SwiftData remindersData field
+      do {
+        let predicate = #Predicate<HabitData> { habitData in
+          habitData.id == habit.id
+        }
+        let descriptor = FetchDescriptor<HabitData>(predicate: predicate)
+        
+        if let habitData = try modelContext.fetch(descriptor).first {
+          if let remindersData = habitData.remindersData {
+            print("    ✓ SwiftData.remindersData: \(remindersData.count) bytes")
+            
+            // Try to decode it
+            if let decodedReminders = try? JSONDecoder().decode([ReminderItem].self, from: remindersData) {
+              print("    ✓ Decoded \(decodedReminders.count) reminders from SwiftData:")
+              for (reminderIndex, reminder) in decodedReminders.enumerated() {
+                let timeStr = DateFormatter.localizedString(from: reminder.time, dateStyle: .none, timeStyle: .short)
+                print("      [\(reminderIndex + 1)] Time: \(timeStr), Active: \(reminder.isActive), ID: \(reminder.id)")
+              }
+            } else {
+              print("    ⚠️  Failed to decode remindersData from SwiftData")
+            }
+          } else {
+            print("    ⚠️  SwiftData.remindersData: nil")
+          }
+        } else {
+          print("    ❌ Habit not found in SwiftData")
+        }
+      } catch {
+        print("    ❌ Error querying SwiftData: \(error.localizedDescription)")
+      }
+      
+      // 3. Check Firestore (only for authenticated users)
+      if !currentUserId.isEmpty {
+        do {
+          let db = Firestore.firestore()
+          let docRef = db.collection("users")
+            .document(currentUserId)
+            .collection("habits")
+            .document(habit.id.uuidString)
+          
+          let snapshot = try await docRef.getDocument()
+          
+          if snapshot.exists {
+            if let remindersField = snapshot.data()?["reminders"] as? [String] {
+              print("    ✓ Firestore.reminders: \(remindersField.count) UUID strings")
+              for (reminderIndex, reminderUUID) in remindersField.enumerated() {
+                print("      [\(reminderIndex + 1)] \(reminderUUID)")
+              }
+              print("    ⚠️  NOTE: Firestore only stores UUIDs, not times/status!")
+            } else {
+              print("    ⚠️  Firestore.reminders: field missing or wrong type")
+            }
+          } else {
+            print("    ℹ️  Habit not found in Firestore (may not be synced yet)")
+          }
+        } catch {
+          print("    ⚠️  Error querying Firestore: \(error.localizedDescription)")
+        }
+      } else {
+        print("    ℹ️  Firestore check skipped (guest user)")
+      }
+      
+      print("")
+    }
+    
+    print(String(repeating: "=", count: 80))
+    print("END OF REMINDER DIAGNOSTIC REPORT")
+    print(String(repeating: "=", count: 80) + "\n")
+  }
+
   // MARK: - Load Habits
 
   func loadHabits(force: Bool = false) async {
@@ -594,6 +696,9 @@ class HabitRepository: ObservableObject {
         // This is especially important after migration when userId changes
         self.objectWillChange.send()
       }
+      
+      // 🔍 DIAGNOSTIC: Check reminder persistence across all storage layers
+      await diagnoseReminderPersistence()
 
     } catch {
       debugLog("❌ HabitRepository: Failed to load habits: \(error.localizedDescription)")
