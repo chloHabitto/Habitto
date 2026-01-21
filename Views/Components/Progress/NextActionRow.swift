@@ -34,6 +34,7 @@ struct NextActionRow: View {
                             .scaleEffect(isPulsing ? 1.8 : 1.0)
                             .opacity(isPulsing ? 0 : 1)
                     )
+                    .clipShape(Rectangle())  // Clip animation to prevent overflow
                     .padding(.top, 18)
                     .onAppear {
                         withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {

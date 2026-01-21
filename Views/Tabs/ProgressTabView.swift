@@ -130,14 +130,15 @@ private struct ScrollOffsetTracker: View {
   
   var body: some View {
     Color.clear
-      .task(id: minY) {
-        guard !Task.isCancelled else { return }
-        
+      .onChange(of: minY) { oldValue, newValue in
+        // Initialize scroll offset on first change
         if initialScrollOffset == nil {
-          initialScrollOffset = minY
+          initialScrollOffset = newValue
+          print("🔄 SCROLL INIT: initialScrollOffset=\(newValue)")
         }
         
-        let newOffset = max(0, (initialScrollOffset ?? minY) - minY)
+        // Calculate scroll offset from initial position
+        let newOffset = max(0, (initialScrollOffset ?? newValue) - newValue)
         scrollOffset = newOffset
         
         // Calculate how much header should be hidden (0 = fully visible, fullHeaderHeight = fully hidden)
@@ -147,8 +148,14 @@ private struct ScrollOffsetTracker: View {
         let snappedHideAmount: CGFloat = headerHideAmount > (fullHeaderHeight * 0.5) ? fullHeaderHeight : 0
         
         // Only update if changed to avoid redundant updates
+        // Use transaction to disable animations and prevent layout flicker
         if displayHeaderHeight != snappedHideAmount {
-          displayHeaderHeight = snappedHideAmount  // No animation wrapper
+          print("🔄 SCROLL: minY=\(newValue), scrollOffset=\(newOffset), headerHeight changing: \(displayHeaderHeight) → \(snappedHideAmount)")
+          var transaction = Transaction()
+          transaction.disablesAnimations = true
+          withTransaction(transaction) {
+            displayHeaderHeight = snappedHideAmount
+          }
         }
       }
   }
@@ -219,6 +226,20 @@ struct ProgressTabView: View {
   @State private var scrollOffset: CGFloat = 0
   @State private var displayHeaderHeight: CGFloat = 96  // Increased by 1pt to eliminate gap artifacts
   @State private var initialScrollOffset: CGFloat? = nil
+  
+  /// Computed property to determine if scroll-responsive header should be enabled
+  /// Disable for Daily tab with incomplete habits to prevent scroll issues
+  private var shouldEnableScrollResponsive: Bool {
+    // For Daily tab (selectedTimePeriod == 0) with a selected habit
+    if selectedTimePeriod == 0, let habit = selectedHabit {
+      // Check if habit is completed for today
+      let isCompleted = timelineEntries.last?.runningTotal ?? 0 >= habit.goalAmount(for: selectedProgressDate)
+      // Only enable scroll-responsive if completed
+      return isCompleted
+    }
+    // Enable for all other tabs
+    return true
+  }
   
   private let fullHeaderHeight: CGFloat = 96  // Increased by 1pt to eliminate gap artifacts
   
@@ -634,6 +655,7 @@ struct ProgressTabView: View {
 
   @ViewBuilder
   private var mainContentView: some View {
+    let _ = print("📐 RENDER: mainContentView body evaluated, selectedHabit=\(selectedHabit?.name ?? "nil"), selectedTimePeriod=\(selectedTimePeriod)")
     VStack(spacing: 20) {
       // Date Selection
       dateSelectionSection
@@ -706,6 +728,7 @@ struct ProgressTabView: View {
       Spacer()
         .frame(height: 80)
     }
+    .frame(maxWidth: .infinity)  // Ensure content doesn't exceed screen width
   }
   
   // MARK: - Paywall Overlay
@@ -776,6 +799,7 @@ struct ProgressTabView: View {
   }
 
   var body: some View {
+    let _ = print("📐 RENDER: ProgressTabView body, scrollResponsive=\(shouldEnableScrollResponsive)")
     ZStack {
       WhiteSheetContainer(
         headerContent: {
@@ -783,24 +807,29 @@ struct ProgressTabView: View {
         },
         headerBackground: .surface01,
         contentBackground: .surface01,
-        scrollResponsive: true,
+        scrollResponsive: shouldEnableScrollResponsive,  // ✅ Conditional based on completion state
         scrollOffset: displayHeaderHeight) {
-          ScrollView {
+          ScrollView(.vertical, showsIndicators: true) {
             mainContentView
               .padding(.top, 21)
               .padding(.bottom, 20)
               .background(
                 GeometryReader { geometry in
-                  ScrollOffsetTracker(
-                    minY: geometry.frame(in: .global).minY,
-                    scrollOffset: $scrollOffset,
-                    displayHeaderHeight: $displayHeaderHeight,
-                    initialScrollOffset: Binding(
-                      get: { initialScrollOffset },
-                      set: { initialScrollOffset = $0 }
-                    ),
-                    fullHeaderHeight: fullHeaderHeight
-                  )
+                  // Only track scroll offset if scroll-responsive is enabled
+                  if shouldEnableScrollResponsive {
+                    ScrollOffsetTracker(
+                      minY: geometry.frame(in: .global).minY,
+                      scrollOffset: $scrollOffset,
+                      displayHeaderHeight: $displayHeaderHeight,
+                      initialScrollOffset: Binding(
+                        get: { initialScrollOffset },
+                        set: { initialScrollOffset = $0 }
+                      ),
+                      fullHeaderHeight: fullHeaderHeight
+                    )
+                  } else {
+                    Color.clear  // No tracking when disabled
+                  }
                 }
               )
           }
@@ -953,6 +982,10 @@ struct ProgressTabView: View {
       loadTimelineData()
       // Update cached streak when selected habit changes
       updateCachedStreak()
+      // Reset scroll offset state when changing habits to prevent state accumulation
+      initialScrollOffset = nil
+      scrollOffset = 0
+      displayHeaderHeight = 96
     }
     .onChange(of: selectedWeekStartDate) {
       // Clear weekly message cache to regenerate on next access
@@ -975,6 +1008,10 @@ struct ProgressTabView: View {
       updateTimeBaseCompletionData()
       // Load timeline data when date changes
       loadTimelineData()
+      // Reset scroll offset state when changing dates
+      initialScrollOffset = nil
+      scrollOffset = 0
+      displayHeaderHeight = 96
     }
     .onChange(of: selectedYear) {
       // Reload yearly data when year changes
