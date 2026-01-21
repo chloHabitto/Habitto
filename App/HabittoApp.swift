@@ -821,15 +821,12 @@ struct HabittoApp: App {
   private func repairUserIdMismatches() async {
     let logger = Logger(subsystem: "com.habitto.app", category: "UserIdRepair")
     
-    logger.info("🔧 UserId Repair: Starting userId mismatch repair...")
-    
     // Prevent multiple simultaneous repairs
     struct RepairLock {
       static var isRunning = false
     }
     
     guard !RepairLock.isRunning else {
-      logger.info("⏭️ UserId Repair: Already running, skipping duplicate repair")
       return
     }
     
@@ -840,8 +837,6 @@ struct HabittoApp: App {
       let modelContext = SwiftDataContainer.shared.modelContext
       let currentUserId = await CurrentUser().idOrGuest
       
-      logger.info("🔧 UserId Repair: Current userId: '\(currentUserId.isEmpty ? "EMPTY (guest)" : currentUserId.prefix(8))...'")
-      
       // Step 1: Find all HabitData for current user
       let habitPredicate = #Predicate<HabitData> { habit in
         habit.userId == currentUserId
@@ -849,8 +844,6 @@ struct HabittoApp: App {
       let habitDescriptor = FetchDescriptor<HabitData>(predicate: habitPredicate)
       let userHabits = try modelContext.fetch(habitDescriptor)
       let userHabitIds = Set(userHabits.map { $0.id })
-      
-      logger.info("🔧 UserId Repair: Found \(userHabits.count) habits for current user")
       
       // Step 2: Find all CompletionRecords for these habits with mismatched userId
       let allRecordsDescriptor = FetchDescriptor<CompletionRecord>()
@@ -860,16 +853,11 @@ struct HabittoApp: App {
       for record in allRecords {
         // Check if this record belongs to one of the user's habits
         if userHabitIds.contains(record.habitId) && record.userId != currentUserId {
-          let oldUserId = record.userId.isEmpty ? "EMPTY" : record.userId.prefix(8)
-          logger.info("🔧 UserId Repair: Fixing CompletionRecord - habitId: \(record.habitId.uuidString.prefix(8))..., dateKey: \(record.dateKey), old userId: '\(oldUserId)...', new userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8))...'")
-          
           record.userId = currentUserId
           record.userIdHabitIdDateKey = "\(currentUserId)#\(record.habitId.uuidString)#\(record.dateKey)"
           recordsFixed += 1
         }
       }
-      
-      logger.info("🔧 UserId Repair: Fixed \(recordsFixed) CompletionRecords")
       
       // Step 3: Find all DailyAward records with mismatched userId
       // Strategy: If user has habits with completions on a date, and there's a DailyAward for that date
@@ -885,17 +873,12 @@ struct HabittoApp: App {
         }
       }
       
-      logger.info("🔧 UserId Repair: Found \(userCompletionDates.count) dates where user has completions")
-      
       var awardsFixed = 0
       for award in allAwards {
         if award.userId != currentUserId {
           // Check if this award date matches one of the user's completion dates
           if userCompletionDates.contains(award.dateKey) {
             // This award is for a date where the user has completions, so it's likely the user's award
-            let oldUserId = award.userId.isEmpty ? "EMPTY" : award.userId.prefix(8)
-            logger.info("🔧 UserId Repair: Fixing DailyAward - dateKey: \(award.dateKey), old userId: '\(oldUserId)...', new userId: '\(currentUserId.isEmpty ? "EMPTY" : currentUserId.prefix(8))...'")
-            
             award.userId = currentUserId
             award.userIdDateKey = "\(currentUserId)#\(award.dateKey)"
             awardsFixed += 1
@@ -907,12 +890,9 @@ struct HabittoApp: App {
         }
       }
       
-      logger.info("🔧 UserId Repair: Fixed \(awardsFixed) DailyAwards")
-      
       // Step 4: Save all changes
       if recordsFixed > 0 || awardsFixed > 0 {
         try modelContext.save()
-        logger.info("✅ UserId Repair: Successfully repaired \(recordsFixed) CompletionRecords and \(awardsFixed) DailyAwards")
         
         // Refresh XP state to reflect the fixes
         await DailyAwardService.shared.refreshXPState()
@@ -1565,68 +1545,19 @@ struct HabittoApp: App {
     do {
       let habitsDesc = FetchDescriptor<HabitData>()
       let allHabits = try context.fetch(habitsDesc)
-      print("\n📊 DIAGNOSIS: Found \(allHabits.count) total habits in database")
+      // DIAGNOSIS logs removed for cleaner console output
       
-      for habit in allHabits {
-        print("   Habit: '\(habit.name)'")
-        print("      HabitData.userId: '\(habit.userId.isEmpty ? "EMPTY STRING" : habit.userId.prefix(8))...'")
-        print("      completionHistory relationship: \(habit.completionHistory.count) records")
-      }
+      // Habit detail logs removed for cleaner console output
       
       // 2. Check CompletionRecords
       let recordsDesc = FetchDescriptor<CompletionRecord>()
       let allRecords = try context.fetch(recordsDesc)
-      print("\n📊 DIAGNOSIS: Found \(allRecords.count) total CompletionRecords in database")
-      
-      let recordsByHabit = Dictionary(grouping: allRecords, by: { $0.habitId })
-      for (habitId, records) in recordsByHabit.sorted(by: { $0.key.uuidString < $1.key.uuidString }) {
-        let userIdDisplay = records.first?.userId.isEmpty ?? true ? "EMPTY STRING" : "\(records.first!.userId.prefix(8))..."
-        print("   Habit ID \(habitId.uuidString.prefix(8))...: \(records.count) records (userId: '\(userIdDisplay)')")
-      }
-      
-      // Group by userId
-      let recordsByUserId = Dictionary(grouping: allRecords, by: { $0.userId })
-      print("\n📊 DIAGNOSIS: CompletionRecords grouped by userId:")
-      for (userId, records) in recordsByUserId.sorted(by: { $0.key < $1.key }) {
-        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
-        print("   userId '\(userIdDisplay)': \(records.count) records")
-        // ✅ CRITICAL: Show actual progress values to diagnose why habits show 0 progress
-        for record in records.prefix(10) {
-          print("      - \(record.dateKey): progress=\(record.progress), isCompleted=\(record.isCompleted), habitId=\(record.habitId.uuidString.prefix(8))...")
-        }
-        if records.count > 10 {
-          print("      ... and \(records.count - 10) more records")
-        }
-      }
-      
-      // 3. Check if records are linked to habits via relationship
-      print("\n📊 DIAGNOSIS: Checking relationship links between habits and records")
-      for habit in allHabits {
-        let recordsForHabit = allRecords.filter { $0.habitId == habit.id }
-        let linkedRecords = habit.completionHistory.count
-        print("   Habit '\(habit.name)':")
-        print("      Records that exist with habitId: \(recordsForHabit.count)")
-        print("      Records linked via relationship: \(linkedRecords)")
-        if recordsForHabit.count != linkedRecords {
-          print("      ⚠️ MISMATCH! \(recordsForHabit.count) records exist but only \(linkedRecords) are linked")
-        }
-        
-        // Check userId match
-        let matchingRecords = recordsForHabit.filter { $0.userId == habit.userId }
-        if matchingRecords.count != recordsForHabit.count {
-          print("      ⚠️ USERID MISMATCH! \(matchingRecords.count) records match habit userId, \(recordsForHabit.count - matchingRecords.count) don't")
-          let mismatched = recordsForHabit.filter { $0.userId != habit.userId }
-          for record in mismatched.prefix(3) {
-            let recordUserIdDisplay = record.userId.isEmpty ? "EMPTY STRING" : "\(record.userId.prefix(8))..."
-            print("         Record userId: '\(recordUserIdDisplay)', habit userId: '\(habit.userId.isEmpty ? "EMPTY STRING" : habit.userId.prefix(8))...'")
-          }
-        }
-      }
+      // DIAGNOSIS logs removed for cleaner console output
       
       // 4. Check UserProgressData
       let xpDesc = FetchDescriptor<UserProgressData>()
       let allXP = try context.fetch(xpDesc)
-      print("\n📊 DIAGNOSIS: Found \(allXP.count) UserProgressData records")
+      // DIAGNOSIS logs removed for cleaner console output
       for xp in allXP {
         let userIdDisplay = xp.userId.isEmpty ? "EMPTY STRING" : "\(xp.userId.prefix(8))..."
         print("   userId: '\(userIdDisplay)', XP: \(xp.xpTotal), Level: \(xp.level), Streak: \(xp.streakDays)")
@@ -1635,7 +1566,7 @@ struct HabittoApp: App {
       // 5. Check DailyAwards
       let awardsDesc = FetchDescriptor<DailyAward>()
       let allAwards = try context.fetch(awardsDesc)
-      print("\n📊 DIAGNOSIS: Found \(allAwards.count) DailyAward records")
+      // DIAGNOSIS logs removed for cleaner console output
       let awardsByUserId = Dictionary(grouping: allAwards, by: { $0.userId })
       for (userId, awards) in awardsByUserId.sorted(by: { $0.key < $1.key }) {
         let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
@@ -1644,7 +1575,7 @@ struct HabittoApp: App {
       }
       
       // 6. Check what the app will actually load
-      print("\n📊 DIAGNOSIS: What will the app load for current userId '\(currentUserId)'?")
+      // DIAGNOSIS logs removed for cleaner console output
       if currentUserId != "nil" {
         let habitsForUser = allHabits.filter { $0.userId == currentUserId }
         let recordsForUser = allRecords.filter { $0.userId == currentUserId }

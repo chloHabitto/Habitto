@@ -36,7 +36,7 @@ struct RemindersHubView: View {
   
   // MARK: - Expandable Habit Rows
   
-  @State private var expandedHabitId: UUID? = nil
+  @State private var expandedHabitIds: Set<UUID> = []
   
   // MARK: - Edit Reminder
   
@@ -581,16 +581,16 @@ struct RemindersHubView: View {
   }
   
   private func expandableHabitReminderRow(_ habit: Habit) -> some View {
-    let isExpanded = expandedHabitId == habit.id
+    let isExpanded = expandedHabitIds.contains(habit.id)
     
     return VStack(spacing: 0) {
       // Main row (always visible)
       Button(action: {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
-          if expandedHabitId == habit.id {
-            expandedHabitId = nil  // Collapse
+          if expandedHabitIds.contains(habit.id) {
+            expandedHabitIds.remove(habit.id)  // Collapse this one only
           } else {
-            expandedHabitId = habit.id  // Expand
+            expandedHabitIds.insert(habit.id)  // Expand (don't collapse others)
           }
         }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()

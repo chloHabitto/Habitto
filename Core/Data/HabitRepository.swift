@@ -68,16 +68,11 @@ class HabitRepository: ObservableObject {
 
   private init() {
     // Initialize basic functionality first
-    debugLog("✅ HabitRepository: Initializing...")
-    debugLog("✅ HabitRepository: Starting with \(habits.count) habits")
-
     // Load habits using the new actor
-    debugLog("✅ HabitRepository: Using HabitStore actor for data operations...")
 
     // Load habits immediately and wait for completion
     Task { @MainActor in
       await loadHabits(force: true)
-      debugLog("✅ HabitRepository: Initial habit loading completed with \(habits.count) habits")
     }
 
     // Defer CloudKit initialization to avoid crashes
@@ -94,7 +89,6 @@ class HabitRepository: ObservableObject {
     // ✅ ISSUE 2 FIX: Setup observer for sync pull completion notifications
     setupSyncObserver()
 
-    debugLog("✅ HabitRepository: Initialization completed")
   }
 
   // MARK: Internal
@@ -268,7 +262,6 @@ class HabitRepository: ObservableObject {
       Task {
         do {
           try await guestDataMigration.migrateGuestData()
-          debugLog("✅ HabitRepository: Guest data migrated successfully during emergency fix")
         } catch {
           debugLog("❌ HabitRepository: Guest migration failed: \(error)")
           debugLog("⚠️ Guest data PRESERVED - user can retry migration later")
@@ -296,7 +289,6 @@ class HabitRepository: ObservableObject {
       }
     }
 
-    debugLog("✅ HabitRepository: Emergency fix applied - migration screen should no longer appear")
   }
 
   // MARK: - Emergency Recovery Methods
@@ -485,8 +477,6 @@ class HabitRepository: ObservableObject {
     
     // ✅ FIX: Use cache to prevent excessive reloads within short time window
     if !force, let lastLoad = lastLoadTime, now.timeIntervalSince(lastLoad) < loadCacheInterval {
-      debugLog(
-        "ℹ️ LOAD_HABITS: Skipping load - recently loaded \(String(format: "%.1f", now.timeIntervalSince(lastLoad)))s ago")
       return
     }
     
@@ -498,11 +488,9 @@ class HabitRepository: ObservableObject {
     
     lastLoadTime = now
     
-    debugLog("🔄 LOAD_HABITS_START: Loading from storage (force: \(force))")
 
     // Always load if force is true, or if habits is empty
     if !force, !habits.isEmpty, lastLoadTime != nil {
-      debugLog("ℹ️ LOAD_HABITS: Skipping load - habits not empty and not forced")
       return
     }
 
@@ -519,10 +507,8 @@ class HabitRepository: ObservableObject {
       
       if !hasLoggedStartupState {
         let todayKey = Habit.dateKey(for: Date())
-        debugLog("🟢 APP_START: Loaded \(loadedHabits.count) habits from disk")
         for habit in loadedHabits {
           let progress = habit.completionHistory[todayKey] ?? 0
-          debugLog("🟢 APP_START: \(habit.name) (\(habit.id)) todayProgress=\(progress)")
         }
         hasLoggedStartupState = true
       }
@@ -608,7 +594,6 @@ class HabitRepository: ObservableObject {
           objectWillChange.send()
         }
 
-        debugLog("✅ HabitRepository: Saved difficulty \(difficulty) for habit \(habitId) on \(date)")
 
       } catch {
         debugLog("❌ HabitRepository: Failed to save difficulty: \(error.localizedDescription)")
@@ -659,7 +644,6 @@ class HabitRepository: ObservableObject {
         //   await cloudKitIntegration.startSync()
         // }
 
-        debugLog("✅ HabitRepository: Successfully saved \(habits.count) habits")
 
       } catch {
         debugLog("❌ HabitRepository: Failed to save habits: \(error.localizedDescription)")
@@ -766,7 +750,6 @@ class HabitRepository: ObservableObject {
         migratedCount += 1
       }
       
-      debugLog("✅ HabitRepository: Navy color migration completed - \(migratedCount) habits processed")
     } catch {
       debugLog("❌ HabitRepository: Navy color migration failed: \(error.localizedDescription)")
     }
@@ -856,7 +839,6 @@ class HabitRepository: ObservableObject {
       self.objectWillChange.send()
     }
 
-    debugLog("✅ HabitRepository: All habits cleared")
   }
 
   // MARK: - Toggle Habit Completion
@@ -892,7 +874,6 @@ class HabitRepository: ObservableObject {
     // Save current habits
     saveHabits(habits)
 
-    debugLog("✅ HabitRepository: All changes saved")
   }
 
   // MARK: - Set Progress
@@ -974,7 +955,6 @@ class HabitRepository: ObservableObject {
       // ✅ PHASE 4: Streak is now computed-only, no need to update
       // Streak is derived from completion history in real-time
       #if DEBUG
-      debugLog("✅ HabitRepository: UI updated immediately for habit '\(habit.name)' on \(dateKey)")
       debugLog("📢 HabitRepository: @Published habits array updated, triggering subscriber notifications")
       #endif
 
@@ -1079,7 +1059,6 @@ class HabitRepository: ObservableObject {
     debugLog("🔄 HabitRepository: Loading soft-deleted habits...")
     do {
       let habits = try await habitStore.loadSoftDeletedHabits()
-      debugLog("✅ HabitRepository: Loaded \(habits.count) soft-deleted habits")
       return habits
     } catch {
       debugLog("❌ HabitRepository: Failed to load soft-deleted habits: \(error.localizedDescription)")
@@ -1103,7 +1082,6 @@ class HabitRepository: ObservableObject {
     debugLog("🗑️ HabitRepository: Permanently deleting habit: \(habit.name)")
     do {
       try await habitStore.permanentlyDeleteHabit(id: habit.id)
-      debugLog("✅ HabitRepository: Successfully permanently deleted habit: \(habit.name)")
     } catch {
       debugLog("❌ HabitRepository: Failed to permanently delete habit: \(error.localizedDescription)")
       throw error
@@ -1139,7 +1117,6 @@ class HabitRepository: ObservableObject {
     
     // Save context
     try modelContext.save()
-    debugLog("✅ HabitRepository: Successfully restored habit: \(habit.name)")
     
     // Re-upload to Firestore (habit was hard-deleted during soft-delete)
     debugLog("♻️ HabitRepository: Re-uploading habit to Firestore...")
@@ -1179,9 +1156,7 @@ class HabitRepository: ObservableObject {
 
       // Save updated habits
       saveHabits(habits)
-      debugLog("✅ HabitRepository: Duplicate cleanup completed, total habits: \(habits.count)")
     } else {
-      debugLog("✅ HabitRepository: No duplicate habits found")
     }
   }
 
@@ -1536,7 +1511,6 @@ class HabitRepository: ObservableObject {
 
       // Load user data
       await loadHabits(force: true)
-      debugLog("✅ HabitRepository: Data loaded for user: \(user.email ?? "Unknown")")
 
       // Load user's XP from SwiftData
       await loadUserXPFromSwiftData(userId: user.uid)
@@ -1571,7 +1545,6 @@ class HabitRepository: ObservableObject {
       // ✅ CRITICAL: Clear in-memory caches IMMEDIATELY (before loading)
       // This ensures UI shows empty state right away
       self.habits = []
-      debugLog("✅ HabitRepository: Cleared in-memory habits array (count: \(self.habits.count))")
       
       // ✅ CRITICAL: Small delay to ensure Auth.auth().currentUser is fully nil
       // This prevents race condition where loadHabits() might see old userId
@@ -1587,13 +1560,11 @@ class HabitRepository: ObservableObject {
       debugLog("🔄 HabitRepository: User signed out, loading guest data...")
       // Load guest habits (queries will filter by userId = "" which returns no account data)
       await loadHabits(force: true)
-      debugLog("✅ HabitRepository: Guest data loaded for unauthenticated user (habits count: \(self.habits.count))")
       
       // ✅ CRITICAL FIX: Refresh XP state for guest mode
       // This ensures XP is recalculated with the new userId (empty string) after sign-out
       // Query DailyAwards for userId == "" will return 0 awards, so XP will be 0
       await DailyAwardService.shared.refreshXPState()
-      debugLog("✅ HabitRepository: XP state refreshed for guest mode")
 
     case .authenticating:
       debugLog("🔄 HabitRepository: User authenticating, keeping current data...")
@@ -1611,7 +1582,6 @@ class HabitRepository: ObservableObject {
 
     // Clear any user-specific cache or temporary data
     // This ensures a clean slate when switching between users
-    debugLog("✅ HabitRepository: User data cleared for account switch")
   }
 
   // MARK: - App Lifecycle Handling
@@ -1623,7 +1593,6 @@ class HabitRepository: ObservableObject {
     // Refresh habits from storage (debounced to avoid redundant loads)
     Task {
       await loadHabits()
-      debugLog("✅ HabitRepository: Habits reloaded after app became active")
     }
   }
 
