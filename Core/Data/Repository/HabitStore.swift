@@ -554,14 +554,8 @@ final actor HabitStore {
       
       let progressDelta = progress - oldProgress
       
-      // ✅ STEP 3: Enhanced logging for manual testing workflow
-      logger.info("📝 setProgress: habit='\(habit.name)', dateKey=\(dateKey)")
-      logger.info("   → oldProgress=\(oldProgress), newProgress=\(progress), delta=\(progressDelta)")
-      logger.info("   → goalAmount=\(goalAmount), eventType=\(eventType.rawValue)")
-      
       // Always create event if there's an actual change (event sourcing is default)
       if progressDelta != 0 {
-        logger.info("📝 setProgress: Creating ProgressEvent (delta != 0)")
         do {
           // Create event on MainActor (ProgressEventService is @MainActor)
           // Swift will handle the actor hop automatically
@@ -616,8 +610,6 @@ final actor HabitStore {
           // Continue with legacy path (backward compatibility)
           logger.info("⚠️ Continuing with deprecated completionHistory update (fallback)")
         }
-      } else {
-        logger.info("📝 setProgress: Skipping event creation (delta == 0, no change)")
       }
       
       // ⚠️ DEPRECATED: Direct state update - kept for backward compatibility
@@ -687,12 +679,9 @@ final actor HabitStore {
       // ✅ FIX: Check daily completion and award/revoke XP AFTER all SwiftData saves are complete
       // This ensures checkDailyCompletionAndAwardXP queries fresh data, not stale CompletionRecords
       // ✅ PRIORITY 2: Check daily completion and award/revoke XP atomically
-      // ✅ STEP 3: Enhanced logging for manual testing workflow
-      logger.info("📝 setProgress: Calling checkDailyCompletionAndAwardXP for dateKey=\(dateKey) (AFTER all saves)")
       // Reuse userId variable declared above
       do {
         try await checkDailyCompletionAndAwardXP(dateKey: dateKey, userId: userId)
-        logger.info("✅ setProgress: checkDailyCompletionAndAwardXP completed successfully")
       } catch {
         logger.error("❌ setProgress: Failed to check daily completion and award XP: \(error.localizedDescription)")
       }
@@ -1397,9 +1386,6 @@ final actor HabitStore {
     }
     
     // ✅ STREAK MODE: Use meetsStreakCriteria to check completion for XP purposes
-    let currentMode = CompletionMode.current
-    logger.info("💰 XP_AWARD_CHECK: Using streak mode: \(currentMode.rawValue)")
-    
     let (allCompleted, incompleteHabits): (Bool, [String]) = await MainActor.run {
       // Check each active (non-skipped) habit using meetsStreakCriteria (respects Streak Mode)
       let incompleteHabits = activeHabits
