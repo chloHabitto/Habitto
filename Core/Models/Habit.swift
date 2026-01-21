@@ -702,7 +702,6 @@ struct Habit: Identifiable, Codable, Equatable {
   /// - Returns: true if the habit meets the criteria for the given mode
   func meetsStreakCriteria(for date: Date, mode: CompletionMode) -> Bool {
     let progress = getProgress(for: date)
-    let dateKey = Self.dateKey(for: date)
     
     switch mode {
     case .full:
