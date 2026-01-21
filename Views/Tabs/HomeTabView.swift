@@ -753,43 +753,30 @@ struct HomeTabView: View {
     debugLog("   BEFORE - pendingMilestone: \(pendingMilestone?.description ?? "nil")")
     debugLog("   BEFORE - showCelebration: \(showCelebration)")
     debugLog("   BEFORE - lastShownMilestoneStreak: \(lastShownMilestoneStreak)")
-    debugLog(String(repeating: "🔔", count: 40))
-    debugLog("")
-    
-    debugLog("🔍 MILESTONE_DEBUG: START - newStreak=\(newStreak), isUserInitiated=\(isUserInitiated)")
-    debugLog("🔍 MILESTONE_DEBUG: Current state - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone), lastShownMilestoneStreak=\(lastShownMilestoneStreak), pendingMilestone=\(pendingMilestone?.description ?? "nil")")
-    
     // ✅ FIX: ALWAYS reset milestone tracking when streak goes to 0
     // This must happen BEFORE the isUserInitiated guard!
     // When streak is lost, user should be able to re-earn milestone
     if newStreak == 0 {
-      debugLog("🔍 MILESTONE_DEBUG: Streak is 0 - resetting milestone tracking (regardless of isUserInitiated)")
       lastShownMilestoneStreak = -1
       lastShownMilestoneDateTimestamp = 0
       pendingMilestone = nil
       milestoneStreakCount = 0
       showStreakMilestone = false
-      debugLog("🔍 MILESTONE_DEBUG: END (streak 0 reset)")
       return  // Nothing more to do for streak 0
     }
     
     // ✅ STEP 2: Only process milestone DISPLAY logic for user-initiated updates
     guard isUserInitiated else {
-      debugLog("🔍 MILESTONE_DEBUG: SKIP - not user initiated")
-      debugLog("⏭️ MILESTONE_CHECK: Skipping milestone check - not user-initiated (app launch/recalculation)")
-      
       // ✅ FIX 1: DON'T clear milestone state if we're waiting to show a milestone
       // The user-initiated notification already set this up, don't interfere
       // Only clear if streak actually changed to a DIFFERENT value
       // (This handles edge case where automatic recalc finds different streak)
       // We'll let the user-initiated path handle milestone display
       
-      debugLog("🔍 MILESTONE_DEBUG: END (skipped) - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone)")
       return  // ← Just return, don't clear anything!
     }
     
     let isMilestone = isMilestoneStreak(newStreak)
-    debugLog("🔍 MILESTONE_DEBUG: isMilestoneStreak(\(newStreak)) = \(isMilestone)")
     
     // ✅ STEP 2: Check if this milestone was already shown today
     // Convert timestamp back to Date for comparison
@@ -800,9 +787,6 @@ struct HomeTabView: View {
                             lastShownDate != nil && 
                             Calendar.current.isDate(lastShownDate!, inSameDayAs: Date())
     
-    debugLog("🔍 MILESTONE_DEBUG: alreadyShownToday=\(alreadyShownToday)")
-    debugLog("   - lastShownMilestoneStreak=\(lastShownMilestoneStreak) vs newStreak=\(newStreak): \(lastShownMilestoneStreak == newStreak)")
-    debugLog("   - lastShownMilestoneDateTimestamp=\(lastShownMilestoneDateTimestamp), lastShownDate=\(lastShownDate?.description ?? "nil")")
     if let date = lastShownDate {
       debugLog("   - isDateInToday=\(Calendar.current.isDate(date, inSameDayAs: Date()))")
     }
@@ -813,12 +797,9 @@ struct HomeTabView: View {
       
       // ✅ STEP 2: If already shown today, show regular celebration instead
       if alreadyShownToday {
-        debugLog("🔍 MILESTONE_DEBUG: Milestone already shown today - skipping milestone screen")
-        debugLog("⏭️ MILESTONE_CHECK: Milestone \(newStreak) already shown today - showing regular celebration instead")
         // Clear any pending milestone and let regular celebration show
         pendingMilestone = nil
         milestoneStreakCount = 0
-        debugLog("🔍 MILESTONE_DEBUG: END (already shown) - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone)")
         return
       }
       
@@ -829,19 +810,13 @@ struct HomeTabView: View {
       debugLog("✅ STEP2_TRACKING: Marked milestone \(newStreak) as shown on \(shownDate.description)")
       
       milestoneStreakCount = newStreak
-      debugLog("🔍 MILESTONE_DEBUG: Set milestoneStreakCount=\(milestoneStreakCount)")
-      debugLog("✅ AFTER - milestoneStreakCount: \(milestoneStreakCount)")
       
       // For streak 1, show milestone sheet INSTEAD of regular celebration
       if newStreak == 1 {
-        debugLog("🔍 MILESTONE_DEBUG: Streak 1 - preparing to show milestone sheet")
-        debugLog("🎉 MILESTONE_CHECK: Streak 1 - showing milestone sheet INSTEAD of celebration")
         // Cancel any pending celebration
         showCelebration = false
-        debugLog("🔍 MILESTONE_DEBUG: Set showCelebration=false, scheduling milestone sheet in 0.5s")
         // Show milestone sheet after a short delay to ensure celebration is cancelled
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-          debugLog("🔍 MILESTONE_DEBUG: Inside asyncAfter - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone)")
           
           // ✅ BUG 3 FIX: Verify we're still on today's date before showing milestone
           let today = Calendar.current.startOfDay(for: Date())
@@ -855,25 +830,17 @@ struct HomeTabView: View {
           
           guard milestoneStreakCount > 0 else {
             debugLog("⚠️ MILESTONE_CHECK: Aborted - milestoneStreakCount is 0")
-            debugLog("🔍 MILESTONE_DEBUG: Guard failed - milestoneStreakCount=\(milestoneStreakCount)")
             return
           }
           
-          debugLog("🔍 MILESTONE_DEBUG: Setting showStreakMilestone=true")
           showStreakMilestone = true
           
           // ✅ BUG 3 FIX: Set the date when milestone is shown
           lastShownMilestoneDateTimestamp = Date().timeIntervalSince1970
-          let shownDate = Date(timeIntervalSince1970: lastShownMilestoneDateTimestamp)
-          debugLog("🔍 MILESTONE_DEBUG: Set lastShownMilestoneDateTimestamp=\(lastShownMilestoneDateTimestamp), date=\(shownDate.description)")
-          debugLog("🔍 MILESTONE_DEBUG: After setting - showStreakMilestone=\(showStreakMilestone)")
         }
       } else {
         // For other milestones (streak 3+), show milestone sheet AFTER celebration
-        debugLog("🔍 MILESTONE_DEBUG: Streak \(newStreak) - storing as pendingMilestone for after celebration")
-        debugLog("🎉 MILESTONE_CHECK: Streak \(newStreak) - will show milestone sheet after celebration")
         pendingMilestone = newStreak
-        debugLog("🔍 MILESTONE_DEBUG: Set pendingMilestone=\(pendingMilestone ?? -1)")
         
         // ✅ FIX: Actually trigger the celebration!
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -883,7 +850,6 @@ struct HomeTabView: View {
       }
     } else {
       // Streak is NOT a milestone
-      debugLog("🔍 MILESTONE_DEBUG: Streak \(newStreak) is NOT a milestone")
       
       // Clear any stale milestone state
       if pendingMilestone != nil || milestoneStreakCount > 0 {
@@ -900,8 +866,6 @@ struct HomeTabView: View {
         }
       }
     }
-    
-    debugLog("🔍 MILESTONE_DEBUG: END - milestoneStreakCount=\(milestoneStreakCount), showStreakMilestone=\(showStreakMilestone), pendingMilestone=\(pendingMilestone?.description ?? "nil")")
   }
 
   private func isMilestoneStreak(_ streak: Int) -> Bool {

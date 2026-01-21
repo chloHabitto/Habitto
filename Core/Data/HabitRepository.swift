@@ -793,20 +793,9 @@ class HabitRepository: ObservableObject {
 
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   func updateHabit(_ habit: Habit) async throws {
-    debugLog("🔄 HabitRepository: updateHabit called for: \(habit.name) (ID: \(habit.id))")
-    debugLog("🔄 HabitRepository: Habit has \(habit.reminders.count) reminders")
-    debugLog("⏭️ HabitRepository: Habit has \(habit.skippedDays.count) skipped day(s)")
-    if !habit.skippedDays.isEmpty {
-      debugLog("⏭️ HabitRepository: Skipped days: \(Array(habit.skippedDays.keys).sorted())")
-    }
-    debugLog("🔄 HabitRepository: Current habits count before update: \(habits.count)")
-    debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
-
     do {
       // Use the HabitStore actor for data operations
-      debugLog("🔄 HabitRepository: Calling habitStore.updateHabit...")
       try await habitStore.updateHabit(habit)
-      debugLog("✅ HabitRepository: habitStore.updateHabit completed successfully")
 
       // ✅ FIX: Check if today's DailyAward should be updated after habit update
       // If habit update (e.g., start date change) makes today incomplete, revoke today's XP award
@@ -824,10 +813,7 @@ class HabitRepository: ObservableObject {
       }
 
       // Reload habits to get the updated list
-      debugLog("🔄 HabitRepository: Reloading habits...")
       await loadHabits(force: true)
-      debugLog("✅ HabitRepository: Habits reloaded, new count: \(habits.count)")
-      debugLog("✅ GUARANTEED: Habit update persisted to SwiftData")
 
     } catch {
       debugLog("❌ HabitRepository: Failed to update habit: \(error.localizedDescription)")
@@ -1711,14 +1697,11 @@ class HabitRepository: ObservableObject {
 
   /// Load user's XP from SwiftData DailyAward records
   private func loadUserXPFromSwiftData(userId: String) async {
-    debugLog("🎯 XP LOAD: Loading XP from SwiftData for userId: \(userId)")
-
     // ✅ FIX #10: Use SwiftDataContainer's ModelContext instead of creating a new container
     // Creating a new container was causing Persistent History to delete tables
     await MainActor.run {
       let modelContext = SwiftDataContainer.shared.modelContext
       XPManager.shared.loadUserXPFromSwiftData(userId: userId, modelContext: modelContext)
-      debugLog("✅ XP LOAD: User XP loaded successfully")
     }
   }
 

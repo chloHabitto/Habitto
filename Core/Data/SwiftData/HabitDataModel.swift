@@ -247,19 +247,14 @@ final class HabitData {
   
   private static func encodeSkippedDays(_ skippedDays: [String: HabitSkip]) -> String {
     guard !skippedDays.isEmpty else {
-      print("⏭️ [ENCODE_SKIP] No skipped days to encode")
       return "{}"
     }
-    
-    print("⏭️ [ENCODE_SKIP] Encoding \(skippedDays.count) skipped day(s)")
     
     // Convert HabitSkip to a simpler dictionary for JSON encoding
     var jsonDict: [String: [String: Any]] = [:]
     let formatter = ISO8601DateFormatter()
     
     for (dateKey, skip) in skippedDays {
-      print("   ⏭️ Encoding skip: \(dateKey) -> \(skip.reason.rawValue)")
-      
       var entry: [String: Any] = [
         "habitId": skip.habitId.uuidString,
         "dateKey": skip.dateKey,
@@ -270,9 +265,6 @@ final class HabitData {
       // Only add customNote if it has a value (avoid null in JSON)
       if let note = skip.customNote, !note.isEmpty {
         entry["customNote"] = note
-        print("   ⏭️ Including customNote: \(note.prefix(20))...")
-      } else {
-        print("   ⏭️ Omitting customNote (nil or empty)")
       }
       
       jsonDict[dateKey] = entry
@@ -284,15 +276,11 @@ final class HabitData {
       return "{}"
     }
     
-    print("⏭️ [ENCODE_SKIP] SUCCESS: \(string.prefix(100))...")
     return string
   }
   
   private static func decodeSkippedDays(_ json: String, habitId: UUID) -> [String: HabitSkip] {
-    print("⏭️ [DECODE_SKIP] Input JSON: \(json.prefix(150))...")
-    
     guard json != "{}", !json.isEmpty else {
-      print("⏭️ [DECODE_SKIP] Empty JSON, returning empty dictionary")
       return [:]
     }
     
@@ -308,15 +296,10 @@ final class HabitData {
       return [:]
     }
     
-    print("⏭️ [DECODE_SKIP] Found \(dict.count) entries in JSON")
-    
     var result: [String: HabitSkip] = [:]
     let formatter = ISO8601DateFormatter()
     
     for (dateKey, skipDict) in dict {
-      print("⏭️ [DECODE_SKIP] Processing entry for \(dateKey)...")
-      print("⏭️ [DECODE_SKIP]   Keys in entry: \(skipDict.keys.joined(separator: ", "))")
-      
       // Extract reason (required)
       guard let reasonRaw = skipDict["reason"] as? String else {
         print("⚠️ [DECODE_SKIP] Missing or invalid 'reason' for \(dateKey) (value: \(skipDict["reason"] ?? "nil"))")
@@ -342,14 +325,11 @@ final class HabitData {
       if let noteValue = skipDict["customNote"] {
         if let noteString = noteValue as? String, !noteString.isEmpty {
           customNote = noteString
-          print("⏭️ [DECODE_SKIP]   customNote: '\(noteString.prefix(20))...'")
         } else {
           customNote = nil
-          print("⏭️ [DECODE_SKIP]   customNote: null or empty (value type: \(type(of: noteValue)))")
         }
       } else {
         customNote = nil
-        print("⏭️ [DECODE_SKIP]   customNote: missing key")
       }
       
       // Extract habitId from JSON or use the provided one
@@ -370,10 +350,8 @@ final class HabitData {
       )
       
       result[dateKey] = skip
-      print("   ⏭️ Decoded skip: \(dateKey) -> \(reason.shortLabel)")
     }
     
-    print("⏭️ [DECODE_SKIP] SUCCESS: Decoded \(result.count) skipped day(s) for habit \(habitId.uuidString.prefix(8))...")
     return result
   }
 
@@ -393,9 +371,6 @@ final class HabitData {
 
   @MainActor
   func updateFromHabit(_ habit: Habit) async {
-    print("⏭️ [UPDATE_FROM_HABIT] Updating HabitData for '\(habit.name)'")
-    print("⏭️ [UPDATE_FROM_HABIT] Habit has \(habit.skippedDays.count) skipped day(s)")
-    
     name = habit.name
     habitDescription = habit.description
     icon = habit.icon
@@ -413,7 +388,6 @@ final class HabitData {
     
     // ⏭️ SKIP FEATURE: Encode and save skipped days
     skippedDaysJSON = Self.encodeSkippedDays(habit.skippedDays)
-    print("⏭️ [UPDATE_FROM_HABIT] Saved skippedDaysJSON: \(skippedDaysJSON.prefix(100))...")
     
     updatedAt = Date()
     // Note: isCompleted and streak are now computed properties
@@ -707,20 +681,6 @@ final class HabitData {
       // Query ALL CompletionRecords for this habitId
       allRecords = try context.fetch(allRecordsDescriptor)
       
-      #if DEBUG
-      // ✅ DIAGNOSTIC: Log what records were found
-      if !allRecords.isEmpty {
-        let recordsByUserId = Dictionary(grouping: allRecords) { $0.userId }
-        print("🔍 [HABIT_TO_HABIT] Habit '\(self.name)' (id: \(habitId.uuidString.prefix(8))...)")
-        print("   Habit userId: '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...'")
-        print("   Total CompletionRecords found: \(allRecords.count)")
-        for (recordUserId, records) in recordsByUserId {
-          let userIdDisplay = recordUserId.isEmpty ? "EMPTY STRING" : "\(recordUserId.prefix(8))..."
-          print("     Records with userId '\(userIdDisplay)': \(records.count)")
-        }
-      }
-      #endif
-      
       // Now filter by userId with fallback logic
       var fetchedRecords: [CompletionRecord]
       
@@ -745,24 +705,12 @@ final class HabitData {
       // ✅ CRITICAL FIX: If no records found with HabitData.userId, but records exist, use them with fallback logic
       // This handles cases where CompletionRecord was saved with different userId due to timing issues
       if fetchedRecords.isEmpty && !allRecords.isEmpty {
-        #if DEBUG
-        print("⚠️ [HABIT_TO_HABIT] No records found with userId '\(userId.isEmpty ? "EMPTY" : userId.prefix(8))...', but \(allRecords.count) records exist - using all records as fallback")
-        #endif
         // ✅ FIX: For authenticated users, still use records if they exist (likely userId mismatch)
         // This prevents data loss when userId doesn't match exactly
         fetchedRecords = allRecords
       }
       
       completionRecords = fetchedRecords
-      
-      #if DEBUG
-      // ✅ DIAGNOSTIC: Log final filtered records
-      if !completionRecords.isEmpty {
-        print("✅ [HABIT_TO_HABIT] Habit '\(self.name)' - Using \(completionRecords.count) completion records after filtering")
-      } else if !allRecords.isEmpty {
-        print("⚠️ [HABIT_TO_HABIT] Habit '\(self.name)' - Filtered out all \(allRecords.count) records (userId mismatch?)")
-      }
-      #endif
     } catch {
       // Fallback to relationship if query fails
       completionRecords = completionHistory
@@ -774,9 +722,6 @@ final class HabitData {
     let filteredRecords: [CompletionRecord]
     if completionRecords.isEmpty && !allRecords.isEmpty {
       // If no records matched userId but records exist, use all records (userId mismatch)
-      #if DEBUG
-      print("⚠️ [HABIT_TO_HABIT] Using ALL \(allRecords.count) records due to userId mismatch - will repair userId later")
-      #endif
       filteredRecords = allRecords
     } else if !completionRecords.isEmpty {
       // Use records that matched userId
@@ -874,15 +819,6 @@ final class HabitData {
     
     // ✅ SKIP FEATURE: Load skipped days from storage
     habit.skippedDays = Self.decodeSkippedDays(skippedDaysJSON, habitId: self.id)
-    
-    #if DEBUG
-    if !habit.skippedDays.isEmpty {
-      print("⏭️ [HABIT_LOAD] Loaded \(habit.skippedDays.count) skipped day(s) for habit '\(habit.name)'")
-      for (dateKey, skip) in habit.skippedDays {
-        print("   ⏭️ \(dateKey): \(skip.reason.shortLabel)")
-      }
-    }
-    #endif
     
     return habit
   }
