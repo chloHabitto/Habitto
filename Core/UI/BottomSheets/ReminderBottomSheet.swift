@@ -253,21 +253,20 @@ struct AddReminderSheet: View {
     VStack(spacing: 0) {
       // Header
       HStack {
+        Spacer()
+        
+        // Close button
         Button(action: {
           dismiss()
         }) {
-          Image(.iconLeftArrow)
-            .resizable()
-            .frame(width: 24, height: 24)
-            .fontWeight(.heavy)
-            .foregroundColor(.appText07)
+          Image(systemName: "xmark")
+            .font(.system(size: 16, weight: .heavy))
+            .foregroundColor(.text07)
+            .frame(width: 44, height: 44)
         }
-        .frame(width: 48, height: 48)
-
-        Spacer()
       }
-      .padding(.horizontal, 4)
-      .padding(.vertical, 16)
+      .padding(.horizontal, 12)
+      .padding(.top, 8)
 
       // Title
       Text("Select Time")
