@@ -709,8 +709,6 @@ class HabitRepository: ObservableObject {
         let todayDateKey = Habit.dateKey(for: today)
         let currentUserId = await CurrentUser().idOrGuest
         
-        debugLog("🎯 XP_CHECK: New habit '\(habit.name)' is scheduled for today - checking DailyAward")
-        debugLog("   If today had an award but this habit isn't complete, the award will be revoked")
         do {
           try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayDateKey, userId: currentUserId)
           debugLog("✅ XP_CHECK: DailyAward check completed for today")
@@ -786,7 +784,6 @@ class HabitRepository: ObservableObject {
       let todayDateKey = Habit.dateKey(for: today)
       let currentUserId = await CurrentUser().idOrGuest
       
-      debugLog("🎯 XP_CHECK: Checking today's DailyAward after habit update (dateKey: \(todayDateKey))")
       do {
         try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayDateKey, userId: currentUserId)
         debugLog("✅ XP_CHECK: DailyAward check completed for today")

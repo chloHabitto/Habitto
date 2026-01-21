@@ -489,9 +489,6 @@ class HomeViewState: ObservableObject {
   // MARK: - Streak Recalculation Queue
 
   func requestStreakRecalculation(reason: String, delay: TimeInterval = 0, isUserInitiated: Bool = false) {
-    debugLog(
-      "📥 STREAK_QUEUE: Request received (\(reason)) delay=\(String(format: "%.2f", delay))s, isUserInitiated: \(isUserInitiated)")
-    
     // ✅ STEP 1: Store the flag when user-initiated
     if isUserInitiated {
       self.isUserInitiatedRecalculation = true
@@ -509,20 +506,15 @@ class HomeViewState: ObservableObject {
 
   private func beginPersistenceOperation(_ context: String) {
     activePersistenceOperations += 1
-    debugLog(
-      "⏳ STREAK_QUEUE: Persistence op started (\(context)) → count=\(activePersistenceOperations)")
   }
 
   private func endPersistenceOperation(_ context: String) {
     activePersistenceOperations = max(0, activePersistenceOperations - 1)
-    debugLog(
-      "⏳ STREAK_QUEUE: Persistence op finished (\(context)) → remaining=\(activePersistenceOperations)")
     
     // ✅ RACE CONDITION FIX: Signal any waiting continuations when all operations complete
     if activePersistenceOperations == 0 {
       let continuations = pendingPersistenceContinuations
       pendingPersistenceContinuations.removeAll()
-      debugLog("⏳ STREAK_QUEUE: Resuming \(continuations.count) waiting continuation(s)")
       for continuation in continuations {
         continuation.resume()
       }
@@ -555,8 +547,6 @@ class HomeViewState: ObservableObject {
     guard pendingStreakRecalculation else { return }
 
     guard activePersistenceOperations == 0 else {
-      debugLog(
-        "⏳ STREAK_QUEUE: Waiting for \(activePersistenceOperations) persistence op(s) before recalculation")
       return
     }
 
@@ -605,8 +595,6 @@ class HomeViewState: ObservableObject {
         
         let modelContext = SwiftDataContainer.shared.modelContext
         
-        debugLog("🔄 STREAK_RECALC: Starting streak recalculation from CompletionRecords for user '\(userId.isEmpty ? "guest" : userId)'")
-        
         // ✅ ONE-TIME BACKFILL: Calculate and restore historical longestStreak for existing users
         let backfillKey = "longest_streak_backfill_completed_\(userId)"
         let hasBackfilled = UserDefaults.standard.bool(forKey: backfillKey)
@@ -631,7 +619,6 @@ class HomeViewState: ObservableObject {
           modelContext.insert(newStreak)
           return newStreak
         }()
-        debugLog("🔍 STREAK_START: GlobalStreakModel.currentStreak = \(streak.currentStreak), longestStreak = \(streak.longestStreak)")
         
         // ✅ CRITICAL FIX: Use HabitRepository.habits instead of querying SwiftData directly
         // HabitRepository.habits already filters out soft-deleted habits (deletedAt != nil)
@@ -660,8 +647,6 @@ class HomeViewState: ObservableObject {
         #endif
         
         let habits = habitRepository.habits
-        
-        debugLog("🔄 STREAK_RECALC: Using \(habits.count) active habits from HabitRepository (soft-deleted habits excluded)")
         
         guard !habits.isEmpty else {
           debugLog("ℹ️ STREAK_RECALC: No habits found - resetting streak to 0")

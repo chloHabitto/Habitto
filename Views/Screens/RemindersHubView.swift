@@ -671,9 +671,12 @@ struct RemindersHubView: View {
       VStack(spacing: 8) {
         // Existing reminders (sorted by time)
         if !habit.reminders.isEmpty {
-          ForEach(habit.reminders.sorted { $0.time < $1.time }) { reminder in
-            reminderItemRow(reminder, habit: habit)
+          VStack(spacing: 8) {
+            ForEach(habit.reminders.sorted { $0.time < $1.time }) { reminder in
+              reminderItemRow(reminder, habit: habit)
+            }
           }
+          .padding(.horizontal, 16)
         }
         
         // Add button

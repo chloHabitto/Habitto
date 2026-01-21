@@ -125,11 +125,6 @@ class FirebaseBackupService {
 
       try await docRef.setData(dataWithTimestamp, merge: true)
       
-      print("☁️ [CLOUD_BACKUP] Habit backed up successfully")
-      print("   Habit: '\(habit.name)'")
-      print("   Habit ID: \(habit.id.uuidString.prefix(8))...")
-      print("   User ID: \(userId.prefix(8))...")
-      logger.info("✅ FirebaseBackupService: Backed up habit '\(habit.name)' to Firestore")
     } catch {
       // ✅ IMPROVED: Better error handling for permission errors
       let errorDesc = error.localizedDescription.lowercased()
@@ -191,12 +186,6 @@ class FirebaseBackupService {
 
       try await docRef.setData(completionData, merge: true)
       
-      print("☁️ [CLOUD_BACKUP] Completion record backed up successfully")
-      print("   Habit ID: \(habitId.uuidString.prefix(8))...")
-      print("   Date: \(dateKey)")
-      print("   Progress: \(progress)")
-      print("   Completed: \(isCompleted)")
-      logger.debug("✅ FirebaseBackupService: Backed up completion record for habit \(habitId.uuidString.prefix(8))... on \(dateKey)")
     } catch {
       // ✅ IMPROVED: Better error handling for permission errors
       let errorDesc = error.localizedDescription.lowercased()
@@ -239,11 +228,6 @@ class FirebaseBackupService {
 
       try await docRef.setData(awardData, merge: true)
       
-      print("☁️ [CLOUD_BACKUP] Daily award backed up successfully")
-      print("   Date: \(dateKey)")
-      print("   XP Granted: \(xpGranted)")
-      print("   All Habits Completed: \(allHabitsCompleted)")
-      logger.debug("✅ FirebaseBackupService: Backed up daily award for \(dateKey)")
     } catch {
       // ✅ IMPROVED: Better error handling for permission errors
       let errorDesc = error.localizedDescription.lowercased()
@@ -279,10 +263,6 @@ class FirebaseBackupService {
       print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - Calling Firestore delete()")
       try await docRef.delete()
       
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - Firestore delete() completed")
-      print("☁️ [CLOUD_BACKUP] Habit deleted from Firestore")
-      print("   Habit ID: \(habitId.uuidString.prefix(8))...")
-      logger.info("✅ FirebaseBackupService: Deleted habit backup \(habitId.uuidString.prefix(8))... from Firestore")
     } catch {
       print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - ERROR: \(error.localizedDescription)")
       print("⚠️ [CLOUD_BACKUP] Habit deletion failed: \(error.localizedDescription)")

@@ -141,7 +141,6 @@ final class HistoryCapper {
     // Cap notes if they exist (placeholder for future implementation)
     // TODO: Implement notes capping when Habit model supports notes
 
-    logger.debug("Capped history for habit: \(habit.name)")
     return updatedHabit
   }
 
