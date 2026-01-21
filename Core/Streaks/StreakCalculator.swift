@@ -37,7 +37,6 @@ enum StreakCalculator {
     }
 
     let currentMode = CompletionMode.current
-    print("🔥 STREAK_CALC: Computing streak with mode: \(currentMode.rawValue)")
 
     let normalizedToday = DateUtils.startOfDay(for: today)
     var checkDate = normalizedToday
@@ -65,16 +64,6 @@ enum StreakCalculator {
 
       // ✅ SKIP FEATURE: Filter out skipped habits from streak calculation
       let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: checkDate) }
-      let skippedCount = scheduledHabits.count - activeHabits.count
-      
-      if skippedCount > 0 {
-        let dateKey = Habit.dateKey(for: checkDate)
-        print("⏭️ SKIP_FILTER: \(dateKey) - Excluded \(skippedCount) skipped habit(s) from streak check")
-        for habit in scheduledHabits where habit.isSkipped(for: checkDate) {
-          let reasonLabel = habit.skipReason(for: checkDate)?.shortLabel ?? "unknown"
-          print("   ⏭️ Skipped: \(habit.name) - reason: \(reasonLabel)")
-        }
-      }
       
       guard !activeHabits.isEmpty else {
         // All habits were skipped - treat as "no habits scheduled" (neutral day)

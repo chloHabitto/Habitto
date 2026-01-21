@@ -417,7 +417,6 @@ class NotificationManager: ObservableObject {
     checkNotificationPermissionStatus { status in
       switch status {
       case .authorized:
-        print("✅ NotificationManager: Permissions validated - authorized")
         completion(true)
 
       case .denied:
@@ -435,11 +434,9 @@ class NotificationManager: ObservableObject {
         }
 
       case .provisional:
-        print("✅ NotificationManager: Permissions validated - provisional")
         completion(true)
 
       case .ephemeral:
-        print("✅ NotificationManager: Permissions validated - ephemeral")
         completion(true)
 
       @unknown default:
@@ -453,8 +450,6 @@ class NotificationManager: ObservableObject {
   func testNotificationPermissions(completion: @escaping (NotificationPermissionTestResult)
     -> Void)
   {
-    print("🧪 NotificationManager: Testing notification permissions...")
-
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       DispatchQueue.main.async {
         let result = NotificationPermissionTestResult(
@@ -470,11 +465,6 @@ class NotificationManager: ObservableObject {
           isAuthorized: settings.authorizationStatus == .authorized,
           canScheduleNotifications: settings.authorizationStatus == .authorized || settings
             .authorizationStatus == .provisional || settings.authorizationStatus == .ephemeral)
-
-        print("🧪 NotificationManager: Permission test completed")
-        print("🧪   Is Authorized: \(result.isAuthorized)")
-        print("🧪   Can Schedule: \(result.canScheduleNotifications)")
-        print("🧪   Status: \(result.authorizationStatus.rawValue)")
 
         completion(result)
       }
@@ -501,27 +491,24 @@ class NotificationManager: ObservableObject {
 
   /// Request notification permission with user-friendly messaging
   func requestNotificationPermissionWithExplanation() {
-    print("📱 NotificationManager: Requesting notification permission with explanation...")
-
     // First check current status
     checkNotificationPermissionStatus { status in
       switch status {
       case .authorized:
-        print("✅ NotificationManager: Permission already granted")
+        break
 
       case .denied:
         print("🚫 NotificationManager: Permission previously denied - user must enable in Settings")
 
       // Could show alert to guide user to Settings
       case .notDetermined:
-        print("❓ NotificationManager: Permission not determined - requesting now")
         self.requestNotificationPermission()
 
       case .provisional:
-        print("✅ NotificationManager: Provisional permission granted")
+        break
 
       case .ephemeral:
-        print("✅ NotificationManager: Ephemeral permission granted")
+        break
 
       @unknown default:
         print("⚠️ NotificationManager: Unknown permission status")
@@ -533,8 +520,6 @@ class NotificationManager: ObservableObject {
   func validateNotificationScheduling(completion: @escaping (NotificationValidationResult)
     -> Void)
   {
-    print("🔍 NotificationManager: Validating notification scheduling capabilities...")
-
     UNUserNotificationCenter.current().getNotificationSettings { settings in
       DispatchQueue.main.async {
         var validationResult = NotificationValidationResult()
@@ -595,11 +580,6 @@ class NotificationManager: ObservableObject {
           validationResult.canShowBadges &&
           validationResult.canPlaySounds
 
-        print("🔍 NotificationManager: Validation completed:")
-        print("🔍   Can Schedule: \(validationResult.canSchedule)")
-        print("🔍   Overall Capability: \(validationResult.overallCapability)")
-        print("🔍   Status: \(validationResult.statusMessage)")
-
         completion(validationResult)
       }
     }
@@ -607,8 +587,6 @@ class NotificationManager: ObservableObject {
 
   /// Test notification delivery with a test notification
   func testNotificationDelivery(completion: @escaping (Bool) -> Void) {
-    print("🧪 NotificationManager: Testing notification delivery...")
-
     // Validate permissions first
     validateNotificationScheduling { validationResult in
       guard validationResult.canSchedule else {
@@ -637,7 +615,6 @@ class NotificationManager: ObservableObject {
             print("❌ NotificationManager: Test notification failed: \(error.localizedDescription)")
             completion(false)
           } else {
-            print("✅ NotificationManager: Test notification scheduled successfully")
             completion(true)
           }
         }
@@ -650,7 +627,6 @@ class NotificationManager: ObservableObject {
     // Check if vacation mode is active - don't schedule notifications during vacation
     let vacationManager = VacationManager.shared
     if vacationManager.isVacationDay(reminderTime) {
-      print("🔇 NotificationManager: Skipping notification for \(habit.name) - vacation day")
       return
     }
 
@@ -707,8 +683,6 @@ class NotificationManager: ObservableObject {
     // Check if habit reminders are globally enabled (default to true if not set)
     let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if !habitReminderEnabled {
-      print(
-        "📅 NotificationManager: Habit reminders globally disabled, skipping individual habit notifications for '\(habit.name)'")
       return
     }
 
@@ -759,9 +733,6 @@ class NotificationManager: ObservableObject {
               if let error {
                 print(
                   "❌ Error scheduling notification for \(habit.name) on \(targetDate): \(error)")
-              } else {
-                print(
-                  "✅ NotificationManager: Scheduled notification for habit '\(habit.name)' on \(targetDate) at \(reminder.time)")
               }
             }
           }
@@ -789,20 +760,17 @@ class NotificationManager: ObservableObject {
   /// Remove all pending notifications
   func removeAllPendingNotifications() {
     UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-    print("🗑️ NotificationManager: Removed all pending notifications")
   }
 
   /// Remove all delivered notifications
   func removeAllDeliveredNotifications() {
     UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-    print("🗑️ NotificationManager: Removed all delivered notifications")
   }
 
   /// Clear all notifications (both pending and delivered)
   func clearAllNotifications() {
     removeAllPendingNotifications()
     removeAllDeliveredNotifications()
-    print("🗑️ NotificationManager: Cleared all notifications")
   }
 
   // Debug: List all pending notifications
@@ -821,7 +789,6 @@ class NotificationManager: ObservableObject {
 
   /// Manual notification rescheduling for testing/debugging
   func manualRescheduleNotifications(for habits: [Habit]) {
-    print("🔄 NotificationManager: Manual notification rescheduling triggered")
     rescheduleAllNotifications(for: habits)
 
     // Debug the results
@@ -845,8 +812,6 @@ class NotificationManager: ObservableObject {
       return
     }
     
-    print("🔄 NotificationManager: Rescheduling all notifications for \(habits.count) habits")
-
     // First, remove all existing notifications
     removeAllPendingNotifications()
 
@@ -859,8 +824,6 @@ class NotificationManager: ObservableObject {
         scheduleNotificationsForDate(targetDate, habits: habits)
       }
     }
-
-    print("✅ NotificationManager: Completed rescheduling all notifications for next 7 days")
   }
 
   // MARK: - Friendly Reminder System
@@ -881,22 +844,18 @@ class NotificationManager: ObservableObject {
     // Check if completion reminders are globally enabled
     let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
     if !completionReminderEnabled {
-      print(
-        "🔇 NotificationManager: Completion reminders are disabled, skipping friendly reminders for \(date)")
       return
     }
 
     // Check if vacation mode is active - don't schedule friendly reminders during vacation
     let vacationManager = VacationManager.shared
     if vacationManager.isVacationDay(date) {
-      print("🔇 NotificationManager: Skipping friendly reminders for \(date) - vacation day")
       return
     }
 
     let incompleteHabits = getIncompleteScheduledHabits(for: date, habits: habits)
 
     guard !incompleteHabits.isEmpty else {
-      print("✅ NotificationManager: All habits completed for \(date), no friendly reminders needed")
       return
     }
 
@@ -917,20 +876,15 @@ class NotificationManager: ObservableObject {
 
   /// Schedule notifications for a specific date (for daily rescheduling)
   func scheduleNotificationsForDate(_ date: Date, habits: [Habit]) {
-    print("🔄 NotificationManager: Scheduling notifications for date: \(date)")
-
     // Check if habit reminders are globally enabled (default to true if not set)
     let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if !habitReminderEnabled {
-      print(
-        "🔇 NotificationManager: Habit reminders are disabled, skipping notifications for \(date)")
       return
     }
 
     // Check if vacation mode is active - don't schedule notifications during vacation
     let vacationManager = VacationManager.shared
     if vacationManager.isVacationDay(date) {
-      print("🔇 NotificationManager: Skipping all notifications for \(date) - vacation day")
       return
     }
 
@@ -977,9 +931,6 @@ class NotificationManager: ObservableObject {
           UNUserNotificationCenter.current().add(request) { error in
             if let error {
               print("❌ Error scheduling notification for \(habit.name) on \(date): \(error)")
-            } else {
-              print(
-                "✅ Notification scheduled for habit '\(habit.name)' on \(date) at \(reminder.time)")
             }
           }
         }
@@ -1032,8 +983,6 @@ class NotificationManager: ObservableObject {
 
   /// Remove all daily plan reminders
   func removeDailyPlanReminders() {
-    print("🗑️ NotificationManager: Removing all daily plan reminders...")
-
     // Get all pending notifications
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       let planReminderIds = requests.compactMap { request in
@@ -1043,22 +992,12 @@ class NotificationManager: ObservableObject {
       if !planReminderIds.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: planReminderIds)
-        print("✅ NotificationManager: Removed \(planReminderIds.count) daily plan reminders")
-
-        // Log the specific reminders that were removed for debugging
-        for id in planReminderIds {
-          print("🗑️ NotificationManager: Removed plan reminder: \(id)")
-        }
-      } else {
-        print("ℹ️ NotificationManager: No daily plan reminders to remove")
       }
     }
   }
 
   /// Remove all daily completion reminders
   func removeDailyCompletionReminders() {
-    print("🗑️ NotificationManager: Removing all daily completion reminders...")
-
     // Get all pending notifications
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       let completionReminderIds = requests.compactMap { request in
@@ -1068,15 +1007,6 @@ class NotificationManager: ObservableObject {
       if !completionReminderIds.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: completionReminderIds)
-        print(
-          "✅ NotificationManager: Removed \(completionReminderIds.count) daily completion reminders")
-
-        // Log the specific reminders that were removed for debugging
-        for id in completionReminderIds {
-          print("🗑️ NotificationManager: Removed completion reminder: \(id)")
-        }
-      } else {
-        print("ℹ️ NotificationManager: No daily completion reminders to remove")
       }
     }
   }
@@ -1091,8 +1021,6 @@ class NotificationManager: ObservableObject {
 
   /// Remove all habit reminders
   func removeAllHabitReminders() {
-    print("🧹 NotificationManager: Removing all habit reminders...")
-
     // Get all pending notifications
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       // Filter for habit reminders
@@ -1103,9 +1031,6 @@ class NotificationManager: ObservableObject {
       if !identifiersToRemove.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
-        print("🗑️ NotificationManager: Removed \(identifiersToRemove.count) habit reminders")
-      } else {
-        print("ℹ️ NotificationManager: No habit reminders found to remove")
       }
     }
   }
@@ -1122,8 +1047,6 @@ class NotificationManager: ObservableObject {
       return
     }
     
-    print("🔄 NotificationManager: Rescheduling all daily reminders...")
-
     // Step 1: Setup notification categories first (for snooze functionality)
     setupNotificationCategories()
 
@@ -1136,31 +1059,21 @@ class NotificationManager: ObservableObject {
     // Step 4: Schedule new ones based on current settings
     // Only schedule if the user has enabled them
     if planReminderEnabled {
-      print("📅 NotificationManager: Plan reminders are enabled, scheduling...")
       scheduleDailyPlanReminders()
-    } else {
-      print("📅 NotificationManager: Plan reminders are disabled, skipping...")
     }
 
     if completionReminderEnabled {
-      print("📅 NotificationManager: Completion reminders are enabled, scheduling...")
       scheduleDailyCompletionReminders()
-    } else {
-      print("📅 NotificationManager: Completion reminders are disabled, skipping...")
     }
 
     // Step 5: Schedule habit reminders based on global setting (default to true if not set)
     if habitReminderEnabled {
-      print(
-        "📅 NotificationManager: Habit reminders are enabled, rescheduling all existing habits...")
       rescheduleAllHabitReminders()
-    } else {
-      print("📅 NotificationManager: Habit reminders are disabled, skipping...")
     }
 
     // Step 6: Get final count for verification
     getPendingDailyRemindersCount { count in
-      print("✅ NotificationManager: Daily reminders rescheduled. Total pending: \(count)")
+      // Count retrieved, no need to log
     }
 
     // Step 7: Debug - List all pending notifications
@@ -1170,13 +1083,10 @@ class NotificationManager: ObservableObject {
   /// Reschedule all existing habit reminders (useful when global toggle is turned on)
   @MainActor
   func rescheduleAllHabitReminders() {
-    print("🔄 NotificationManager: Rescheduling all existing habit reminders...")
-
     // Get all habits and reschedule their notifications
     let habits = HabitRepository.shared.habits
     for habit in habits {
       if !habit.reminders.isEmpty {
-        print("🔄 Rescheduling notifications for habit: \(habit.name)")
         updateNotifications(for: habit, reminders: habit.reminders)
       }
     }
@@ -1185,12 +1095,9 @@ class NotificationManager: ObservableObject {
   /// Force reschedule all habit reminders (bypasses completion checks)
   @MainActor
   func forceRescheduleAllHabitReminders() {
-    print("🔄 NotificationManager: Force rescheduling all habit reminders...")
-
     // Check if habit reminders are globally enabled (default to true if not set)
     let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if !habitReminderEnabled {
-      print("🔇 NotificationManager: Habit reminders are disabled, cannot force reschedule")
       return
     }
 
@@ -1252,9 +1159,6 @@ class NotificationManager: ObservableObject {
                 if let error {
                   print(
                     "❌ Error force scheduling notification for \(habit.name) on \(targetDate): \(error)")
-                } else {
-                  print(
-                    "✅ Force scheduled notification for habit '\(habit.name)' on \(targetDate) at \(reminder.time) - ID: \(notificationId)")
                 }
               }
             }
@@ -1267,11 +1171,8 @@ class NotificationManager: ObservableObject {
   /// Test method to immediately schedule a test notification
   @MainActor
   func scheduleTestHabitReminder() {
-    print("🧪 NotificationManager: Scheduling test habit reminder...")
-
     // Check notification authorization
     UNUserNotificationCenter.current().getNotificationSettings { settings in
-      print("🔐 Test - Notification authorization status: \(settings.authorizationStatus.rawValue)")
       if settings.authorizationStatus != .authorized {
         print(
           "❌ Test - Notifications not authorized! Status: \(settings.authorizationStatus.rawValue)")
@@ -1294,8 +1195,6 @@ class NotificationManager: ObservableObject {
       UNUserNotificationCenter.current().add(request) { error in
         if let error {
           print("❌ Test - Error scheduling test notification: \(error)")
-        } else {
-          print("✅ Test - Test notification scheduled successfully!")
         }
       }
     }
@@ -1373,8 +1272,6 @@ class NotificationManager: ObservableObject {
 
     // Reschedule daily reminders (this will respect current vacation mode settings)
     rescheduleDailyReminders()
-
-    print("✅ NotificationManager: Daily reminders rescheduled for vacation mode change")
   }
 
   /// Handle snooze action for completion reminders
@@ -1441,7 +1338,6 @@ class NotificationManager: ObservableObject {
       let incompleteCount = incompleteHabits.count
 
       guard incompleteCount > 0 else {
-        print("ℹ️ NotificationManager: No incomplete habits for snooze, skipping")
         return
       }
 
@@ -1473,8 +1369,6 @@ class NotificationManager: ObservableObject {
       // Schedule the snooze notification
       do {
         try await UNUserNotificationCenter.current().add(request)
-        print(
-          "✅ Snooze notification scheduled for \(snoozeMinutes) minutes from now (snooze count: \(snoozeCount + 1))")
       } catch {
         print("❌ Error scheduling snooze notification: \(error)")
       }
@@ -1483,8 +1377,6 @@ class NotificationManager: ObservableObject {
 
   /// Remove snoozed completion reminders
   func removeSnoozedCompletionReminders() {
-    print("🗑️ NotificationManager: Removing snoozed completion reminders...")
-
     // Get all pending notifications
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       let snoozeReminderIds = requests.compactMap { request in
@@ -1494,10 +1386,6 @@ class NotificationManager: ObservableObject {
       if !snoozeReminderIds.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: snoozeReminderIds)
-        print(
-          "✅ NotificationManager: Removed \(snoozeReminderIds.count) snoozed completion reminders")
-      } else {
-        print("ℹ️ NotificationManager: No snoozed completion reminders to remove")
       }
     }
   }
@@ -1506,8 +1394,6 @@ class NotificationManager: ObservableObject {
 
   /// Check for and remove duplicate daily reminders
   func removeDuplicateDailyReminders() {
-    print("🔍 NotificationManager: Checking for duplicate daily reminders...")
-
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       var seenIdentifiers: Set<String> = []
       var duplicateIds: [String] = []
@@ -1528,17 +1414,12 @@ class NotificationManager: ObservableObject {
       if !duplicateIds.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: duplicateIds)
-        print("✅ NotificationManager: Removed \(duplicateIds.count) duplicate daily reminders")
-      } else {
-        print("ℹ️ NotificationManager: No duplicate daily reminders found")
       }
     }
   }
 
   /// Remove expired daily reminders (older than 7 days)
   func removeExpiredDailyReminders() {
-    print("🗑️ NotificationManager: Checking for expired daily reminders...")
-
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       let calendar = Calendar.current
       let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: Date()) ?? Date()
@@ -1558,8 +1439,6 @@ class NotificationManager: ObservableObject {
             if let requestDate = formatter.date(from: dateString) {
               if requestDate < sevenDaysAgo {
                 expiredIds.append(request.identifier)
-                print(
-                  "🗑️ NotificationManager: Found expired reminder: \(request.identifier) (date: \(dateString))")
               }
             }
           }
@@ -1569,17 +1448,12 @@ class NotificationManager: ObservableObject {
       if !expiredIds.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: expiredIds)
-        print("✅ NotificationManager: Removed \(expiredIds.count) expired daily reminders")
-      } else {
-        print("ℹ️ NotificationManager: No expired daily reminders found")
       }
     }
   }
 
   /// Remove daily reminders for specific dates
   func removeDailyRemindersForDates(_ dates: [Date]) {
-    print("🗑️ NotificationManager: Removing daily reminders for \(dates.count) specific dates...")
-
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       var idsToRemove: [String] = []
       let dateKeys = Set(dates.map { DateUtils.dateKey(for: $0) })
@@ -1602,14 +1476,6 @@ class NotificationManager: ObservableObject {
       if !idsToRemove.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: idsToRemove)
-        print(
-          "✅ NotificationManager: Removed \(idsToRemove.count) daily reminders for specified dates")
-
-        for id in idsToRemove {
-          print("🗑️ NotificationManager: Removed reminder: \(id)")
-        }
-      } else {
-        print("ℹ️ NotificationManager: No daily reminders found for specified dates")
       }
     }
   }
@@ -1877,8 +1743,6 @@ class NotificationManager: ObservableObject {
 
     // Cancel all pending notifications
     UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-
-    print("🧹 NotificationManager: Cleared all pending notifications due to permission denial")
   }
 
   /// Handle notification permission error
@@ -1900,23 +1764,7 @@ class NotificationManager: ObservableObject {
 
   /// Log detailed notification permission information
   private func logNotificationPermissionDetails() {
-    UNUserNotificationCenter.current().getNotificationSettings { settings in
-      DispatchQueue.main.async {
-        print("📊 NotificationManager: Permission Details:")
-        print("📊   Authorization Status: \(settings.authorizationStatus.rawValue)")
-        print("📊   Alert Setting: \(settings.alertSetting.rawValue)")
-        print("📊   Badge Setting: \(settings.badgeSetting.rawValue)")
-        print("📊   Sound Setting: \(settings.soundSetting.rawValue)")
-        print("📊   Notification Center Setting: \(settings.notificationCenterSetting.rawValue)")
-        print("📊   Lock Screen Setting: \(settings.lockScreenSetting.rawValue)")
-        print("📊   Car Play Setting: \(settings.carPlaySetting.rawValue)")
-
-        if #available(iOS 14.0, *) {
-          print("📊   Critical Alert Setting: \(settings.criticalAlertSetting.rawValue)")
-          print("📊   Announcement Setting: \(settings.announcementSetting.rawValue)")
-        }
-      }
-    }
+    // Permission details logging removed for cleaner logs
   }
 
   /// Get notification IDs for a habit
@@ -2024,7 +1872,6 @@ class NotificationManager: ObservableObject {
 
     // Only schedule if the reminder time is in the future
     guard targetTime > currentTime else {
-      print("⏰ NotificationManager: Reminder time for \(hoursBefore)h before has passed, skipping")
       return
     }
 
@@ -2148,8 +1995,6 @@ class NotificationManager: ObservableObject {
         schedulePlanReminderForDate(targetDate, reminderTime: planReminderTime, habits: habits)
       }
     }
-
-    print("✅ NotificationManager: Daily plan reminders scheduled for next 7 days")
   }
 
   /// Perform the actual daily completion reminders scheduling (after permission validation)
@@ -2182,7 +2027,6 @@ class NotificationManager: ObservableObject {
 
     // Get habits from HabitRepository
     let habits = HabitRepository.shared.habits
-    print("📅 NotificationManager: Found \(habits.count) habits for completion reminders")
 
     // Schedule completion reminders for the next 7 days
     let calendar = Calendar.current
@@ -2196,8 +2040,6 @@ class NotificationManager: ObservableObject {
           habits: habits)
       }
     }
-
-    print("✅ NotificationManager: Daily completion reminders scheduled for next 7 days")
   }
 
   /// Schedule a plan reminder for a specific date
@@ -2205,7 +2047,6 @@ class NotificationManager: ObservableObject {
     // Check if vacation mode is active - don't schedule notifications during vacation
     let vacationManager = VacationManager.shared
     if vacationManager.isVacationDay(date) {
-      print("🔇 NotificationManager: Skipping plan reminder for \(date) - vacation day")
       return
     }
 
@@ -2218,7 +2059,6 @@ class NotificationManager: ObservableObject {
 
     // Don't schedule reminder if no habits are scheduled for this date
     guard habitCount > 0 else {
-      print("ℹ️ NotificationManager: No habits scheduled for \(date), skipping plan reminder")
       return
     }
 
@@ -2246,13 +2086,6 @@ class NotificationManager: ObservableObject {
       let reminderComponents = calendar.dateComponents(in: .current, from: reminderTime)
       let dateComponents = calendar.dateComponents(in: .current, from: date)
 
-      // Debug logging
-      print("🔍 NotificationManager: Plan reminder scheduling debug:")
-      print("  - Target date: \(date)")
-      print("  - Reminder time: \(reminderTime)")
-      print("  - Reminder components: \(reminderComponents)")
-      print("  - Date components: \(dateComponents)")
-
       // Combine date and time components
       var combinedComponents = DateComponents()
       combinedComponents.year = dateComponents.year
@@ -2260,8 +2093,6 @@ class NotificationManager: ObservableObject {
       combinedComponents.day = dateComponents.day
       combinedComponents.hour = reminderComponents.hour
       combinedComponents.minute = reminderComponents.minute
-
-      print("  - Combined components: \(combinedComponents)")
 
       // Create trigger for specific date
       let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
@@ -2276,8 +2107,6 @@ class NotificationManager: ObservableObject {
       UNUserNotificationCenter.current().add(request) { error in
         if let error {
           print("❌ Error scheduling plan reminder for \(date): \(error)")
-        } else {
-          print("✅ Plan reminder scheduled for \(date) at \(reminderTime) - \(habitCount) habits")
         }
       }
     }
@@ -2292,7 +2121,6 @@ class NotificationManager: ObservableObject {
     // Check if vacation mode is active - don't schedule notifications during vacation
     let vacationManager = VacationManager.shared
     if vacationManager.isVacationDay(date) {
-      print("🔇 NotificationManager: Skipping completion reminder for \(date) - vacation day")
       return
     }
 
@@ -2302,7 +2130,6 @@ class NotificationManager: ObservableObject {
 
     // Don't schedule reminder if no incomplete habits for this date
     guard incompleteCount > 0 else {
-      print("ℹ️ NotificationManager: No incomplete habits for \(date), skipping completion reminder")
       return
     }
 
@@ -2337,13 +2164,6 @@ class NotificationManager: ObservableObject {
       let reminderComponents = calendar.dateComponents(in: .current, from: reminderTime)
       let dateComponents = calendar.dateComponents(in: .current, from: date)
 
-      // Debug logging
-      print("🔍 NotificationManager: Completion reminder scheduling debug:")
-      print("  - Target date: \(date)")
-      print("  - Reminder time: \(reminderTime)")
-      print("  - Reminder components: \(reminderComponents)")
-      print("  - Date components: \(dateComponents)")
-
       // Combine date and time components
       var combinedComponents = DateComponents()
       combinedComponents.year = dateComponents.year
@@ -2351,8 +2171,6 @@ class NotificationManager: ObservableObject {
       combinedComponents.day = dateComponents.day
       combinedComponents.hour = reminderComponents.hour
       combinedComponents.minute = reminderComponents.minute
-
-      print("  - Combined components: \(combinedComponents)")
 
       // Create trigger for specific date
       let trigger = UNCalendarNotificationTrigger(dateMatching: combinedComponents, repeats: false)
@@ -2367,9 +2185,6 @@ class NotificationManager: ObservableObject {
       UNUserNotificationCenter.current().add(request) { error in
         if let error {
           print("❌ Error scheduling completion reminder for \(date): \(error)")
-        } else {
-          print(
-            "✅ Completion reminder scheduled for \(date) at \(reminderTime) - \(incompleteCount) incomplete habits")
         }
       }
     }
@@ -2378,11 +2193,8 @@ class NotificationManager: ObservableObject {
   /// Schedule all habit reminders for the next 7 days
   @MainActor
   private func scheduleAllHabitReminders() {
-    print("📅 NotificationManager: Scheduling all habit reminders...")
-
     // Check notification authorization first
     UNUserNotificationCenter.current().getNotificationSettings { settings in
-      print("🔐 Notification authorization status: \(settings.authorizationStatus.rawValue)")
       if settings.authorizationStatus != .authorized {
         print("⚠️ Notifications not authorized! Status: \(settings.authorizationStatus.rawValue)")
       }
@@ -2390,7 +2202,6 @@ class NotificationManager: ObservableObject {
 
     // Get habits from HabitRepository
     let habits = HabitRepository.shared.habits
-    print("📅 NotificationManager: Found \(habits.count) habits for habit reminders")
 
     // Debug: Check each habit's reminders
     var totalActiveReminders = 0
@@ -2428,12 +2239,9 @@ class NotificationManager: ObservableObject {
       // Only schedule if habit should be shown on this date
       if shouldShowHabitOnDate(habit, date: date) {
         let activeReminders = habit.reminders.filter { $0.isActive }
-        print("🔍 Habit '\(habit.name)' on \(date): \(activeReminders.count) active reminders")
 
         for reminder in activeReminders {
           let notificationId = "habit_reminder_\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: date))"
-          print(
-            "🔔 Scheduling notification for habit '\(habit.name)' at \(reminder.time) on \(date) - ID: \(notificationId)")
 
           // Create content
           let content = UNMutableNotificationContent()
@@ -2470,9 +2278,6 @@ class NotificationManager: ObservableObject {
           UNUserNotificationCenter.current().add(request) { error in
             if let error {
               print("❌ Error scheduling notification for \(habit.name) on \(date): \(error)")
-            } else {
-              print(
-                "✅ Notification scheduled for habit '\(habit.name)' on \(date) at \(reminder.time) - ID: \(notificationId)")
             }
           }
         }
@@ -2496,7 +2301,6 @@ class NotificationManager: ObservableObject {
 
     // Only create snooze category if snooze is enabled
     guard snoozeDuration != .none else {
-      print("ℹ️ NotificationManager: Snooze disabled, skipping category setup")
       // Clear any existing categories when snooze is disabled
       UNUserNotificationCenter.current().setNotificationCategories([])
       return
@@ -2543,8 +2347,6 @@ class NotificationManager: ObservableObject {
 
     // Register category
     UNUserNotificationCenter.current().setNotificationCategories([category])
-    print(
-      "✅ NotificationManager: Notification categories set up with snooze duration: \(snoozeDuration.rawValue)")
   }
 
   /// Get snooze count for a specific date
@@ -2558,14 +2360,12 @@ class NotificationManager: ObservableObject {
     let key = "snooze_count_\(dateKey)"
     let currentCount = UserDefaults.standard.integer(forKey: key)
     UserDefaults.standard.set(currentCount + 1, forKey: key)
-    print("📊 NotificationManager: Snooze count for \(dateKey): \(currentCount + 1)")
   }
 
   /// Reset snooze count for a specific date (call when day changes)
   private func resetSnoozeCount(for dateKey: String) {
     let key = "snooze_count_\(dateKey)"
     UserDefaults.standard.removeObject(forKey: key)
-    print("🔄 NotificationManager: Reset snooze count for \(dateKey)")
   }
 
   /// Clean up old snooze counts (older than 7 days)
@@ -2585,7 +2385,6 @@ class NotificationManager: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd"
         if let date = formatter.date(from: dateString), date < sevenDaysAgo {
           UserDefaults.standard.removeObject(forKey: key)
-          print("🗑️ NotificationManager: Cleaned up old snooze count: \(key)")
         }
       }
     }
@@ -2593,8 +2392,6 @@ class NotificationManager: ObservableObject {
 
   /// Remove daily reminders for vacation days
   private func removeVacationDayReminders() {
-    print("🗑️ NotificationManager: Checking for vacation day reminders to remove...")
-
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       let vacationManager = VacationManager.shared
       var vacationDayIds: [String] = []
@@ -2616,8 +2413,6 @@ class NotificationManager: ObservableObject {
               // Check if this date is a vacation day
               if vacationManager.isVacationDay(date) {
                 vacationDayIds.append(request.identifier)
-                print(
-                  "🗑️ NotificationManager: Found vacation day reminder: \(request.identifier) (date: \(dateString))")
               }
             }
           }
@@ -2627,13 +2422,6 @@ class NotificationManager: ObservableObject {
       if !vacationDayIds.isEmpty {
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: vacationDayIds)
-        print("✅ NotificationManager: Removed \(vacationDayIds.count) vacation day reminders")
-
-        for id in vacationDayIds {
-          print("🗑️ NotificationManager: Removed vacation reminder: \(id)")
-        }
-      } else {
-        print("ℹ️ NotificationManager: No vacation day reminders found")
       }
     }
   }
