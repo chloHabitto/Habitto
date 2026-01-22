@@ -858,7 +858,8 @@ struct HomeTabView: View {
   }
 
   private func isMilestoneStreak(_ streak: Int) -> Bool {
-    return [1, 3, 7, 14, 30].contains(streak) || (streak > 30 && streak % 30 == 0)
+    // Common milestone streaks: 1, 3, 5, 7, 10, 14, 21, 30, 50, 100, and every 30 after 30
+    return [1, 3, 5, 7, 10, 14, 21, 30, 50, 100].contains(streak) || (streak > 30 && streak % 30 == 0)
   }
 
   private func getWeekdayName(_ weekday: Int) -> String {
@@ -1304,8 +1305,6 @@ struct HomeTabView: View {
     completionStatusMap[habit.id] = true
 
     // ✅ STREAK MODE: Use meetsStreakCriteria to check remaining habits for streak/XP purposes
-    let currentMode = CompletionMode.current
-    
     let remainingHabits = baseHabitsForSelectedDate.filter { h in
       if h.id == habit.id { return false } // Exclude current habit
       
