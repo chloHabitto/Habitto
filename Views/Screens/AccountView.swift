@@ -228,7 +228,7 @@ struct AccountView: View {
           }
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 100)
+        .padding(.bottom, 85) // Above tab bar
         .transition(.move(edge: .bottom).combined(with: .opacity))
       }
     }
