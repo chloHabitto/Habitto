@@ -160,9 +160,6 @@ final actor HabitStore {
 
   func saveHabits(_ habits: [Habit]) async throws {
     let startTime = CFAbsoluteTimeGetCurrent()
-    #if DEBUG
-    logger.info("🎯 [7/8] HabitStore.saveHabits: persisting \(habits.count) habits")
-    #endif
 
     // Cap history data to prevent unlimited growth
     let capper = await historyCapper

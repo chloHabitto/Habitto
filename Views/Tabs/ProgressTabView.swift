@@ -4751,9 +4751,6 @@ struct ProgressTabView: View {
         ? Double(completionsInPeriod.count) / Double(totalDays)
         : 0.0
 
-      print(
-        "🕐 TimeBaseCompletionChart: \(periodName) (\(startHour)-\(endHour)): \(completionsInPeriod.count) completions, rate: \(completionRate) (\(completionRate * 100)%), avg time: \(averageTimeString)")
-
       // Debug warning for overflow
       if completionRate > 1.0 {
         print(
@@ -4821,9 +4818,6 @@ struct ProgressTabView: View {
     // Get difficulty logs for the week directly from habit's difficulty history
     var difficultyLogs: [(date: Date, difficulty: Int)] = []
 
-    print("🔍 getWeeklyDifficultyData: Week range \(weekStart) to \(adjustedWeekEnd)")
-    print("🔍 Total difficulty history entries: \(habit.difficultyHistory.count)")
-
     for (dateKey, difficulty) in habit.difficultyHistory {
       let formatter = DateFormatter()
       formatter.dateFormat = "yyyy-MM-dd"
@@ -4834,13 +4828,8 @@ struct ProgressTabView: View {
 
       if date >= weekStart, date <= adjustedWeekEnd {
         difficultyLogs.append((date: date, difficulty: difficulty))
-        print("✅ Added difficulty log: \(dateKey) = \(difficulty)")
-      } else {
-        print("⏭️ Skipped difficulty log: \(dateKey) (outside week range)")
       }
     }
-    
-    print("🔍 Filtered difficulty logs for week: \(difficultyLogs.count)")
 
     // Sort by date
     difficultyLogs.sort { $0.date < $1.date }
@@ -4901,9 +4890,6 @@ struct ProgressTabView: View {
     // Get difficulty logs for the month directly from habit's difficulty history
     var difficultyLogs: [(date: Date, difficulty: Int)] = []
 
-    print("🔍 getMonthlyDifficultyData: Month range \(monthStart) to \(adjustedMonthEnd)")
-    print("🔍 Total difficulty history entries: \(habit.difficultyHistory.count)")
-
     for (dateKey, difficulty) in habit.difficultyHistory {
       let formatter = DateFormatter()
       formatter.dateFormat = "yyyy-MM-dd"
@@ -4914,13 +4900,8 @@ struct ProgressTabView: View {
 
       if date >= monthStart, date <= adjustedMonthEnd {
         difficultyLogs.append((date: date, difficulty: difficulty))
-        print("✅ Added difficulty log: \(dateKey) = \(difficulty)")
-      } else {
-        print("⏭️ Skipped difficulty log: \(dateKey) (outside month range)")
       }
     }
-    
-    print("🔍 Filtered difficulty logs for month: \(difficultyLogs.count)")
 
     // Sort by date
     difficultyLogs.sort { $0.date < $1.date }
@@ -5812,12 +5793,10 @@ struct AnimatedCircularProgressRing: View {
     }
     .onAppear {
       // Always animate when the ring appears
-      print("🔄 AnimatedCircularProgressRing onAppear - progress: \(progress)")
       animatedProgress = 0
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
         withAnimation(.easeOut(duration: 0.8)) {
           animatedProgress = progress
-          print("🔄 Animating to progress: \(progress)")
         }
       }
     }

@@ -508,7 +508,6 @@ class HabitRepository: ObservableObject {
       if !hasLoggedStartupState {
         hasLoggedStartupState = true
       }
-      debugLog("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
       
       let todayKey = Habit.dateKey(for: Date())
 

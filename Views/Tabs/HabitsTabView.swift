@@ -428,8 +428,6 @@ struct HabitsTabView: View {
       for duplicate in duplicates {
         print("  - ID: \(duplicate.id), Name: \(duplicate.name)")
       }
-    } else {
-      print("✅ HabitsTabView: No duplicate habits found")
     }
   }
   

@@ -81,7 +81,6 @@ struct HomeTabView: View {
           // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
           // DO NOT call publishXP() here - it overwrites the database value with calculated value
           // XP will be loaded from DailyAwardService.refreshXPState() which reads from SwiftData DailyAward records
-          debugLog("✅ INITIAL_XP: Skipping XP calculation - XP will come from DailyAwardService")
         }
 
         // Subscribe to event bus
@@ -1186,8 +1185,6 @@ struct HomeTabView: View {
     await MainActor.run {
       completionStatusMap = statusMap
     }
-
-    debugLog("✅ HomeTabView: Prefetched completion status for \(statusMap.count) habits from local data")
   }
 
   /// ✅ BUG FIX: Refresh habits data when user pulls down
@@ -1308,7 +1305,6 @@ struct HomeTabView: View {
 
     // ✅ STREAK MODE: Use meetsStreakCriteria to check remaining habits for streak/XP purposes
     let currentMode = CompletionMode.current
-    debugLog("🎯 CELEBRATION_CHECK: Using streak mode: \(currentMode.rawValue)")
     
     let remainingHabits = baseHabitsForSelectedDate.filter { h in
       if h.id == habit.id { return false } // Exclude current habit
@@ -1325,7 +1321,6 @@ struct HomeTabView: View {
       
       // Use meetsStreakCriteria for streak/XP purposes (respects Streak Mode)
       let meetsCriteria = habitData.meetsStreakCriteria(for: selectedDate)
-      debugLog("🎯 CELEBRATION_CHECK: Habit '\(h.name)' (type=\(h.habitType)) | meetsStreakCriteria=\(meetsCriteria)")
       return !meetsCriteria // Return true if NOT meeting criteria
     }
     
@@ -1338,7 +1333,6 @@ struct HomeTabView: View {
 
         if remainingHabits.isEmpty {
           wasPartialCompletion = isPartialCompletion
-          debugLog("🎯 CELEBRATION_CHECK: Triggering celebration - isPartialCompletion: \(isPartialCompletion)")
           
           // Check if this specific habit is fully complete (progress >= goal)
           let habitIsFullyComplete = habit.isCompleted(for: selectedDate)
