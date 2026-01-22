@@ -67,8 +67,6 @@ final class SwiftDataContainer: ObservableObject {
             throw NSError(domain: "SwiftDataMigration", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to delete CloudKit database"])
           }
           
-          logger.info("✅ SwiftData: CloudKit database removed successfully")
-          logger.info("✅ SwiftData: New local-only database will be created (CloudKit migration)")
           UserDefaults.standard.set(true, forKey: cloudKitMigrationFlagKey)
           
           // ✅ CRITICAL: Set skip flag to skip database creation this session
@@ -161,7 +159,6 @@ final class SwiftDataContainer: ObservableObject {
               }
             }
             
-            logger.info("✅ SwiftData: Deep integrity check passed - all tables healthy")
           } catch {
             let errorDesc = error.localizedDescription
             let nsError = error as NSError
@@ -220,8 +217,6 @@ final class SwiftDataContainer: ObservableObject {
               }
             }
             
-            logger.info("✅ SwiftData: All corrupted files removed")
-            logger.info("✅ SwiftData: Fresh database will be created on next launch")
             
             // Clear the corruption flag - we've fixed it
             UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
@@ -229,7 +224,6 @@ final class SwiftDataContainer: ObservableObject {
             // Mark one-time schema fix as complete
             if needsOneTimeFix {
               UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
-              logger.info("✅ SwiftData: One-time schema fix flag set")
             }
             
             // ✅ FIX #5 (REVISED): Set flag to skip database creation THIS session
@@ -238,7 +232,6 @@ final class SwiftDataContainer: ObservableObject {
             UserDefaults.standard.set(true, forKey: "SwiftData_Skip_Creation_This_Session")
             logger.warning("⚠️ SwiftData: Database reset complete, skipping creation this session")
             logger.warning("⚠️ SwiftData: App will use local storage fallback until next launch")
-            logger.info("✅ SwiftData: Fresh database will be created on next app launch")
             
           } catch {
             logger.error("❌ SwiftData: Failed to remove files: \(error)")
@@ -252,7 +245,6 @@ final class SwiftDataContainer: ObservableObject {
         // Mark migration flag as complete immediately when creating new database
         // This should never trigger on fresh installs anyway (due to databaseExists check above)
         UserDefaults.standard.set(true, forKey: oneTimeSchemaFixKey)
-        logger.info("✅ SwiftData: New database - marking migration flag as complete")
       }
 
       // ✅ FIX #5: Check if we should skip database creation this session
@@ -260,7 +252,6 @@ final class SwiftDataContainer: ObservableObject {
       if shouldSkipCreation {
         logger.warning("⚠️ SwiftData: Skipping database creation this session (corruption was just cleaned)")
         logger.warning("⚠️ SwiftData: App will use UserDefaults fallback for data storage")
-        logger.info("✅ SwiftData: Fresh database will be created on next natural app launch")
         
         // Clear the flag so next launch will create the database
         UserDefaults.standard.removeObject(forKey: "SwiftData_Skip_Creation_This_Session")
@@ -280,7 +271,6 @@ final class SwiftDataContainer: ObservableObject {
             configurations: [inMemoryConfig])
           self.modelContext = ModelContext(modelContainer)
           
-          logger.info("✅ SwiftData: Created temporary in-memory container (fallback mode)")
         } catch {
           // ✅ FALLBACK: If CloudKit validation fails even for in-memory container,
           // create a minimal container with just the essential models
@@ -341,8 +331,6 @@ final class SwiftDataContainer: ObservableObject {
         modelContext.autosaveEnabled = false
       }
 
-      logger.info("✅ SwiftData: Container initialized successfully")
-      logger.info("✅ SwiftData: Database URL: \(modelConfiguration.url.absoluteString)")
 
       // ✅ FIX #7 & #8: Force table creation on new database
       // SwiftData doesn't always auto-create tables on first fetch
@@ -369,8 +357,7 @@ final class SwiftDataContainer: ObservableObject {
           
           // Re-enable autosave after table creation is complete
           modelContext.autosaveEnabled = true
-          logger.info("✅ SwiftData: Tables created successfully via dummy insert/delete")
-          logger.info("✅ SwiftData: Autosave re-enabled")
+          modelContext.autosaveEnabled = true
         } catch {
           logger.warning("⚠️ SwiftData: Failed to force table creation: \(error.localizedDescription)")
           // Re-enable autosave even on failure
@@ -385,19 +372,11 @@ final class SwiftDataContainer: ObservableObject {
       
       // Log actual data state to help with debugging
       if testCount > 0 {
-        logger.info("✅ SwiftData: Existing database found with \(testCount) completion records")
+        // Database exists with data
       } else if testCount == 0 {
         // Check other tables to confirm this is truly fresh
         let habitCount = (try? modelContext.fetchCount(FetchDescriptor<HabitData>())) ?? 0
         let awardCount = (try? modelContext.fetchCount(FetchDescriptor<DailyAward>())) ?? 0
-        
-        if habitCount > 0 || awardCount > 0 {
-          logger.info("✅ SwiftData: Existing database found (habits: \(habitCount), awards: \(awardCount))")
-        } else if !finalDatabaseExists {
-          logger.info("✅ SwiftData: Fresh install - no existing data found")
-        } else {
-          logger.info("✅ SwiftData: Empty database - no data found (database file existed)")
-        }
       } else {
         logger.warning("⚠️ SwiftData: Could not determine data state (fetch failed)")
       }
@@ -561,7 +540,6 @@ final class SwiftDataContainer: ObservableObject {
     for (tableName, test) in tests {
       do {
         _ = try test()
-        logger.info("✅ SwiftData: \(tableName) table is healthy")
       } catch {
         logger.error("❌ SwiftData: \(tableName) table is corrupted: \(error)")
         logger.error("🔧 SwiftData: Initiating database reset...")
@@ -570,7 +548,6 @@ final class SwiftDataContainer: ObservableObject {
       }
     }
 
-    logger.info("✅ SwiftData: All tables are healthy")
     return true
   }
 
@@ -578,7 +555,6 @@ final class SwiftDataContainer: ObservableObject {
     logger.warning("🔧 SwiftData: Resetting corrupted database...")
     let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
     try? FileManager.default.removeItem(at: databaseURL)
-    logger.info("✅ SwiftData: Corrupted database removed - app will need to restart")
 
     // Also remove any related database files
     let databaseDir = databaseURL.deletingLastPathComponent()
@@ -628,7 +604,6 @@ final class SwiftDataContainer: ObservableObject {
       // Replace the existing container and context
       // Note: This is a workaround since we can't directly replace the stored properties
       // The app will need to restart to fully recover, but this prevents further corruption
-      logger.info("✅ SwiftData: New container created successfully")
 
     } catch {
       logger.error("❌ SwiftData: Failed to recreate container: \(error)")

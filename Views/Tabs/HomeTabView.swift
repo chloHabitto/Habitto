@@ -703,7 +703,6 @@ struct HomeTabView: View {
 
   private func handleHabitsChange(oldHabits: [Habit], newHabits: [Habit]) {
     // Resort habits when the habits array changes
-    debugLog("🔄 HomeTabView: Habits changed from \(oldHabits.count) to \(newHabits.count)")
     // ✅ RACE FIX: Prefetch then resort. Habits now change only AFTER CompletionRecord is saved
     // (HabitRepository defers in-memory update until after persist), so we always read correct data.
     Task {
@@ -1284,13 +1283,9 @@ struct HomeTabView: View {
   private func onHabitCompleted(_ habit: Habit) {
     let dateKey = Habit.dateKey(for: selectedDate)
 
-    debugLog(
-      "🎯 COMPLETION_FLOW: onHabitCompleted - habitId=\(habit.id), dateKey=\(dateKey), userIdHash=debug_user_id")
-
     // ✅ BUG 2 FIX: Check if this day was already awarded (extra progress scenario)
     // If day was already complete and awarded, this is just extra progress - don't trigger celebration
     if awardedDateKeys.contains(dateKey) {
-      debugLog("🎯 COMPLETION_FLOW: Day already awarded - this is extra progress, skipping celebration trigger")
       deferResort = true
       completionStatusMap[habit.id] = true
       // Don't set lastHabitJustCompleted - just return
@@ -1338,7 +1333,6 @@ struct HomeTabView: View {
           
           if habitIsFullyComplete {
             // Normal flow: difficulty sheet will show, celebration after dismiss
-            debugLog("🎯 COMPLETION_FLOW: Last habit fully completed - will trigger celebration after sheet dismissal")
             onLastHabitCompleted()
             // Don't set selectedHabit = nil here - let the difficulty sheet show
           } else if isPartialCompletion {
@@ -1365,7 +1359,6 @@ struct HomeTabView: View {
       // Present difficulty sheet (existing logic)
       // Don't set selectedHabit here as it triggers habit detail screen
       // The difficulty sheet will be shown by the ScheduledHabitItem
-      debugLog("🎯 COMPLETION_FLOW: Habit completed, \(remainingHabits.count) remaining")
     }
   }
 
@@ -1433,9 +1426,6 @@ struct HomeTabView: View {
   private func onDifficultySheetDismissed() {
     let dateKey = Habit.dateKey(for: selectedDate)
     
-    debugLog(
-      "🎯 COMPLETION_FLOW: onDifficultySheetDismissed - dateKey=\(dateKey), userIdHash=debug_user_id, lastHabitJustCompleted=\(lastHabitJustCompleted)")
-    
     // ✅ BUG 2 FIX: Check if this is truly the FIRST completion of all habits today
     // or if user is just adding extra progress to an already-complete day
     let isExtraProgress = awardedDateKeys.contains(dateKey)
@@ -1443,7 +1433,6 @@ struct HomeTabView: View {
     if isExtraProgress && !lastHabitJustCompleted {
       // Day was already awarded, this is just extra progress
       // Show celebration but skip milestone/XP logic
-      debugLog("🎯 COMPLETION_FLOW: Extra progress on already-complete day - showing celebration only")
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
         showCelebration = true
       }
@@ -1453,34 +1442,15 @@ struct HomeTabView: View {
 
     // ✅ FIX: Wait 1 second before resorting to allow smooth sheet dismissal animation
     Task { @MainActor in
-      debugLog("🔄 COMPLETION_FLOW: Starting 1-second delay before resort...")
-      debugLog("   deferResort (before delay): \(deferResort)")
-      debugLog("   sortedHabits count (before delay): \(sortedHabits.count)")
-      
       try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
       
-      debugLog("🔄 COMPLETION_FLOW: 1 second passed, now resorting...")
-      
       // ✅ FIX: Refresh completion status map BEFORE resorting
-      debugLog("   Refreshing completionStatusMap...")
       await prefetchCompletionStatus()
-      debugLog("   ✅ completionStatusMap refreshed")
       
-      debugLog("   Setting deferResort = false")
       deferResort = false
       
-      debugLog("   Calling resortHabits() with animation...")
       withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
         resortHabits()
-      }
-      
-      debugLog("✅ COMPLETION_FLOW: Resort completed!")
-      debugLog("   sortedHabits count (after resort): \(sortedHabits.count)")
-      if !sortedHabits.isEmpty {
-        for (index, habit) in sortedHabits.enumerated() {
-          let isComplete = completionStatusMap[habit.id] ?? false
-          debugLog("   [\(index)] \(habit.name) - completed: \(isComplete)")
-        }
       }
     }
 
@@ -1488,7 +1458,6 @@ struct HomeTabView: View {
     if lastHabitJustCompleted {
       // Step 1: Only award XP if DailyAward doesn't already exist
       if awardedDateKeys.contains(dateKey) {
-        debugLog("⏭️ COMPLETION_FLOW: Daily award already granted for \(dateKey), skipping duplicate XP award")
         lastHabitJustCompleted = false
         onCompletionDismiss?()
         return
@@ -1502,13 +1471,10 @@ struct HomeTabView: View {
       // ✅ CORRECT: Call DailyAwardService to grant XP for completing all habits
       // This is the ONLY place where XP should be awarded for habit completion
       // Do NOT call XPManager methods directly - always use DailyAwardService
-      debugLog(
-        "🎉 COMPLETION_FLOW: Last habit completion sheet dismissed! Granting daily award for \(dateKey)")
 
       Task {
 #if DEBUG
         debugGrantCalls += 1
-        debugLog("🔍 DEBUG: onDifficultySheetDismissed - grant call #\(debugGrantCalls) from ui_sheet_dismiss")
         if debugGrantCalls > 1 {
           debugLog("⚠️ WARNING: Multiple grant calls detected! Call #\(debugGrantCalls)")
           debugLog("⚠️ Stack trace:")
@@ -1519,7 +1485,6 @@ struct HomeTabView: View {
         let userId = await MainActor.run {
           AuthenticationManager.shared.currentUser?.uid ?? "debug_user_id"
         }
-        debugLog("🎯 COMPLETION_FLOW: userId = \(userId)")
         // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
         // When habit is completed, DailyAwardService will award XP via awardXP(delta: 50)
         // DO NOT call publishXP() here - it overwrites the database value with calculated value
@@ -1528,9 +1493,7 @@ struct HomeTabView: View {
         // ✅ RACE CONDITION FIX: Wait for ALL persistence operations to complete
         // This ensures the SwiftData save from setHabitProgress() has finished
         // before we trigger streak recalculation (which fetches fresh data from SwiftData)
-        debugLog("⏳ COMPLETION_FLOW: Waiting for persistence to complete before streak calculation...")
         await onWaitForPersistence?()
-        debugLog("✅ COMPLETION_FLOW: Persistence complete! Now safe to calculate streak from fresh SwiftData.")
 
         // ✅ BUG 2 FIX: Call streak recalculation AFTER persistence completes
         debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
@@ -1551,9 +1514,6 @@ struct HomeTabView: View {
           )
           modelContext.insert(dailyAward)
           try modelContext.save()
-          debugLog("✅ COMPLETION_FLOW: DailyAward record created for history")
-          debugLog("✅ COMPLETION_FLOW: Streak will be recalculated by callback (no manual update)")
-          debugLog("📢 COMPLETION_FLOW: Streak will update automatically via @Query")
         } catch {
           awardedDateKeys.remove(dateKey)
           debugLog("❌ COMPLETION_FLOW: Failed to award daily bonus: \(error)")
@@ -1562,10 +1522,6 @@ struct HomeTabView: View {
           }
           return
         }
-
-        let currentXP = xpManager.totalXP
-        debugLog("🎯 COMPLETION_FLOW: Current XP after award: \(currentXP)")
-        debugLog("🎯 COMPLETION_FLOW: XPManager level: \(xpManager.currentLevel)")
 
         // ✅ FIX: DON'T decide celebration/milestone here!
         // Let handleStreakUpdated be the single source of truth.
@@ -1576,7 +1532,6 @@ struct HomeTabView: View {
         
         await MainActor.run {
           onCompletionDismiss?()
-          debugLog("✅ COMPLETION_FLOW: Called onCompletionDismiss callback")
         }
       }
 
@@ -1585,7 +1540,6 @@ struct HomeTabView: View {
     } else {
       // ✅ FIX: Call completion callback even if not last habit
       onCompletionDismiss?()
-      debugLog("✅ COMPLETION_FLOW: Called onCompletionDismiss callback (not last habit)")
     }
   }
 

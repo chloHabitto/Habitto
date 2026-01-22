@@ -477,8 +477,6 @@ struct ScheduledHabitItem: View {
   private func completeHabit() {
     let goalAmount = goalAmountForSelectedDate
     
-    print("🔘 CIRCLE_BUTTON: Current=\(currentProgress), Goal=\(goalAmount)")
-    
     // Determine new progress: instant toggle
     let newProgress: Int
     let isCompleting: Bool
@@ -487,12 +485,10 @@ struct ScheduledHabitItem: View {
       // ✅ INSTANT COMPLETE: Jump to goal
       newProgress = goalAmount
       isCompleting = true
-      print("🔘 CIRCLE_BUTTON: Instant complete - jumping from \(currentProgress) to \(goalAmount)")
     } else {
       // ✅ INSTANT UNCOMPLETE: Reset to 0
       newProgress = 0
       isCompleting = false
-      print("🔘 CIRCLE_BUTTON: Instant uncomplete - resetting from \(currentProgress) to 0")
     }
     
     // Prevent onChange listeners from overriding this update

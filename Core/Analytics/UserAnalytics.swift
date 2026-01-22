@@ -42,8 +42,6 @@ class UserAnalytics: ObservableObject {
     recordEvent(.sessionStart, metadata: [
       "timestamp": ISO8601DateFormatter().string(from: Date())
     ])
-
-    print("📊 UserAnalytics: Started tracking")
   }
 
   /// Stop tracking user analytics
@@ -63,15 +61,12 @@ class UserAnalytics: ObservableObject {
 
     // Save session data
     saveSessionData()
-
-    print("📊 UserAnalytics: Stopped tracking")
   }
 
   /// Record a user event
   func recordEvent(_ event: UserEvent, metadata: [String: String] = [:]) {
     // Skip analytics during vacation mode
     if VacationManager.shared.isActive {
-      print("📊 UserAnalytics: Skipping event during vacation mode - \(event.rawValue)")
       return
     }
 
@@ -82,8 +77,6 @@ class UserAnalytics: ObservableObject {
 
     currentSession.events.append(eventData)
     updateEngagementMetrics(for: event)
-
-    print("📊 UserAnalytics: Recorded event - \(event.rawValue)")
   }
 
   /// Record habit interaction
@@ -94,8 +87,6 @@ class UserAnalytics: ObservableObject {
   {
     // Skip analytics during vacation mode
     if VacationManager.shared.isActive {
-      print(
-        "📊 UserAnalytics: Skipping habit interaction during vacation mode - \(action.rawValue) for habit \(habitId)")
       return
     }
 
@@ -109,15 +100,12 @@ class UserAnalytics: ObservableObject {
 
     // Update habit-specific metrics
     updateHabitMetrics(habitId: habitId, action: action)
-
-    print("📊 UserAnalytics: Recorded habit interaction - \(action.rawValue) for habit \(habitId)")
   }
 
   /// Record screen view
   func recordScreenView(_ screen: ScreenName, metadata: [String: String] = [:]) {
     // Skip analytics during vacation mode
     if VacationManager.shared.isActive {
-      print("📊 UserAnalytics: Skipping screen view during vacation mode - \(screen.rawValue)")
       return
     }
 
@@ -130,16 +118,12 @@ class UserAnalytics: ObservableObject {
 
     // Update screen metrics
     updateScreenMetrics(for: screen)
-
-    print("📊 UserAnalytics: Recorded screen view - \(screen.rawValue)")
   }
 
   /// Record user engagement
   func recordEngagement(_ type: EngagementType, value: Double, metadata: [String: String] = [:]) {
     // Skip analytics during vacation mode
     if VacationManager.shared.isActive {
-      print(
-        "📊 UserAnalytics: Skipping engagement tracking during vacation mode - \(type.rawValue): \(value)")
       return
     }
 
@@ -151,8 +135,6 @@ class UserAnalytics: ObservableObject {
 
     currentSession.engagementEvents.append(engagement)
     updateEngagementScore()
-
-    print("📊 UserAnalytics: Recorded engagement - \(type.rawValue): \(value)")
   }
 
   /// Get user insights

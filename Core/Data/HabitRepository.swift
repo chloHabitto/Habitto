@@ -618,7 +618,6 @@ class HabitRepository: ObservableObject {
   // MARK: - Save Habits
 
   func saveHabits(_ habits: [Habit]) {
-    debugLog("🔄 HabitRepository: saveHabits called with \(habits.count) habits")
 
     Task {
       do {
@@ -786,11 +785,9 @@ class HabitRepository: ObservableObject {
   func deleteHabit(_ habit: Habit) async throws {
     // Remove all notifications for this habit first
     NotificationManager.shared.removeAllNotifications(for: habit)
-    debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee delete completion")
 
     do {
       try await habitStore.deleteHabit(habit)
-      debugLog("✅ GUARANTEED: Habit deleted from SwiftData")
       
       // ✅ FIX: Manually update published habits to prevent race condition with publisher
       // This ensures the @Published habits array is immediately updated, preventing the
@@ -851,7 +848,6 @@ class HabitRepository: ObservableObject {
   // MARK: - Force Save All Changes
 
   func forceSaveAllChanges() {
-    debugLog("🔄 HabitRepository: Force saving all changes...")
 
     // Save current habits
     saveHabits(habits)
@@ -865,10 +861,6 @@ class HabitRepository: ObservableObject {
   /// UI (e.g. HomeTabView prefetch) must not see "habits changed" until CompletionRecord is saved.
   func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
     let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
-    #if DEBUG
-    debugLog("🔄 HabitRepository: Setting progress to \(progress) for habit '\(habit.name)' on \(dateKey)")
-    debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
-    #endif
 
     guard habits.firstIndex(where: { $0.id == habit.id }) != nil else {
       return
@@ -910,11 +902,6 @@ class HabitRepository: ObservableObject {
 
       let endTime = Date()
       let duration = endTime.timeIntervalSince(startTime)
-      #if DEBUG
-      debugLog("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
-      debugLog("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
-      debugLog("  ✅ GUARANTEED: Data persisted to SwiftData")
-      #endif
 
       // ✅ Reload habits from storage so in-memory state matches SwiftData (includes new CompletionRecord).
       #if DEBUG
@@ -934,16 +921,10 @@ class HabitRepository: ObservableObject {
 
       // ✅ RACE FIX: Post notification ONLY after save + reload. UI prefetch runs on "habits changed";
       // habits change via loadHabits above, so prefetch always sees persisted data.
-      #if DEBUG
-      debugLog("🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
-      #endif
       NotificationCenter.default.post(
         name: .habitProgressUpdated,
         object: nil,
         userInfo: ["habitId": habit.id, "progress": progress, "dateKey": dateKey])
-      #if DEBUG
-      debugLog("🎯 HabitRepository: Notification posted successfully")
-      #endif
     } catch {
       #if DEBUG
       debugLog("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
@@ -980,7 +961,6 @@ class HabitRepository: ObservableObject {
   
   /// Load soft-deleted habits (for Recently Deleted view)
   func loadSoftDeletedHabits() async throws -> [Habit] {
-    debugLog("🔄 HabitRepository: Loading soft-deleted habits...")
     do {
       let habits = try await habitStore.loadSoftDeletedHabits()
       return habits
@@ -1054,7 +1034,6 @@ class HabitRepository: ObservableObject {
   // MARK: - Clean Up Duplicates
 
   func cleanupDuplicateHabits() {
-    debugLog("🔄 HabitRepository: Starting duplicate cleanup...")
 
     // Check for duplicate IDs in current habits
     var seenIds: Set<UUID> = []
@@ -1071,7 +1050,6 @@ class HabitRepository: ObservableObject {
     }
 
     if !duplicatesToRemove.isEmpty {
-      debugLog("🔄 HabitRepository: Removing \(duplicatesToRemove.count) duplicate habits...")
 
       // Remove duplicates from habits array
       habits.removeAll { habit in
@@ -1239,7 +1217,6 @@ class HabitRepository: ObservableObject {
     ) { [weak self] notification in
       guard let self = self else { return }
       let habitsPulled = notification.userInfo?["habitsPulled"] as? Int ?? 0
-      print("🔄 HabitRepository: Received SyncPullCompleted notification - \(habitsPulled) habits pulled")
       
       Task { @MainActor in
         await self.loadHabits(force: true)
@@ -1396,8 +1373,6 @@ class HabitRepository: ObservableObject {
     switch authState {
     case .authenticated(let user):
       isUserCurrentlyAuthenticated = true
-      debugLog(
-        "🔄 HabitRepository: User authenticated: \(user.email ?? "Unknown"), checking for guest data migration...")
 
       // ✅ CRITICAL FIX: Only show migration UI if user is NOT anonymous
       // Note: Anonymous users are authenticated but migration UI is only shown for email/password users
@@ -1417,7 +1392,6 @@ class HabitRepository: ObservableObject {
       let hasCurrentGuestData = guestDataMigration.hasGuestData()
       
       if hasCurrentGuestData {
-        debugLog("🔄 HabitRepository: Guest data detected - showing migration UI...")
         debugLog("   Found guest data that needs user decision (regardless of previous migrations)")
         shouldShowMigrationView = true  // ✅ Show migration UI, let user choose
         debugLog("✅ Guest data found, user can choose to migrate or start fresh")
@@ -1452,7 +1426,6 @@ class HabitRepository: ObservableObject {
       
       // ✅ CRITICAL FIX: Migration flag is cleared in AuthenticationManager.signOut()
       // before authState changes to .unauthenticated, so we don't need to clear it here
-      debugLog("🔄 HabitRepository: User signed out")
       
       // ✅ DEBUG: Log userId before clearing
       let userIdBeforeClear = await CurrentUser().idOrGuest
@@ -1478,7 +1451,6 @@ class HabitRepository: ObservableObject {
       
       // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
       // await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
-      debugLog("🔄 HabitRepository: User signed out, loading guest data...")
       // Load guest habits (queries will filter by userId = "" which returns no account data)
       await loadHabits(force: true)
       
@@ -1488,7 +1460,7 @@ class HabitRepository: ObservableObject {
       await DailyAwardService.shared.refreshXPState()
 
     case .authenticating:
-      debugLog("🔄 HabitRepository: User authenticating, keeping current data...")
+      break
 
     case .error(let error):
       debugLog("❌ HabitRepository: Authentication error: \(error)")
@@ -1509,7 +1481,6 @@ class HabitRepository: ObservableObject {
 
   @objc
   private func appDidBecomeActive() {
-    debugLog("🔄 HabitRepository: App became active, reloading habits...")
 
     // Refresh habits from storage (debounced to avoid redundant loads)
     Task {

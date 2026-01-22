@@ -248,7 +248,6 @@ class HomeViewState: ObservableObject {
 
     do {
       try await habitRepository.toggleHabitCompletion(habit, for: targetDate)
-      debugLog("✅ GUARANTEED: Completion toggled and persisted")
       
       // Sync updated habit to widget storage
       if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {
@@ -278,7 +277,6 @@ class HomeViewState: ObservableObject {
     // Delete from storage in background
     do {
       try await habitRepository.deleteHabit(habit)
-      debugLog("✅ GUARANTEED: Habit deleted and persisted")
       
       // ✅ Recalculate streak after delete
       await MainActor.run {
@@ -365,7 +363,6 @@ class HomeViewState: ObservableObject {
   func updateHabit(_ updatedHabit: Habit) async {
     do {
       try await habitRepository.updateHabit(updatedHabit)
-      debugLog("✅ GUARANTEED: Habit updated and persisted")
       WidgetDataSync.shared.syncHabitToWidget(updatedHabit)
     } catch {
       debugLog("❌ Failed to update habit: \(error.localizedDescription)")
@@ -386,9 +383,6 @@ class HomeViewState: ObservableObject {
       try await habitRepository.setProgress(for: habit, date: date, progress: progress)
       let endTime = Date()
       let duration = endTime.timeIntervalSince(startTime)
-      debugLog("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
-      debugLog("✅ GUARANTEED: Progress saved and persisted in \(String(format: "%.3f", duration))s")
-      debugLog("═══════════════════════════════════════════════════════")
       
       // Sync updated habit to widget storage
       if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {
@@ -1238,13 +1232,11 @@ struct HomeView: View {
     .onReceive(NotificationCenter.default
       .publisher(for: UIApplication.willResignActiveNotification))
     { _ in
-      debugLog("🏠 HomeView: App going to background, backing up habits...")
       state.backupHabits()
     }
     .onReceive(NotificationCenter.default
       .publisher(for: UIApplication.didBecomeActiveNotification))
     { _ in
-      debugLog("🏠 HomeView: App became active, updating streaks...")
       state.requestStreakRecalculation(reason: "App became active", delay: 1.0)
     }
     .sheet(isPresented: $state.showingCreateHabit) {
@@ -1431,16 +1423,13 @@ struct HomeView: View {
   }
 
   private func loadHabitsOptimized() {
-    debugLog("🏠 HomeView: Loading habits from HabitRepository...")
     // Refresh from Core Data to ensure we have the latest state (let repository debounce)
     Task {
       await HabitRepository.shared.loadHabits()
-      debugLog("🏠 HomeView: Habits loaded from HabitRepository - total: \(state.habits.count)")
     }
 
     // Only validate streaks if we have habits and haven't validated recently
     if !state.habits.isEmpty {
-      debugLog("🏠 HomeView: Validating streaks...")
       // Use Task to prevent UI blocking
       Task {
         let habits = state.habits
@@ -1453,7 +1442,6 @@ struct HomeView: View {
         // Update on main thread
         await MainActor.run {
           state.updateHabits(habits)
-          debugLog("🏠 HomeView: Streak validation completed")
           
           // ✅ FIX: Refresh global streak from database after validation
           state.updateStreak()
