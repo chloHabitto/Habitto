@@ -1524,10 +1524,6 @@ struct HabittoApp: App {
       let recordsDesc = FetchDescriptor<CompletionRecord>()
       let allRecords = try context.fetch(recordsDesc)
       
-      // 4. Check UserProgressData
-      let xpDesc = FetchDescriptor<UserProgressData>()
-      let allXP = try context.fetch(xpDesc)
-      
       // 5. Check DailyAwards
       let awardsDesc = FetchDescriptor<DailyAward>()
       let allAwards = try context.fetch(awardsDesc)

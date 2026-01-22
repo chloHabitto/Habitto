@@ -603,8 +603,16 @@ struct ProgressTabView: View {
       // Today's Progress Card - Show when "Daily" tab is active and "All habits" is selected
       if selectedHabit == nil, selectedTimePeriod == 0 {
         todayProgressCard
+
+        // Today's Journey Timeline - Shows habit completion timeline for the day
+        TodaysJourneyView(
+          habits: habitRepository.habits,
+          selectedDate: selectedProgressDate
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
       }
-      
+
       // Daily Activity Stats Card - Show when a specific habit is selected on Daily tab
       if let selectedHabit = selectedHabit, selectedTimePeriod == 0 {
         DailyActivityStatsCard(

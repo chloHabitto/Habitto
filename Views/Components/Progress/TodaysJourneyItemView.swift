@@ -9,10 +9,13 @@ import SwiftUI
 
 struct TodaysJourneyItemView: View {
   let item: JourneyHabitItem
+  let index: Int
   let isFirst: Bool
   let isLast: Bool
   /// Estimated completion time for pending items. Nil when no estimate; shown as "—".
   var estimatedTime: Date? = nil
+
+  @State private var hasAppeared = false
 
   private static let timeFormatter: DateFormatter = {
     let f = DateFormatter()
@@ -32,6 +35,13 @@ struct TodaysJourneyItemView: View {
       spineColumn
       cardColumn
     }
+    .opacity(hasAppeared ? 1 : 0)
+    .offset(y: hasAppeared ? 0 : 20)
+    .animation(
+      .spring(response: 0.4, dampingFraction: 0.8).delay(Double(index) * 0.05),
+      value: hasAppeared
+    )
+    .onAppear { hasAppeared = true }
   }
 
   // MARK: - Time Column (44pt, right-aligned)
@@ -319,6 +329,7 @@ struct TodaysJourneyItemView: View {
         currentStreak: 5,
         isAtRisk: false
       ),
+      index: 0,
       isFirst: false,
       isLast: false,
       estimatedTime: nil
@@ -333,6 +344,7 @@ struct TodaysJourneyItemView: View {
         currentStreak: 3,
         isAtRisk: true
       ),
+      index: 1,
       isFirst: false,
       isLast: true,
       estimatedTime: Calendar.current.date(bySettingHour: 20, minute: 0, second: 0, of: Date())
