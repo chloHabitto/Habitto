@@ -362,14 +362,12 @@ struct ProgressTabView: View {
         AllHabitsWeeklyProgressView(
           habits: getActiveHabits(),
           selectedWeekStartDate: selectedWeekStartDate)
-          .padding(.top, 8)
 
         // Individual Habits Weekly Progress
         IndividualHabitsWeeklyProgressContainer(
           habits: getActiveHabits(),
           selectedWeekStartDate: selectedWeekStartDate,
           selectedHabit: selectedHabit)
-          .padding(.top, 8)
 
         // Weekly Analysis Card
         // weeklyAnalysisCard // Hidden
