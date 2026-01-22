@@ -862,6 +862,8 @@ class HabitRepository: ObservableObject {
   // MARK: - Set Progress
 
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
+  /// ✅ RACE FIX: Persist FIRST, then update in-memory and post notification.
+  /// UI (e.g. HomeTabView prefetch) must not see "habits changed" until CompletionRecord is saved.
   func setProgress(for habit: Habit, date: Date, progress: Int) async throws {
     let dateKey = Habit.dateKey(for: date)  // ✅ Uses device timezone
     #if DEBUG
@@ -869,82 +871,70 @@ class HabitRepository: ObservableObject {
     debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee save completion")
     #endif
 
-    // Update the local habits array immediately for UI responsiveness
-    if let index = habits.firstIndex(where: { $0.id == habit.id }) {
-      let oldProgress = habits[index].completionHistory[dateKey] ?? 0
-      let isUncompleteAction = progress < oldProgress
+    guard habits.firstIndex(where: { $0.id == habit.id }) != nil else {
+      return
+    }
+
+    let oldProgress = habit.completionHistory[dateKey] ?? 0
+    let isUncompleteAction = progress < oldProgress
+    #if DEBUG
+    if isUncompleteAction {
+      debugLog("🔴 UNCOMPLETE_START: habitId=\(habit.id), dateKey=\(dateKey), oldProgress=\(oldProgress), newProgress=\(progress)")
+    }
+    debugLog("🔍 REPO - \(habit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(habit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
+    #endif
+
+    // ✅ RACE FIX: Persist to SwiftData FIRST. Do NOT update in-memory or post notification until after save.
+    do {
+      let startTime = Date()
+      #if DEBUG
+      debugLog("  🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
+      debugLog("  ⏱️ REPO_AWAIT_START: Calling habitStore.setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
+      #endif
+
+      try await habitStore.setProgress(for: habit, date: date, progress: progress)
       #if DEBUG
       if isUncompleteAction {
-        debugLog("🔴 UNCOMPLETE_START: habitId=\(habit.id), dateKey=\(dateKey), oldProgress=\(oldProgress), newProgress=\(progress)")
+        debugLog("🔴 UNCOMPLETE_SWIFTDATA: habitStore.setProgress succeeded for habitId=\(habit.id)")
       }
-      #endif
-      var updatedHabit = habits[index]
-      updatedHabit.completionHistory[dateKey] = progress
-      #if DEBUG
       if isUncompleteAction {
-        let memProgress = updatedHabit.completionHistory[dateKey] ?? -999
-        debugLog("🔴 UNCOMPLETE_MEMORY: Updated in-memory completionHistory[\(dateKey)]=\(memProgress)")
+        do {
+          let verificationHabits = try await habitStore.loadHabits()
+          let reloadedHabit = verificationHabits.first(where: { $0.id == habit.id })
+          let reloadedProgress = reloadedHabit?.completionHistory[dateKey] ?? -999
+          debugLog("🔴 UNCOMPLETE_VERIFY: Reloaded progress for \(habit.id) on \(dateKey) = \(reloadedProgress)")
+        } catch {
+          debugLog("🔴 UNCOMPLETE_VERIFY: Failed to reload habits - \(error)")
+        }
       }
       #endif
+
+      let endTime = Date()
+      let duration = endTime.timeIntervalSince(startTime)
       #if DEBUG
-      debugLog("🔍 REPO - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
+      debugLog("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
+      debugLog("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
+      debugLog("  ✅ GUARANTEED: Data persisted to SwiftData")
       #endif
 
-      // ✅ UNIVERSAL RULE: Both Formation and Breaking habits use IDENTICAL completion logic
-      // Set completionStatus[dateKey] = true when progress >= goal
-      let goalAmount = updatedHabit.goalAmount(for: date)
-      let isComplete = progress >= goalAmount
-      updatedHabit.completionStatus[dateKey] = isComplete
+      // ✅ Reload habits from storage so in-memory state matches SwiftData (includes new CompletionRecord).
       #if DEBUG
-      debugLog("🔍 COMPLETION FIX - \(updatedHabit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(updatedHabit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Completed: \(isComplete)")
+      debugLog("  🔄 RELOAD_START: Reloading habits from storage to sync in-memory state")
       #endif
-
-      // Handle timestamp recording for time-based completion analysis
-      let currentTimestamp = Date()
-      if progress > oldProgress {
-        // Progress increased - record new completion timestamp
-        if updatedHabit.completionTimestamps[dateKey] == nil {
-          updatedHabit.completionTimestamps[dateKey] = []
+      await loadHabits(force: true)
+      #if DEBUG
+      debugLog("  ✅ RELOAD_COMPLETE: Habits reloaded, in-memory state now matches persisted data")
+      if let reloadedHabit = habits.first(where: { $0.id == habit.id }) {
+        let reloadedProgress = reloadedHabit.completionHistory[dateKey] ?? -1
+        debugLog("  ✅ VERIFY: Reloaded habit '\(habit.name)' has progress=\(reloadedProgress) for \(dateKey) (expected=\(progress))")
+        if reloadedProgress != progress {
+          debugLog("  ⚠️ WARNING: Progress mismatch! Expected \(progress) but got \(reloadedProgress)")
         }
-        let newCompletions = progress - oldProgress
-        for _ in 0 ..< newCompletions {
-          updatedHabit.completionTimestamps[dateKey]?.append(currentTimestamp)
-        }
-        #if DEBUG
-        debugLog("🕐 HabitRepository: Recorded \(newCompletions) completion timestamp(s) for \(habit.name) at \(currentTimestamp)")
-        debugLog("🕐 HabitRepository: Total timestamps for \(dateKey): \(updatedHabit.completionTimestamps[dateKey]?.count ?? 0)")
-        #endif
-      } else if progress < oldProgress {
-        // Progress decreased - remove recent timestamps
-        let removedCompletions = oldProgress - progress
-        for _ in 0 ..< removedCompletions {
-          if updatedHabit.completionTimestamps[dateKey]?.isEmpty == false {
-            updatedHabit.completionTimestamps[dateKey]?.removeLast()
-          }
-        }
-        #if DEBUG
-        debugLog("🕐 HabitRepository: Removed \(removedCompletions) completion timestamp(s) for \(habit.name)")
-        #endif
       }
-
-      // ✅ SYNC METADATA: Any progress change must be re-synced to Firestore
-      updatedHabit.lastSyncedAt = nil
-      updatedHabit.syncStatus = .pending
-
-      // ✅ CRITICAL FIX: Reassign to habits array to trigger @Published emission
-      objectWillChange.send()
-      habits[index] = updatedHabit
-      
-      // ✅ PHASE 4: Streak is now computed-only, no need to update
-      // Streak is derived from completion history in real-time
-      #if DEBUG
-      debugLog("📢 HabitRepository: @Published habits array updated, triggering subscriber notifications")
       #endif
 
-      // ✅ XP SYSTEM: XP awarding is now handled by the UI layer (HomeTabView)
-      // Removed automatic XP check here to prevent double celebrations
-
-      // Send notification for UI components to update
+      // ✅ RACE FIX: Post notification ONLY after save + reload. UI prefetch runs on "habits changed";
+      // habits change via loadHabits above, so prefetch always sees persisted data.
       #if DEBUG
       debugLog("🎯 HabitRepository: Posting habitProgressUpdated notification for habit: \(habit.name), progress: \(progress)")
       #endif
@@ -955,81 +945,14 @@ class HabitRepository: ObservableObject {
       #if DEBUG
       debugLog("🎯 HabitRepository: Notification posted successfully")
       #endif
-      
-      // ✅ CRITICAL FIX: Await save completion BEFORE returning
-      do {
-        let startTime = Date()
-        #if DEBUG
-        debugLog("  🎯 PERSIST_START: \(habit.name) progress=\(progress) date=\(dateKey)")
-        debugLog("  ⏱️ REPO_AWAIT_START: Calling habitStore.setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
-        #endif
-        
-        try await habitStore.setProgress(for: habit, date: date, progress: progress)
-        #if DEBUG
-        if isUncompleteAction {
-          debugLog("🔴 UNCOMPLETE_SWIFTDATA: habitStore.setProgress succeeded for habitId=\(habit.id)")
-        }
-        #endif
-        
-        #if DEBUG
-        if isUncompleteAction {
-          do {
-            let verificationHabits = try await habitStore.loadHabits()
-            let reloadedHabit = verificationHabits.first(where: { $0.id == habit.id })
-            let reloadedProgress = reloadedHabit?.completionHistory[dateKey] ?? -999
-            debugLog("🔴 UNCOMPLETE_VERIFY: Reloaded progress for \(habit.id) on \(dateKey) = \(reloadedProgress)")
-          } catch {
-            debugLog("🔴 UNCOMPLETE_VERIFY: Failed to reload habits - \(error)")
-          }
-        }
-        #endif
-        
-        let endTime = Date()
-        let duration = endTime.timeIntervalSince(startTime)
-        #if DEBUG
-        debugLog("  ⏱️ REPO_AWAIT_END: habitStore.setProgress() returned at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
-        debugLog("  ✅ PERSIST_SUCCESS: \(habit.name) saved in \(String(format: "%.3f", duration))s")
-        debugLog("  ✅ GUARANTEED: Data persisted to SwiftData")
-        #endif
-
-        // ✅ CRITICAL FIX: Reload habits from storage AFTER save completes
-        // This ensures the in-memory array matches what's persisted in SwiftData
-        // and prevents UI from reverting to stale data
-        #if DEBUG
-        debugLog("  🔄 RELOAD_START: Reloading habits from storage to sync in-memory state")
-        #endif
-        await loadHabits(force: true)
-        #if DEBUG
-        debugLog("  ✅ RELOAD_COMPLETE: Habits reloaded, in-memory state now matches persisted data")
-        // Verify the reloaded habit has correct progress
-        if let reloadedHabit = habits.first(where: { $0.id == habit.id }) {
-          let reloadedProgress = reloadedHabit.completionHistory[dateKey] ?? -1
-          debugLog("  ✅ VERIFY: Reloaded habit '\(habit.name)' has progress=\(reloadedProgress) for \(dateKey) (expected=\(progress))")
-          if reloadedProgress != progress {
-            debugLog("  ⚠️ WARNING: Progress mismatch! Expected \(progress) but got \(reloadedProgress)")
-          }
-        }
-        #endif
-
-      } catch {
-        #if DEBUG
-        debugLog("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
-        debugLog("  ❌ Error type: \(type(of: error))")
-        debugLog("  ❌ Error details: \(error)")
-        #endif
-        
-        // Revert UI change on error
-        var revertedHabit = habits[index]
-        revertedHabit.completionHistory[dateKey] = oldProgress
-        habits[index] = revertedHabit
-        #if DEBUG
-        debugLog("  🔄 PERSIST_REVERT: Reverted \(habit.name) to progress=\(oldProgress)")
-        debugLog("  📢 HabitRepository: @Published habits array reverted, triggering subscriber notifications")
-        #endif
-        
-        // Re-throw to let caller know save failed
-        throw error
-      }
+    } catch {
+      #if DEBUG
+      debugLog("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
+      debugLog("  ❌ Error type: \(type(of: error))")
+      debugLog("  ❌ Error details: \(error)")
+      #endif
+      // No in-memory update was made; nothing to revert. Re-throw.
+      throw error
     }
   }
 
