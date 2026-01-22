@@ -82,7 +82,7 @@ struct MoreTabView: View {
             }
           }
           .padding(.horizontal, 16)
-          .padding(.bottom, 100) // Above tab bar
+          .padding(.bottom, 85) // Above tab bar
           .transition(.move(edge: .bottom).combined(with: .opacity))
         }
       }

@@ -940,7 +940,7 @@ struct ProgressTabView: View {
       }
       .background(Color(.systemBackground))
     }
-    .presentationDetents([.large])
+    .presentationDetents([.height(650)])
     .presentationCornerRadius(32)
   }
 
