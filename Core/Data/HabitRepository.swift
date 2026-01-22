@@ -992,6 +992,25 @@ class HabitRepository: ObservableObject {
         debugLog("  ✅ GUARANTEED: Data persisted to SwiftData")
         #endif
 
+        // ✅ CRITICAL FIX: Reload habits from storage AFTER save completes
+        // This ensures the in-memory array matches what's persisted in SwiftData
+        // and prevents UI from reverting to stale data
+        #if DEBUG
+        debugLog("  🔄 RELOAD_START: Reloading habits from storage to sync in-memory state")
+        #endif
+        await loadHabits(force: true)
+        #if DEBUG
+        debugLog("  ✅ RELOAD_COMPLETE: Habits reloaded, in-memory state now matches persisted data")
+        // Verify the reloaded habit has correct progress
+        if let reloadedHabit = habits.first(where: { $0.id == habit.id }) {
+          let reloadedProgress = reloadedHabit.completionHistory[dateKey] ?? -1
+          debugLog("  ✅ VERIFY: Reloaded habit '\(habit.name)' has progress=\(reloadedProgress) for \(dateKey) (expected=\(progress))")
+          if reloadedProgress != progress {
+            debugLog("  ⚠️ WARNING: Progress mismatch! Expected \(progress) but got \(reloadedProgress)")
+          }
+        }
+        #endif
+
       } catch {
         #if DEBUG
         debugLog("  ❌ PERSIST_FAILED: \(habit.name) - \(error.localizedDescription)")
