@@ -13,92 +13,114 @@ struct NextActionRow: View {
     @State private var isPulsing = false
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 8) {
             // Time Column
-            VStack {
-                Text("Now")
-                    .font(.appLabelMedium)
-                    .foregroundColor(.appText04)
-            }
-            .frame(width: 45)
-            .padding(.top, 16)
+            timeColumn
             
-            // Connector with pulsing dot
-            VStack(spacing: 0) {
-                ZStack {
-                    Circle()
-                        .fill(Color.blue)
-                        .frame(width: 12, height: 12)
-                    
-                    Circle()
-                        .stroke(Color.blue.opacity(0.3), lineWidth: 3)
-                        .scaleEffect(isPulsing ? 1.8 : 1.0)
-                        .opacity(isPulsing ? 0 : 1)
-                }
-                .frame(width: 24, height: 24)  // ✅ Explicit container size
-                .clipped()  // ✅ Clips ALL content including the animation
-                .padding(.top, 18)
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) {
-                        isPulsing = true
-                    }
-                }
-            }
-            .frame(width: 24)
+            // Spine Column
+            spineColumn
             
             // Info Card
-            HStack(alignment: .top, spacing: 12) {
-                // Info icon
-                Image(systemName: "info.circle.fill")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.blue)
-                    .frame(width: 40, height: 40)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.white)
-                            .shadow(color: Color.blue.opacity(0.15), radius: 2, y: 1)  // ✅ Reduced shadow radius to minimize overflow
-                    )
-                
-                // Text
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("\(remainingCount) more to reach your goal")
-                        .font(.appLabelLargeEmphasised)
-                        .foregroundColor(.appText01)
-                        .lineLimit(1)  // ✅ Prevent text overflow
-                    
-                    Text("Complete this habit from Home")
-                        .font(.appBodySmall)
-                        .foregroundColor(.appText03)
-                        .lineLimit(1)  // ✅ Prevent text overflow
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                // Chevron arrow
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.appText04)
-                    .frame(width: 24, height: 24)
-            }
-            .padding(16)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.blue.opacity(0.08), Color.blue.opacity(0.03)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 16))  // ✅ Clip card content to bounds
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(Color.blue.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))  // ✅ Use strokeBorder instead of stroke - draws INWARD
-            )
-            .padding(.top, 16)
+            infoCard
         }
-        .frame(maxWidth: .infinity)  // ✅ Constrain to parent width
-        .clipped()  // ✅ Top-level clipping to contain all potential overflow
+    }
+    
+    // MARK: - Time Column
+    
+    private var timeColumn: some View {
+        VStack {
+            Text("Now")
+                .font(.appLabelMedium)
+                .foregroundColor(.appText04)
+        }
+        .frame(width: 45, alignment: .trailing)
+        .padding(.top, 16)
+    }
+    
+    // MARK: - Spine Column
+    
+    private var spineColumn: some View {
+        VStack(spacing: 0) {
+            // Line ABOVE - connects from previous entry
+            Rectangle()
+                .fill(Color.appPrimary.opacity(0.5))
+                .frame(width: 3, height: 16)
+            
+            // Pulsing dot
+            nowDot
+        }
+        .frame(width: 24)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+    
+    private var nowDot: some View {
+        Circle()
+            .fill(Color.appPrimary)
+            .frame(width: 12, height: 12)
+            .shadow(
+                color: Color.appPrimary.opacity(isPulsing ? 0.5 : 0),
+                radius: isPulsing ? 8 : 0
+            )
+            .scaleEffect(isPulsing ? 1.2 : 1.0)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                    isPulsing = true
+                }
+            }
+    }
+    
+    // MARK: - Info Card
+            
+    private var infoCard: some View {
+        HStack(alignment: .top, spacing: 12) {
+            // Info icon
+            Image(systemName: "info.circle.fill")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.appPrimary)
+                .frame(width: 40, height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white)
+                        .shadow(color: Color.appPrimary.opacity(0.15), radius: 2, y: 1)
+                )
+            
+            // Text
+            VStack(alignment: .leading, spacing: 2) {
+                Text("\(remainingCount) more to reach your goal")
+                    .font(.appLabelLargeEmphasised)
+                    .foregroundColor(.appText01)
+                    .lineLimit(1)
+                
+                Text("Complete this habit from Home")
+                    .font(.appBodySmall)
+                    .foregroundColor(.appText03)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Chevron arrow
+            Image(systemName: "chevron.right")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.appText04)
+                .frame(width: 24, height: 24)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.appPrimary.opacity(0.08), Color.appPrimary.opacity(0.03)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.appPrimary.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+        )
+        .padding(.top, 16)
     }
 }
 
