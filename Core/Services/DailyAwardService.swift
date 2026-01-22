@@ -689,16 +689,60 @@ class DailyAwardService: ObservableObject {
             // Get goalAmount for this date (considers goalHistory)
             let goalAmount = getGoalAmount(habitData: habitData, dateKey: dateKey)
             
+            // 📊 DIAGNOSTIC: Check ProgressEvents before calculation
+            // Use old method to see all events (for diagnostic purposes)
+            let diagnosticDescriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
+            let diagnosticEvents = (try? modelContext.fetch(diagnosticDescriptor)) ?? []
+            
+            // Filter by userId (eventsForHabitDate doesn't filter by userId - this is a bug!)
+            let userEvents = diagnosticEvents.filter { $0.userId == userId }
+            
             // Calculate progress from ProgressEvents (source of truth)
             // Note: calculateProgressFromEvents is async but doesn't throw
+            // ✅ CRITICAL FIX: Pass userId to ensure user-scoped event queries
             let eventResult = await ProgressEventService.shared.calculateProgressFromEvents(
                 habitId: habitId,
                 dateKey: dateKey,
                 goalAmount: goalAmount,
-                legacyProgress: nil  // Don't use legacy, we want pure event calculation
+                legacyProgress: nil,  // Don't use legacy, we want pure event calculation
+                userId: userId
             )
             
             let calculatedProgress = eventResult.progress
+            
+            // 📊 DIAGNOSTIC: Log detailed information when mismatch detected or cross-user events found
+            if calculatedProgress != currentProgress || diagnosticEvents.count != userEvents.count {
+                logger.info("📊 DIAGNOSTIC: ProgressEvent investigation for \(recordIdentifier)")
+                logger.info("   Total ProgressEvents in DB (no userId filter): \(diagnosticEvents.count)")
+                logger.info("   ProgressEvents for userId '\(userId)': \(userEvents.count)")
+                logger.info("   ProgressEvents for dateKey '\(dateKey)': \(diagnosticEvents.filter { $0.dateKey == dateKey }.count)")
+                logger.info("   ProgressEvents for habitId '\(habitId.uuidString.prefix(8))...': \(diagnosticEvents.filter { $0.habitId == habitId }.count)")
+                
+                // Show userId distribution
+                let userIds = Set(diagnosticEvents.map { $0.userId })
+                if userIds.count > 1 {
+                    logger.warning("⚠️ DIAGNOSTIC: Found events with different userIds: \(userIds)")
+                    for eventUserId in userIds {
+                        let count = diagnosticEvents.filter { $0.userId == eventUserId }.count
+                        logger.warning("   userId '\(eventUserId)': \(count) events")
+                    }
+                }
+                
+                // Show dateKeys for this habit
+                let habitAllEvents = diagnosticEvents.filter { $0.habitId == habitId }
+                let uniqueDateKeys = Set(habitAllEvents.map { $0.dateKey })
+                logger.info("   All dateKeys for this habit: \(Array(uniqueDateKeys.sorted()).prefix(10))")
+                
+                // Show sample event details
+                if !userEvents.isEmpty {
+                    logger.info("   Sample user events (first 3):")
+                    for event in userEvents.prefix(3) {
+                        logger.info("     - \(event.eventType): delta=\(event.progressDelta), createdAt=\(event.createdAt)")
+                    }
+                } else {
+                    logger.warning("   ⚠️ No events found for this userId - this indicates missing ProgressEvents!")
+                }
+            }
             
             // Compare with CompletionRecord.progress
             if calculatedProgress != currentProgress {
