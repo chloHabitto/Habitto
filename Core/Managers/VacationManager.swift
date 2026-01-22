@@ -103,7 +103,6 @@ final class VacationManager: ObservableObject {
   }
 
   func cancelVacationForDate(_ date: Date) {
-    let targetDate = date.startOfDay(in: tz)
     let today = Date().startOfDay(in: tz)
 
 

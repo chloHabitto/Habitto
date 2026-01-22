@@ -639,7 +639,7 @@ struct HabittoApp: App {
                     }
                     
                     if !shouldSkipCleanup {
-                      let removedCount = try await DailyAwardIntegrityService.shared.cleanupInvalidAwards(userId: userId)
+                      let _ = try await DailyAwardIntegrityService.shared.cleanupInvalidAwards(userId: userId)
                       
                       // Store timestamp of cleanup (time-based instead of one-time flag)
                       UserDefaults.standard.set(now.timeIntervalSince1970, forKey: cleanupKey)

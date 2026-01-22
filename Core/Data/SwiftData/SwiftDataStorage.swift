@@ -540,8 +540,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
         let filteredCount = beforeFilterCount - habits.count
         logger.warning("⚠️ Filtered out \(filteredCount) deleted habit(s) - WAL checkpoint may have failed")
       }
-
-      let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
       
       if habits.isEmpty {
         // Check if habits exist with different userIds

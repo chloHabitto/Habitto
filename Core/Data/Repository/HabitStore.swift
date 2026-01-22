@@ -1336,7 +1336,7 @@ final actor HabitStore {
     
     if skippedCount > 0 {
       for habit in scheduledHabits where habit.isSkipped(for: date) {
-        let reasonLabel = habit.skipReason(for: date)?.shortLabel ?? "unknown"
+        _ = habit.skipReason(for: date)?.shortLabel ?? "unknown"
       }
     }
     
@@ -1385,7 +1385,7 @@ final actor HabitStore {
     }
     
     // ✅ STREAK MODE: Use meetsStreakCriteria to check completion for XP purposes
-    let (allCompleted, incompleteHabits): (Bool, [String]) = await MainActor.run {
+    let (allCompleted, _): (Bool, [String]) = await MainActor.run {
       // Check each active (non-skipped) habit using meetsStreakCriteria (respects Streak Mode)
       let incompleteHabits = activeHabits
         .filter { !$0.meetsStreakCriteria(for: date) }
