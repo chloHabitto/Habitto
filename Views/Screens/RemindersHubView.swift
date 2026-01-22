@@ -85,7 +85,16 @@ struct RemindersHubView: View {
       }
     }
     
-    return reminders.sorted { $0.reminder.time < $1.reminder.time }
+    return reminders.sorted { lhs, rhs in
+      let calendar = Calendar.current
+      let lhsComponents = calendar.dateComponents([.hour, .minute], from: lhs.reminder.time)
+      let rhsComponents = calendar.dateComponents([.hour, .minute], from: rhs.reminder.time)
+      
+      let lhsMinutes = (lhsComponents.hour ?? 0) * 60 + (lhsComponents.minute ?? 0)
+      let rhsMinutes = (rhsComponents.hour ?? 0) * 60 + (rhsComponents.minute ?? 0)
+      
+      return lhsMinutes < rhsMinutes
+    }
   }
   
   /// Get all active habits for the "All Habit Reminders" section
