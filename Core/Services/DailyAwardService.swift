@@ -292,7 +292,6 @@ class DailyAwardService: ObservableObject {
     ///
     /// - Returns: True if integrity check passes
     func verifyIntegrity() async throws -> Bool {
-        logger.info("🔍 DailyAwardService: Verifying XP integrity...")
         
         let modelContext = SwiftDataContainer.shared.modelContext
         let userId = await CurrentUser().idOrGuest

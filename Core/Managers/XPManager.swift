@@ -278,8 +278,6 @@ class XPManager {
       // Calculate total XP from all awards
       let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
       
-      print("🔧 [XP_SET] Calculated totalXP from awards: \(totalXP)")
-      print("🔧 [XP_SET] self.totalXP BEFORE setting: \(self.totalXP)")
 
       // Update XPManager with the calculated XP
       // ✅ Update @Observable properties directly (triggers instant UI update)

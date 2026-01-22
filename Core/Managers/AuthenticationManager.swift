@@ -54,7 +54,6 @@ class AuthenticationManager: ObservableObject {
   private init() {
     // ✅ FIX: Don't setup auth listener immediately - wait for Firebase to be configured
     // Auth listener will be set up lazily when first needed
-    print("🔐 AuthenticationManager: Initialized (Auth listener deferred until Firebase configured)")
   }
 
   deinit {
@@ -161,8 +160,6 @@ class AuthenticationManager: ObservableObject {
   // Note: Email/password sign-in and sign-up functionality has been removed - can be restored from git history if needed
 
   func signOut() {
-    print("🔐 AuthenticationManager: Starting sign out")
-    
     // ✅ CRITICAL FIX: Capture user ID before clearing to clear migration flag
     let userIdToClear = currentUser?.uid
     
@@ -475,7 +472,6 @@ class AuthenticationManager: ObservableObject {
       return
     }
     
-    print("🔐 AuthenticationManager: Setting up Firebase authentication state listener...")
     setupAuthStateListener()
     hasSetupAuthListener = true
   }
@@ -487,7 +483,6 @@ class AuthenticationManager: ObservableObject {
       return
     }
     
-    print("🔐 AuthenticationManager: Adding Firebase Auth state change listener")
     authStateListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
       DispatchQueue.main.async {
         if let user {
@@ -510,7 +505,6 @@ class AuthenticationManager: ObservableObject {
             } catch {
               // Account was deleted or invalid - sign out automatically
               print("⚠️ AuthenticationManager: Account validation failed (account may have been deleted): \(error.localizedDescription)")
-              print("🔐 AuthenticationManager: Signing out invalid/deleted account...")
               
               do {
                 try Auth.auth().signOut()

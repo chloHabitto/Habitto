@@ -121,7 +121,6 @@ struct CreateHabitFlowView: View {
       }
     }
     .onAppear {
-      print("⌨️ CREATE_FLOW: Sheet appeared at \(Date())")
       HabitRepository.shared.pauseSyncMonitoring()
       // Initialize values if editing
       if let habit = habitToEdit {

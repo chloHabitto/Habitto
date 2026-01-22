@@ -271,8 +271,6 @@ class SubscriptionManager: ObservableObject {
       if activeProductID != nil {
         // Premium status enabled
       }
-    } else {
-      print("ℹ️ SubscriptionManager: No active subscription found - free user")
     }
   }
   
@@ -468,10 +466,6 @@ class SubscriptionManager: ObservableObject {
   
   /// Verify subscription state is visible to UI
   func verifyUIState() {
-    print("🔍 Verifying UI State:")
-    print("   isPremium: \(isPremium)")
-    print("   Type: \(type(of: self))")
-    print("   Singleton: \(self === SubscriptionManager.shared)")
     
     Task { @MainActor in
       // Since we're in @MainActor context, we're guaranteed to be on the main thread
@@ -612,7 +606,6 @@ class SubscriptionManager: ObservableObject {
           try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
           
           // VERIFY the transaction is now in currentEntitlements
-          print("🔍 Verifying transaction was recorded in StoreKit...")
           var foundInEntitlements = false
           for await result in Transaction.currentEntitlements {
             if case .verified(let entitlement) = result,
@@ -739,7 +732,6 @@ class SubscriptionManager: ObservableObject {
   func disablePremiumForTesting() {
     print("🧪 SubscriptionManager: DEBUG - Manually disabling premium for testing")
     self.isPremium = false
-    print("ℹ️ SubscriptionManager: Premium disabled (DEBUG MODE)")
   }
   
   /// Force enable premium for debugging (independent of StoreKit)

@@ -664,7 +664,6 @@ class NotificationManager: ObservableObject {
   /// Remove a specific notification
   func removeNotification(withId id: String) {
     UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [id])
-    print("🗑️ Removed notification with ID: \(id)")
   }
 
   /// Remove all notifications for a habit
@@ -807,7 +806,6 @@ class NotificationManager: ObservableObject {
     let habitReminderEnabled = UserDefaults.standard.object(
       forKey: "habitReminderEnabled") as? Bool ?? true
     guard habitReminderEnabled else {
-      debugLog("ℹ️ NotificationManager: Habit reminders disabled, skipping reschedule")
       return
     }
     
@@ -1042,7 +1040,6 @@ class NotificationManager: ObservableObject {
     let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     
     guard planReminderEnabled || completionReminderEnabled || habitReminderEnabled else {
-      debugLog("ℹ️ NotificationManager: All reminders disabled, skipping reschedule")
       return
     }
     
@@ -1202,62 +1199,11 @@ class NotificationManager: ObservableObject {
   /// Comprehensive debug method to check everything
   @MainActor
   func debugHabitRemindersStatus() {
-    print("🔍 ===== COMPREHENSIVE HABIT REMINDERS DEBUG =====")
-
-    // Check global toggle (default to true if not set)
-    let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
-    print("🔍 Global habit reminder toggle: \(habitReminderEnabled)")
-
-    // Check habits
-    let habits = HabitRepository.shared.habits
-    print("🔍 Total habits: \(habits.count)")
-
-    var totalReminders = 0
-    var activeReminders = 0
-
-    for habit in habits {
-      let habitReminders = habit.reminders
-      let activeHabitReminders = habit.reminders.filter { $0.isActive }
-      totalReminders += habitReminders.count
-      activeReminders += activeHabitReminders.count
-
-      print(
-        "🔍 Habit '\(habit.name)': \(habitReminders.count) total, \(activeHabitReminders.count) active reminders")
-      for (index, reminder) in habitReminders.enumerated() {
-        print("  Reminder \(index + 1): \(reminder.time) - Active: \(reminder.isActive)")
-      }
-    }
-
-    print("🔍 Total reminders across all habits: \(totalReminders) total, \(activeReminders) active")
-
-    // Check notification authorization
-    UNUserNotificationCenter.current().getNotificationSettings { settings in
-      print("🔍 Notification authorization: \(settings.authorizationStatus.rawValue)")
-      print("🔍 Alert setting: \(settings.alertSetting.rawValue)")
-      print("🔍 Badge setting: \(settings.badgeSetting.rawValue)")
-      print("🔍 Sound setting: \(settings.soundSetting.rawValue)")
-
-      // Check pending notifications
-      UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-        print("🔍 Total pending notifications: \(requests.count)")
-
-        let habitReminders = requests.filter { $0.identifier.hasPrefix("habit_reminder_") }
-        print("🔍 Pending habit reminders: \(habitReminders.count)")
-
-        for request in habitReminders {
-          print("  - \(request.identifier)")
-          print("    Title: \(request.content.title)")
-          print("    Body: \(request.content.body)")
-        }
-
-        print("🔍 ===== END DEBUG =====")
-      }
-    }
+    // Debug function - logs removed for production
   }
 
   /// Initialize notification categories at app startup
   func initializeNotificationCategories() {
-    print("🔧 NotificationManager: Initializing notification categories...")
     setupNotificationCategories()
   }
 
@@ -2207,8 +2153,6 @@ class NotificationManager: ObservableObject {
     for habit in habits {
       let activeReminders = habit.reminders.filter { $0.isActive }
       totalActiveReminders += activeReminders.count
-      print(
-        "🔍 Habit '\(habit.name)': \(habit.reminders.count) total reminders, \(activeReminders.count) active")
       for (index, reminder) in habit.reminders.enumerated() {
         print("  Reminder \(index + 1): \(reminder.time) - Active: \(reminder.isActive)")
       }

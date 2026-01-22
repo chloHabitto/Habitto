@@ -285,7 +285,6 @@ class HabitSchedulingLogic {
     let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
     
     if wasCompletedOnThisDate {
-      print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Was completed on \(dateKey) → true")
       return true
     }
 
@@ -300,7 +299,6 @@ class HabitSchedulingLogic {
     
     // If already completed the monthly goal, don't show for future dates
     if completionsNeeded <= 0 {
-      print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
       return false
     }
     
@@ -315,8 +313,6 @@ class HabitSchedulingLogic {
     // Check if targetDate is within the next daysToShow days from today
     let daysUntilTarget = DateUtils.daysBetween(todayStart, targetDate)
     let shouldShow = daysUntilTarget >= 0 && daysUntilTarget < daysToShow
-    
-    print("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': \(completionsThisMonth)/\(daysPerMonth) done, need \(completionsNeeded) more, \(daysRemainingFromToday) days left, showing for \(daysToShow) days, target in \(daysUntilTarget) days → \(shouldShow)")
     
     return shouldShow
   }

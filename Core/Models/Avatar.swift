@@ -196,8 +196,6 @@ class AvatarManager: ObservableObject {
 
   /// Debug method to list all stored avatars
   func debugListAllStoredAvatars() {
-    print("🔍 AvatarManager: Debug - Listing all stored avatars:")
-
     // List guest avatar
     if let guestData = userDefaults.data(forKey: guestAvatarKey),
        let guestAvatar = try? JSONDecoder().decode(Avatar.self, from: guestData)
@@ -249,7 +247,6 @@ class AvatarManager: ObservableObject {
     // For now, we'll use UserDefaults with user-specific key
     // In a full implementation, this would load from Firebase Storage
     let userKey = getUserSpecificKey()
-    print("🔍 AvatarManager: Looking for user avatar with key: \(userKey)")
 
     guard let data = userDefaults.data(forKey: userKey),
           let avatar = try? JSONDecoder().decode(Avatar.self, from: data) else

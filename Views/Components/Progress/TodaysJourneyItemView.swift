@@ -44,7 +44,7 @@ struct TodaysJourneyItemView: View {
     .onAppear { hasAppeared = true }
   }
 
-  // MARK: - Time Column (44pt, right-aligned)
+  // MARK: - Time Column (40pt, right-aligned)
 
   private var timeColumn: some View {
     VStack(alignment: .trailing, spacing: 2) {
@@ -57,7 +57,7 @@ struct TodaysJourneyItemView: View {
           .foregroundColor(item.status == .completed ? .appText03 : .appText05)
       }
     }
-    .frame(width: 44, alignment: .trailing)
+    .frame(width: 40, alignment: .trailing)
     .padding(.top, 14)
   }
 
@@ -83,7 +83,7 @@ struct TodaysJourneyItemView: View {
     }
   }
 
-  // MARK: - Spine Column (28pt)
+  // MARK: - Spine Column (24pt)
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
@@ -97,7 +97,7 @@ struct TodaysJourneyItemView: View {
           .frame(minHeight: 18)
       }
     }
-    .frame(width: 28)
+    .frame(width: 24)
   }
 
   private func spineLine(isPending: Bool) -> some View {
@@ -147,7 +147,7 @@ struct TodaysJourneyItemView: View {
   // MARK: - Card Column
 
   private var cardColumn: some View {
-    HStack(alignment: .center, spacing: 12) {
+    HStack(alignment: .top, spacing: 12) {
       HabitIconView(habit: item.habit)
         .frame(width: 36, height: 36)
 
@@ -178,7 +178,7 @@ struct TodaysJourneyItemView: View {
     .overlay(cardBorder)
     .clipShape(RoundedRectangle(cornerRadius: 14))
     .opacity(item.status == .pending ? 0.8 : 1)
-    .padding(.leading, 8)
+    .padding(.leading, 6)
     .padding(.top, 8)
     .padding(.bottom, isLast ? 0 : 8)
   }
@@ -188,14 +188,14 @@ struct TodaysJourneyItemView: View {
     if item.status == .completed {
       LinearGradient(
         colors: [
-          Color.appSuccess.opacity(0.15),
-          Color.appSuccess.opacity(0.05)
+          Color.appSuccess.opacity(0.12),
+          Color.appSuccess.opacity(0.04)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
       )
     } else {
-      Color.appSurface02
+      Color.appSurface03
     }
   }
 

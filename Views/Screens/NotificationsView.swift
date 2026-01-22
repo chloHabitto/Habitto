@@ -319,7 +319,6 @@ struct NotificationsView: View {
     }
     .padding(.horizontal, 20)
     .padding(.bottom, 40)
-    .background(Color.surface2)
   }
 
   // MARK: - Debug Helper
@@ -342,9 +341,6 @@ struct NotificationsView: View {
   // MARK: - Save Action
 
   private func saveChanges() {
-    print("\n" + String(repeating: "=", count: 60))
-    print("🔧 NOTIFICATION SETTINGS: Saving changes...")
-    print(String(repeating: "=", count: 60))
 
     // Log what changed
     if planReminderEnabled != originalPlanReminderEnabled {

@@ -38,13 +38,11 @@ final class SwiftDataContainer: ObservableObject {
       
       if needsCloudKitMigration {
         logger.warning("🔧 SwiftData: One-time CloudKit-to-local migration detected")
-        logger.warning("🔧 SwiftData: Deleting CloudKit-enabled database (will recreate as local-only)...")
         
         do {
           // Delete main database file
           if FileManager.default.fileExists(atPath: databaseURL.path) {
             try FileManager.default.removeItem(at: databaseURL)
-            logger.info("  🗑️ Removed: default.store")
           }
           
           // Remove ALL related database files (WAL, SHM, journal, etc.)
@@ -103,11 +101,9 @@ final class SwiftDataContainer: ObservableObject {
       let forceReset = UserDefaults.standard.bool(forKey: corruptionFlagKey) || needsOneTimeFix
       
       if needsOneTimeFix {
-        logger.warning("🔧 SwiftData: One-time schema fix needed - will recreate database with proper schema")
       }
       
       if forceReset {
-        logger.warning("🔧 SwiftData: Corruption flag set - forcing database reset")
       }
       
       // Skip integrity check if we just migrated from CloudKit (database was deleted)
@@ -195,13 +191,11 @@ final class SwiftDataContainer: ObservableObject {
         // If corrupted, force remove all database files
         if needsReset {
           logger.warning("🔧 SwiftData: Removing corrupted database files...")
-          logger.warning("🔧 SwiftData: Data is safe in UserDefaults fallback")
           
           do {
             // Remove main database file
             if FileManager.default.fileExists(atPath: databaseURL.path) {
               try FileManager.default.removeItem(at: databaseURL)
-              logger.info("  🗑️ Removed: default.store")
             }
             
             // Remove ALL related database files (WAL, SHM, journal, etc.)
@@ -550,7 +544,6 @@ final class SwiftDataContainer: ObservableObject {
   }
 
   func resetCorruptedDatabase() {
-    logger.warning("🔧 SwiftData: Resetting corrupted database...")
     let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
     try? FileManager.default.removeItem(at: databaseURL)
 
@@ -567,7 +560,6 @@ final class SwiftDataContainer: ObservableObject {
       for file in files {
         if file.lastPathComponent.hasPrefix(databaseName) {
           try? fileManager.removeItem(at: file)
-          logger.info("🔧 SwiftData: Removed related file: \(file.lastPathComponent)")
         }
       }
     } catch {
@@ -577,7 +569,6 @@ final class SwiftDataContainer: ObservableObject {
 
   /// ✅ CRITICAL FIX: Recreate the entire container after corruption
   func recreateContainerAfterCorruption() {
-    logger.warning("🔧 SwiftData: Recreating container after corruption...")
 
     // First, clean up the corrupted database
     resetCorruptedDatabase()

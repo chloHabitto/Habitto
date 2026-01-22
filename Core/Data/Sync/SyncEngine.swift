@@ -63,7 +63,6 @@ actor SyncEngine {
         deletedHabitsLock.lock()
         recentlyDeletedHabitIds.insert(habitId)
         deletedHabitsLock.unlock()
-        Logger(subsystem: "com.habitto.app", category: "SyncEngine").info("🗑️ SyncEngine: Marked habit \(habitId.uuidString.prefix(8))... as deleted")
     }
     
     /// Check if a habit was recently deleted
@@ -120,7 +119,6 @@ actor SyncEngine {
     func syncEvents() async throws {
         // Prevent concurrent syncs
         guard !isSyncing else {
-            logger.info("⏭️ Sync already in progress, skipping")
             return
         }
         
@@ -132,7 +130,6 @@ actor SyncEngine {
         // ✅ Skip sync only for users with userId = "" (no Firebase auth)
         // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
-            logger.info("⏭️ Skipping event sync for guest user (userId = \"\")")
             return
         }
         
@@ -341,7 +338,6 @@ actor SyncEngine {
                 // ✅ Skip sync only for users with userId = "" (no Firebase auth)
                 // Anonymous users (with Firebase UID) ARE synced to Firestore
                 guard !CurrentUser.isGuestId(userId) else {
-                    logger.info("⏭️ Skipping background sync for guest user (userId = \"\")")
                     return
                 }
                 try await self.performFullSyncCycle(userId: userId)
@@ -379,7 +375,6 @@ actor SyncEngine {
             // ✅ Skip sync only for users with userId = "" (no Firebase auth)
             // Anonymous users (with Firebase UID) ARE synced to Firestore
             guard !CurrentUser.isGuestId(initialUserId) else {
-                logger.info("⏭️ Skipping periodic sync for guest user (userId = \"\")")
                 self.stopPeriodicSync(reason: "guest user")
                 return
             }
@@ -406,8 +401,6 @@ actor SyncEngine {
                 // ✅ Skip sync only for users with userId = "" (no Firebase auth)
                 // Anonymous users (with Firebase UID) continue syncing
                 guard !CurrentUser.isGuestId(currentUserId) else {
-                    logger.info("⏭️ User is now guest (userId = \"\"), stopping periodic sync")
-                    debugLog("⏭️ SyncEngine: User is now guest (userId = \"\"), stopping periodic sync")
                     break
                 }
                 
@@ -448,7 +441,6 @@ actor SyncEngine {
         // ✅ Skip sync only for users with userId = "" (no Firebase auth)
         // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
-            logger.info("⏭️ Skipping full sync cycle for guest user (userId = \"\")")
             return
         }
         
@@ -580,7 +572,6 @@ actor SyncEngine {
     
     /// Stop periodic sync
     func stopPeriodicSync() {
-        logger.info("⏹️ Stopping periodic sync")
         syncTask?.cancel()
         syncTask = nil
     }
@@ -602,7 +593,6 @@ actor SyncEngine {
     func syncAwards() async throws {
         // Prevent concurrent syncs
         guard !isSyncing else {
-            logger.info("⏭️ Sync already in progress, skipping")
             return
         }
         
@@ -614,7 +604,6 @@ actor SyncEngine {
         // ✅ Skip sync only for users with userId = "" (no Firebase auth)
         // Anonymous users (with Firebase UID) ARE synced to Firestore
         guard !CurrentUser.isGuestId(userId) else {
-            logger.info("⏭️ Skipping award sync for guest user (userId = \"\")")
             return
         }
         
@@ -810,7 +799,6 @@ actor SyncEngine {
     func syncCompletions() async throws {
         // Prevent concurrent syncs
         guard !isSyncing else {
-            logger.info("⏭️ Sync already in progress, skipping")
             return
         }
         
@@ -1431,7 +1419,6 @@ actor SyncEngine {
                 // If a habit was soft-deleted locally but still exists in Firestore,
                 // we should NOT restore it via sync
                 if existingHabit.deletedAt != nil {
-                    logger.info("⏭️ SyncEngine: Skipping update for soft-deleted habit \(habitId.uuidString.prefix(8))... (deletedAt: \(existingHabit.deletedAt!))")
                     return
                 }
                 
@@ -1466,8 +1453,7 @@ actor SyncEngine {
                     habit.id == habitId && habit.deletedAt != nil
                 }
                 let softDeletedDescriptor = FetchDescriptor<HabitData>(predicate: softDeletedPredicate)
-                if let softDeleted = try? modelContext.fetch(softDeletedDescriptor).first {
-                    logger.info("⏭️ SyncEngine: Habit \(habitId.uuidString.prefix(8))... is soft-deleted locally (deletedAt: \(softDeleted.deletedAt!)) - skipping recreation from Firestore")
+                if let _ = try? modelContext.fetch(softDeletedDescriptor).first {
                     return
                 }
                 
@@ -1878,7 +1864,6 @@ actor SyncEngine {
             
             if remoteTotalXP != localTotalXP {
                 logger.info("🔄 XP sync: Local=\(localTotalXP), Remote=\(remoteTotalXP) (xp/state)")
-                logger.info("ℹ️ XP state stream should update DailyAwardService automatically")
             } else {
                 logger.info("✅ XP already in sync: \(localTotalXP)")
             }
@@ -1979,7 +1964,6 @@ actor SyncEngine {
         // ⏭️ SKIP FEATURE: Update skipped days from Firestore
         if let skippedDaysJSON = data["skippedDaysJSON"] as? String {
             habitData.skippedDaysJSON = skippedDaysJSON
-            print("⏭️ [SYNC_UPDATE] Updated skippedDaysJSON for habit: \(skippedDaysJSON.prefix(50))...")
         }
         
         // ✅ FIX: Update reminders from Firestore (prevents data loss on reinstall)
@@ -1990,7 +1974,6 @@ actor SyncEngine {
                 if let reminders = try? decoder.decode([ReminderItem].self, from: jsonData) {
                     // Re-encode for SwiftData storage (uses default date encoding)
                     habitData.remindersData = try? JSONEncoder().encode(reminders)
-                    print("✅ [SYNC_UPDATE] Restored \(reminders.count) reminders from Firestore for habit \(habitData.id.uuidString.prefix(8))...")
                 } else {
                     print("⚠️ [SYNC_UPDATE] Failed to decode remindersJSON for habit \(habitData.id.uuidString.prefix(8))...")
                 }
@@ -2043,7 +2026,6 @@ actor SyncEngine {
         // ⏭️ SKIP FEATURE: Copy skipped days from Firestore
         if let skippedDaysJSON = data["skippedDaysJSON"] as? String {
             habitData.skippedDaysJSON = skippedDaysJSON
-            print("⏭️ [SYNC_CREATE] Set skippedDaysJSON for new habit: \(skippedDaysJSON.prefix(50))...")
         }
         
         // ✅ FIX: Copy reminders from Firestore (prevents data loss on reinstall)
@@ -2054,7 +2036,6 @@ actor SyncEngine {
                 if let reminders = try? decoder.decode([ReminderItem].self, from: jsonData) {
                     // Re-encode for SwiftData storage (uses default date encoding)
                     habitData.remindersData = try? JSONEncoder().encode(reminders)
-                    print("✅ [SYNC_CREATE] Restored \(reminders.count) reminders from Firestore for habit \(habitId.uuidString.prefix(8))...")
                 } else {
                     print("⚠️ [SYNC_CREATE] Failed to decode remindersJSON for habit \(habitId.uuidString.prefix(8))...")
                 }
@@ -2088,7 +2069,6 @@ actor SyncEngine {
         let deletedLocallyButInFirestore = remoteHabitIds.subtracting(localHabitIds)
         
         if !deletedLocallyButInFirestore.isEmpty {
-            logger.info("🗑️ SyncEngine: Found \(deletedLocallyButInFirestore.count) habits deleted locally but still in Firestore - checking for soft-deleted habits")
             
             // ✅ SOFT DELETE FIX: Check if any of these habits are soft-deleted locally
             // Soft-deleted habits should be kept in Firestore for recovery
@@ -2102,12 +2082,10 @@ actor SyncEngine {
             for habitId in deletedLocallyButInFirestore {
                 // Check if it's soft-deleted locally
                 if softDeletedIds.contains(habitId) {
-                    logger.info("⏭️ SyncEngine: Habit \(habitId.uuidString.prefix(8))... is soft-deleted locally - keeping in Firestore for recovery")
                     continue  // Don't delete from Firestore - it's intentionally kept for recovery
                 }
                 
                 // Only delete if not in local database at all (true orphan)
-                logger.info("🗑️ SyncEngine: Deleting true orphaned habit \(habitId.uuidString.prefix(8))... from Firestore")
                 
                 // ✅ CRITICAL BUG FIX: Mark as deleted to prevent resurrection
                 Self.markHabitAsDeleted(habitId)
@@ -2138,7 +2116,6 @@ actor SyncEngine {
         let deletedRemotelyButLocal = localHabitIds.subtracting(remoteHabitIds)
         
         if !deletedRemotelyButLocal.isEmpty {
-            logger.info("🗑️ [SOFT_DELETE] SyncEngine: Found \(deletedRemotelyButLocal.count) habits deleted remotely but still local")
             logger.warning("⚠️ [SYNC_SAFETY] Using SOFT DELETE (not hard delete) to preserve audit trail")
             
             // ✅ CRITICAL BUG FIX: Mark as deleted to prevent resurrection before soft-deleting
@@ -2168,14 +2145,12 @@ actor SyncEngine {
                         }
                         
                         // ✅ SOFT DELETE: Mark as deleted instead of hard deleting
-                        logger.info("🗑️ [SOFT_DELETE] SyncEngine: Soft-deleting locally orphaned habit '\(habitToSoftDelete.name)' (\(habitId.uuidString.prefix(8))...)")
                         habitToSoftDelete.softDelete(source: "sync", context: modelContext)
                     }
                 }
                 
                 do {
                     try modelContext.save()
-                    logger.info("✅ [SOFT_DELETE] SyncEngine: Soft-deleted \(deletedRemotelyButLocal.count) locally orphaned habits from SwiftData")
                 } catch {
                     logger.error("❌ [SOFT_DELETE] SyncEngine: Failed to save after soft-deleting local orphaned habits: \(error.localizedDescription)")
                 }
@@ -2183,7 +2158,6 @@ actor SyncEngine {
             
             // ⚠️ SYNC SAFETY: We do NOT delete completion records from Firestore when soft-deleting
             // This preserves the audit trail and allows for investigation of sync conflicts
-            logger.info("ℹ️ [SYNC_SAFETY] Preserving completion records in Firestore for soft-deleted habits")
             
             // Clear the deleted markers after soft-delete is complete
             for habitId in deletedRemotelyButLocal {

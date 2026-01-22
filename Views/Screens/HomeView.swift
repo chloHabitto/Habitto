@@ -28,10 +28,8 @@ class HomeViewState: ObservableObject {
   // MARK: Lifecycle
 
   init() {
-    debugLog("🚀 HomeViewState: Initializing...")
     let today = LegacyDateUtils.today()
     self.selectedDate = today
-    debugLog("🚀 HomeViewState: Initial selectedDate: \(selectedDate)")
 
     // Debug the repository state
     habitRepository.debugRepositoryState()
@@ -223,13 +221,9 @@ class HomeViewState: ObservableObject {
   
   /// Check if user can create a new habit and handle paywall if needed
   func handleCreateHabitRequest() {
-    print("⌨️ HOME: Create button tapped at \(Date())")
     let currentHabitCount = habits.count
     
     let canCreate = subscriptionManager.canCreateHabit(currentHabitCount: currentHabitCount)
-    #if DEBUG
-    print("🔍 HomeView - Can create habit: \(canCreate), isPremium: \(subscriptionManager.isPremium), habitCount: \(currentHabitCount)")
-    #endif
     if canCreate {
       // User can create habit, show create flow
       showingCreateHabit = true
@@ -376,9 +370,6 @@ class HomeViewState: ObservableObject {
     beginPersistenceOperation(opContext)
     defer { endPersistenceOperation(opContext) }
 
-    debugLog("═══════════════════════════════════════════════════════")
-    debugLog("🔄 HomeViewState: setHabitProgress called for \(habit.name), progress: \(progress)")
-    debugLog("⏱️ AWAIT_START: setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
     do {
       try await habitRepository.setProgress(for: habit, date: date, progress: progress)
       
@@ -392,11 +383,7 @@ class HomeViewState: ObservableObject {
       
       requestStreakRecalculation(reason: "Persistence completed for \(opContext)")
     } catch {
-      let endTime = Date()
-      let duration = endTime.timeIntervalSince(startTime)
-      debugLog("⏱️ AWAIT_END: setProgress() at \(DateFormatter.localizedString(from: endTime, dateStyle: .none, timeStyle: .medium))")
-      debugLog("❌ Failed to set progress: \(error.localizedDescription) (took \(String(format: "%.3f", duration))s)")
-      debugLog("═══════════════════════════════════════════════════════")
+      debugLog("❌ Failed to set progress: \(error.localizedDescription)")
     }
   }
 
@@ -405,37 +392,17 @@ class HomeViewState: ObservableObject {
     CrashlyticsService.shared.logHabitCreationStart(habitName: habit.name)
     CrashlyticsService.shared.setValue("\(habits.count)", forKey: "habits_count_before_create")
     
-    #if DEBUG
-    debugLog("═══════════════════════════════════════════════════════")
-    debugLog("🎯 [3/8] HomeViewState.createHabit: creating habit")
-    #endif
-    
     // Check if vacation mode is active
     if VacationManager.shared.isActive {
-      #if DEBUG
-      debugLog("🚫 HomeViewState: Cannot create habit during vacation mode")
-      debugLog("═══════════════════════════════════════════════════════")
-      #endif
       CrashlyticsService.shared.log("Habit creation blocked: vacation mode active")
       return
     }
-    
-    #if DEBUG
-    debugLog("✅ Vacation mode check passed")
-    debugLog("🎯 [4/8] HomeViewState.createHabit: calling HabitRepository")
-    #endif
 
     await habitRepository.createHabit(habit)
     
     // Log successful creation
     CrashlyticsService.shared.logHabitCreationComplete(habitID: habit.id.uuidString)
     CrashlyticsService.shared.setValue("\(habits.count)", forKey: "habits_count_after_create")
-
-    #if DEBUG
-    debugLog("  → HabitRepository.createHabit completed")
-    debugLog("  → New habits count: \(habits.count)")
-    debugLog("═══════════════════════════════════════════════════════")
-    #endif
   }
 
   func backupHabits() {
@@ -692,8 +659,6 @@ class HomeViewState: ObservableObject {
   /// Clean up soft-deleted habits older than 30 days
   /// This permanently removes habits that have been in the "Recently Deleted" state for too long
   func cleanupOldSoftDeletedHabits() async {
-    debugLog("🗑️ CLEANUP: Starting cleanup of old soft-deleted habits...")
-    
     let modelContext = SwiftDataContainer.shared.modelContext
     let userId = await CurrentUser().idOrGuest
     
@@ -718,15 +683,10 @@ class HomeViewState: ObservableObject {
       }
       
       guard !oldDeletedHabits.isEmpty else {
-        debugLog("🗑️ CLEANUP: No old soft-deleted habits found")
         return
       }
       
-      debugLog("🗑️ CLEANUP: Found \(oldDeletedHabits.count) old soft-deleted habits to permanently delete")
-      
       for habitData in oldDeletedHabits {
-        debugLog("🗑️ CLEANUP: Permanently deleting '\(habitData.name)' (deleted on \(habitData.deletedAt?.description ?? "unknown"))")
-        
         // Delete associated CompletionRecords
         // ✅ FIX: SwiftData predicates can't capture UUID variables
         // Solution: Fetch all CompletionRecords for user, then filter in Swift by habitId
@@ -792,7 +752,6 @@ class HomeViewState: ObservableObject {
       debugLog("📊 STREAK_BACKFILL: Using \(habits.count) active habits from HabitRepository")
       
       guard !habits.isEmpty else {
-        debugLog("ℹ️ STREAK_BACKFILL: No habits found, skipping backfill")
         return
       }
       
@@ -843,7 +802,6 @@ class HomeViewState: ObservableObject {
         try modelContext.save()
         debugLog("✅ STREAK_BACKFILL: Updated longestStreak from \(storedLongestBefore) to \(calculatedLongestStreak)")
       } else {
-        debugLog("ℹ️ STREAK_BACKFILL: Kept longestStreak at \(storedLongestBefore) (calculated: \(calculatedLongestStreak))")
       }
       
     } catch {
@@ -1238,7 +1196,6 @@ struct HomeView: View {
       state.requestStreakRecalculation(reason: "App became active", delay: 1.0)
     }
     .sheet(isPresented: $state.showingCreateHabit) {
-      let _ = print("⌨️ HOME: Sheet closure executing at \(Date())")
       CreateHabitFlowView(onSave: { habit in
         #if DEBUG
         debugLog("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
