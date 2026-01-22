@@ -838,7 +838,7 @@ struct Habit: Identifiable, Codable, Equatable {
 
   /// Validates if the current streak matches actual consecutive completions
   func validateStreak() -> Bool {
-    let actualStreak = calculateTrueStreak()
+    _ = calculateTrueStreak()
     // ❌ REMOVED: Denormalized field comparison in Phase 4
     // Streak validation now always returns true since we only use computed values
     let isValid = true

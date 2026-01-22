@@ -36,7 +36,7 @@ enum StreakCalculator {
         todayWasComplete: false)
     }
 
-    let currentMode = CompletionMode.current
+    _ = CompletionMode.current
 
     let normalizedToday = DateUtils.startOfDay(for: today)
     var checkDate = normalizedToday
@@ -122,7 +122,7 @@ enum StreakCalculator {
       return 0
     }
     
-    let currentMode = CompletionMode.current
+    _ = CompletionMode.current
     
     let today = DateUtils.startOfDay(for: Date())
     let defaultStartDate = calendar.date(byAdding: .day, value: -365, to: today) ?? today
@@ -152,7 +152,6 @@ enum StreakCalculator {
       
       // ✅ SKIP FEATURE: Filter out skipped habits from longest streak calculation
       let activeHabits = scheduledHabits.filter { !$0.isSkipped(for: checkDate) }
-      let skippedCount = scheduledHabits.count - activeHabits.count
       
       guard !activeHabits.isEmpty else {
         // All habits were skipped - doesn't break streak, but doesn't count either
@@ -174,8 +173,6 @@ enum StreakCalculator {
       }
       
       let allComplete = incompleteHabits.isEmpty
-      let completionCount = completedHabits.count
-      let totalCount = scheduledHabits.count
       
       // Check completion status
       if allComplete {

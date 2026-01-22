@@ -185,7 +185,7 @@ class DailyAwardIntegrityService {
         
         if skippedCount > 0 {
             for habit in scheduledHabits where habit.isSkipped(for: date) {
-                let reasonLabel = habit.skipReason(for: date)?.shortLabel ?? "unknown"
+                _ = habit.skipReason(for: date)?.shortLabel ?? "unknown"
             }
         }
         
@@ -201,7 +201,7 @@ class DailyAwardIntegrityService {
         }
         
         // ✅ STREAK MODE: Use meetsStreakCriteria to validate awards (respects Streak Mode)
-        let currentMode = CompletionMode.current
+        _ = CompletionMode.current
         
         // Check each active (non-skipped) habit using meetsStreakCriteria (respects Streak Mode)
         var completedHabits: [Habit] = []

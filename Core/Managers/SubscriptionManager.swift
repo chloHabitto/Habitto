@@ -278,7 +278,7 @@ class SubscriptionManager: ObservableObject {
     self.isPremium = hasActiveSubscription
     self.currentSubscriptionProductID = activeProductID
     if hasActiveSubscription {
-      if let productID = activeProductID {
+      if activeProductID != nil {
         // Premium status enabled
       }
     } else {

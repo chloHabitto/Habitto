@@ -506,10 +506,6 @@ class HabitRepository: ObservableObject {
       let loadedHabits = try await habitStore.loadHabits(force: force)
       
       if !hasLoggedStartupState {
-        let todayKey = Habit.dateKey(for: Date())
-        for habit in loadedHabits {
-          let progress = habit.completionHistory[todayKey] ?? 0
-        }
         hasLoggedStartupState = true
       }
       debugLog("🔄 LOAD_HABITS_COMPLETE: Loaded \(loadedHabits.count) habits")
