@@ -111,7 +111,6 @@ class BackupNotificationService: ObservableObject {
     content.title = "Backup Complete"
     content.body = "Your \(habitCount) habits have been backed up (\(backupSize))"
     content.sound = .default
-    content.badge = 1
 
     let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
     let request = UNNotificationRequest(
@@ -134,7 +133,6 @@ class BackupNotificationService: ObservableObject {
     content.title = "Backup Failed"
     content.body = "Failed to create backup: \(error.localizedDescription)"
     content.sound = .default
-    content.badge = 1
 
     let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
     let request = UNNotificationRequest(
