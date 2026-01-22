@@ -1013,6 +1013,83 @@ struct HomeView: View {
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+    .overlay(alignment: .bottom) {
+      // ✅ UNDO TOAST: Show toast when habit is deleted
+      if let deletedHabit = state.deletedHabitForUndo {
+        UndoToastView(
+          habitName: deletedHabit.name,
+          onUndo: {
+            Task {
+              await state.restoreHabit(deletedHabit)
+            }
+          },
+          onDismiss: {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              state.deletedHabitForUndo = nil
+            }
+          }
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, ToastConstants.bottomPadding)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when habit is created
+      if let habitName = state.createdHabitName {
+        SuccessToastView(message: "\"\(habitName)\" created successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.createdHabitName = nil
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, ToastConstants.bottomPadding)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when habit is updated
+      if state.showHabitUpdatedToast {
+        SuccessToastView(message: "Changes saved successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.showHabitUpdatedToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, ToastConstants.bottomPadding)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when vacation mode is enabled
+      if state.showVacationEnabledToast {
+        SuccessToastView(message: "Vacation mode enabled successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.showVacationEnabledToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, ToastConstants.bottomPadding)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .overlay(alignment: .bottom) {
+      // ✅ SUCCESS TOAST: Show toast when vacation mode is disabled
+      if state.showVacationDisabledToast {
+        SuccessToastView(message: "Vacation mode disabled successfully") {
+          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+            state.showVacationDisabledToast = false
+          }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, ToastConstants.bottomPadding)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+      }
+    }
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.createdHabitName)
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showHabitUpdatedToast)
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationEnabledToast)
+    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationDisabledToast)
   }
   
   private var progressTabContent: some View {
@@ -1270,83 +1347,6 @@ struct HomeView: View {
     .sheet(isPresented: $tutorialManager.shouldShowTutorial) {
       TutorialBottomSheet(tutorialManager: tutorialManager)
     }
-    .overlay(alignment: .bottom) {
-      // ✅ UNDO TOAST: Show toast when habit is deleted
-      if let deletedHabit = state.deletedHabitForUndo {
-        UndoToastView(
-          habitName: deletedHabit.name,
-          onUndo: {
-            Task {
-              await state.restoreHabit(deletedHabit)
-            }
-          },
-          onDismiss: {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-              state.deletedHabitForUndo = nil
-            }
-          }
-        )
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when habit is created
-      if let habitName = state.createdHabitName {
-        SuccessToastView(message: "\"\(habitName)\" created successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.createdHabitName = nil
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when habit is updated
-      if state.showHabitUpdatedToast {
-        SuccessToastView(message: "Changes saved successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.showHabitUpdatedToast = false
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when vacation mode is enabled
-      if state.showVacationEnabledToast {
-        SuccessToastView(message: "Vacation mode enabled successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.showVacationEnabledToast = false
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when vacation mode is disabled
-      if state.showVacationDisabledToast {
-        SuccessToastView(message: "Vacation mode disabled successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.showVacationDisabledToast = false
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.createdHabitName)
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showHabitUpdatedToast)
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationEnabledToast)
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationDisabledToast)
     .onChange(of: state.habits) { oldHabits, newHabits in
       // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
       // DO NOT call publishXP() here - it overwrites the database value with calculated value
