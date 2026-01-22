@@ -246,24 +246,15 @@ struct ScheduledHabitItem: View {
       }
     }
     .onReceive(NotificationCenter.default.publisher(for: .habitProgressUpdated)) { notification in
-      // Don't override local updates that are in progress
-      guard !isLocalUpdateInProgress else { return }
-
-      // ✅ FIX: If user just made a change, wait longer before accepting external updates
-      if let lastUpdate = lastUserUpdateTimestamp,
-         Date().timeIntervalSince(lastUpdate) < 1.0 {
-        print("🔍 RACE FIX: Ignoring habitProgressUpdated notification within 1s of user action")
-        return
-      }
-
-      // Listen for habit progress updates from the repository
-      if let updatedHabitId = notification.userInfo?["habitId"] as? UUID,
-         updatedHabitId == habit.id
-      {
-        let newProgress = habit.getProgress(for: selectedDate)
-        withAnimation(.easeInOut(duration: 0.2)) {
-          currentProgress = newProgress
-        }
+      guard let updatedHabitId = notification.userInfo?["habitId"] as? UUID,
+            updatedHabitId == habit.id,
+            let newProgress = notification.userInfo?["progress"] as? Int else { return }
+      
+      // ✅ FIX: Use progress directly from notification (the value that was just saved)
+      // Don't use habit.getProgress() which reads from stale local copy
+      // Don't block with 1-second guard - this IS the update we want!
+      withAnimation(.easeInOut(duration: 0.2)) {
+        currentProgress = newProgress
       }
     }
     .sheet(isPresented: $showingCompletionSheet) {
