@@ -600,7 +600,6 @@ struct CreateHabitStep2View: View {
     let newHabit = createHabit()
     #if DEBUG
     print("🎯 [1/8] CreateHabitStep2View.saveHabit: tap Add button")
-    print("  → Habit: '\(newHabit.name)', ID: \(newHabit.id)")
     print("  → Goal: '\(newHabit.goal)', Type: \(newHabit.habitType)")
     print("  → Reminders: \(reminders.count)")
     #endif

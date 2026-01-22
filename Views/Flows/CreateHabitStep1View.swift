@@ -379,12 +379,6 @@ struct CreateHabitStep1View: View {
           .textFieldStyle(PlainTextFieldStyle())
           .submitLabel(.done)
           .focused(isFocused)
-          .onAppear {
-            print("⌨️ TEXTFIELD: onAppear at \(Date())")
-          }
-          .onChange(of: isFocused.wrappedValue) { oldValue, newValue in
-            print("⌨️ TEXTFIELD: focus changed \(oldValue) → \(newValue) at \(Date())")
-          }
       }
       .frame(maxWidth: .infinity, minHeight: 48)
       .padding(.horizontal, 16)

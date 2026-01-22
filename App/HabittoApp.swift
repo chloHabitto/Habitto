@@ -506,28 +506,19 @@ struct HabittoApp: App {
             // All users use userId = "" (guest mode)
             Task { @MainActor in
               // ✅ FORCE RELOAD - Reload data after repair to ensure UI sees fixed relationships
-              print("🔄 [RELOAD] Forcing data reload after relationship repair...")
               await habitRepository.loadHabits()
               
               // Reload XP - Use the @State instance that the UI is observing
               let userId = await CurrentUser().idOrGuest // Always "" in guest mode
-              // ✅ DIAGNOSTIC: Check if instances are the same
-              let areSameInstance = xpManager === XPManager.shared
-              print("🔄 [RELOAD] Loading XP for userId: '\(userId.isEmpty ? "EMPTY_STRING" : userId.prefix(8))...'")
-              print("   xpManager === XPManager.shared: \(areSameInstance)")
-              print("   xpManager.totalXP before load: \(xpManager.totalXP)")
               
               // ✅ FIX: Refresh DailyAwardService FIRST to ensure xpState is correct
               // This way the observer won't overwrite the loaded value
-              print("🔄 [RELOAD] Refreshing DailyAwardService state first...")
               await DailyAwardService.shared.refreshXPState()
               
               // If DailyAwardService has the correct state, use it
               if let xpState = DailyAwardService.shared.xpState, xpState.totalXP > 0 {
-                print("✅ [RELOAD] DailyAwardService has correct XP state: \(xpState.totalXP) - using it")
                 // The observer will automatically apply this state
               } else {
-                print("⚠️ [RELOAD] DailyAwardService state is nil or 0 - loading directly from SwiftData")
                 // Use the @State instance that the UI is observing
                 xpManager.loadUserXPFromSwiftData(
                   userId: userId,
@@ -535,21 +526,12 @@ struct HabittoApp: App {
                 )
               }
               
-              // Verify the load worked
-              print("   xpManager.totalXP after load: \(xpManager.totalXP)")
-              print("   XPManager.shared.totalXP after load: \(XPManager.shared.totalXP)")
-              
               // ✅ FORCE UI REFRESH - Ensure SwiftUI sees the updated data
               await MainActor.run {
-                print("🔄 [UI_REFRESH] Forcing UI refresh...")
                 habitRepository.objectWillChange.send()
                 // XPManager is @Observable, so accessing properties should trigger update
                 _ = xpManager.totalXP
-                print("   ✅ objectWillChange.send() called for HabitRepository")
-                print("   ✅ xpManager.totalXP accessed: \(xpManager.totalXP) - should trigger @Observable update")
               }
-              
-              print("✅ [RELOAD] Data reload complete")
             }
 
             // ✅ FIX #25: Don't force-hide migration UI - let HabitRepository decide
@@ -1530,91 +1512,48 @@ struct HabittoApp: App {
   /// Complete data diagnosis - shows the full state of the database
   @MainActor
   private func diagnoseDataIssue() async {
-    print(String(repeating: "=", count: 80))
-    print("📊 STARTING COMPLETE DATA DIAGNOSIS")
-    print(String(repeating: "=", count: 80))
-    
     let context = SwiftDataContainer.shared.modelContext
     let currentUserId = await CurrentUser().idOrGuest // Always "" in guest mode
-    
-    print("\n🔍 Current userId (guest mode): '\(currentUserId.isEmpty ? "EMPTY_STRING" : currentUserId)'")
     
     // 1. Check habits
     do {
       let habitsDesc = FetchDescriptor<HabitData>()
       let allHabits = try context.fetch(habitsDesc)
-      // DIAGNOSIS logs removed for cleaner console output
-      
-      // Habit detail logs removed for cleaner console output
       
       // 2. Check CompletionRecords
       let recordsDesc = FetchDescriptor<CompletionRecord>()
       let allRecords = try context.fetch(recordsDesc)
-      // DIAGNOSIS logs removed for cleaner console output
       
       // 4. Check UserProgressData
       let xpDesc = FetchDescriptor<UserProgressData>()
       let allXP = try context.fetch(xpDesc)
-      // DIAGNOSIS logs removed for cleaner console output
-      for xp in allXP {
-        let userIdDisplay = xp.userId.isEmpty ? "EMPTY STRING" : "\(xp.userId.prefix(8))..."
-        print("   userId: '\(userIdDisplay)', XP: \(xp.xpTotal), Level: \(xp.level), Streak: \(xp.streakDays)")
-      }
       
       // 5. Check DailyAwards
       let awardsDesc = FetchDescriptor<DailyAward>()
       let allAwards = try context.fetch(awardsDesc)
-      // DIAGNOSIS logs removed for cleaner console output
-      let awardsByUserId = Dictionary(grouping: allAwards, by: { $0.userId })
-      for (userId, awards) in awardsByUserId.sorted(by: { $0.key < $1.key }) {
-        let totalXP = awards.reduce(0) { $0 + $1.xpGranted }
-        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
-        print("   userId '\(userIdDisplay)': \(awards.count) awards, Total XP: \(totalXP)")
-      }
       
       // 6. Check what the app will actually load
-      // DIAGNOSIS logs removed for cleaner console output
       if currentUserId != "nil" {
         let habitsForUser = allHabits.filter { $0.userId == currentUserId }
         let recordsForUser = allRecords.filter { $0.userId == currentUserId }
         let xpForUser = allXP.filter { $0.userId == currentUserId }
         let awardsForUser = allAwards.filter { $0.userId == currentUserId }
         
-        print("   Habits: \(habitsForUser.count)")
-        print("   CompletionRecords: \(recordsForUser.count)")
-        print("   UserProgressData: \(xpForUser.count)")
-        print("   DailyAwards: \(awardsForUser.count)")
-        
         if habitsForUser.isEmpty && !allHabits.isEmpty {
-          print("   ⚠️ WARNING: No habits found for current userId, but \(allHabits.count) habits exist with other userIds")
+          print("❌ DIAGNOSIS: No habits found for current userId, but \(allHabits.count) habits exist with other userIds")
         }
         if recordsForUser.isEmpty && !allRecords.isEmpty {
-          print("   ⚠️ WARNING: No CompletionRecords found for current userId, but \(allRecords.count) records exist with other userIds")
+          print("❌ DIAGNOSIS: No CompletionRecords found for current userId, but \(allRecords.count) records exist with other userIds")
         }
         if awardsForUser.isEmpty && !allAwards.isEmpty {
-          print("   ⚠️ WARNING: No DailyAwards found for current userId, but \(allAwards.count) awards exist with other userIds")
+          print("❌ DIAGNOSIS: No DailyAwards found for current userId, but \(allAwards.count) awards exist with other userIds")
         }
-      } else {
-        print("   ⚠️ WARNING: No authenticated user - will query for userId = \"\"")
-        let guestHabits = allHabits.filter { $0.userId.isEmpty }
-        let guestRecords = allRecords.filter { $0.userId.isEmpty }
-        let guestXP = allXP.filter { $0.userId.isEmpty }
-        let guestAwards = allAwards.filter { $0.userId.isEmpty }
-        
-        print("   Guest habits (userId = \"\"): \(guestHabits.count)")
-        print("   Guest CompletionRecords (userId = \"\"): \(guestRecords.count)")
-        print("   Guest UserProgressData (userId = \"\"): \(guestXP.count)")
-        print("   Guest DailyAwards (userId = \"\"): \(guestAwards.count)")
       }
       
     } catch {
       print("❌ DIAGNOSIS ERROR: \(error.localizedDescription)")
       print("   Error details: \(error)")
     }
-    
-    print("\n" + String(repeating: "=", count: 80))
-    print("📊 DIAGNOSIS COMPLETE")
-    print(String(repeating: "=", count: 80))
   }
   
   /// Check if progress restoration is needed by checking for CompletionRecords with progress=0

@@ -159,13 +159,9 @@ final class ProgressEventService {
         goalAmount: Int,
         modelContext: ModelContext
     ) async throws -> (progress: Int, isCompleted: Bool) {
-        logger.info("Applying events for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
-        
         // Fetch all events for this habit+date
         let descriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
         let events = try modelContext.fetch(descriptor)
-        
-        logger.info("Found \(events.count) events for habitId=\(habitId.uuidString), dateKey=\(dateKey)")
         
         // Sum progress deltas to get current progress
         let totalProgress = events.reduce(0) { $0 + $1.progressDelta }
@@ -175,8 +171,6 @@ final class ProgressEventService {
         
         // Determine completion status based on goal
         let isCompleted = progress >= goalAmount
-        
-        logger.info("Calculated progress=\(progress), isCompleted=\(isCompleted) from \(events.count) events")
         
         return (progress, isCompleted)
     }
@@ -217,19 +211,8 @@ final class ProgressEventService {
             let events = (try? modelContext.fetch(descriptor)) ?? []
             
             if !events.isEmpty {
-                for (index, event) in events.enumerated().prefix(5) {
-                    logger.info("      [\(index)] type=\(event.eventType), delta=\(event.progressDelta), createdAt=\(event.createdAt)")
-                }
-                if events.count > 5 {
-                    logger.info("      ... and \(events.count - 5) more events")
-                }
-            }
-            
-            if !events.isEmpty {
                 // Events exist - use event-sourced result (events are source of truth)
                 // Even if progress is 0, we trust events over legacy data
-                logger.info("✅ calculateProgressFromEvents: Using event-sourced progress: \(result.progress) (from \(events.count) events)")
-                logger.info("   → Calculated progress=\(result.progress), isCompleted=\(result.isCompleted)")
                 return result
             }
             
@@ -242,20 +225,17 @@ final class ProgressEventService {
             let completionRecordDescriptor = FetchDescriptor<CompletionRecord>(predicate: completionRecordPredicate)
             if let completionRecord = try? modelContext.fetch(completionRecordDescriptor).first {
                 let progress = Int(completionRecord.progress)
-                logger.info("⚠️ calculateProgressFromEvents: No events found, using CompletionRecord.progress: \(progress)")
                 return (progress, completionRecord.isCompleted)
             }
             
             // Final fallback to legacy completionHistory
             let progress = legacyProgress ?? 0
-            logger.info("⚠️ calculateProgressFromEvents: No events or CompletionRecord found, falling back to legacy progress: \(progress)")
             return (progress, progress >= goalAmount)
             
         } catch {
             logger.error("❌ calculateProgressFromEvents: Failed to calculate progress from events: \(error.localizedDescription)")
             // Fall back to legacy on error
             let progress = legacyProgress ?? 0
-            logger.info("⚠️ calculateProgressFromEvents: Using fallback progress: \(progress)")
             return (progress, progress >= goalAmount)
         }
     }

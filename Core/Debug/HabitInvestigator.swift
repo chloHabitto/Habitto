@@ -71,7 +71,6 @@ class HabitInvestigator {
           let found = decoded.first { $0.name == habitName }
           if found != nil {
             print("   Found: ✅ YES in key '\(key)'")
-            print("   → Habit: \(found!)")
             foundInUserDefaults = true
           }
         }

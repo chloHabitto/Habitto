@@ -416,8 +416,6 @@ class HomeViewState: ObservableObject {
     #if DEBUG
     debugLog("═══════════════════════════════════════════════════════")
     debugLog("🎯 [3/8] HomeViewState.createHabit: creating habit")
-    debugLog("  → Habit: '\(habit.name)', ID: \(habit.id)")
-    
     #endif
     
     // Check if vacation mode is active
@@ -1265,7 +1263,6 @@ struct HomeView: View {
       CreateHabitFlowView(onSave: { habit in
         #if DEBUG
         debugLog("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
-        debugLog("  → Habit: '\(habit.name)', ID: \(habit.id)")
         debugLog("  → Current habits count: \(state.habits.count)")
         #endif
 
