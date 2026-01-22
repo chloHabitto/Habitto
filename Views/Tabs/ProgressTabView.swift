@@ -940,7 +940,7 @@ struct ProgressTabView: View {
       }
       .background(Color(.systemBackground))
     }
-    .presentationDetents([.medium, .large])
+    .presentationDetents([.large])
     .presentationCornerRadius(32)
   }
 
@@ -1023,12 +1023,12 @@ struct ProgressTabView: View {
 
         // All habits icon
         ZStack {
-          RoundedRectangle(cornerRadius: 12)
+          RoundedRectangle(cornerRadius: 10)
             .fill(Color.outline02)
-            .frame(width: 40, height: 40)
+            .frame(width: 32, height: 32)
 
           Image(systemName: "chart.bar.fill")
-            .font(.system(size: 18, weight: .medium))
+            .font(.system(size: 14, weight: .medium))
             .foregroundColor(.primaryFocus)
         }
         .padding(.leading, 16)
@@ -1041,15 +1041,9 @@ struct ProgressTabView: View {
             .foregroundColor(.text02)
             .lineLimit(1)
             .truncationMode(.tail)
-
-          Text("View progress for all habits")
-            .font(.appLabelSmall)
-            .foregroundColor(.text05)
-            .lineLimit(1)
-            .truncationMode(.tail)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 76)
+        .frame(height: 56)
 
         // Selection indicator
         if selectedHabit == nil {
@@ -1134,7 +1128,7 @@ struct ProgressTabView: View {
           .frame(maxHeight: .infinity)
 
         // HabitIcon
-        HabitIconView(habit: habit)
+        habitIconSmall(habit: habit)
           .padding(.leading, 16)
           .padding(.trailing, 16)
 
@@ -1170,15 +1164,9 @@ struct ProgressTabView: View {
                 )
             }
           }
-
-          Text("View progress for this habit")
-            .font(.appLabelSmall)
-            .foregroundColor(.text05)
-            .lineLimit(1)
-            .truncationMode(.tail)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 76)
+        .frame(height: 56)
 
         // Selection indicator
         if selectedHabit?.id == habit.id {
@@ -1236,6 +1224,31 @@ struct ProgressTabView: View {
         // Emoji or system icon
         Text(habit.icon)
           .font(.system(size: 20))
+      }
+    }
+  }
+
+  private func habitIconSmall(habit: Habit) -> some View {
+    ZStack {
+      RoundedRectangle(cornerRadius: 10)
+        .fill(Color.outline02)
+        .frame(width: 32, height: 32)
+
+      if habit.icon.hasPrefix("Icon-") {
+        // Asset icon
+        Image(habit.icon)
+          .resizable()
+          .frame(width: 14, height: 14)
+          .foregroundColor(habit.color.color)
+      } else if habit.icon == "None" {
+        // No icon selected - show colored rounded rectangle
+        RoundedRectangle(cornerRadius: 4)
+          .fill(habit.color.color)
+          .frame(width: 14, height: 14)
+      } else {
+        // Emoji or system icon
+        Text(habit.icon)
+          .font(.system(size: 14))
       }
     }
   }
