@@ -28,7 +28,7 @@ struct TodaysJourneyNowMarker: View {
       spineColumn
       contentColumn
     }
-    .padding(.bottom, 16) // Extend row height so gradient line reaches the next item
+    // Remove .padding(.bottom, 16) - it creates empty space, not gradient extension
   }
 
   // MARK: - Time Column (45pt, right-aligned, primary styling) - matches TimelineEntryRow
@@ -94,26 +94,33 @@ struct TodaysJourneyNowMarker: View {
   // MARK: - Content Column: horizontal gradient line + NOW badge
 
   private var contentColumn: some View {
-    HStack(spacing: 8) {
-      Rectangle()
-        .fill(
-          LinearGradient(
-            colors: [Color.appPrimary, Color.appOutline02],
-            startPoint: .leading,
-            endPoint: .trailing
+    VStack(alignment: .leading, spacing: 0) {
+      HStack(spacing: 8) {
+        // Horizontal gradient line
+        Rectangle()
+          .fill(
+            LinearGradient(
+              colors: [Color.appPrimary, Color.appOutline02],
+              startPoint: .leading,
+              endPoint: .trailing
+            )
           )
-        )
-        .frame(height: 2)
+          .frame(height: 2)
 
-      Text("NOW")
-        .font(.system(size: 10, weight: .bold))
-        .foregroundColor(.appPrimary)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 4)
-        .background(Color.appPrimaryContainer)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        // NOW badge
+        Text("NOW")
+          .font(.system(size: 10, weight: .bold))
+          .foregroundColor(.appPrimary)
+          .padding(.horizontal, 10)
+          .padding(.vertical, 4)
+          .background(Color.appPrimaryContainer)
+          .clipShape(RoundedRectangle(cornerRadius: 8))
+      }
+      .padding(.top, 21) // Align with dot center: 16 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
+      
+      Spacer()
+        .frame(height: 24) // Add height to make row taller, gradient will extend
     }
-    .padding(.top, 21) // Align with dot center: 16 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
   }
 }
 
