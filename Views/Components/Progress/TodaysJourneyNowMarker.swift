@@ -46,7 +46,7 @@ struct TodaysJourneyNowMarker: View {
     .padding(.top, 16) // Align with dot (line above is 16pt)
   }
 
-  // MARK: - Spine Column (24pt): pulsing dot + gradient line - two-segment approach
+  // MARK: - Spine Column (24pt): pulsing dot + gradient line - fixed height approach
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
@@ -58,23 +58,20 @@ struct TodaysJourneyNowMarker: View {
       // Pulsing dot
       nowDot
       
-      // Line BELOW - gradient, connects to next pending item
-      GeometryReader { geo in
-        Rectangle()
-          .fill(
-            LinearGradient(
-              colors: [Color.appPrimary, Color.appOutline02],
-              startPoint: .top,
-              endPoint: .bottom
-            )
+      // Line BELOW - gradient with FIXED height that extends past row
+      // Using fixed 100pt ensures it overlaps with pending item's line-above
+      Rectangle()
+        .fill(
+          LinearGradient(
+            colors: [Color.appPrimary, Color.appOutline02],
+            startPoint: .top,
+            endPoint: .bottom
           )
-          .frame(width: 3, height: max(geo.size.height, 48)) // Minimum 48pt height
-      }
-      .frame(width: 3)
-      .frame(minHeight: 48) // Ensure GeometryReader has minimum height
+        )
+        .frame(width: 3, height: 100)
     }
-    .frame(width: 24)
-    .frame(maxHeight: .infinity, alignment: .top) // CRITICAL: Expand to fill row height
+    .frame(width: 24, alignment: .top)
+    // Note: Remove .frame(maxHeight: .infinity) - we don't need it anymore
   }
 
   private var nowDot: some View {
@@ -95,33 +92,28 @@ struct TodaysJourneyNowMarker: View {
   // MARK: - Content Column: horizontal gradient line + NOW badge
 
   private var contentColumn: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      HStack(spacing: 8) {
-        // Horizontal gradient line
-        Rectangle()
-          .fill(
-            LinearGradient(
-              colors: [Color.appPrimary, Color.appOutline02],
-              startPoint: .leading,
-              endPoint: .trailing
-            )
+    HStack(spacing: 8) {
+      // Horizontal gradient line
+      Rectangle()
+        .fill(
+          LinearGradient(
+            colors: [Color.appPrimary, Color.appOutline02],
+            startPoint: .leading,
+            endPoint: .trailing
           )
-          .frame(height: 2)
+        )
+        .frame(height: 2)
 
-        // NOW badge
-        Text("NOW")
-          .font(.system(size: 10, weight: .bold))
-          .foregroundColor(.appPrimary)
-          .padding(.horizontal, 10)
-          .padding(.vertical, 4)
-          .background(Color.appPrimaryContainer)
-          .clipShape(RoundedRectangle(cornerRadius: 8))
-      }
-      .padding(.top, 21) // Align with dot center: 16 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
-      
-      Spacer()
-        .frame(height: 48) // Add height to make row taller, gradient will extend
+      // NOW badge
+      Text("NOW")
+        .font(.system(size: 10, weight: .bold))
+        .foregroundColor(.appPrimary)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(Color.appPrimaryContainer)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
+    .padding(.top, 21) // Align with dot center
   }
 }
 
