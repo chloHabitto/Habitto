@@ -1046,8 +1046,6 @@ struct HabittoApp: App {
           userHabitIds.contains(record.habitId) && record.userId != newUserId
         }
         
-        // Group orphaned completions by old userId for logging
-        let completionsByOldUserId = Dictionary(grouping: orphanedCompletions) { $0.userId }
         logger.info("📊 GuestMigration: Found \(orphanedCompletions.count) orphaned CompletionRecords")
         
         // Check for orphaned DailyAwards
@@ -1499,7 +1497,7 @@ struct HabittoApp: App {
       var duplicatesDeleted = 0
       
       // For each group, keep only the most recent record and delete the rest
-      for (key, records) in recordsByKey {
+      for (_, records) in recordsByKey {
         if records.count > 1 {
           // Sort by createdAt (most recent first)
           let sortedRecords = records.sorted { $0.createdAt > $1.createdAt }

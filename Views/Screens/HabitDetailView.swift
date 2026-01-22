@@ -1325,8 +1325,6 @@ struct HabitDetailView: View {
   // MARK: - Skip Feature Methods
   
   private func skipHabit(reason: SkipReason) {
-    let dateKey = Habit.dateKey(for: selectedDate)
-    
     // Modify the habit to add skip
     habit.skip(for: selectedDate, reason: reason)
     

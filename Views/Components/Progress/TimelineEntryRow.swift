@@ -60,12 +60,15 @@ struct TimelineEntryRow: View {
                 .shadow(color: Color.green.opacity(0.3), radius: 2, y: 1)
                 .padding(.top, 18)
             
-            // Line
+            // Line below (if not last) - extends to connect with next dot
             if !isLast {
-                Rectangle()
-                    .fill(Color.appOutline02)
-                    .frame(width: 2)
-                    .padding(.top, 4)
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(Color.appOutline02)
+                        .frame(width: 2, height: max(28, geo.size.height))
+                }
+                .frame(width: 2)
+                .frame(minHeight: 28) // Minimum height to extend through card padding (12pt) and connect
             }
         }
         .frame(width: 24)

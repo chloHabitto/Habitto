@@ -365,7 +365,6 @@ class HomeViewState: ObservableObject {
 
   /// ✅ CRITICAL FIX: Made async to await repository save completion
   func setHabitProgress(_ habit: Habit, for date: Date, progress: Int) async {
-    let startTime = Date()
     let opContext = "setHabitProgress(\(habit.id), progress: \(progress))"
     beginPersistenceOperation(opContext)
     defer { endPersistenceOperation(opContext) }
