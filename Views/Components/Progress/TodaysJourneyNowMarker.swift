@@ -28,7 +28,7 @@ struct TodaysJourneyNowMarker: View {
       spineColumn
       contentColumn
     }
-    // No top padding - line above handles the connection
+    .padding(.bottom, 16) // Extend row height so gradient line reaches the next item
   }
 
   // MARK: - Time Column (45pt, right-aligned, primary styling) - matches TimelineEntryRow
