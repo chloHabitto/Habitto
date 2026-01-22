@@ -600,7 +600,6 @@ class NotificationManager: ObservableObject {
       content.title = "Test Notification"
       content.body = "This is a test notification to verify delivery"
       content.sound = .default
-      content.badge = 1
 
       // Schedule for 5 seconds from now
       let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
@@ -634,7 +633,6 @@ class NotificationManager: ObservableObject {
     content.title = "Habit Reminder"
     content.body = "Time to complete: \(habit.name)"
     content.sound = .default
-    content.badge = 1
 
     // Create date components for the reminder time
     let calendar = Calendar.current
@@ -724,7 +722,6 @@ class NotificationManager: ObservableObject {
             content.title = "Habit Reminder"
             content.body = "Time to complete: \(habit.name)"
             content.sound = .default
-            content.badge = 1
             
             // Create trigger for specific date
             let trigger = UNCalendarNotificationTrigger(
@@ -787,7 +784,6 @@ class NotificationManager: ObservableObject {
             content.title = "Habit Reminder"
             content.body = "Time to complete: \(habit.name)"
             content.sound = .default
-            content.badge = 1
 
             // Create date components for the specific date and reminder time
             // Use local timezone for both reminder time and target date
@@ -1005,7 +1001,6 @@ class NotificationManager: ObservableObject {
           content.title = "Habit Reminder"
           content.body = "Time to complete: \(habit.name)"
           content.sound = .default
-          content.badge = 1
 
           // Create date components for the specific date and reminder time
           let calendar = Calendar.current
@@ -1253,7 +1248,6 @@ class NotificationManager: ObservableObject {
               content.title = "Habit Reminder"
               content.body = "Time to complete: \(habit.name)"
               content.sound = .default
-              content.badge = 1
 
               // Create date components for the specific date and reminder time
               // Use local timezone for both reminder time and target date
@@ -1311,7 +1305,6 @@ class NotificationManager: ObservableObject {
       content.title = "🧪 TEST Habit Reminder"
       content.body = "This is a test notification to verify the system is working"
       content.sound = .default
-      content.badge = 1
 
       let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
       let request = UNNotificationRequest(
@@ -1425,7 +1418,6 @@ class NotificationManager: ObservableObject {
       content.body = generateSnoozeReminderMessage(incompleteCount: incompleteCount)
 
       content.sound = .default
-      content.badge = 1
 
       // Add snooze actions if snooze is still enabled and under limit
       let snoozeDuration = getSnoozeDuration()
@@ -2011,7 +2003,6 @@ class NotificationManager: ObservableObject {
     content.title = getFriendlyReminderTitle(for: habits, reminderType: reminderType)
     content.body = getFriendlyReminderMessage(for: habits, reminderType: reminderType)
     content.sound = .default
-    content.badge = 1
 
     // Create date components for the reminder time
     let components = calendar.dateComponents(
@@ -2208,7 +2199,6 @@ class NotificationManager: ObservableObject {
       content.title = self.generatePlanReminderTitle(habitCount: habitCount)
       content.body = self.generatePlanReminderMessage(habitCount: habitCount)
       content.sound = .default
-      content.badge = 1
 
       // Create date components for the reminder time on the specific date
       // Use the same timezone for both reminder time and target date
@@ -2280,7 +2270,6 @@ class NotificationManager: ObservableObject {
       content.title = self.generateCompletionReminderTitle(incompleteCount: incompleteCount)
       content.body = self.generateCompletionReminderMessage(incompleteCount: incompleteCount)
       content.sound = .default
-      content.badge = 1
 
       // Add snooze actions if snooze is enabled
       let snoozeDuration = self.getSnoozeDuration()
@@ -2375,7 +2364,6 @@ class NotificationManager: ObservableObject {
           content.title = "Habit Reminder"
           content.body = "Time to complete: \(habit.name)"
           content.sound = .default
-          content.badge = 1
 
           // Create date components for the reminder time
           let reminderTime = reminder.time

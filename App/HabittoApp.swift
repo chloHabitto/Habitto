@@ -276,9 +276,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     // Show notification even when app is in foreground
     if #available(iOS 14.0, *) {
-      completionHandler([.banner, .badge, .sound])
+      completionHandler([.banner, .sound])
     } else {
-      completionHandler([.alert, .badge, .sound])
+      completionHandler([.alert, .sound])
     }
   }
 
