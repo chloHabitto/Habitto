@@ -684,10 +684,9 @@ struct HomeTabView: View {
           onHabitUncompleted(habit)
         }
 
-        // ✅ PHASE 5: Update completion status map after progress change
-        Task {
-          await prefetchCompletionStatus()
-        }
+        // ✅ RACE FIX: Do NOT prefetch here. Prefetch runs in handleHabitsChange when habits
+        // change. HabitRepository now updates habits only AFTER save, so we always prefetch
+        // with persisted data.
       },
       onEdit: {
         selectedHabit = habit
@@ -706,7 +705,12 @@ struct HomeTabView: View {
   private func handleHabitsChange(oldHabits: [Habit], newHabits: [Habit]) {
     // Resort habits when the habits array changes
     debugLog("🔄 HomeTabView: Habits changed from \(oldHabits.count) to \(newHabits.count)")
-    resortHabits()
+    // ✅ RACE FIX: Prefetch then resort. Habits now change only AFTER CompletionRecord is saved
+    // (HabitRepository defers in-memory update until after persist), so we always read correct data.
+    Task {
+      await prefetchCompletionStatus()
+      resortHabits()
+    }
   }
 
   private func handleHabitsForSelectedDateChange(_: [Habit], _: [Habit]) {
