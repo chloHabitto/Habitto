@@ -595,13 +595,7 @@ class HomeViewState: ObservableObject {
           }
         )
         allHabitsDescriptor.includePendingChanges = true
-        if let allHabitDataList = try? modelContext.fetch(allHabitsDescriptor) {
-          let allHabitsCount = allHabitDataList.count
-          let deletedHabitsCount = allHabitDataList.filter { $0.deletedAt != nil }.count
-          let activeHabitsCount = habitRepository.habits.count
-          
-          // Mismatch detection removed - informational only
-        }
+        // Mismatch detection removed - informational only
         #endif
         
         let habits = habitRepository.habits
