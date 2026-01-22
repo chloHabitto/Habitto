@@ -71,22 +71,6 @@ struct MoreTabView: View {
         // CRITICAL: Force view to observe isPremium changes by using it in .id()
         .id("moretab-premium-\(subscriptionManager.isPremium)")
       }
-      .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowThemeSavedToast"))) { _ in
-        showThemeSavedToast = true
-      }
-      .overlay(alignment: .bottom) {
-        if showThemeSavedToast {
-          SuccessToastView(message: "Appearance saved successfully") {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-              showThemeSavedToast = false
-            }
-          }
-          .padding(.horizontal, 16)
-          .padding(.bottom, ToastConstants.bottomPadding)
-          .transition(.move(edge: .bottom).combined(with: .opacity))
-        }
-      }
-      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showThemeSavedToast)
       .sheet(isPresented: $showingVacationModeSheet) {
         VacationModeSheet()
       }
@@ -197,7 +181,6 @@ struct MoreTabView: View {
   @State private var showingFAQ = false
   @State private var showingContactUs = false
   @State private var showingSendFeedback = false
-  @State private var showThemeSavedToast = false
   #if DEBUG
   @State private var showDebugTools = false
   #endif

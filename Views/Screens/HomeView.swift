@@ -81,6 +81,13 @@ class HomeViewState: ObservableObject {
       }
     }
     
+    // ✅ Listen for theme saved toast notification
+    NotificationCenter.default.addObserver(forName: NSNotification.Name("ShowThemeSavedToast"), object: nil, queue: .main) { [weak self] _ in
+      Task { @MainActor in
+        self?.showThemeSavedToast = true
+      }
+    }
+    
     // ✅ FIX: Listen for streak updates from completion flow
     NotificationCenter.default.publisher(for: NSNotification.Name("StreakUpdated"))
       .receive(on: DispatchQueue.main)
@@ -124,6 +131,7 @@ class HomeViewState: ObservableObject {
   @Published var showHabitUpdatedToast = false
   @Published var showVacationEnabledToast = false
   @Published var showVacationDisabledToast = false
+  @Published var showThemeSavedToast = false
 
   /// Core Data adapter
   let habitRepository = HabitRepository.shared
@@ -1352,6 +1360,17 @@ struct HomeView: View {
           .padding(.horizontal, 16)
           .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+        
+        // Success toast (theme/appearance saved)
+        if state.showThemeSavedToast {
+          SuccessToastView(message: "Appearance saved successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              state.showThemeSavedToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
       }
       .padding(.bottom, 70) // Position above tab bar (49pt tab bar + 21pt margin)
       .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.deletedHabitForUndo?.id)
@@ -1359,6 +1378,7 @@ struct HomeView: View {
       .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showHabitUpdatedToast)
       .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationEnabledToast)
       .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationDisabledToast)
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showThemeSavedToast)
     }
   }
 
