@@ -1536,7 +1536,6 @@ struct HabittoApp: App {
       if currentUserId != "nil" {
         let habitsForUser = allHabits.filter { $0.userId == currentUserId }
         let recordsForUser = allRecords.filter { $0.userId == currentUserId }
-        let xpForUser = allXP.filter { $0.userId == currentUserId }
         let awardsForUser = allAwards.filter { $0.userId == currentUserId }
         
         if habitsForUser.isEmpty && !allHabits.isEmpty {
