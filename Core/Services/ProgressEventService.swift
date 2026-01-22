@@ -149,6 +149,7 @@ final class ProgressEventService {
     ///   - habitId: The habit identifier
     ///   - dateKey: The date key in format "yyyy-MM-dd"
     ///   - goalAmount: The goal amount for this habit (to determine completion status)
+    ///   - userId: The user identifier (required for user-scoped queries)
     ///   - modelContext: The SwiftData model context
     ///
     /// - Returns: A tuple containing (progress: Int, isCompleted: Bool)
@@ -157,10 +158,11 @@ final class ProgressEventService {
         habitId: UUID,
         dateKey: String,
         goalAmount: Int,
+        userId: String,
         modelContext: ModelContext
     ) async throws -> (progress: Int, isCompleted: Bool) {
-        // Fetch all events for this habit+date
-        let descriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
+        // ✅ CRITICAL FIX: Fetch events with userId filter to prevent cross-user data leakage
+        let descriptor = ProgressEvent.eventsForHabitDateUser(habitId: habitId, dateKey: dateKey, userId: userId)
         let events = try modelContext.fetch(descriptor)
         
         // Sum progress deltas to get current progress
@@ -185,6 +187,7 @@ final class ProgressEventService {
     ///   - dateKey: The date key in format "yyyy-MM-dd"
     ///   - goalAmount: The goal amount for this habit
     ///   - legacyProgress: Fallback progress from completionHistory (if no events exist)
+    ///   - userId: Optional user identifier (if not provided, will fetch from CurrentUser)
     ///
     /// - Returns: A tuple containing (progress: Int, isCompleted: Bool)
     /// - Note: Accesses ModelContext internally since this method is @MainActor
@@ -192,22 +195,29 @@ final class ProgressEventService {
         habitId: UUID,
         dateKey: String,
         goalAmount: Int,
-        legacyProgress: Int? = nil
+        legacyProgress: Int? = nil,
+        userId: String? = nil
     ) async -> (progress: Int, isCompleted: Bool) {
         
         // Access ModelContext directly since we're @MainActor
         let modelContext = SwiftDataContainer.shared.modelContext
+        
+        // ✅ FIX: Extract async call before using ?? operator (autoclosures don't support async)
+        let currentUserId = await CurrentUser().idOrGuest
+        let actualUserId = userId ?? currentUserId
+        
         do {
             // Try to calculate from events first
             let result = try await applyEvents(
                 habitId: habitId,
                 dateKey: dateKey,
                 goalAmount: goalAmount,
+                userId: actualUserId,
                 modelContext: modelContext
             )
             
-            // Check if events exist for this habit+date
-            let descriptor = ProgressEvent.eventsForHabitDate(habitId: habitId, dateKey: dateKey)
+            // ✅ CRITICAL FIX: Check if events exist with userId filter
+            let descriptor = ProgressEvent.eventsForHabitDateUser(habitId: habitId, dateKey: dateKey, userId: actualUserId)
             let events = (try? modelContext.fetch(descriptor)) ?? []
             
             if !events.isEmpty {

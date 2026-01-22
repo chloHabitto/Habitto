@@ -248,6 +248,7 @@ public enum ProgressEventType: String, Codable, CaseIterable {
 
 extension ProgressEvent {
   /// Fetch all events for a specific habit and date
+  /// ⚠️ WARNING: This method does NOT filter by userId - use eventsForHabitDateUser() for user-scoped queries
   public static func eventsForHabitDate(
     habitId: UUID,
     dateKey: String
@@ -255,6 +256,25 @@ extension ProgressEvent {
     let predicate = #Predicate<ProgressEvent> { event in
       event.habitId == habitId &&
       event.dateKey == dateKey &&
+      event.deletedAt == nil
+    }
+    
+    var descriptor = FetchDescriptor(predicate: predicate)
+    descriptor.sortBy = [SortDescriptor(\.createdAt, order: .forward)]
+    return descriptor
+  }
+  
+  /// Fetch all events for a specific habit, date, and user
+  /// ✅ CRITICAL FIX: This method includes userId filtering to prevent cross-user data leakage
+  public static func eventsForHabitDateUser(
+    habitId: UUID,
+    dateKey: String,
+    userId: String
+  ) -> FetchDescriptor<ProgressEvent> {
+    let predicate = #Predicate<ProgressEvent> { event in
+      event.habitId == habitId &&
+      event.dateKey == dateKey &&
+      event.userId == userId &&
       event.deletedAt == nil
     }
     
