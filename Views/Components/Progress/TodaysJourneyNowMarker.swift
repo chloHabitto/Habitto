@@ -52,7 +52,7 @@ struct TodaysJourneyNowMarker: View {
     VStack(spacing: 0) {
       // Line ABOVE - solid primary, connects from previous completed item
       Rectangle()
-        .fill(Color.appPrimary)
+        .fill(Color.appPrimary.opacity(0.5))
         .frame(width: 3, height: 16)
       
       // Pulsing dot
@@ -63,7 +63,7 @@ struct TodaysJourneyNowMarker: View {
       Rectangle()
         .fill(
           LinearGradient(
-            colors: [Color.appPrimary, Color.appOutline02],
+            colors: [Color.appPrimary.opacity(0.5), Color.appOutline02],
             startPoint: .top,
             endPoint: .bottom
           )
@@ -97,7 +97,7 @@ struct TodaysJourneyNowMarker: View {
       Rectangle()
         .fill(
           LinearGradient(
-            colors: [Color.appPrimary, Color.appOutline02],
+            colors: [Color.appPrimary.opacity(0.5), Color.appOutline02],
             startPoint: .leading,
             endPoint: .trailing
           )

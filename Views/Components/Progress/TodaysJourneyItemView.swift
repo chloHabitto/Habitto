@@ -114,7 +114,7 @@ struct TodaysJourneyItemView: View {
 
   private func lineSegment(position: LinePosition) -> some View {
     let isPending = item.status == .pending
-    let lineColor = isPending ? Color.appOutline02 : Color.appPrimary
+    let lineColor = isPending ? Color.appOutline02 : Color.appPrimary.opacity(0.5)
     
     return GeometryReader { geo in
       if isPending {
