@@ -1013,83 +1013,6 @@ struct HomeView: View {
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    .overlay(alignment: .bottom) {
-      // ✅ UNDO TOAST: Show toast when habit is deleted
-      if let deletedHabit = state.deletedHabitForUndo {
-        UndoToastView(
-          habitName: deletedHabit.name,
-          onUndo: {
-            Task {
-              await state.restoreHabit(deletedHabit)
-            }
-          },
-          onDismiss: {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-              state.deletedHabitForUndo = nil
-            }
-          }
-        )
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when habit is created
-      if let habitName = state.createdHabitName {
-        SuccessToastView(message: "\"\(habitName)\" created successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.createdHabitName = nil
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when habit is updated
-      if state.showHabitUpdatedToast {
-        SuccessToastView(message: "Changes saved successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.showHabitUpdatedToast = false
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when vacation mode is enabled
-      if state.showVacationEnabledToast {
-        SuccessToastView(message: "Vacation mode enabled successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.showVacationEnabledToast = false
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .overlay(alignment: .bottom) {
-      // ✅ SUCCESS TOAST: Show toast when vacation mode is disabled
-      if state.showVacationDisabledToast {
-        SuccessToastView(message: "Vacation mode disabled successfully") {
-          withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-            state.showVacationDisabledToast = false
-          }
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-        .transition(.move(edge: .bottom).combined(with: .opacity))
-      }
-    }
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.createdHabitName)
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showHabitUpdatedToast)
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationEnabledToast)
-    .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationDisabledToast)
   }
   
   private var progressTabContent: some View {
@@ -1193,173 +1116,249 @@ struct HomeView: View {
   }
 
   var body: some View {
-    TabView(selection: $state.selectedTab) {
-      // Home Tab
-      homeTabContent
-        .tabItem {
-          Label("Home", image: "Icon-home-filled")
-        }
-        .tag(Tab.home)
-      
-      // Progress Tab
-      progressTabContent
-        .tabItem {
-          Label("Progress", image: "Icon-chart-filled")
-        }
-        .tag(Tab.progress)
-      
-      // Habits Tab
-      habitsTabContent
-        .tabItem {
-          Label("Habits", image: "Icon-book-filled")
-        }
-        .tag(Tab.habits)
-      
-      // More Tab
-      moreTabContent
-        .tabItem {
-          Label("More", image: "Icon-more-filled")
-        }
-        .tag(Tab.more)
-    }
-    .customTabBarAppearance()
-    .onChange(of: state.selectedTab) { oldValue, newValue in
-      // Add haptic feedback when tab is selected
-      UISelectionFeedbackGenerator().selectionChanged()
-    }
-    .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToProgressTabWithHabit"))) { notification in
-      // Switch to Progress tab
-      state.selectedTab = .progress
-      
-      // Forward the notification to ProgressTabView to select the habit
-      if let habitId = notification.userInfo?["habitId"] as? UUID {
-        // Delay slightly to ensure the Progress tab is visible
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-          NotificationCenter.default.post(
-            name: NSNotification.Name("SelectHabitInProgressTab"),
-            object: nil,
-            userInfo: ["habitId": habitId]
-          )
-        }
+    ZStack(alignment: .bottom) {
+      // Main TabView
+      TabView(selection: $state.selectedTab) {
+        // Home Tab
+        homeTabContent
+          .tabItem {
+            Label("Home", image: "Icon-home-filled")
+          }
+          .tag(Tab.home)
+        
+        // Progress Tab
+        progressTabContent
+          .tabItem {
+            Label("Progress", image: "Icon-chart-filled")
+          }
+          .tag(Tab.progress)
+        
+        // Habits Tab
+        habitsTabContent
+          .tabItem {
+            Label("Habits", image: "Icon-book-filled")
+          }
+          .tag(Tab.habits)
+        
+        // More Tab
+        moreTabContent
+          .tabItem {
+            Label("More", image: "Icon-more-filled")
+          }
+          .tag(Tab.more)
       }
-    }
-    .onAppear {
-      debugLog("🚀 HomeView: onAppear called!")
-      debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
-      
-      // ✅ Ensure auth listener is set up (safety check)
-      authManager.ensureAuthListenerSetup()
-      
-      loadHabitsOptimized()
-      
-      // ✅ FIX: Recalculate streak from CompletionRecords when app launches
-      state.requestStreakRecalculation(reason: "HomeView onAppear")
-
-      // ✅ FIX: Also refresh streak UI
-      state.updateStreak()
-
-      // Debug current state
-      state.debugCurrentState()
-    }
-    .onReceive(NotificationCenter.default
-      .publisher(for: UIApplication.willResignActiveNotification))
-    { _ in
-      state.backupHabits()
-    }
-    .onReceive(NotificationCenter.default
-      .publisher(for: UIApplication.didBecomeActiveNotification))
-    { _ in
-      state.requestStreakRecalculation(reason: "App became active", delay: 1.0)
-    }
-    .sheet(isPresented: $state.showingCreateHabit) {
-      CreateHabitFlowView(onSave: { habit in
-        #if DEBUG
-        debugLog("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
-        debugLog("  → Current habits count: \(state.habits.count)")
-        #endif
-
-        // ✅ FIX: Wait for habit creation to complete before dismissing sheet
-        Task { @MainActor in
-          await state.createHabit(habit)
-          #if DEBUG
-          debugLog("  → Habit creation completed, dismissing sheet")
-          #endif
-          state.showingCreateHabit = false
-          
-          // Show success toast after sheet dismisses
-          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            state.createdHabitName = habit.name
+      .customTabBarAppearance()
+      .onChange(of: state.selectedTab) { oldValue, newValue in
+        // Add haptic feedback when tab is selected
+        UISelectionFeedbackGenerator().selectionChanged()
+      }
+      .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("SwitchToProgressTabWithHabit"))) { notification in
+        // Switch to Progress tab
+        state.selectedTab = .progress
+        
+        // Forward the notification to ProgressTabView to select the habit
+        if let habitId = notification.userInfo?["habitId"] as? UUID {
+          // Delay slightly to ensure the Progress tab is visible
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            NotificationCenter.default.post(
+              name: NSNotification.Name("SelectHabitInProgressTab"),
+              object: nil,
+              userInfo: ["habitId": habitId]
+            )
           }
         }
-      })
-    }
-    .sheet(isPresented: $state.showingPaywall) {
-      SubscriptionView()
-    }
-    .fullScreenCover(item: $state.habitToEditSession) { session in
-      HabitEditView(habit: session.habit, onSave: { updatedHabit in
-        Task {
-          await state.updateHabit(updatedHabit)
-          await MainActor.run {
-            state.habitToEditSession = nil
+      }
+      .onAppear {
+        debugLog("🚀 HomeView: onAppear called!")
+        debugLog("🚀 HomeView: This is a test log - if you see this, logging is working!")
+        
+        // ✅ Ensure auth listener is set up (safety check)
+        authManager.ensureAuthListenerSetup()
+        
+        loadHabitsOptimized()
+        
+        // ✅ FIX: Recalculate streak from CompletionRecords when app launches
+        state.requestStreakRecalculation(reason: "HomeView onAppear")
+
+        // ✅ FIX: Also refresh streak UI
+        state.updateStreak()
+
+        // Debug current state
+        state.debugCurrentState()
+      }
+      .onReceive(NotificationCenter.default
+        .publisher(for: UIApplication.willResignActiveNotification))
+      { _ in
+        state.backupHabits()
+      }
+      .onReceive(NotificationCenter.default
+        .publisher(for: UIApplication.didBecomeActiveNotification))
+      { _ in
+        state.requestStreakRecalculation(reason: "App became active", delay: 1.0)
+      }
+      .sheet(isPresented: $state.showingCreateHabit) {
+        CreateHabitFlowView(onSave: { habit in
+          #if DEBUG
+          debugLog("🎯 [2/8] HomeView.onSave: received habit from CreateHabitFlowView")
+          debugLog("  → Current habits count: \(state.habits.count)")
+          #endif
+
+          // ✅ FIX: Wait for habit creation to complete before dismissing sheet
+          Task { @MainActor in
+            await state.createHabit(habit)
+            #if DEBUG
+            debugLog("  → Habit creation completed, dismissing sheet")
+            #endif
+            state.showingCreateHabit = false
             
-            // ✅ Show success toast after edit sheet dismisses
+            // Show success toast after sheet dismisses
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-              state.showHabitUpdatedToast = true
+              state.createdHabitName = habit.name
+            }
+          }
+        })
+      }
+      .sheet(isPresented: $state.showingPaywall) {
+        SubscriptionView()
+      }
+      .fullScreenCover(item: $state.habitToEditSession) { session in
+        HabitEditView(habit: session.habit, onSave: { updatedHabit in
+          Task {
+            await state.updateHabit(updatedHabit)
+            await MainActor.run {
+              state.habitToEditSession = nil
+              
+              // ✅ Show success toast after edit sheet dismisses
+              DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                state.showHabitUpdatedToast = true
+              }
+            }
+          }
+        })
+      }
+      .alert("Delete Habit", isPresented: $state.showingDeleteConfirmation) {
+        Button("Cancel", role: .cancel) {
+          state.habitToDelete = nil
+        }
+        Button("Delete", role: .destructive) {
+          if let habit = state.habitToDelete {
+            Task {
+              await state.deleteHabit(habit)
             }
           }
         }
-      })
-    }
-    .alert("Delete Habit", isPresented: $state.showingDeleteConfirmation) {
-      Button("Cancel", role: .cancel) {
-        state.habitToDelete = nil
-      }
-      Button("Delete", role: .destructive) {
+      } message: {
         if let habit = state.habitToDelete {
-          Task {
-            await state.deleteHabit(habit)
-          }
+          Text("Are you sure you want to delete \"\(habit.name)\"? This action cannot be undone.")
+        } else {
+          Text("Are you sure you want to delete this habit? This action cannot be undone.")
         }
       }
-    } message: {
-      if let habit = state.habitToDelete {
-        Text("Are you sure you want to delete \"\(habit.name)\"? This action cannot be undone.")
-      } else {
-        Text("Are you sure you want to delete this habit? This action cannot be undone.")
+      .sheet(isPresented: $state.showingOverviewView) {
+        OverviewView()
+          .environmentObject(state)
       }
-    }
-
-    .sheet(isPresented: $state.showingOverviewView) {
-      OverviewView()
-        .environmentObject(state)
-    }
-    .sheet(isPresented: $state.showingNotificationView) {
-      RemindersHubView()
-        .environmentObject(state.habitRepository)
-    }
-    .sheet(isPresented: Binding(
-      get: { HabitRepository.shared.shouldShowMigrationView },
-      set: { HabitRepository.shared.shouldShowMigrationView = $0 }
-    )) {
-      GuestDataMigrationView()
-    }
-    .sheet(isPresented: $tutorialManager.shouldShowTutorial) {
-      TutorialBottomSheet(tutorialManager: tutorialManager)
-    }
-    .onChange(of: state.habits) { oldHabits, newHabits in
-      // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
-      // DO NOT call publishXP() here - it overwrites the database value with calculated value
-      // When habits change, DailyAwardService will award XP via awardXP() if needed
-      // XPManager observes DailyAwardService.xpState and updates automatically
-      Task { @MainActor in
-        // ✅ CRITICAL FIX: Only recalculate streak when habits change
-        // But add a small delay to ensure SwiftData has finished saving CompletionRecords
-        // Wait 100ms to allow SwiftData saves to complete
-        try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+      .sheet(isPresented: $state.showingNotificationView) {
+        RemindersHubView()
+          .environmentObject(state.habitRepository)
+      }
+      .sheet(isPresented: Binding(
+        get: { HabitRepository.shared.shouldShowMigrationView },
+        set: { HabitRepository.shared.shouldShowMigrationView = $0 }
+      )) {
+        GuestDataMigrationView()
+      }
+      .sheet(isPresented: $tutorialManager.shouldShowTutorial) {
+        TutorialBottomSheet(tutorialManager: tutorialManager)
+      }
+      .onChange(of: state.habits) { oldHabits, newHabits in
+        // ✅ CRITICAL FIX: XP should ONLY come from DailyAwardService (source of truth)
+        // DO NOT call publishXP() here - it overwrites the database value with calculated value
+        // When habits change, DailyAwardService will award XP via awardXP() if needed
+        // XPManager observes DailyAwardService.xpState and updates automatically
+        Task { @MainActor in
+          // ✅ CRITICAL FIX: Only recalculate streak when habits change
+          // But add a small delay to ensure SwiftData has finished saving CompletionRecords
+          // Wait 100ms to allow SwiftData saves to complete
+          try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+          
+          state.requestStreakRecalculation(reason: "Habits publisher change")
+        }
+      }
+      
+      // GLOBAL TOAST OVERLAYS - visible on ALL tabs
+      VStack {
+        Spacer()
         
-        state.requestStreakRecalculation(reason: "Habits publisher change")
+        // Undo toast (habit deleted)
+        if let deletedHabit = state.deletedHabitForUndo {
+          UndoToastView(
+            habitName: deletedHabit.name,
+            onUndo: {
+              Task {
+                await state.restoreHabit(deletedHabit)
+              }
+            },
+            onDismiss: {
+              withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                state.deletedHabitForUndo = nil
+              }
+            }
+          )
+          .padding(.horizontal, 16)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        
+        // Success toast (habit created)
+        if let habitName = state.createdHabitName {
+          SuccessToastView(message: "\"\(habitName)\" created successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              state.createdHabitName = nil
+            }
+          }
+          .padding(.horizontal, 16)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        
+        // Success toast (habit updated)
+        if state.showHabitUpdatedToast {
+          SuccessToastView(message: "Changes saved successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              state.showHabitUpdatedToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        
+        // Success toast (vacation enabled)
+        if state.showVacationEnabledToast {
+          SuccessToastView(message: "Vacation mode enabled successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              state.showVacationEnabledToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+        
+        // Success toast (vacation disabled)
+        if state.showVacationDisabledToast {
+          SuccessToastView(message: "Vacation mode disabled successfully") {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              state.showVacationDisabledToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
       }
+      .padding(.bottom, 70) // Position above tab bar (49pt tab bar + 21pt margin)
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.deletedHabitForUndo?.id)
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.createdHabitName)
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showHabitUpdatedToast)
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationEnabledToast)
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: state.showVacationDisabledToast)
     }
   }
 
