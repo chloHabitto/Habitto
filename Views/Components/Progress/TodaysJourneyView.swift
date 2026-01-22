@@ -125,7 +125,7 @@ struct TodaysJourneyView: View {
         .background(Color.appPrimaryContainer)
         .clipShape(Capsule())
     }
-    .padding(.horizontal, 20)
+    .padding(.horizontal, 16)
     .padding(.top, 20)
     .padding(.bottom, 16)
   }
@@ -275,7 +275,7 @@ struct TodaysJourneyView: View {
         )
       }
     }
-    .padding(.horizontal, 20)
+    .padding(.horizontal, 12)
     .padding(.bottom, 20)
   }
 

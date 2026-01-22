@@ -405,7 +405,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
           sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
         let guestHabits = try container.modelContext.fetch(guestDescriptor)
         if !guestHabits.isEmpty {
-          logger.info("🔍 Found \(guestHabits.count) guest habits - migrating to userId '\(userId)'")
           // Update these habits to have the correct userId
           for habitData in guestHabits {
             habitData.userId = userId
@@ -437,7 +436,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
         // ✅ CRITICAL FIX: If Firebase isn't configured, show ALL habits (including those with userId = "")
         // This ensures guest mode works even when Firebase isn't configured
         if !AppEnvironment.isFirebaseConfigured {
-          logger.info("🔍 Firebase not configured - showing all habits (guest mode)")
           habitDataArray = allHabits.filter { $0.userId.isEmpty }
           if !habitDataArray.isEmpty {
             logger.info("✅ Found \(habitDataArray.count) guest habits (Firebase not configured)")
@@ -708,54 +706,37 @@ final class SwiftDataStorage: HabitStorageProtocol {
   }
 
   func deleteHabit(id: UUID) async throws {
-    print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - START for habit ID: \(id)")
     logger.info("Soft-deleting habit with ID: \(id)")
 
     do {
       // ✅ SOFT DELETE: Fetch ALL habits (including soft-deleted) to find by ID
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Fetching all habits to find by ID")
-      
       let descriptor = FetchDescriptor<HabitData>()
       let allHabits = try container.modelContext.fetch(descriptor)
       
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Found \(allHabits.count) total habits in database")
-      
       // Find the habit by ID using Swift filtering (not predicate)
       guard let habitData = allHabits.first(where: { $0.id == id }) else {
-        print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - WARNING: Habit not found for deletion: \(id)")
-        print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Available habit IDs: \(allHabits.map { $0.id })")
         logger.warning("Habit not found for deletion: \(id)")
         return
       }
 
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Found habit: '\(habitData.name)' (ID: \(habitData.id), userId: \(habitData.userId))")
-      
       // ✅ RACE CONDITION FIX: Check if habit was restored while delete was pending
       let deletedIds = UserDefaults.standard.stringArray(forKey: "DeletedHabitIDs") ?? []
       if !deletedIds.contains(id.uuidString) {
-        print("⏭️ [SOFT_DELETE] Skipping - habit was restored while delete was pending")
         logger.info("Skipping soft-delete - habit \(id) was restored while delete was pending")
         return
       }
       
       // ✅ SOFT DELETE: Mark as deleted instead of hard deleting
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Performing SOFT DELETE (marking as deleted)")
       habitData.softDelete(source: "user", context: container.modelContext)
       
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Calling modelContext.save()")
       try container.modelContext.save()
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - modelContext.save() completed")
 
       // ✅ CRITICAL FIX: Force WAL checkpoint to ensure soft-delete is persisted to disk
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - Forcing WAL checkpoint...")
       forceWALCheckpoint()
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - WAL checkpoint completed")
 
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - END - Successfully soft-deleted")
       logger.info("Successfully soft-deleted habit with ID: \(id)")
 
     } catch {
-      print("🗑️ [SOFT_DELETE] SwiftDataStorage.deleteHabit() - ERROR: \(error.localizedDescription)")
       logger.error("Failed to soft-delete habit: \(error.localizedDescription)")
       throw DataError.storage(StorageError(
         type: .unknown,
@@ -979,23 +960,14 @@ final class SwiftDataStorage: HabitStorageProtocol {
       let allHabits = try container.modelContext.fetch(allHabitsDescriptor)
       
       if allHabits.isEmpty {
-        print("🔍 [DIAGNOSTIC] No habits found in database at all")
         return
       }
       
       // Group by userId
       let habitsByUserId = Dictionary(grouping: allHabits) { $0.userId }
       
-      print("🔍 [DIAGNOSTIC] Found habits with different userIds:")
-      for (userId, habits) in habitsByUserId {
-        let userIdDisplay = userId.isEmpty ? "(empty/guest)" : userId.prefix(8) + "..."
-        print("   User ID: \(userIdDisplay) - \(habits.count) habits")
-        print("      Names: \(habits.map { $0.name }.joined(separator: ", "))")
-      }
-      
       // Check current authenticated user
       let currentUserId = await getCurrentUserId()
-      print("🔍 [DIAGNOSTIC] Current authenticated user ID: \(currentUserId ?? "nil (guest)")")
       
       if let currentUserId = currentUserId {
         let matchingHabits = habitsByUserId[currentUserId] ?? []

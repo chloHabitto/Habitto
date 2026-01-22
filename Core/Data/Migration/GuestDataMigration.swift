@@ -23,8 +23,6 @@ final class GuestDataMigration: ObservableObject {
   /// ✅ FIX: Only checks SwiftData for habits with userId = "" (real guest data)
   /// Does NOT check UserDefaults 'SavedHabits' - that's stale backup data, not guest data
   func hasGuestData() -> Bool {
-    print("🔍 GuestDataMigration.hasGuestData() - Starting check...")
-
     // ✅ CRITICAL FIX: ONLY check SwiftData for guest habits (current storage)
     // Guest data = habits with userId == "" (empty string)
     // Do NOT check UserDefaults 'SavedHabits' - that's a backup mechanism, not guest data detection
@@ -41,27 +39,22 @@ final class GuestDataMigration: ObservableObject {
       let guestHabits = try context.fetch(descriptor)
       
       if !guestHabits.isEmpty {
-        print("🔍 GuestDataMigration: Found \(guestHabits.count) guest habits in SwiftData (userId = '')")
         return true
       }
     } catch {
       print("❌ GuestDataMigration: Error checking SwiftData: \(error.localizedDescription)")
     }
 
-    print("🔍 GuestDataMigration: No guest data found (no habits with userId = '')")
     return false
   }
 
   /// Check if guest data has already been migrated for the current user
   func hasMigratedGuestData() -> Bool {
     guard let currentUser = authManager.currentUser else {
-      print("🔍 GuestDataMigration.hasMigratedGuestData() - No authenticated user")
       return false
     }
     let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
     let hasMigrated = userDefaults.bool(forKey: migrationKey)
-    print(
-      "🔍 GuestDataMigration.hasMigratedGuestData() - User: \(currentUser.uid), Key: \(migrationKey), Migrated: \(hasMigrated)")
     return hasMigrated
   }
 

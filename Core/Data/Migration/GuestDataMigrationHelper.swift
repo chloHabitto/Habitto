@@ -21,13 +21,10 @@ final class GuestDataMigrationHelper {
   static func forceMigration(userId: String) async {
     let newMigrationKey = "guest_to_anonymous_complete_migrated_\(userId)"
     
-    print("🔄 [GUEST_MIGRATION] FORCING migration (manual trigger)")
-    print("   User ID: \(userId.prefix(8))...")
     logger.info("🔄 GuestMigration: FORCING migration (manual trigger) for user \(userId.prefix(8))...")
     
     // Clear the migration flag to allow re-migration
     UserDefaults.standard.removeObject(forKey: newMigrationKey)
-    print("   ✅ Cleared migration flag: \(newMigrationKey)")
     logger.info("   ✅ Cleared migration flag")
     
     // Run the migration
@@ -36,8 +33,6 @@ final class GuestDataMigrationHelper {
   
   /// Run the complete migration (habits + completions + awards + progress)
   static func runCompleteMigration(userId: String) async {
-    print("🔄 [GUEST_MIGRATION] Starting COMPLETE migration to anonymous user")
-    print("   Target User ID: \(userId)")
     logger.info("🔄 GuestMigration: Starting COMPLETE migration to anonymous user \(userId.prefix(8))...")
     
     do {
@@ -67,15 +62,7 @@ final class GuestDataMigrationHelper {
       let guestHabits = allHabits.filter { !existingUserHabitIds.contains($0.id) && $0.userId != userId }
       
       if !guestHabits.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(guestHabits.count) habits to migrate")
         logger.info("🔄 GuestMigration: Migrating \(guestHabits.count) habits...")
-        
-        // Group by old userId for logging
-        let byOldUserId = Dictionary(grouping: guestHabits) { $0.userId }
-        for (oldUserId, habits) in byOldUserId {
-          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
-          print("   Migrating \(habits.count) habits from userId '\(oldUserIdDisplay)'")
-        }
         
         for habitData in guestHabits {
           habitData.userId = userId
@@ -88,10 +75,7 @@ final class GuestDataMigrationHelper {
         }
         
         try modelContext.save()
-        print("✅ [GUEST_MIGRATION] Migrated \(guestHabits.count) habits successfully")
         logger.info("✅ GuestMigration: Migrated \(guestHabits.count) habits")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No habits found to migrate (all habits already belong to current user)")
       }
       
       // Get all user habits (including newly migrated ones) for later steps
@@ -105,8 +89,6 @@ final class GuestDataMigrationHelper {
       let userHabits = allUserHabits.isEmpty ? try modelContext.fetch(userHabitsDescriptor) : allUserHabits
       let userHabitIds = Set(userHabits.map { $0.id })
       
-      print("🔍 [GUEST_MIGRATION] Found \(userHabits.count) habits for current user")
-      print("   Habit IDs: \(userHabitIds.map { $0.uuidString.prefix(8) }.joined(separator: ", "))...")
       
       // Find all CompletionRecords that match user's habits but have different userId
       let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
@@ -118,7 +100,6 @@ final class GuestDataMigrationHelper {
       }
       
       if !orphanedRecords.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(orphanedRecords.count) orphaned completion records to migrate")
         print("   Records have userId != '\(userId.prefix(8))...' but match user's habits")
         logger.info("🔄 GuestMigration: Migrating \(orphanedRecords.count) orphaned completion records...")
         
@@ -148,12 +129,7 @@ final class GuestDataMigrationHelper {
         )
         let verifiedRecords = try modelContext.fetch(verifyDescriptor)
         
-        print("✅ [GUEST_MIGRATION] Migrated \(completionRecordsMigrated) completion records successfully")
-        print("   ✅ Verification: \(verifiedRecords.count) records now have userId '\(userId.prefix(8))...'")
-        print("   ✅ Old userIds migrated from: \(oldUserIdsBeforeMigration.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." }.joined(separator: ", "))")
         logger.info("✅ GuestMigration: Migrated \(completionRecordsMigrated) completion records (verified: \(verifiedRecords.count))")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No orphaned completion records found to migrate")
       }
       
       // 3. Migrate DailyAwards
@@ -165,7 +141,6 @@ final class GuestDataMigrationHelper {
       let orphanedAwards = allAwards.filter { $0.userId != userId }
       
       if !orphanedAwards.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(orphanedAwards.count) orphaned daily awards to migrate")
         print("   Awards have userId != '\(userId.prefix(8))...'")
         logger.info("🔄 GuestMigration: Migrating \(orphanedAwards.count) orphaned daily awards...")
         
@@ -198,14 +173,7 @@ final class GuestDataMigrationHelper {
         let verifiedAwards = try modelContext.fetch(verifyAwardsDescriptor)
         let verifiedXP = verifiedAwards.reduce(0) { $0 + $1.xpGranted }
         
-        print("✅ [GUEST_MIGRATION] Migrated \(dailyAwardsMigrated) daily awards successfully")
-        print("   ✅ Total XP migrated: \(totalMigratedXP)")
-        print("   ✅ Verification: \(verifiedAwards.count) awards now have userId '\(userId.prefix(8))...'")
-        print("   ✅ Verified total XP: \(verifiedXP)")
-        print("   ✅ Old userIds migrated from: \(oldUserIdsBeforeMigration.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." }.joined(separator: ", "))")
         logger.info("✅ GuestMigration: Migrated \(dailyAwardsMigrated) daily awards with \(totalMigratedXP) total XP (verified: \(verifiedAwards.count) awards, \(verifiedXP) XP)")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No orphaned daily awards found to migrate")
       }
       
       // 4. Migrate UserProgressData
@@ -218,7 +186,6 @@ final class GuestDataMigrationHelper {
       
       // If there are multiple orphaned progress records, merge them into one
       if !orphanedProgress.isEmpty {
-        print("🔄 [GUEST_MIGRATION] Found \(orphanedProgress.count) orphaned user progress records to migrate")
         logger.info("🔄 GuestMigration: Migrating \(orphanedProgress.count) orphaned user progress records...")
         
         // Find or create progress for current user
@@ -279,18 +246,13 @@ final class GuestDataMigrationHelper {
           print("   ✅ Migrated XP: \(maxXP), Level: \(maxLevel), Streak: \(maxStreak)")
           if let verified = verifiedProgress {
             print("   ✅ Verification: UserProgressData now has userId '\(userId.prefix(8))...'")
-            print("   ✅ Verified XP: \(verified.xpTotal), Level: \(verified.level)")
+            logger.info("✅ GuestMigration: Migrated user progress (XP: \(maxXP), Level: \(maxLevel)) - verified: \(verifiedProgress != nil)")
           }
-          print("   ✅ Old userIds migrated from: \(oldUserIdsBeforeMigration.map { $0.isEmpty ? "EMPTY" : $0.prefix(8) + "..." }.joined(separator: ", "))")
-          logger.info("✅ GuestMigration: Migrated user progress (XP: \(maxXP), Level: \(maxLevel)) - verified: \(verifiedProgress != nil)")
         }
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No orphaned user progress found to migrate")
       }
       
       // 5. Re-establish completionHistory relationships
       // ✅ CRITICAL FIX: After migrating CompletionRecords, re-link them to HabitData
-      print("🔄 [GUEST_MIGRATION] Re-establishing completionHistory relationships...")
       logger.info("🔄 GuestMigration: Re-establishing completionHistory relationships...")
       
       var relationshipsFixed = 0
@@ -320,33 +282,17 @@ final class GuestDataMigrationHelper {
         try modelContext.save()
         print("✅ [GUEST_MIGRATION] Re-established relationships for \(relationshipsFixed) habits")
         logger.info("✅ GuestMigration: Re-established relationships for \(relationshipsFixed) habits")
-      } else {
-        print("ℹ️ [GUEST_MIGRATION] No relationships needed to be re-established")
       }
       
       // Summary log
-      print("📊 [GUEST_MIGRATION] Migration Summary:")
-      print("   ✅ Habits: \(guestHabits.count)")
-      print("   ✅ Completion Records: \(completionRecordsMigrated)")
-      print("   ✅ Daily Awards: \(dailyAwardsMigrated)")
-      print("   ✅ Total XP from Awards: \(totalMigratedXP)")
-      print("   ✅ Relationships Fixed: \(relationshipsFixed)")
-      if let progress = try modelContext.fetch(FetchDescriptor<UserProgressData>(
-        predicate: #Predicate<UserProgressData> { $0.userId == userId }
-      )).first {
-        print("   ✅ User Progress XP: \(progress.xpTotal)")
-      }
       logger.info("📊 GuestMigration: Summary - \(guestHabits.count) habits, \(completionRecordsMigrated) completions, \(dailyAwardsMigrated) awards, \(totalMigratedXP) XP")
       
       // Mark migration as complete
       let newMigrationKey = "guest_to_anonymous_complete_migrated_\(userId)"
       UserDefaults.standard.set(true, forKey: newMigrationKey)
-      print("✅ [GUEST_MIGRATION] COMPLETE migration finished for user \(userId.prefix(8))...")
-      print("   Migration flag set: \(newMigrationKey)")
       logger.info("✅ GuestMigration: COMPLETE migration finished for user \(userId.prefix(8))...")
       
     } catch {
-      print("❌ [GUEST_MIGRATION] FAILED: \(error.localizedDescription)")
       logger.error("❌ GuestMigration: Failed to migrate guest data: \(error.localizedDescription)")
     }
   }

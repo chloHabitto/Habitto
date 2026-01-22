@@ -33,7 +33,6 @@ struct HabitDetailView: View {
           habit = freshHabit
           isHabitSkipped = freshHabit.isSkipped(for: selectedDate)
           currentSkipReason = freshHabit.getSkipReason(for: selectedDate) // NEW
-          print("⏭️ [HABIT_DETAIL] Refreshed habit '\(habit.name)' - skipped: \(isHabitSkipped)")
         } else {
           isHabitSkipped = habit.isSkipped(for: selectedDate)
           currentSkipReason = habit.getSkipReason(for: selectedDate) // NEW
@@ -1327,32 +1326,20 @@ struct HabitDetailView: View {
   
   private func skipHabit(reason: SkipReason) {
     let dateKey = Habit.dateKey(for: selectedDate)
-    print("⏭️ SKIP: ========== STARTING SKIP ==========")
-    print("⏭️ SKIP: Habit: '\(habit.name)' (ID: \(habit.id.uuidString.prefix(8))...)")
-    print("⏭️ SKIP: Date: \(dateKey)")
-    print("⏭️ SKIP: Reason: \(reason.rawValue)")
-    print("⏭️ SKIP: Before skip - habit.skippedDays count: \(habit.skippedDays.count)")
     
     // Modify the habit to add skip
     habit.skip(for: selectedDate, reason: reason)
-    
-    print("⏭️ SKIP: After skip - habit.skippedDays count: \(habit.skippedDays.count)")
-    print("⏭️ SKIP: Skip data: \(habit.skippedDays)")
     
     // Update local state
     isHabitSkipped = true
     currentSkipReason = reason // NEW - update current reason
     
     // CRITICAL: Persist the change to SwiftData
-    print("⏭️ SKIP: Calling onUpdateHabit to persist changes...")
     onUpdateHabit?(habit)
-    print("⏭️ SKIP: onUpdateHabit called")
     
     // Haptic feedback
     let generator = UINotificationFeedbackGenerator()
     generator.notificationOccurred(.success)
-    
-    print("⏭️ SKIP: ========== SKIP COMPLETE ==========")
   }
   
   private func unskipHabit() {
@@ -1363,7 +1350,6 @@ struct HabitDetailView: View {
     let generator = UIImpactFeedbackGenerator(style: .medium)
     generator.impactOccurred()
     
-    print("⏭️ UNSKIP: Habit '\(habit.name)' unskipped for \(Habit.dateKey(for: selectedDate))")
   }
 
   /// Get a sensible default time for new reminders (e.g., 9:00 AM or next hour)

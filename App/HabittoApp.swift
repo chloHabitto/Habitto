@@ -28,7 +28,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     super.init()
     guard !Self.hasLoggedInit else { return }
     Self.hasLoggedInit = true
-    debugLog("🚀 AppDelegate: INIT CALLED")
   }
   
   func application(
@@ -37,19 +36,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     -> Bool
   {
     if Self.hasCompletedLaunch {
-      debugLog("⏭️ AppDelegate: Duplicate didFinishLaunchingWithOptions call detected, skipping redundant initialization")
       return true
     }
     Self.hasCompletedLaunch = true
     
     FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.didFinishLaunching")
     
-    // Force flush to ensure log appears immediately
-    debugLog("🚀 AppDelegate: didFinishLaunchingWithOptions called")
-    fflush(stdout)
-    
     FirebaseBootstrapper.configureIfNeeded(source: "AppDelegate.didFinishLaunching")
-    debugLog("✅ AppDelegate: Firebase configured (or already configured)")
     
     // CRITICAL: Initialize Remote Config defaults SYNCHRONOUSLY before anything else
     let remoteConfig = RemoteConfig.remoteConfig()
@@ -71,14 +64,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     
     // Use Task instead of Task.detached to ensure it runs on MainActor immediately
     Task { @MainActor in
-      debugLog("🚀 AppDelegate: Task block started executing...")
-      fflush(stdout)
-      
       // ✅ CRITICAL: Ensure user is authenticated (anonymous if not signed in)
       // This must happen before any data operations
       // Firebase Auth is already configured by FirebaseBootstrapper.configureIfNeeded()
       do {
-        debugLog("🔐 AppDelegate: Ensuring user authentication...")
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
         debugLog("✅ AppDelegate: User authenticated - uid: \(uid)")
         
@@ -133,8 +122,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
       
       // Ensure user is authenticated (anonymous if not signed in)
       do {
-        debugLog("🔍 SyncEngine: Starting authentication check...")
-        NSLog("🔍 SyncEngine: Starting authentication check...")
         let uid = try await FirebaseConfiguration.ensureAuthenticated()
         debugLog("✅ SyncEngine: User authenticated - uid: \(uid)")
         NSLog("✅ SyncEngine: User authenticated - uid: %@", uid)
@@ -149,36 +136,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         
         // Initialize backfill job if Firestore sync is enabled
         if FeatureFlags.enableFirestoreSync {
-          debugLog("🔄 SyncEngine: Running backfill job...")
-          NSLog("🔄 SyncEngine: Running backfill job...")
           await BackfillJob.shared.runIfEnabled()
-          debugLog("✅ SyncEngine: Backfill job completed")
-          NSLog("✅ SyncEngine: Backfill job completed")
         }
         
         // ✅ CRITICAL: Start periodic sync for authenticated users (not guests)
         // This ensures data syncs on app launch, not just when app becomes active
-        debugLog("🔍 SyncEngine: Checking if user is guest - uid: \(uid), isGuest: \(CurrentUser.isGuestId(uid))")
-        NSLog("🔍 SyncEngine: Checking if user is guest - uid: %@, isGuest: %@", uid, CurrentUser.isGuestId(uid) ? "YES" : "NO")
         if !CurrentUser.isGuestId(uid) {
-          debugLog("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
-          NSLog("✅ SyncEngine: User is authenticated, accessing SyncEngine.shared...")
           // Access SyncEngine.shared explicitly to ensure initialization
-          debugLog("🔍 SyncEngine: About to access SyncEngine.shared...")
-          NSLog("🔍 SyncEngine: About to access SyncEngine.shared...")
-          fflush(stdout)
           let syncEngine = SyncEngine.shared
-          debugLog("✅ SyncEngine: SyncEngine.shared accessed (initialization should have logged above)")
-          NSLog("✅ SyncEngine: SyncEngine.shared accessed (initialization should have logged above)")
-          fflush(stdout)
-          debugLog("✅ SyncEngine: Calling startPeriodicSync(userId: \(uid))...")
-          NSLog("✅ SyncEngine: Calling startPeriodicSync(userId: %@)...", uid)
-          fflush(stdout)
           // Pass userId directly to avoid race condition with CurrentUser().idOrGuest
           await syncEngine.startPeriodicSync(userId: uid)
-          debugLog("✅ SyncEngine: startPeriodicSync() call completed")
-          NSLog("✅ SyncEngine: startPeriodicSync() call completed")
-          fflush(stdout)
           
           // ✅ PRIORITY 1: Schedule event compaction after authentication
           debugLog("📅 EventCompactor: Initializing for authenticated user: \(uid)")
@@ -252,9 +219,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     clearAppIconBadge()
     
     // Register event compaction background task
-    debugLog("📅 EventCompactor: Registering background task handler...")
     EventCompactor.registerBackgroundTaskHandler()
-    debugLog("✅ EventCompactor: Background task handler registered")
 
     return true
   }
@@ -266,7 +231,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     } else {
       UIApplication.shared.applicationIconBadgeNumber = 0
     }
-    debugLog("✅ AppDelegate: Cleared app icon badge")
   }
   
   /// Called when app becomes active - clear badge
@@ -454,14 +418,10 @@ struct HabittoApp: App {
           }
           .onAppear {
             // App startup logging
-            print("🚀 App Launched")
-            print("   isPremium: \(SubscriptionManager.shared.isPremium)")
             
             // Give transaction listener time to check
             Task { @MainActor in
               try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-              print("🚀 App Launched +2s")
-              print("   isPremium: \(SubscriptionManager.shared.isPremium)")
             }
             
             // ✅ DIAGNOSTIC - Run this FIRST before anything else
@@ -477,17 +437,14 @@ struct HabittoApp: App {
                 // ✅ VERIFY - Check that the fix worked
                 await diagnoseDataIssue()
               } else {
-                print("ℹ️ [REPAIR] Relationship repair already completed - skipping")
               }
               
               // ✅ RESTORE - Try to restore progress from Firestore if CompletionRecords have progress=0
               // Check if we need to restore by checking if any CompletionRecords have progress=0
               let needsRestore = await checkIfNeedsProgressRestore()
               if needsRestore {
-                print("🔧 [RESTORE] CompletionRecords with progress=0 detected - attempting restore from Firestore")
                 await restoreProgressFromFirestore()
               } else {
-                print("ℹ️ [RESTORE] All CompletionRecords have progress > 0 - no restore needed")
               }
               
               // ✅ FIX - Clean up duplicate CompletionRecords (one-time only)
@@ -496,7 +453,6 @@ struct HabittoApp: App {
                 await cleanupDuplicateCompletionRecords()
                 UserDefaults.standard.set(true, forKey: cleanupKey)
               } else {
-                print("ℹ️ [CLEANUP] Duplicate CompletionRecord cleanup already completed - skipping")
               }
             }
             
@@ -601,9 +557,6 @@ struct HabittoApp: App {
                   
                   // Only log if issues are found
                   if !result.invalidAwards.isEmpty {
-                    print("⚠️ [DAILY_AWARD_INTEGRITY] Found \(result.invalidAwards.count) invalid awards!")
-                    DailyAwardIntegrityService.shared.printInvestigationReport(result)
-                    
                     // ✅ FIX: Use time-based cleanup flag instead of one-time flag
                     // This allows cleanup to run again if invalid awards are detected after the last cleanup
                     let cleanupKey = "dailyAwardIntegrityCleanupLastRun_\(userId)"
@@ -625,13 +578,8 @@ struct HabittoApp: App {
                       
                       // Store timestamp of cleanup (time-based instead of one-time flag)
                       UserDefaults.standard.set(now.timeIntervalSince1970, forKey: cleanupKey)
-                      print("✅ [DAILY_AWARD_INTEGRITY] Cleanup completed (timestamp stored - can run again after 1 hour if needed)")
                     } else {
-                      let timeSinceLastCleanup = now.timeIntervalSince(lastCleanupDate!)
-                      let minutesSince = Int(timeSinceLastCleanup / 60)
-                      print("ℹ️ [DAILY_AWARD_INTEGRITY] Cleanup ran \(minutesSince) minute(s) ago - skipping to prevent excessive cleanup")
-                      print("   Invalid awards detected but cleanup will run again after 1 hour if still present")
-                      print("   Use DailyAwardIntegrityView to manually clean up immediately if needed")
+                      // Cleanup ran recently, will run again after 1 hour if still present
                     }
                   }
                   // Silent success - no logging if all awards are valid
@@ -683,12 +631,9 @@ struct HabittoApp: App {
   @MainActor
   private func diagnoseAndMigrateOldUserData() async {
     let logger = Logger(subsystem: "com.habitto.app", category: "UserDataMigration")
-    logger.info("🔍 User Data Migration: Starting diagnosis and migration...")
-    
     do {
       let modelContext = SwiftDataContainer.shared.modelContext
       let currentUserId = await CurrentUser().idOrGuest
-      logger.info("🔍 User Data Migration: Current userId: '\(currentUserId.isEmpty ? "guest" : currentUserId)'")
       
       // STEP 1: Diagnose all userIds in the database
       let allHabits = try modelContext.fetch(FetchDescriptor<HabitData>())
@@ -700,25 +645,6 @@ struct HabittoApp: App {
       let awardUserIds = Set(allDailyAwards.map { $0.userId })
       let allUserIds = habitUserIds.union(recordUserIds).union(awardUserIds)
       
-      print("📊 [USER_MIGRATION] All userIds in database: \(Array(allUserIds).map { $0.isEmpty ? "EMPTY_STRING" : String($0.prefix(8)) + "..." })")
-      
-      for userId in allUserIds {
-        let habitsForUser = allHabits.filter { $0.userId == userId }
-        let recordsForUser = allCompletionRecords.filter { $0.userId == userId }
-        let awardsForUser = allDailyAwards.filter { $0.userId == userId }
-        
-        let userIdDisplay = userId.isEmpty ? "EMPTY_STRING" : String(userId.prefix(8)) + "..."
-        print("   📊 User \(userIdDisplay):")
-        print("      - \(habitsForUser.count) habits")
-        print("      - \(recordsForUser.count) CompletionRecords")
-        print("      - \(awardsForUser.count) DailyAwards")
-        
-        // Check if this user has any progress data
-        let recordsWithProgress = recordsForUser.filter { $0.progress > 0 }
-        if recordsWithProgress.count > 0 {
-          print("      - ⚠️ \(recordsWithProgress.count) CompletionRecords with progress > 0")
-        }
-      }
       
       // STEP 2: Identify old userIds that need migration
       let oldUserIds = allUserIds.filter { $0 != currentUserId && !$0.isEmpty }
@@ -904,15 +830,12 @@ struct HabittoApp: App {
   private func performXPIntegrityCheck() async {
     let logger = Logger(subsystem: "com.habitto.app", category: "XPIntegrityCheck")
     
-    logger.info("🔍 XP Integrity Check: Starting automatic integrity check on app launch...")
-    
     // Prevent multiple simultaneous checks
     struct IntegrityCheckLock {
       static var isRunning = false
     }
     
     guard !IntegrityCheckLock.isRunning else {
-      logger.info("⏭️ XP Integrity Check: Already running, skipping duplicate check")
       return
     }
     
@@ -924,8 +847,6 @@ struct HabittoApp: App {
       let awardService = DailyAwardService.shared
       let xpStateBefore = awardService.xpState
       let totalXPBefore = xpStateBefore?.totalXP ?? 0
-      
-      logger.info("🔍 XP Integrity Check: Current XP state - Total: \(totalXPBefore), Level: \(xpStateBefore?.level ?? 1)")
       
       // Perform integrity check and auto-repair
       let wasValid = try await awardService.checkAndRepairIntegrity()
@@ -1028,11 +949,8 @@ struct HabittoApp: App {
   /// Runs in background to avoid blocking app startup.
   @MainActor
   private func performDataIntegrityValidation() async {
-    print("🔍🔍🔍 DATA INTEGRITY VALIDATION STARTING 🔍🔍🔍")
     
     let logger = Logger(subsystem: "com.habitto.app", category: "DataIntegrityValidation")
-    
-    logger.info("🔍 Data Integrity Validation: Starting automatic validation on app launch...")
     
     // Prevent multiple simultaneous validations
     struct ValidationLock {
@@ -1040,7 +958,6 @@ struct HabittoApp: App {
     }
     
     guard !ValidationLock.isRunning else {
-      logger.info("⏭️ Data Integrity Validation: Already running, skipping duplicate validation")
       return
     }
     
@@ -1085,8 +1002,6 @@ struct HabittoApp: App {
     
     // Check if user is authenticated (anonymous or otherwise)
     guard let currentUser = authManager.currentUser else {
-      logger.debug("⏭️ GuestMigration: No authenticated user, skipping migration")
-      print("⏭️ [GUEST_MIGRATION] No authenticated user, skipping migration")
       return
     }
     
@@ -1098,9 +1013,6 @@ struct HabittoApp: App {
     let oldMigrationKey = "guest_to_anonymous_migrated_\(newUserId)"
     let newMigrationKey = "guest_to_anonymous_complete_migrated_\(newUserId)"
     
-    // ✅ DIAGNOSTIC: Log migration status BEFORE checking flags
-    print("🔍 [GUEST_MIGRATION] Checking migration status for user: \(newUserId.prefix(8))...")
-    logger.info("🔍 GuestMigration: Checking migration status for user \(newUserId.prefix(8))...")
     
     let oldFlagSet = UserDefaults.standard.bool(forKey: oldMigrationKey)
     let newFlagSet = UserDefaults.standard.bool(forKey: newMigrationKey)
@@ -1116,8 +1028,6 @@ struct HabittoApp: App {
       do {
         let modelContext = SwiftDataContainer.shared.modelContext
         
-        print("🔍 [ORPHANED_DATA_CHECK] Checking for orphaned data (migration flag already set)...")
-        logger.info("🔍 GuestMigration: Checking for orphaned data (migration flag already set)")
         
         // Get user's habits
         let userHabitsDescriptor = FetchDescriptor<HabitData>(
@@ -1128,9 +1038,6 @@ struct HabittoApp: App {
         let userHabits = try modelContext.fetch(userHabitsDescriptor)
         let userHabitIds = Set(userHabits.map { $0.id })
         
-        print("🔍 [ORPHANED_DATA_CHECK] Found \(userHabits.count) habits for current user")
-        print("   User ID: \(newUserId.prefix(8))...")
-        logger.info("🔍 GuestMigration: Found \(userHabits.count) habits for user \(newUserId.prefix(8))...")
         
         // Check for orphaned CompletionRecords
         let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
@@ -1141,11 +1048,6 @@ struct HabittoApp: App {
         
         // Group orphaned completions by old userId for logging
         let completionsByOldUserId = Dictionary(grouping: orphanedCompletions) { $0.userId }
-        print("📊 [ORPHANED_DATA_CHECK] Orphaned CompletionRecords: \(orphanedCompletions.count)")
-        for (oldUserId, records) in completionsByOldUserId.sorted(by: { $0.key < $1.key }) {
-          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
-          print("   → \(records.count) records with userId '\(oldUserIdDisplay)'")
-        }
         logger.info("📊 GuestMigration: Found \(orphanedCompletions.count) orphaned CompletionRecords")
         
         // Check for orphaned DailyAwards
@@ -1156,15 +1058,6 @@ struct HabittoApp: App {
         // Calculate total XP from orphaned awards
         let totalOrphanedXP = orphanedAwards.reduce(0) { $0 + $1.xpGranted }
         
-        // Group orphaned awards by old userId for logging
-        let awardsByOldUserId = Dictionary(grouping: orphanedAwards) { $0.userId }
-        print("📊 [ORPHANED_DATA_CHECK] Orphaned DailyAwards: \(orphanedAwards.count)")
-        print("   Total XP from orphaned awards: \(totalOrphanedXP)")
-        for (oldUserId, awards) in awardsByOldUserId.sorted(by: { $0.key < $1.key }) {
-          let oldUserIdDisplay = oldUserId.isEmpty ? "EMPTY STRING" : "\(oldUserId.prefix(8))..."
-          let xp = awards.reduce(0) { $0 + $1.xpGranted }
-          print("   → \(awards.count) awards with userId '\(oldUserIdDisplay)' (XP: \(xp))")
-        }
         logger.info("📊 GuestMigration: Found \(orphanedAwards.count) orphaned DailyAwards with \(totalOrphanedXP) total XP")
         
         // Check for orphaned UserProgressData
@@ -1172,36 +1065,22 @@ struct HabittoApp: App {
         let allProgress = try modelContext.fetch(allProgressDescriptor)
         let orphanedProgress = allProgress.filter { $0.userId != newUserId }
         
-        print("📊 [ORPHANED_DATA_CHECK] Orphaned UserProgressData: \(orphanedProgress.count)")
-        for progress in orphanedProgress {
-          let oldUserIdDisplay = progress.userId.isEmpty ? "EMPTY STRING" : "\(progress.userId.prefix(8))..."
-          print("   → Progress with userId '\(oldUserIdDisplay)' (XP: \(progress.xpTotal), Level: \(progress.level))")
-        }
         logger.info("📊 GuestMigration: Found \(orphanedProgress.count) orphaned UserProgressData records")
         
         // If orphaned data exists, run repair migration
         if !orphanedCompletions.isEmpty || !orphanedAwards.isEmpty || !orphanedProgress.isEmpty {
-          print("⚠️ [ORPHANED_DATA_CHECK] Orphaned data detected! Summary:")
-          print("   ✅ Orphaned CompletionRecords: \(orphanedCompletions.count)")
-          print("   ✅ Orphaned DailyAwards: \(orphanedAwards.count) (Total XP: \(totalOrphanedXP))")
-          print("   ✅ Orphaned UserProgressData: \(orphanedProgress.count)")
-          print("   🔄 Running repair migration...")
           logger.warning("⚠️ GuestMigration: Orphaned data detected - \(orphanedCompletions.count) completions, \(orphanedAwards.count) awards (\(totalOrphanedXP) XP), \(orphanedProgress.count) progress")
           
           // Run repair migration (it will only migrate orphaned data, not re-migrate everything)
           await GuestDataMigrationHelper.runCompleteMigration(userId: newUserId)
           return
         } else {
-          print("✅ [ORPHANED_DATA_CHECK] No orphaned data found - migration complete")
           logger.debug("⏭️ GuestMigration: Complete migration already done for user \(newUserId.prefix(8))...")
-          print("⏭️ [GUEST_MIGRATION] Complete migration already done, skipping")
           return
         }
       } catch {
         // If check fails, log and skip (don't block app startup)
         logger.warning("⚠️ GuestMigration: Error checking for orphaned data: \(error.localizedDescription)")
-        print("⚠️ [ORPHANED_DATA_CHECK] Error checking for orphaned data: \(error.localizedDescription)")
-        print("⚠️ [GUEST_MIGRATION] Error checking for orphaned data, skipping migration check")
         return
       }
     }
@@ -1210,72 +1089,21 @@ struct HabittoApp: App {
     do {
       let modelContext = SwiftDataContainer.shared.modelContext
       
-      print("🔍 [DIAGNOSTIC] Starting comprehensive data audit...")
-      logger.info("🔍 GuestMigration: Starting comprehensive data audit...")
-      
       // Query ALL CompletionRecords regardless of userId
       let allCompletionsDescriptor = FetchDescriptor<CompletionRecord>()
       let allCompletions = try modelContext.fetch(allCompletionsDescriptor)
-      print("🔍 [DIAGNOSTIC] Total CompletionRecords in database: \(allCompletions.count)")
-      logger.info("🔍 GuestMigration: Total CompletionRecords: \(allCompletions.count)")
-      
-      // Group by userId
-      let completionsByUserId = Dictionary(grouping: allCompletions) { $0.userId }
-      print("🔍 [DIAGNOSTIC] CompletionRecords grouped by userId:")
-      for (userId, records) in completionsByUserId.sorted(by: { $0.key < $1.key }) {
-        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
-        print("   UserId: '\(userIdDisplay)' - \(records.count) records")
-        logger.info("   CompletionRecords - UserId: '\(userIdDisplay)': \(records.count) records")
-      }
       
       // Query ALL DailyAwards regardless of userId
       let allAwardsDescriptor = FetchDescriptor<DailyAward>()
       let allAwards = try modelContext.fetch(allAwardsDescriptor)
-      print("🔍 [DIAGNOSTIC] Total DailyAwards in database: \(allAwards.count)")
-      logger.info("🔍 GuestMigration: Total DailyAwards: \(allAwards.count)")
-      
-      // Group by userId
-      let awardsByUserId = Dictionary(grouping: allAwards) { $0.userId }
-      print("🔍 [DIAGNOSTIC] DailyAwards grouped by userId:")
-      for (userId, awards) in awardsByUserId.sorted(by: { $0.key < $1.key }) {
-        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
-        var totalXP = 0
-        for award in awards {
-          totalXP += award.xpGranted
-        }
-        print("   UserId: '\(userIdDisplay)' - \(awards.count) awards (Total XP: \(totalXP))")
-        logger.info("   DailyAwards - UserId: '\(userIdDisplay)': \(awards.count) awards, \(totalXP) XP")
-      }
       
       // Query ALL UserProgressData regardless of userId
       let allProgressDescriptor = FetchDescriptor<UserProgressData>()
       let allProgress = try modelContext.fetch(allProgressDescriptor)
-      print("🔍 [DIAGNOSTIC] Total UserProgressData in database: \(allProgress.count)")
-      logger.info("🔍 GuestMigration: Total UserProgressData: \(allProgress.count)")
-      
-      for progress in allProgress {
-        let userIdDisplay = progress.userId.isEmpty ? "EMPTY STRING" : "\(progress.userId.prefix(8))..."
-        print("   UserId: '\(userIdDisplay)' - XP: \(progress.xpTotal), Level: \(progress.level), Streak: \(progress.streakDays)")
-        logger.info("   UserProgressData - UserId: '\(userIdDisplay)': XP=\(progress.xpTotal), Level=\(progress.level), Streak=\(progress.streakDays)")
-      }
       
       // Query ALL HabitData regardless of userId
       let allHabitsDescriptor = FetchDescriptor<HabitData>()
       let allHabits = try modelContext.fetch(allHabitsDescriptor)
-      print("🔍 [DIAGNOSTIC] Total HabitData in database: \(allHabits.count)")
-      logger.info("🔍 GuestMigration: Total HabitData: \(allHabits.count)")
-      
-      // Group by userId
-      let habitsByUserId = Dictionary(grouping: allHabits) { $0.userId }
-      print("🔍 [DIAGNOSTIC] HabitData grouped by userId:")
-      for (userId, habits) in habitsByUserId.sorted(by: { $0.key < $1.key }) {
-        let userIdDisplay = userId.isEmpty ? "EMPTY STRING" : "\(userId.prefix(8))..."
-        print("   UserId: '\(userIdDisplay)' - \(habits.count) habits")
-        logger.info("   HabitData - UserId: '\(userIdDisplay)': \(habits.count) habits")
-      }
-      
-      // Now try predicate-based queries
-      print("🔍 [DIAGNOSTIC] Testing predicate-based queries for userId = \"\"...")
       
       let guestHabitsDescriptor = FetchDescriptor<HabitData>(
         predicate: #Predicate<HabitData> { habit in
@@ -1305,11 +1133,6 @@ struct HabittoApp: App {
       )
       let guestProgress = try modelContext.fetch(guestProgressDescriptor)
       
-      print("📊 [GUEST_MIGRATION] Predicate query results (userId = \"\"):")
-      print("   Guest Habits: \(guestHabits.count)")
-      print("   Guest Completion Records: \(guestCompletionRecords.count)")
-      print("   Guest Daily Awards: \(guestAwards.count)")
-      print("   Guest User Progress: \(guestProgress.count)")
       logger.info("📊 GuestMigration: Predicate results - \(guestHabits.count) habits, \(guestCompletionRecords.count) completions, \(guestAwards.count) awards, \(guestProgress.count) progress")
       
       // ✅ FALLBACK: Use code-based filtering if predicate returns 0 but we know data exists
@@ -1322,12 +1145,6 @@ struct HabittoApp: App {
          guestAwardsFiltered.count != guestAwards.count ||
          guestProgressFiltered.count != guestProgress.count ||
          guestHabitsFiltered.count != guestHabits.count {
-        print("⚠️ [DIAGNOSTIC] PREDICATE MISMATCH DETECTED!")
-        print("   Predicate vs Filtered results:")
-        print("   Completions: \(guestCompletionRecords.count) (predicate) vs \(guestCompletionsFiltered.count) (filtered)")
-        print("   Awards: \(guestAwards.count) (predicate) vs \(guestAwardsFiltered.count) (filtered)")
-        print("   Progress: \(guestProgress.count) (predicate) vs \(guestProgressFiltered.count) (filtered)")
-        print("   Habits: \(guestHabits.count) (predicate) vs \(guestHabitsFiltered.count) (filtered)")
         logger.warning("⚠️ GuestMigration: Predicate mismatch detected - using filtered results")
       }
       
@@ -1337,15 +1154,8 @@ struct HabittoApp: App {
       let finalGuestProgress = guestProgressFiltered.isEmpty ? guestProgress : guestProgressFiltered
       let finalGuestHabits = guestHabitsFiltered.isEmpty ? guestHabits : guestHabitsFiltered
       
-      print("📊 [GUEST_MIGRATION] Final guest data to migrate:")
-      print("   Guest Habits: \(finalGuestHabits.count)")
-      print("   Guest Completion Records: \(finalGuestCompletions.count)")
-      print("   Guest Daily Awards: \(finalGuestAwards.count)")
-      print("   Guest User Progress: \(finalGuestProgress.count)")
-      
       // If no guest data exists, mark migration as complete and return
       if finalGuestHabits.isEmpty && finalGuestCompletions.isEmpty && finalGuestAwards.isEmpty && finalGuestProgress.isEmpty {
-        print("ℹ️ [GUEST_MIGRATION] No guest data found, marking migration as complete")
         UserDefaults.standard.set(true, forKey: newMigrationKey)
         return
       }
@@ -1355,24 +1165,19 @@ struct HabittoApp: App {
       if finalGuestCompletions.count > guestCompletionRecords.count ||
          finalGuestAwards.count > guestAwards.count ||
          finalGuestProgress.count > guestProgress.count {
-        print("⚠️ [GUEST_MIGRATION] Using code-filtered results instead of predicate results")
         logger.warning("⚠️ GuestMigration: Using code-filtered results due to predicate mismatch")
       }
       
     } catch {
-      print("⚠️ [GUEST_MIGRATION] Error checking for guest data: \(error.localizedDescription)")
       logger.warning("⚠️ GuestMigration: Error checking for guest data: \(error.localizedDescription)")
     }
     
-    print("🔄 [GUEST_MIGRATION] Starting COMPLETE migration to anonymous user")
-    print("   Target User ID: \(newUserId)")
     logger.info("🔄 GuestMigration: Starting COMPLETE migration to anonymous user \(newUserId.prefix(8))...")
     
     // Delegate to the helper class for the actual migration logic
     await GuestDataMigrationHelper.runCompleteMigration(userId: newUserId)
     
     // The helper already sets the migration flag, so trigger backup
-    print("🔄 [GUEST_MIGRATION] Starting backup of migrated data to Firestore...")
     Task.detached { @MainActor in
       await backupMigratedGuestData(userId: newUserId)
     }
@@ -1382,22 +1187,18 @@ struct HabittoApp: App {
   @MainActor
   private func backupMigratedGuestData(userId: String) async {
     let logger = Logger(subsystem: "com.habitto.app", category: "GuestMigration")
-    print("🔄 [GUEST_MIGRATION] Backing up migrated data to Firestore...")
     logger.info("🔄 GuestMigration: Starting backup of migrated data...")
     
     // Load habits and backup them
     do {
       let habits = try await HabitStore.shared.loadHabits()
-      print("🔄 [GUEST_MIGRATION] Backing up \(habits.count) migrated habits...")
       for habit in habits {
         await MainActor.run {
           FirebaseBackupService.shared.backupHabit(habit)
         }
       }
-      print("✅ [GUEST_MIGRATION] Backup complete - \(habits.count) habits queued for backup")
       logger.info("✅ GuestMigration: Backed up \(habits.count) habits to Firestore")
     } catch {
-      print("❌ [GUEST_MIGRATION] Backup failed: \(error.localizedDescription)")
       logger.warning("⚠️ GuestMigration: Failed to backup habits: \(error.localizedDescription)")
     }
   }
@@ -1538,7 +1339,6 @@ struct HabittoApp: App {
           print("❌ DIAGNOSIS: No habits found for current userId, but \(allHabits.count) habits exist with other userIds")
         }
         if recordsForUser.isEmpty && !allRecords.isEmpty {
-          print("❌ DIAGNOSIS: No CompletionRecords found for current userId, but \(allRecords.count) records exist with other userIds")
         }
         if awardsForUser.isEmpty && !allAwards.isEmpty {
           print("❌ DIAGNOSIS: No DailyAwards found for current userId, but \(allAwards.count) awards exist with other userIds")
@@ -1566,14 +1366,11 @@ struct HabittoApp: App {
       let recordsWithZeroProgress = try context.fetch(descriptor)
       
       if !recordsWithZeroProgress.isEmpty {
-        print("🔍 [RESTORE_CHECK] Found \(recordsWithZeroProgress.count) CompletionRecords with progress=0 - restore needed")
         return true
       } else {
-        print("✅ [RESTORE_CHECK] All CompletionRecords have progress > 0 - no restore needed")
         return false
       }
     } catch {
-      print("⚠️ [RESTORE_CHECK] Failed to check CompletionRecords: \(error.localizedDescription)")
       // If check fails, assume restore is needed (safe default)
       return true
     }
@@ -1583,17 +1380,14 @@ struct HabittoApp: App {
   /// This repairs CompletionRecords that have progress=0 by restoring from Firestore
   @MainActor
   private func restoreProgressFromFirestore() async {
-    print("🔧 [RESTORE] Starting progress restoration from Firestore...")
     
     // ✅ GUEST MODE: Firestore restore requires authentication
     // In guest mode, we can't restore from Firestore, so skip it
-    print("ℹ️ [RESTORE] Guest mode - Firestore restore requires authentication, skipping")
   }
   
   /// Check UserDefaults for any backup data that might help recover progress
   @MainActor
   private func checkUserDefaultsForRecovery() async {
-    print("🔍 [RECOVERY] Checking UserDefaults for backup data...")
     
     // Check common UserDefaults keys
     let possibleKeys = ["SavedHabits", "guest_habits", "habits", "user_progress"]
@@ -1634,15 +1428,12 @@ struct HabittoApp: App {
       }
     }
     
-    print("🔍 [RECOVERY] UserDefaults check complete")
   }
   
   /// Repair broken CompletionRecord relationships
   /// The migration updated userId on CompletionRecords but broke the SwiftData relationship links
   @MainActor
   private func repairCompletionRecordRelationships() async {
-    print("🔧 [REPAIR] Starting relationship repair...")
-    
     let context = SwiftDataContainer.shared.modelContext
     
     do {
@@ -1653,8 +1444,6 @@ struct HabittoApp: App {
       // Get all completion records
       let recordsDesc = FetchDescriptor<CompletionRecord>()
       let allRecords = try context.fetch(recordsDesc)
-      
-      print("🔧 [REPAIR] Found \(allHabits.count) habits and \(allRecords.count) completion records")
       
       // Group records by habitId
       let recordsByHabit = Dictionary(grouping: allRecords, by: { $0.habitId })
@@ -1667,8 +1456,6 @@ struct HabittoApp: App {
         
         // Only repair if there's a mismatch
         if recordsForThisHabit.count != habit.completionHistory.count {
-          print("🔧 [REPAIR] Habit '\(habit.name)': Found \(recordsForThisHabit.count) records, but only \(habit.completionHistory.count) linked")
-          
           // Clear existing relationship (which is empty anyway)
           habit.completionHistory.removeAll()
           
@@ -1677,24 +1464,17 @@ struct HabittoApp: App {
             habit.completionHistory.append(record)
           }
           
-          print("🔧 [REPAIR] Habit '\(habit.name)': Linked \(recordsForThisHabit.count) completion records")
           totalRepaired += recordsForThisHabit.count
-        } else {
-          print("✅ [REPAIR] Habit '\(habit.name)': Already correctly linked (\(recordsForThisHabit.count) records)")
         }
       }
       
       // Save the changes
       if totalRepaired > 0 {
         try context.save()
-        print("✅ [REPAIR] Successfully repaired \(totalRepaired) completion record relationships")
-      } else {
-        print("ℹ️ [REPAIR] No relationships needed repair - all relationships are correct")
       }
       
     } catch {
       print("❌ [REPAIR] Failed to repair relationships: \(error.localizedDescription)")
-      print("   Error details: \(error)")
     }
   }
   
@@ -1731,24 +1511,18 @@ struct HabittoApp: App {
           for duplicateRecord in sortedRecords.dropFirst() {
             context.delete(duplicateRecord)
             duplicatesDeleted += 1
-            print("🗑️ [CLEANUP] Deleted duplicate CompletionRecord: habitId=\(duplicateRecord.habitId), dateKey=\(duplicateRecord.dateKey), createdAt=\(duplicateRecord.createdAt)")
           }
           
-          print("✅ [CLEANUP] Kept most recent record for key '\(key)' (deleted \(sortedRecords.count - 1) duplicates)")
         }
       }
       
       // Save the changes
       if duplicatesDeleted > 0 {
         try context.save()
-        print("✅ [CLEANUP] Successfully deleted \(duplicatesDeleted) duplicate CompletionRecords")
-      } else {
-        print("ℹ️ [CLEANUP] No duplicate CompletionRecords found - all records are unique")
       }
       
     } catch {
       print("❌ [CLEANUP] Failed to clean up duplicate CompletionRecords: \(error.localizedDescription)")
-      print("   Error details: \(error)")
     }
   }
 }

@@ -1105,7 +1105,6 @@ struct HomeTabView: View {
     let wasCompletedOnThisDate = (latestHabit.completionHistory[dateKey] ?? 0) > 0
     
     if wasCompletedOnThisDate {
-      debugLog("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Was completed on \(dateKey) → true")
       return true
     }
 
@@ -1120,7 +1119,6 @@ struct HomeTabView: View {
     
     // If already completed the monthly goal, don't show for future dates
     if completionsNeeded <= 0 {
-      debugLog("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': Goal reached (\(completionsThisMonth)/\(daysPerMonth))")
       return false
     }
     
@@ -1136,7 +1134,6 @@ struct HomeTabView: View {
     let daysUntilTarget = DateUtils.daysBetween(todayStart, targetDate)
     let shouldShow = daysUntilTarget >= 0 && daysUntilTarget < daysToShow
     
-    debugLog("🔍 MONTHLY FREQUENCY - Habit '\(habit.name)': \(completionsThisMonth)/\(daysPerMonth) done, need \(completionsNeeded) more, \(daysRemainingFromToday) days left, showing for \(daysToShow) days, target in \(daysUntilTarget) days → \(shouldShow)")
     
     return shouldShow
   }
@@ -1309,7 +1306,6 @@ struct HomeTabView: View {
       
       // ⏭️ SKIP FEATURE: Exclude skipped habits from remaining count
       if habitData.isSkipped(for: selectedDate) {
-        debugLog("⏭️ CELEBRATION_CHECK: Habit '\(h.name)' is SKIPPED - excluding from remaining check")
         return false // Skipped habits don't count as "remaining"
       }
       
@@ -1498,7 +1494,6 @@ struct HomeTabView: View {
         // ✅ BUG 2 FIX: Call streak recalculation AFTER persistence completes
         debugLog("🔄 DERIVED_STREAK: Recalculating streak after completion")
         await MainActor.run {
-          debugLog("🔍 BEFORE_CALLBACK: About to call onStreakRecalculationNeeded?(true)")
           onStreakRecalculationNeeded?(true)  // ✅ STEP 2: Mark as user-initiated
           debugLog("✅ STEP2_CALLBACK: Called onStreakRecalculationNeeded with isUserInitiated=true (completion)")
         }
@@ -1640,7 +1635,6 @@ struct HomeTabView: View {
       // ✅ CRITICAL FIX: Today's completion status should NOT affect the current streak
       // The streak only counts consecutive PAST completed days (yesterday and before)
       // Today is still in progress, so uncompleting today's habits should not decrement the streak
-      debugLog("ℹ️ STREAK_REVERSAL: Uncompleting today's habits - streak unchanged (today doesn't count until midnight)")
       return streak.currentStreak
     } else {
       // ✅ PAST DATE: Recalculate streak from scratch since we changed history

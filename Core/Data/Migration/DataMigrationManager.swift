@@ -304,7 +304,6 @@ class DataMigrationManager: ObservableObject {
   private func loadCurrentVersion() {
     let versionString = userDefaults.string(forKey: versionKey) ?? "1.0.0"
     currentVersion = MigrationVersion(versionString)
-    print("🔍 DataMigrationManager: Loaded current version: \(currentVersion.stringValue)")
   }
 
   private func getHabitCount() async -> Int {

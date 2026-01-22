@@ -804,8 +804,6 @@ class HabitRepository: ObservableObject {
   // MARK: - Clear All Habits
 
   func clearAllHabits() async throws {
-    debugLog("🗑️ HabitRepository: Clearing all habits")
-
     // Remove all notifications
     NotificationManager.shared.removeAllPendingNotifications()
 
@@ -832,14 +830,7 @@ class HabitRepository: ObservableObject {
     // ✅ UNIVERSAL RULE: Both types use completionHistory
     let currentProgress = habit.completionHistory[dateKey] ?? 0
     
-    if habit.habitType == .breaking {
-      debugLog("🔍 TOGGLE - Breaking Habit '\(habit.name)' | Current progress: \(currentProgress)")
-    } else {
-      debugLog("🔍 TOGGLE - Formation Habit '\(habit.name)' | Current progress: \(currentProgress)")
-    }
-    
     let newProgress = currentProgress > 0 ? 0 : 1
-    debugLog("🔍 TOGGLE - Setting new progress to: \(newProgress)")
 
     // ✅ CRITICAL FIX: Await save completion
     try await setProgress(for: habit, date: date, progress: newProgress)
@@ -872,7 +863,6 @@ class HabitRepository: ObservableObject {
     if isUncompleteAction {
       debugLog("🔴 UNCOMPLETE_START: habitId=\(habit.id), dateKey=\(dateKey), oldProgress=\(oldProgress), newProgress=\(progress)")
     }
-    debugLog("🔍 REPO - \(habit.habitType == .breaking ? "Breaking" : "Formation") Habit '\(habit.name)' | Old progress: \(oldProgress) → New progress: \(progress)")
     #endif
 
     // ✅ RACE FIX: Persist to SwiftData FIRST. Do NOT update in-memory or post notification until after save.
@@ -980,7 +970,6 @@ class HabitRepository: ObservableObject {
   
   /// Permanently delete a habit (called from Recently Deleted view)
   func permanentlyDeleteHabit(_ habit: Habit) async throws {
-    debugLog("🗑️ HabitRepository: Permanently deleting habit: \(habit.name)")
     do {
       try await habitStore.permanentlyDeleteHabit(id: habit.id)
     } catch {
@@ -1105,7 +1094,6 @@ class HabitRepository: ObservableObject {
 
     let snapshotHabits = habits
     guard !snapshotHabits.isEmpty else {
-      debugLog("🚀 POST_LAUNCH: Skipped warmup - no habits loaded yet")
       return
     }
 
@@ -1147,7 +1135,6 @@ class HabitRepository: ObservableObject {
       }
     }
 
-    debugLog("🚀 POST_LAUNCH: All warmup tasks scheduled")
   }
 
   // MARK: - Safe CloudKit Initialization (DISABLED)
@@ -1155,7 +1142,6 @@ class HabitRepository: ObservableObject {
   private func initializeCloudKitSafely() async {
     // CloudKit sync is disabled - infrastructure archived
     // See: Core/Data/CloudKit/Archive/ for archived CloudKit code
-    debugLog("ℹ️ HabitRepository: CloudKit initialization skipped (disabled)")
 
     // Monitor app lifecycle to reload data when app becomes active
     NotificationCenter.default.addObserver(
@@ -1376,7 +1362,6 @@ class HabitRepository: ObservableObject {
       let isAnonymous = (user as? User)?.isAnonymous ?? false
       
       if isAnonymous {
-        debugLog("ℹ️ HabitRepository: User is anonymous - skipping migration UI (migration handled automatically)")
         shouldShowMigrationView = false
         await loadHabits(force: true)
         return
@@ -1393,7 +1378,6 @@ class HabitRepository: ObservableObject {
         debugLog("✅ Guest data found, user can choose to migrate or start fresh")
         // Don't auto-migrate - wait for user's choice in migration UI
       } else {
-        debugLog("ℹ️ HabitRepository: No guest data found - skipping migration UI")
         shouldShowMigrationView = false
         
         // No automatic migration - user must explicitly choose via migration UI
@@ -1415,17 +1399,12 @@ class HabitRepository: ObservableObject {
 
     case .unauthenticated:
       guard isUserCurrentlyAuthenticated else {
-        debugLog("ℹ️ HabitRepository: Ignoring unauthenticated state before initial login completes")
         return
       }
       isUserCurrentlyAuthenticated = false
       
       // ✅ CRITICAL FIX: Migration flag is cleared in AuthenticationManager.signOut()
       // before authState changes to .unauthenticated, so we don't need to clear it here
-      
-      // ✅ DEBUG: Log userId before clearing
-      let userIdBeforeClear = await CurrentUser().idOrGuest
-      debugLog("🔐 HabitRepository: CurrentUser().idOrGuest before clear = '\(userIdBeforeClear.isEmpty ? "EMPTY" : userIdBeforeClear)'")
       
       // ✅ OPTION B: Account data isolation - do NOT convert account data to guest
       // Account data stays with the account (userId = "abc123") and is hidden on sign-out
@@ -1439,11 +1418,6 @@ class HabitRepository: ObservableObject {
       // ✅ CRITICAL: Small delay to ensure Auth.auth().currentUser is fully nil
       // This prevents race condition where loadHabits() might see old userId
       try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
-      
-      // ✅ DEBUG: Verify userId after delay
-      let userIdAfterDelay = await CurrentUser().idOrGuest
-      debugLog("🔐 HabitRepository: CurrentUser().idOrGuest after delay = '\(userIdAfterDelay.isEmpty ? "EMPTY" : userIdAfterDelay)'")
-      debugLog("🔐 HabitRepository: Auth.auth().currentUser = \(Auth.auth().currentUser?.uid ?? "nil")")
       
       // ✅ GUEST-ONLY MODE: Sync disabled - no cloud sync needed
       // await SyncEngine.shared.stopPeriodicSync(reason: "user signed out")
@@ -1555,9 +1529,6 @@ class HabitRepository: ObservableObject {
   private func resetUserDataToGuest() async {
     // ✅ OPTION B: Do nothing - account data stays with the account
     // Queries filter by userId, so account data is automatically hidden when signed out
-    debugLog("ℹ️ HabitRepository: resetUserDataToGuest() disabled - account data isolation enabled")
-    debugLog("   Account data remains unchanged. Queries filter by CurrentUser().idOrGuest")
-    debugLog("   When signed out, queries return no account data (empty app state)")
     return
   }
 }

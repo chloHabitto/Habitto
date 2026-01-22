@@ -1718,8 +1718,6 @@ struct ProgressTabView: View {
     
     // Get difficulty for the day (if recorded)
     let dayDifficulty = habit.getDifficulty(for: date)
-    print("🔍 TIMELINE DEBUG: Loading entries for '\(habit.name)' on \(dateKey)")
-    print("   → Day difficulty: \(dayDifficulty != nil ? String(dayDifficulty!) : "nil")")
     
     // Try ProgressEvents first (preferred - has exact timestamps)
     let modelContext = SwiftDataContainer.shared.modelContext
@@ -4777,18 +4775,8 @@ struct ProgressTabView: View {
       return
     }
 
-    // Debug: Log difficulty history count
-    print("🔍 updateDifficultyData: Habit '\(habit.name)' has \(habit.difficultyHistory.count) difficulty entries")
-    if !habit.difficultyHistory.isEmpty {
-      let sampleKeys = Array(habit.difficultyHistory.keys.prefix(5))
-      print("🔍 Sample difficulty keys: \(sampleKeys)")
-    }
-
     weeklyDifficultyData = getWeeklyDifficultyData(for: habit)
     monthlyDifficultyData = getMonthlyDifficultyData(for: habit)
-    
-    print("🔍 Weekly difficulty data points: \(weeklyDifficultyData.count) (with data: \(weeklyDifficultyData.filter { $0.hasData }.count))")
-    print("🔍 Monthly difficulty data points: \(monthlyDifficultyData.count) (with data: \(monthlyDifficultyData.filter { $0.hasData }.count))")
   }
 
   // MARK: - Time Base Completion Data Update

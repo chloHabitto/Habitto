@@ -50,7 +50,6 @@ class DailyAwardIntegrityService {
     ///
     /// - Returns: InvestigationResult with details about valid and invalid awards
     func investigateDailyAwards(userId: String) async throws -> InvestigationResult {
-        logger.info("🔍 DailyAwardIntegrityService: Starting investigation for userId: '\(userId.isEmpty ? "guest" : userId.prefix(8))...'")
         
         let modelContext = SwiftDataContainer.shared.modelContext
         
@@ -64,7 +63,6 @@ class DailyAwardIntegrityService {
         )
         let allAwards = try modelContext.fetch(awardDescriptor)
         
-        logger.info("🔍 Found \(allAwards.count) DailyAwards to investigate")
         
         var validAwards: [DailyAward] = []
         var invalidAwards: [InvestigationResult.InvalidAward] = []
@@ -250,7 +248,6 @@ class DailyAwardIntegrityService {
     ///
     /// - Returns: Number of invalid awards removed
     func cleanupInvalidAwards(userId: String) async throws -> Int {
-        logger.info("🔧 DailyAwardIntegrityService: Starting cleanup for userId: '\(userId.isEmpty ? "guest" : userId.prefix(8))...'")
         
         // ✅ CRITICAL FIX: Verify habits exist before cleanup to prevent data loss
         // If no habits are found, skip cleanup (likely a timing/cache issue after sign-in)
@@ -278,7 +275,6 @@ class DailyAwardIntegrityService {
             return 0
         }
         
-        logger.info("🔧 Removing \(investigation.invalidAwards.count) invalid awards...")
         
         // Delete invalid awards
         var removedCount = 0
@@ -294,7 +290,6 @@ class DailyAwardIntegrityService {
             for award in awardsToDelete {
                 modelContext.delete(award)
                 removedCount += 1
-                logger.info("🗑️ Deleted invalid award for \(invalidAward.dateKey) (\(award.xpGranted) XP) - Reason: \(invalidAward.reason)")
             }
         }
         

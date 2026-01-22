@@ -116,7 +116,6 @@ final actor HabitStore {
           let authenticatedHabits = allHabits.filter { !$0.userId.isEmpty }
           if !authenticatedHabits.isEmpty {
             let userIds = Set(authenticatedHabits.map { $0.userId })
-            logger.info("🔍 Found \(authenticatedHabits.count) habits with userIds: \(userIds.map { String($0.prefix(8)) + "..." })")
             logger.info("🛑 Skipping UserDefaults migration - account data exists in SwiftData")
             return true
           }
@@ -221,18 +220,15 @@ final actor HabitStore {
       let startOfEndDate = calendar.startOfDay(for: endDate)
       
       if endDate < sevenDaysAgo {
-        logger.info("🔧 Auto-clearing old end date for habit '\(habit.name)' (was: \(endDate), more than 7 days ago)")
         return clearEndDate(habit)
       }
       
       if let latestActivityDate = latestActivityDate(for: habit),
          latestActivityDate > startOfEndDate {
-        logger.info("🔧 Clearing stale end date for habit '\(habit.name)' (endDate: \(endDate), latest activity: \(latestActivityDate))")
         return clearEndDate(habit)
       }
       
       // Preserve recent end dates (within last 7 days) - these are intentionally set
-      logger.debug("🔧 Preserving recent end date for habit '\(habit.name)' (was: \(endDate), within last 7 days)")
       return habit
     }
 
@@ -350,12 +346,6 @@ final actor HabitStore {
 
   func updateHabit(_ habit: Habit) async throws {
     logger.info("Updating habit: \(habit.name) (ID: \(habit.id))")
-    logger.info("⏭️ HabitStore.updateHabit: Habit has \(habit.skippedDays.count) skipped day(s)")
-    if !habit.skippedDays.isEmpty {
-      for (dateKey, skip) in habit.skippedDays {
-        logger.info("⏭️   - \(dateKey): \(skip.reason.rawValue)")
-      }
-    }
 
     // Validate habit before updating
     let validationResult = validationService.validateHabit(habit)
@@ -416,7 +406,6 @@ final actor HabitStore {
   // MARK: - Delete Habit
 
   func deleteHabit(_ habit: Habit) async throws {
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
     logger.info("Soft-deleting habit: \(habit.name)")
 
     // ✅ CRITICAL FIX: Mark habit as deleted FIRST (before any deletion operations)
@@ -425,7 +414,6 @@ final actor HabitStore {
     SyncEngine.markHabitAsDeleted(habit.id)  // Store in SyncEngine for sync prevention
 
     // Record user analytics
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Recording analytics")
     let analytics = await userAnalytics
     await analytics.recordEvent(.featureUsed, metadata: [
       "action": "habit_deleted",
@@ -434,60 +422,38 @@ final actor HabitStore {
     ])
 
     // Load current habits
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Loading current habits")
     var currentHabits = try await loadHabits()
-    let beforeCount = currentHabits.count
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Loaded \(beforeCount) habits")
-    
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Removing habit from in-memory array")
+
     currentHabits.removeAll { $0.id == habit.id }
-    let afterCount = currentHabits.count
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Habits after removal: \(beforeCount) → \(afterCount)")
 
     // TODO: Update Firestore to support soft delete (mark as deleted instead of hard delete)
     // For now, we still hard-delete from Firestore but soft-delete locally for audit trail
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Deleting from Firestore (TODO: implement soft delete)")
     await FirebaseBackupService.shared.deleteHabitBackupAwait(habitId: habit.id)
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Firestore habit deletion completed")
     
     // Delete completion records from Firestore
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Deleting completion records from Firestore")
     await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habit.id)
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Completion records deletion COMPLETED")
     
     // ✅ SOFT DELETE: This now soft-deletes (marks as deleted) instead of hard deleting
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Calling activeStorage.deleteHabit() (SOFT DELETE)")
     try await activeStorage.deleteHabit(id: habit.id)
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - activeStorage.deleteHabit() completed (habit soft-deleted)")
 
     // ✅ SOFT DELETE: Clean up UserDefaults (legacy system)
     // Note: This is less critical with soft delete, but still good for cleanup
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Cleaning up UserDefaults")
     do {
       try await userDefaultsStorage.deleteHabit(id: habit.id)
-      print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - UserDefaults individual key deleted")
       
       // Also ensure the SavedHabits array is updated
       var userDefaultsHabits = try await userDefaultsStorage.loadHabits()
-      let beforeCount = userDefaultsHabits.count
       userDefaultsHabits.removeAll { $0.id == habit.id }
-      let afterCount = userDefaultsHabits.count
-      if beforeCount != afterCount {
+      if userDefaultsHabits.count != currentHabits.count {
         try await userDefaultsStorage.saveHabits(userDefaultsHabits, immediate: true)
-        print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - UserDefaults SavedHabits array updated: \(beforeCount) → \(afterCount)")
       }
     } catch {
       // Don't fail the soft-delete if UserDefaults cleanup fails
-      print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - WARNING: UserDefaults cleanup failed: \(error.localizedDescription)")
     }
 
     // THEN save the updated array (without the soft-deleted habit)
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Now saving updated habits array")
     try await saveHabits(currentHabits)
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - Habits array saved")
     
-
-    print("🗑️ [SOFT_DELETE] HabitStore.deleteHabit() - END")
     logger.info("Successfully soft-deleted habit: \(habit.name)")
   }
 
@@ -604,7 +570,6 @@ final actor HabitStore {
           }
           
           // Continue with legacy path (backward compatibility)
-          logger.info("⚠️ Continuing with deprecated completionHistory update (fallback)")
         }
       }
       
@@ -621,10 +586,8 @@ final actor HabitStore {
       
       // Logging with habit type info
       if habitType == .breaking {
-        logger.info("🔍 BREAKING HABIT - '\(habit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isComplete)")
         logger.info("   📊 Display-only: Target: \(currentHabits[index].target) | Baseline: \(currentHabits[index].baseline)")
       } else {
-        logger.info("🔍 FORMATION HABIT - '\(habit.name)' | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isComplete)")
       }
 
       // Handle timestamp recording for time-based completion analysis
@@ -705,12 +668,6 @@ final actor HabitStore {
     // Get legacy progress from completionHistory (fallback)
     let legacyProgress = habit.completionHistory[dateKey] ?? 0
     
-    // 🔍 DEBUG: Log completionHistory state
-    logger.info("🔍 getProgress DEBUG: habit=\(habit.name), dateKey=\(dateKey)")
-    logger.info("   → completionHistory has \(habit.completionHistory.count) entries")
-    logger.info("   → completionHistory[\(dateKey)] = \(legacyProgress)")
-    logger.info("   → completionHistory keys: \(Array(habit.completionHistory.keys.sorted()).prefix(5))")
-    
     // Calculate progress from events (event sourcing)
     // Note: ProgressEventService is @MainActor and accesses ModelContext internally
     let result = await ProgressEventService.shared.calculateProgressFromEvents(
@@ -719,8 +676,6 @@ final actor HabitStore {
       goalAmount: goalAmount,
       legacyProgress: legacyProgress
     )
-    
-    logger.info("🔍 getProgress RESULT: habit=\(habit.name), dateKey=\(dateKey), finalProgress=\(result.progress), legacyProgress=\(legacyProgress), source=\(result.progress == legacyProgress ? "legacy" : "events")")
     
     return result.progress
   }
@@ -1073,7 +1028,6 @@ final actor HabitStore {
       deletedIds.remove(at: index)
       UserDefaults.standard.set(deletedIds, forKey: Self.deletedHabitsKey)
       UserDefaults.standard.synchronize()
-      print("♻️ [RESTORE] Unmarked habit \(idString.prefix(8))... as deleted in UserDefaults")
     }
   }
 
@@ -1123,19 +1077,6 @@ final actor HabitStore {
   {
     let userId = await CurrentUser().idOrGuest
     
-    // ✅ DEBUG: Log current authentication state to diagnose userId issues
-    await MainActor.run {
-      if let currentUser = AuthenticationManager.shared.currentUser {
-        if let firebaseUser = currentUser as? User {
-          logger.info("🔍 DEBUG: Current Firebase user - UID: \(firebaseUser.uid), isAnonymous: \(firebaseUser.isAnonymous), userId used: '\(userId.isEmpty ? "guest" : userId)'")
-        } else {
-          logger.info("🔍 DEBUG: Current user (non-Firebase) - userId used: '\(userId.isEmpty ? "guest" : userId)'")
-        }
-      } else {
-        logger.info("🔍 DEBUG: No current user - userId used: '\(userId.isEmpty ? "guest" : userId)'")
-      }
-    }
-    
     do {
       // Perform all SwiftData operations on the main actor to avoid concurrency issues
       try await MainActor.run {
@@ -1166,7 +1107,6 @@ final actor HabitStore {
           logger.info("🔍 BREAKING HABIT CHECK - '\(habit.name)' (id=\(habit.id)) | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isCompleted)")
           logger.info("   📊 Display-only fields: Target: \(habit.target) | Baseline: \(habit.baseline)")
         } else {
-          logger.info("🔍 FORMATION HABIT CHECK - '\(habit.name)' (id=\(habit.id)) | Progress: \(progress) | Goal: \(goalAmount) | Complete: \(isCompleted)")
         }
         
         logger.info("🎯 CREATE_RECORD: habitType=\(habitTypeStr), progress=\(progress), goal=\(goalAmount), isCompleted=\(isCompleted)")
@@ -1181,9 +1121,7 @@ final actor HabitStore {
           // Delete ALL existing records (handles duplicates)
           for existingRecord in existingRecords {
             modelContext.delete(existingRecord)
-            logger.info("🗑️ Deleted duplicate CompletionRecord: habitId=\(existingRecord.habitId), dateKey=\(existingRecord.dateKey)")
           }
-          logger.info("✅ Deleted \(existingRecords.count) existing CompletionRecord(s) - will create fresh one")
         }
         
         // Always create a fresh record with current state (ensures exactly one record)
@@ -1212,7 +1150,6 @@ final actor HabitStore {
             habitData.completionHistory.append(completionRecord)
             logger.info("✅ Linked CompletionRecord to HabitData.completionHistory (userId: '\(userId)', habitId: \(habit.id))")
           } else {
-            logger.info("ℹ️ CompletionRecord already linked to HabitData, skipping duplicate link")
           }
         } else {
           // HabitData not found - CompletionRecord is still inserted and will be found via manual query
@@ -1273,10 +1210,8 @@ final actor HabitStore {
         await MainActor.run {
           // The progress is already stored in the habit's completionHistory
           // in the setProgress method above, so no need to set it again here
-          logger
-            .info(
-              "🔧 HabitStore: Fallback: Progress \(progress) already stored in habit.completionHistory for \(dateKey)")
-
+          logger.info("🔧 HabitStore: Resetting corrupted database for next app launch")
+          
           // Reset the corrupted database for next app launch
           SwiftDataContainer.shared.resetCorruptedDatabase()
         }
