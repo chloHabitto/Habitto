@@ -176,6 +176,8 @@ struct TodaysJourneyItemView: View {
               .background(Circle().fill(Color.green))
           }
         }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .leading)
         
         VStack(alignment: .leading, spacing: 4) {
           if item.status == .completed {
@@ -189,8 +191,7 @@ struct TodaysJourneyItemView: View {
           }
         }
       }
-
-      Spacer(minLength: 0)
+      .frame(maxWidth: .infinity, alignment: .leading)
     }
     .padding(16)
     .background(
