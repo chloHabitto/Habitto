@@ -27,7 +27,6 @@ struct CreateHabitStep1View: View {
   let onCancel: () -> Void
 
   var body: some View {
-    let _ = print("⌨️ STEP1: body evaluated at \(Date())")
     VStack(spacing: 0) {
       // Header - always show
       CreateHabitHeader(
@@ -304,14 +303,7 @@ struct CreateHabitStep1View: View {
       cachedColorName = getColorName(for: newColor)
     }
     .onAppear {
-      print("⌨️ STEP1: onAppear START at \(Date())")
       cachedColorName = getColorName(for: color)
-      print("⌨️ STEP1: onAppear END at \(Date())")
-      
-      // Check if main thread is responsive
-      DispatchQueue.main.async {
-        print("⌨️ STEP1: Main thread responsive at \(Date())")
-      }
       
       // Auto-focus name field after sheet animation (keyboard loads during this natural pause)
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

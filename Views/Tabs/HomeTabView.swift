@@ -1223,12 +1223,9 @@ struct HomeTabView: View {
   // MARK: - Sorting Logic
 
   private func resortHabits() {
-    debugLog("🔄 resortHabits() called - deferResort: \(deferResort)")
     guard !deferResort else {
-      debugLog("   ⚠️ resortHabits() BLOCKED by deferResort flag")
       return
     }
-    debugLog("   ✅ resortHabits() proceeding...")
 
     let todayHabits = habits.filter { habit in
       let selected = DateUtils.startOfDay(for: selectedDate)
@@ -1274,7 +1271,6 @@ struct HomeTabView: View {
       return habit1.name < habit2.name
     })
     
-    debugLog("   ✅ resortHabits() completed - sortedHabits count: \(sortedHabits.count)")
     for (index, habit) in sortedHabits.enumerated() {
       let isComplete = completionStatusMap[habit.id] ?? false
       debugLog("      [\(index)] \(habit.name) - completed: \(isComplete)")

@@ -83,11 +83,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
     if habitsToSave.count < habits.count {
       logger.info("⏭️ SwiftDataStorage: Filtered out \(habits.count - habitsToSave.count) deleted habits before saving")
     }
-    
-    #if DEBUG
-    logger.info("🎯 [8/8] SwiftDataStorage.saveHabits: writing to SwiftData")
-    logger.info("  → Count: \(habitsToSave.count) (filtered from \(habits.count))")
-    #endif
 
     let startTime = CFAbsoluteTimeGetCurrent()
 
@@ -529,12 +524,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
       habits = habits.filter { habit in
         let isDeleted = deletedIds.contains(habit.id.uuidString)
         if isDeleted {
-          print("🗑️ DELETE_FLOW: Filtering out deleted habit: \(habit.name) (\(habit.id))")
           // Also try to delete it again from SwiftData (async, non-blocking)
           Task {
             do {
               try await self.deleteHabit(id: habit.id)
-              print("🗑️ DELETE_FLOW: Re-deleted habit \(habit.id) that reappeared")
             } catch {
               print("⚠️ DELETE_FLOW: Failed to re-delete habit \(habit.id): \(error.localizedDescription)")
             }
@@ -545,7 +538,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       
       if beforeFilterCount != habits.count {
         let filteredCount = beforeFilterCount - habits.count
-        print("🗑️ DELETE_FLOW: Filtered out \(filteredCount) deleted habit(s) that reappeared")
         logger.warning("⚠️ Filtered out \(filteredCount) deleted habit(s) - WAL checkpoint may have failed")
       }
 
@@ -1050,13 +1042,10 @@ final class SwiftDataStorage: HabitStorageProtocol {
   
   /// Force WAL checkpoint using multiple aggressive methods
   private func forceWALCheckpoint() {
-    print("🗑️ DELETE_FLOW: SwiftDataStorage - Forcing WAL checkpoint...")
-    
     // Method 1: Save context multiple times to ensure flush
     do {
       if container.modelContext.hasChanges {
         try container.modelContext.save()
-        print("🗑️ DELETE_FLOW: Context saved before checkpoint")
       }
     } catch {
       print("❌ DELETE_FLOW: Context save failed: \(error)")
@@ -1099,17 +1088,13 @@ final class SwiftDataStorage: HabitStorageProtocol {
       result = sqlite3_wal_checkpoint_v2(database, nil, SQLITE_CHECKPOINT_FULL, &pnLog, &pnCkpt)
     }
     
-    if result == SQLITE_OK && pnLog >= 0 {
-      print("✅ DELETE_FLOW: WAL checkpoint SUCCESS (mode result: \(result), log frames: \(pnLog), checkpointed: \(pnCkpt))")
-    } else {
+    if result != SQLITE_OK || pnLog < 0 {
       print("❌ DELETE_FLOW: WAL checkpoint FAILED - result: \(result), log: \(pnLog), ckpt: \(pnCkpt)")
       
       // Method 3: Nuclear option - execute PRAGMA directly
       var errMsg: UnsafeMutablePointer<CChar>?
       let pragmaResult = sqlite3_exec(database, "PRAGMA wal_checkpoint(TRUNCATE);", nil, nil, &errMsg)
-      if pragmaResult == SQLITE_OK {
-        print("✅ DELETE_FLOW: PRAGMA wal_checkpoint succeeded")
-      } else {
+      if pragmaResult != SQLITE_OK {
         if let errMsg = errMsg {
           let errorString = String(cString: errMsg)
           print("❌ DELETE_FLOW: PRAGMA wal_checkpoint failed: \(pragmaResult) - \(errorString)")

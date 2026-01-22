@@ -793,17 +793,12 @@ class HabitRepository: ObservableObject {
   /// ✅ CRITICAL FIX: Made async/await to GUARANTEE save completion before returning
   /// ✅ CRITICAL FIX: DO NOT reload habits after deletion - reloading triggers sync/migration that recreates the habit
   func deleteHabit(_ habit: Habit) async throws {
-    print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - START for habit: \(habit.name) (ID: \(habit.id))")
-    
     // Remove all notifications for this habit first
     NotificationManager.shared.removeAllNotifications(for: habit)
-    print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Removing notifications")
     debugLog("🎯 PERSISTENCE FIX: Using async/await to guarantee delete completion")
-    print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Calling habitStore.deleteHabit()")
 
     do {
       try await habitStore.deleteHabit(habit)
-      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - habitStore.deleteHabit() completed")
       debugLog("✅ GUARANTEED: Habit deleted from SwiftData")
       
       // ✅ FIX: Manually update published habits to prevent race condition with publisher
@@ -811,12 +806,8 @@ class HabitRepository: ObservableObject {
       // publisher from re-adding the deleted habit to HomeView before delete completes
       await MainActor.run {
         self.habits.removeAll { $0.id == habit.id }
-        print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - Updated @Published habits array")
       }
-      
-      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - END")
     } catch {
-      print("🗑️ DELETE_FLOW: HabitRepository.deleteHabit() - ERROR: \(error.localizedDescription)")
       debugLog("❌ HabitRepository: Failed to delete habit: \(error.localizedDescription)")
       throw error
     }

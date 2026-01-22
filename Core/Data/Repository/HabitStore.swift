@@ -1060,7 +1060,6 @@ final actor HabitStore {
       deletedIds.append(idString)
       UserDefaults.standard.set(deletedIds, forKey: Self.deletedHabitsKey)
       UserDefaults.standard.synchronize()
-      print("🗑️ DELETE_FLOW: Marked habit \(idString) as deleted in UserDefaults")
     }
   }
   
