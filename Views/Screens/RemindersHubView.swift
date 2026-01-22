@@ -66,6 +66,10 @@ struct RemindersHubView: View {
   @State private var reminderToSkip: ReminderWithHabit? = nil
   @State private var showingSkipConfirmation = false
   
+  // MARK: - Habit Detail Navigation
+  
+  @State private var selectedHabitForDetail: Habit? = nil
+  
   // MARK: - Computed Properties
   
   /// Get all reminders for selected date, sorted by time
@@ -246,6 +250,16 @@ struct RemindersHubView: View {
           Text("Skip this reminder for today?")
         }
       }
+      .sheet(item: $selectedHabitForDetail) { habit in
+        NavigationStack {
+          HabitDetailView(
+            habit: habit,
+            onUpdateHabit: { _ in },
+            selectedDate: selectedDate,
+            onDeleteHabit: nil
+          )
+        }
+      }
     }
   }
   
@@ -344,9 +358,8 @@ struct RemindersHubView: View {
     let isSkipped = isReminderSkipped(reminderWithHabit.reminder)
     
     return Button(action: {
-      // Navigate to habit detail
       UIImpactFeedbackGenerator(style: .light).impactOccurred()
-      navigateToHabitDetail(reminderWithHabit.habit)
+      selectedHabitForDetail = reminderWithHabit.habit
     }) {
       HStack(spacing: 12) {
         // Habit icon
@@ -394,13 +407,6 @@ struct RemindersHubView: View {
         }
         
         Spacer()
-        
-        // Completion checkmark (if completed on selected date)
-        if isHabitCompletedOnDate(reminderWithHabit.habit) {
-          Image(systemName: "checkmark.circle.fill")
-            .foregroundColor(.green)
-            .font(.system(size: 22))
-        }
         
         // Toggle for skip/enable reminder
         Toggle("", isOn: Binding(
@@ -1085,19 +1091,6 @@ struct RemindersHubView: View {
     }
   }
   
-  private func navigateToHabitDetail(_ habit: Habit) {
-    dismiss()
-    
-    // Post notification to open habit detail
-    NotificationCenter.default.post(
-      name: NSNotification.Name("OpenHabitDetail"),
-      object: nil,
-      userInfo: ["habitId": habit.id]
-    )
-    
-    // Haptic feedback
-    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-  }
 }
 
 #Preview {
