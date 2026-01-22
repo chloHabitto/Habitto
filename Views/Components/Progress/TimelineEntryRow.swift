@@ -10,68 +10,95 @@ import SwiftUI
 struct TimelineEntryRow: View {
     let entry: DailyProgressEntry
     let habit: Habit
+    let index: Int
+    let isFirst: Bool
     let isLast: Bool
     
+    @State private var hasAppeared = false
+    
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 8) {
             // Time Column
             timeColumn
             
-            // Connector
-            connectorColumn
+            // Spine Column
+            spineColumn
             
             // Entry Card
             entryCard
         }
+        .padding(.top, isFirst ? 16 : 0)
+        .opacity(hasAppeared ? 1 : 0)
+        .offset(y: hasAppeared ? 0 : 20)
+        .animation(
+            .spring(response: 0.4, dampingFraction: 0.8).delay(Double(index) * 0.05),
+            value: hasAppeared
+        )
+        .onAppear { hasAppeared = true }
     }
     
     // MARK: - Time Column
     
     private var timeColumn: some View {
-        VStack(alignment: .trailing, spacing: 4) {
+        VStack(alignment: .trailing, spacing: 2) {
             Text(entry.formattedTime)
-                .font(.appLabelLargeEmphasised)
+                .font(.appLabelSmall)
                 .foregroundColor(.appText02)
             
             Text(entry.amPmString)
                 .font(.appLabelSmall)
                 .foregroundColor(.appText04)
-            
-            Image(systemName: entry.timePeriodIcon)
-                .font(.system(size: 12))
-                .foregroundColor(.appText04)
         }
-        .frame(width: 45)
-        .padding(.top, 16)
+        .frame(width: 45, alignment: .trailing)
+        .padding(.top, isFirst ? 0 : 16)
     }
     
-    // MARK: - Connector Column
+    // MARK: - Spine Column
     
-    private var connectorColumn: some View {
+    private var spineColumn: some View {
         VStack(spacing: 0) {
-            // Dot
-            Circle()
-                .fill(Color.green)
-                .frame(width: 12, height: 12)
-                .overlay(
-                    Circle()
-                        .stroke(Color.green.opacity(0.3), lineWidth: 3)
-                )
-                .shadow(color: Color.green.opacity(0.3), radius: 2, y: 1)
-                .padding(.top, 18)
+            // Line ABOVE the dot - connects to previous item
+            if !isFirst {
+                lineSegment(position: .above)
+                    .frame(height: 16)
+            }
             
-            // Line below (if not last) - extends to connect with next dot
+            // The dot
+            timelineNode
+            
+            // Line BELOW the dot - connects to next item
             if !isLast {
-                GeometryReader { geo in
-                    Rectangle()
-                        .fill(Color.appOutline02)
-                        .frame(width: 2, height: max(28, geo.size.height))
-                }
-                .frame(width: 2)
-                .frame(minHeight: 28) // Minimum height to extend through card padding (12pt) and connect
+                lineSegment(position: .below)
             }
         }
         .frame(width: 24)
+        .frame(maxHeight: .infinity, alignment: .top)
+    }
+    
+    private enum LinePosition {
+        case above, below
+    }
+    
+    private func lineSegment(position: LinePosition) -> some View {
+        let lineColor = Color.appPrimary.opacity(0.5)
+        
+        return GeometryReader { geo in
+            Rectangle()
+                .fill(lineColor)
+                .frame(width: 3, height: geo.size.height)
+        }
+        .frame(width: 3)
+    }
+    
+    private var timelineNode: some View {
+        Circle()
+            .fill(Color.appPrimary)
+            .frame(width: 12, height: 12)
+            .shadow(
+                color: Color.appPrimary.opacity(0.3),
+                radius: 2,
+                y: 1
+            )
     }
     
     // MARK: - Status Icon
@@ -146,8 +173,7 @@ struct TimelineEntryRow: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.appOutline02, lineWidth: 1)
         )
-        .padding(.top, 16)
-        .padding(.bottom, isLast ? 0 : 12)
+        .padding(.top, isFirst ? 0 : 16)
     }
 }
 
