@@ -374,9 +374,7 @@ final class SwiftDataContainer: ObservableObject {
       if testCount > 0 {
         // Database exists with data
       } else if testCount == 0 {
-        // Check other tables to confirm this is truly fresh
-        let habitCount = (try? modelContext.fetchCount(FetchDescriptor<HabitData>())) ?? 0
-        let awardCount = (try? modelContext.fetchCount(FetchDescriptor<DailyAward>())) ?? 0
+        // Check other tables to confirm this is truly fresh (no longer logging counts)
       } else {
         logger.warning("⚠️ SwiftData: Could not determine data state (fetch failed)")
       }

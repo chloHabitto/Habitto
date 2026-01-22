@@ -900,9 +900,6 @@ class HabitRepository: ObservableObject {
       }
       #endif
 
-      let endTime = Date()
-      let duration = endTime.timeIntervalSince(startTime)
-
       // ✅ Reload habits from storage so in-memory state matches SwiftData (includes new CompletionRecord).
       #if DEBUG
       debugLog("  🔄 RELOAD_START: Reloading habits from storage to sync in-memory state")
@@ -1216,7 +1213,6 @@ class HabitRepository: ObservableObject {
       queue: .main
     ) { [weak self] notification in
       guard let self = self else { return }
-      let habitsPulled = notification.userInfo?["habitsPulled"] as? Int ?? 0
       
       Task { @MainActor in
         await self.loadHabits(force: true)
