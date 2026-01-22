@@ -316,7 +316,6 @@ final actor HabitStore {
   func createHabit(_ habit: Habit) async throws {
     #if DEBUG
     logger.info("🎯 [6/8] HabitStore.createHabit: storing habit")
-    logger.info("  → Habit: '\(habit.name)', ID: \(habit.id)")
     #endif
 
     // Record user analytics

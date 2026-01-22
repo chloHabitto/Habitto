@@ -155,17 +155,9 @@ class HabitFormLogic {
     endDate: Date?,
     reminders: [ReminderItem]) -> Habit
   {
-    print("🔍 HabitFormLogic: createHabit called")
-    print("🔍 HabitFormLogic: step1Data = \(step1Data)")
-    print(
-      "🔍 HabitFormLogic: goalNumber = \(goalNumber), goalUnit = \(goalUnit), goalFrequency = \(goalFrequency)")
-
     // For habit building, use goal frequency; for habit breaking, use target frequency
     let scheduleFrequency = step1Data.4 == .formation ? goalFrequency : targetFrequency
     let calendarSchedule = convertGoalFrequencyToSchedule(scheduleFrequency)
-
-    print(
-      "🔍 HabitFormLogic: scheduleFrequency = \(scheduleFrequency), calendarSchedule = \(calendarSchedule)")
 
     if step1Data.4 == .formation {
       // Habit Building
@@ -186,7 +178,6 @@ class HabitFormLogic {
         endDate: endDate,
         reminders: reminders)
 
-      print("🔍 HabitFormLogic: Created formation habit - name: \(habit.name), id: \(habit.id)")
       return habit
     } else {
       // Habit Breaking
@@ -222,7 +213,6 @@ class HabitFormLogic {
         baseline: baselineValue,
         target: targetValue)
 
-      print("🔍 HabitFormLogic: Created breaking habit - name: \(habit.name), baseline: \(baselineValue), target: \(targetValue)")
       return habit
     }
   }

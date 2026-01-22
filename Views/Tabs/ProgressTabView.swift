@@ -104,7 +104,6 @@ enum ActiveSheet: Identifiable {
   case weekPicker
   case monthPicker
   case yearPicker
-  case allReminders
   case paywall
   case difficultyExplanation
   
@@ -205,9 +204,6 @@ struct ProgressTabView: View {
   @State private var isLoadingProgress = 0.0
   @State private var selectedYear: Int = Calendar.current.component(.year, from: Date())
 
-  /// Per-date reminder states: [dateKey: [reminderId: isEnabled]]
-  @State private var reminderStates: [String: [UUID: Bool]] = [:]
-  
   /// Refresh ID to force views to update when habits change
   @State private var refreshID = UUID()
   
@@ -562,92 +558,6 @@ struct ProgressTabView: View {
     .padding(.horizontal, 20)
   }
 
-  // MARK: - Reminders Section
-
-  @ViewBuilder
-  private var remindersSection: some View {
-    VStack(alignment: .leading, spacing: 0) {
-      // Header
-      HStack {
-        Text("Reminders")
-          .font(.appTitleMediumEmphasised)
-          .foregroundColor(.appText03)
-
-        Spacer()
-
-        Button(action: {
-          activeSheet = .allReminders
-        }) {
-          HStack(spacing: 4) {
-            Text("See more")
-              .font(.appBodyMediumEmphasised)
-              .foregroundColor(.appText05)
-
-            Image(systemName: "chevron.right")
-              .font(.system(size: 8, weight: .bold))
-              .foregroundColor(.appText05)
-          }
-        }
-      }
-      .padding(.horizontal, 20)
-      .padding(.top, 20)
-      .padding(.bottom, 16)
-
-      // Reminders Carousel - Only show active reminders
-      if getActiveRemindersForDate(selectedProgressDate).isEmpty {
-        // Empty state when no reminders
-        VStack(spacing: 16) {
-          Image("Today-Habit-List-Empty-State@4x")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 120, height: 120)
-
-          VStack(spacing: 4) {
-            Text("No reminders for today")
-              .font(.appTitleLargeEmphasised)
-              .foregroundColor(.text04)
-
-            Text("You don't have any active reminders scheduled for this date")
-              .font(.appTitleSmall)
-              .foregroundColor(.text06)
-              .multilineTextAlignment(.center)
-          }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 0)
-        .padding(.bottom, 40)
-        .padding(.horizontal, 20)
-      } else {
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: 12) {
-            ForEach(getActiveRemindersForDate(selectedProgressDate), id: \.id) { reminder in
-              reminderCard(for: reminder)
-            }
-          }
-          .padding(.horizontal, 20)
-          .padding(.bottom, 20)
-        }
-      }
-    }
-    .background(
-      RoundedRectangle(cornerRadius: 24)
-        .fill(.appSurface01)
-        .overlay(
-          LinearGradient(
-            stops: [
-              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
-              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
-            ],
-            startPoint: UnitPoint(x: 0.08, y: 0.09),
-            endPoint: UnitPoint(x: 0.88, y: 1)
-          )
-          .clipShape(RoundedRectangle(cornerRadius: 24))
-        ))
-    .overlay(
-      RoundedRectangle(cornerRadius: 24)
-        .stroke(Color("appOutline1Variant"), lineWidth: 2))
-    .padding(.horizontal, 20)
-  }
 
   // MARK: - Main Content View
 
@@ -715,11 +625,6 @@ struct ProgressTabView: View {
           streak: cachedStreak
         )
         .padding(.horizontal, 20)
-      }
-
-      // Reminders Section - Only show when "All habits" is selected and "Daily" tab is active
-      if selectedHabit == nil, selectedTimePeriod == 0 {
-        remindersSection
       }
       
       Spacer()
@@ -887,26 +792,6 @@ struct ProgressTabView: View {
           ))
         .presentationDetents([.height(400)])
         .presentationDragIndicator(.hidden)
-        .presentationCornerRadius(32)
-        
-      case .allReminders:
-        AllRemindersPopup(
-          selectedDate: selectedProgressDate,
-          reminders: getAllRemindersForDate(selectedProgressDate),
-          isReminderEnabled: { reminder, date in
-            isReminderEnabled(for: reminder, on: date)
-          },
-          isReminderTimePassed: { reminder, date in
-            isReminderTimePassed(for: reminder, on: date)
-          },
-          toggleReminder: { reminder, date in
-            toggleReminder(for: reminder, on: date)
-          },
-          onDismiss: {
-            activeSheet = nil
-          })
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
         
       case .paywall:
@@ -1674,73 +1559,6 @@ struct ProgressTabView: View {
 
   // Today's progress section
 
-  /// Individual reminder card
-  private func reminderCard(for reminderWithHabit: ReminderWithHabit) -> some View {
-    let isEnabled = isReminderEnabled(for: reminderWithHabit.reminder, on: selectedProgressDate)
-    let isTimePassed = isReminderTimePassed(
-      for: reminderWithHabit.reminder,
-      on: selectedProgressDate)
-
-    return VStack(alignment: .leading, spacing: 8) {
-      // Top: Habit Icon
-      ZStack {
-        RoundedRectangle(cornerRadius: 12)
-          .fill(reminderWithHabit.habit.color.color.opacity(0.15))
-          .frame(width: 40, height: 40)
-
-        if reminderWithHabit.habit.icon.hasPrefix("Icon-") {
-          Image(reminderWithHabit.habit.icon)
-            .resizable()
-            .frame(width: 18, height: 18)
-            .foregroundColor(reminderWithHabit.habit.color.color)
-        } else if reminderWithHabit.habit.icon == "None" {
-          RoundedRectangle(cornerRadius: 4)
-            .fill(reminderWithHabit.habit.color.color)
-            .frame(width: 18, height: 18)
-        } else {
-          Text(reminderWithHabit.habit.icon)
-            .font(.system(size: 18))
-        }
-      }
-
-      // Middle: Habit Name
-      Text(reminderWithHabit.habit.name)
-        .font(.appBodyMediumEmphasised)
-        .foregroundColor(.onPrimaryContainer)
-        .lineLimit(2)
-        .multilineTextAlignment(.leading)
-
-      // Bottom: Reminder Time with Toggle
-      HStack(spacing: 0) {
-        Text(formatReminderTime(reminderWithHabit.reminder.time))
-          .font(.appBodyMedium)
-          .foregroundColor(.text02)
-
-        Spacer()
-
-        Toggle("", isOn: Binding(
-          get: { isEnabled },
-          set: { _ in toggleReminder(for: reminderWithHabit.reminder, on: selectedProgressDate) }))
-          .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
-          .controlSize(.mini)
-          .scaleEffect(0.75)
-          .labelsHidden()
-          .disabled(isTimePassed) // Disable toggle if time has passed
-      }
-      .frame(maxWidth: .infinity)
-    }
-    .frame(alignment: .leading)
-    .padding(16)
-    .frame(width: 160)
-    .background(
-      RoundedRectangle(cornerRadius: 16)
-        .fill(Color("appSecondaryContainer03")))
-    .overlay(
-      RoundedRectangle(cornerRadius: 16)
-        .stroke(Color("appOutline1Variant"), lineWidth: 1.0))
-    .clipShape(RoundedRectangle(cornerRadius: 16))
-    .opacity(isEnabled ? 1.0 : 0.6)
-  }
 
   private var mainContent: some View {
     ScrollView {
@@ -2356,39 +2174,6 @@ struct ProgressTabView: View {
 
   // MARK: - Reminder State Management
 
-  private func getDateKey(for date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "yyyy-MM-dd"
-    return formatter.string(from: date)
-  }
-
-  private func isReminderEnabled(for reminder: ReminderItem, on date: Date) -> Bool {
-    let dateKey = getDateKey(for: date)
-    return reminderStates[dateKey]?[reminder.id] ?? reminder.isActive
-  }
-
-  private func isReminderTimePassed(for reminder: ReminderItem, on date: Date) -> Bool {
-    let calendar = Calendar.current
-    let reminderDateTime = calendar.date(
-      bySettingHour: calendar.component(.hour, from: reminder.time),
-      minute: calendar.component(.minute, from: reminder.time),
-      second: 0,
-      of: date) ?? date
-
-    return Date() > reminderDateTime
-  }
-
-  private func toggleReminder(for reminder: ReminderItem, on date: Date) {
-    // Don't allow toggling if the reminder time has already passed
-    guard !isReminderTimePassed(for: reminder, on: date) else { return }
-
-    let dateKey = getDateKey(for: date)
-    if reminderStates[dateKey] == nil {
-      reminderStates[dateKey] = [:]
-    }
-    let currentState = isReminderEnabled(for: reminder, on: date)
-    reminderStates[dateKey]?[reminder.id] = !currentState
-  }
 
   // MARK: - Yearly Data Management
 
@@ -3328,61 +3113,7 @@ struct ProgressTabView: View {
     }
   }
 
-  private func getHabitReminderTime(for habit: Habit) -> String {
-    // Get the first active reminder time for the habit
-    if let firstReminder = habit.reminders.first(where: { $0.isActive }) {
-      let formatter = DateFormatter()
-      formatter.timeStyle = .short
-      return formatter.string(from: firstReminder.time)
-    }
 
-    // Fallback to a default time if no reminders
-    return "9:00 AM"
-  }
-
-  // MARK: - Helper Functions for All Reminders
-
-  struct ReminderWithHabit: Identifiable {
-    let id = UUID()
-    let reminder: ReminderItem
-    let habit: Habit
-  }
-
-  private func getAllRemindersForDate(_ date: Date) -> [ReminderWithHabit] {
-    let scheduledHabits = getScheduledHabitsForDate(date)
-    var allReminders: [ReminderWithHabit] = []
-
-    for habit in scheduledHabits {
-      for reminder in habit.reminders {
-        // Show all reminders for the selected date, regardless of their enabled state
-        // The toggle will control whether they're actually sent as notifications
-        allReminders.append(ReminderWithHabit(reminder: reminder, habit: habit))
-      }
-    }
-
-    // Sort reminders by time
-    return allReminders.sorted { $0.reminder.time < $1.reminder.time }
-  }
-
-  private func getActiveRemindersForDate(_ date: Date) -> [ReminderWithHabit] {
-    let scheduledHabits = getScheduledHabitsForDate(date)
-    var activeReminders: [ReminderWithHabit] = []
-
-    for habit in scheduledHabits {
-      for reminder in habit.reminders {
-        // Check if reminder is enabled for this specific date AND time hasn't passed yet
-        if isReminderEnabled(for: reminder, on: date), !isReminderTimePassed(
-          for: reminder,
-          on: date)
-        {
-          activeReminders.append(ReminderWithHabit(reminder: reminder, habit: habit))
-        }
-      }
-    }
-
-    // Sort reminders by time
-    return activeReminders.sorted { $0.reminder.time < $1.reminder.time }
-  }
 
   private func formatReminderTime(_ time: Date) -> String {
     let formatter = DateFormatter()

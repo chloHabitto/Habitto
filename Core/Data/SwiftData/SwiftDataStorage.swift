@@ -87,12 +87,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
     let startTime = CFAbsoluteTimeGetCurrent()
 
     do {
-      #if DEBUG
-      for (i, habit) in habitsToSave.enumerated() {
-        logger.info("  → [\(i)] '\(habit.name)' (ID: \(habit.id))")
-      }
-      #endif
-
       // ✅ CRITICAL FIX: Get existing habits with fallback for corruption
       var existingHabits: [Habit] = []
       var existingHabitIds: Set<UUID> = []
@@ -254,10 +248,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
 
       // ✅ CRITICAL FIX: Try to save, with fallback to UserDefaults on any error
       do {
-        print("        ⏱️ SWIFTDATA_SAVE_START: Calling modelContext.save() at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
-        print("        📊 SWIFTDATA_CONTEXT: hasChanges=\(container.modelContext.hasChanges)")
         try container.modelContext.save()
-        print("        ⏱️ SWIFTDATA_SAVE_END: modelContext.save() succeeded at \(DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium))")
 
         let timeElapsed = CFAbsoluteTimeGetCurrent() - startTime
         #if DEBUG

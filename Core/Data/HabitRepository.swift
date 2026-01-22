@@ -524,12 +524,9 @@ class HabitRepository: ObservableObject {
         try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
         
         do {
-          debugLog("🎯 XP_VALIDATION: Validating today's DailyAward after habit load (dateKey: \(todayKey))")
-          debugLog("   Waiting 2 seconds for sync to complete, then validating...")
           try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayKey, userId: currentUserId)
-          debugLog("✅ XP_VALIDATION: Today's DailyAward validated - XP integrity confirmed")
         } catch {
-          debugLog("⚠️ XP_VALIDATION: Failed to validate DailyAward: \(error.localizedDescription)")
+          debugLog("❌ XP_VALIDATION: Failed to validate DailyAward: \(error.localizedDescription)")
           // Don't fail habit loading if XP validation fails
         }
       }
@@ -659,7 +656,6 @@ class HabitRepository: ObservableObject {
   func createHabit(_ habit: Habit) async {
     #if DEBUG
     debugLog("🎯 [5/8] HabitRepository.createHabit: persisting habit")
-    debugLog("  → Habit: '\(habit.name)', ID: \(habit.id)")
     debugLog("  → Current habits count: \(habits.count)")
     #endif
 
@@ -1384,12 +1380,9 @@ class HabitRepository: ObservableObject {
       let currentUserId = await CurrentUser().idOrGuest
       
       do {
-        debugLog("🎯 XP_VALIDATION: Validating today's DailyAward after sync completion (dateKey: \(todayKey))")
-        debugLog("   This ensures XP is correct even if invalid awards were imported during sync")
         try await habitStore.checkDailyCompletionAndAwardXP(dateKey: todayKey, userId: currentUserId)
-        debugLog("✅ XP_VALIDATION: Today's DailyAward validated after sync - XP integrity confirmed")
       } catch {
-        debugLog("⚠️ XP_VALIDATION: Failed to validate DailyAward after sync: \(error.localizedDescription)")
+        debugLog("❌ XP_VALIDATION: Failed to validate DailyAward after sync: \(error.localizedDescription)")
         // Don't fail sync if XP validation fails
       }
     }
