@@ -610,7 +610,6 @@ struct ProgressTabView: View {
           selectedDate: selectedProgressDate
         )
         .padding(.horizontal, 20)
-        .padding(.top, 16)
       }
 
       // Daily Activity Stats Card - Show when a specific habit is selected on Daily tab

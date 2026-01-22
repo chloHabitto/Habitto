@@ -113,28 +113,28 @@ struct TodaysJourneyView: View {
     let calendar = Calendar.current
     let isToday = calendar.isDateInToday(selectedDate)
     
-    return VStack(alignment: .leading, spacing: 4) {
-      HStack {
+    return HStack(alignment: .top) {
+      VStack(alignment: .leading, spacing: 4) {
         Text(headerTitle)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.appText01)
-
-        Spacer()
-
-        Text("\(completedCount) of \(totalCount)")
-          .font(.appLabelMedium)
-          .foregroundColor(.appPrimary)
-          .padding(.horizontal, 12)
-          .padding(.vertical, 6)
-          .background(Color.appPrimaryContainer)
-          .clipShape(Capsule())
+        
+        if isToday {
+          Text("Your progress journey today")
+            .font(.appBodySmall)
+            .foregroundColor(.appText04)
+        }
       }
       
-      if isToday {
-        Text("Your progress journey today")
-          .font(.appBodySmall)
-          .foregroundColor(.appText04)
-      }
+      Spacer()
+      
+      Text("\(completedCount) of \(totalCount)")
+        .font(.appLabelMedium)
+        .foregroundColor(.appPrimary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.appPrimaryContainer)
+        .clipShape(Capsule())
     }
     .padding(.horizontal, 16)
     .padding(.top, 20)
