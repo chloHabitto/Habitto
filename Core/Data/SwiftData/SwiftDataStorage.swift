@@ -376,8 +376,6 @@ final class SwiftDataStorage: HabitStorageProtocol {
       }
     }
 
-    let startTime = CFAbsoluteTimeGetCurrent()
-
     do {
       
       // Create user-specific fetch descriptor

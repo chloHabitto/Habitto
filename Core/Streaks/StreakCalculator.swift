@@ -135,8 +135,6 @@ enum StreakCalculator {
     var currentStreak = 0
     var checkDate = startDate
     var completedDates: [String] = []
-    var longestStreakStartDate: Date?
-    var longestStreakEndDate: Date?
     
     while checkDate <= today {
       let dateKey = Habit.dateKey(for: checkDate)
@@ -181,8 +179,6 @@ enum StreakCalculator {
         
         if currentStreak > longestStreak {
           longestStreak = currentStreak
-          longestStreakEndDate = checkDate
-          longestStreakStartDate = calendar.date(byAdding: .day, value: -(currentStreak - 1), to: checkDate)
         }
       } else {
         currentStreak = 0
