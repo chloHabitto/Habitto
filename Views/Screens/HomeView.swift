@@ -381,8 +381,6 @@ class HomeViewState: ObservableObject {
     debugLog("⏱️ AWAIT_START: setProgress() at \(DateFormatter.localizedString(from: startTime, dateStyle: .none, timeStyle: .medium))")
     do {
       try await habitRepository.setProgress(for: habit, date: date, progress: progress)
-      let endTime = Date()
-      let duration = endTime.timeIntervalSince(startTime)
       
       // Sync updated habit to widget storage
       if let updatedHabit = habitRepository.habits.first(where: { $0.id == habit.id }) {

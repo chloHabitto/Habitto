@@ -1727,7 +1727,7 @@ actor SyncEngine {
         
         // Check completion records for this date
         let scheduledHabitIds: Set<UUID> = Set(scheduledHabits.map { $0.id })
-        let (allCompleted, missingHabits): (Bool, [String]) = await MainActor.run {
+        let (allCompleted, _): (Bool, [String]) = await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
             
             let completionPredicate = #Predicate<CompletionRecord> { record in

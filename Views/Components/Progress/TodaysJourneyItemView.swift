@@ -188,14 +188,14 @@ struct TodaysJourneyItemView: View {
     if item.status == .completed {
       LinearGradient(
         colors: [
-          Color.appSuccess.opacity(0.25),
-          Color.appSuccess.opacity(0.12)
+          Color.appSuccess.opacity(0.15),
+          Color.appSuccess.opacity(0.05)
         ],
         startPoint: .topLeading,
         endPoint: .bottomTrailing
       )
     } else {
-      Color.appSurface01
+      Color.appSurface02
     }
   }
 
@@ -220,14 +220,16 @@ struct TodaysJourneyItemView: View {
         streakBadge(count: item.currentStreak)
       }
     } else {
-      if let _ = estimatedTime {
-        timeHintBadge
+      // Pending state - simpler badges
+      if item.currentStreak > 0 {
+        if item.isAtRisk {
+          // Gentler "protect streak" badge
+          protectStreakBadge(count: item.currentStreak)
+        } else {
+          streakBadge(count: item.currentStreak)
+        }
       }
-      if item.isAtRisk {
-        atRiskBadge
-      } else if item.currentStreak > 0 {
-        streakBadge(count: item.currentStreak)
-      }
+      // No badge if streak is 0 - keep it clean
     }
   }
 
@@ -254,41 +256,30 @@ struct TodaysJourneyItemView: View {
   }
 
   private func streakBadge(count: Int) -> some View {
-    let text = count == 1 ? "1 day streak" : "\(count) days streak"
-    return HStack(spacing: 2) {
+    HStack(spacing: 3) {
       Text("🔥")
         .font(.system(size: 10))
-      Text(text)
+      Text("\(count)d")
         .font(.appLabelSmall)
         .foregroundColor(.white)
     }
     .padding(.horizontal, 8)
     .padding(.vertical, 3)
-    .background(Color.blue)
+    .background(Color.appPrimary)
     .clipShape(RoundedRectangle(cornerRadius: 6))
   }
 
-  private var timeHintBadge: some View {
-    Text("Est.")
-      .font(.appLabelSmall)
-      .foregroundColor(.appText05)
-      .padding(.horizontal, 8)
-      .padding(.vertical, 3)
-      .background(Color.appSurface03)
-      .clipShape(RoundedRectangle(cornerRadius: 6))
-  }
-
-  private var atRiskBadge: some View {
-    HStack(spacing: 2) {
-      Text("⚠️")
+  private func protectStreakBadge(count: Int) -> some View {
+    HStack(spacing: 3) {
+      Text("🔥")
         .font(.system(size: 10))
-      Text("At risk")
+      Text("\(count)d")
         .font(.appLabelSmall)
-        .foregroundColor(.white)
+        .foregroundColor(.appText01)
     }
     .padding(.horizontal, 8)
     .padding(.vertical, 3)
-    .background(Color.orange)
+    .background(Color.orange.opacity(0.15))
     .clipShape(RoundedRectangle(cornerRadius: 6))
   }
 }

@@ -15,7 +15,7 @@ struct TodaysJourneyView: View {
   @State private var journeyItems: [JourneyHabitItem] = []
   @State private var isAnimating = false
   @State private var breathingPhase = false
-  @State private var animationProgress: CGFloat = 0
+  @State private var animationPhase: CGFloat = 0
 
   private var scheduledHabits: [Habit] {
     habits.filter { StreakDataCalculator.shouldShowHabitOnDate($0, date: selectedDate) }
@@ -55,26 +55,39 @@ struct TodaysJourneyView: View {
   }
 
   private var totalCount: Int {
-    journeyItems.count
+    scheduledHabits.count
   }
 
   var body: some View {
     VStack(spacing: 0) {
       header
 
-      if journeyItems.isEmpty {
+      if scheduledHabits.isEmpty {
         emptyState
-      } else if completedCount == totalCount {
+      } else if completedCount == totalCount && totalCount > 0 {
         completeState
       } else {
         timelineContent
       }
     }
-    .background(Color.appSurface01)
-    .clipShape(RoundedRectangle(cornerRadius: 24))
+    .background(
+      RoundedRectangle(cornerRadius: 24)
+        .fill(Color.appSurface02)
+        .overlay(
+          LinearGradient(
+            stops: [
+              Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
+              Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
+            ],
+            startPoint: UnitPoint(x: 0.08, y: 0.09),
+            endPoint: UnitPoint(x: 0.88, y: 1)
+          )
+          .clipShape(RoundedRectangle(cornerRadius: 24))
+        )
+    )
     .overlay(
       RoundedRectangle(cornerRadius: 24)
-        .stroke(Color.appOutline1Variant, lineWidth: 1)
+        .stroke(Color.appOutline1Variant, lineWidth: 2)
     )
     .onAppear { loadJourneyItems() }
     .onChange(of: selectedDate) { _, _ in loadJourneyItems() }
@@ -132,7 +145,7 @@ struct TodaysJourneyView: View {
         .font(.appBodySmall)
         .foregroundColor(.appText03)
 
-      // Breathing dots animation
+      // Breathing dots with proper animation
       HStack(spacing: 16) {
         ForEach(0..<5, id: \.self) { index in
           Circle()
@@ -144,8 +157,8 @@ struct TodaysJourneyView: View {
       }
       .padding(.top, 8)
       .onAppear {
-        withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
-          animationProgress = 1
+        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+          animationPhase = 1
         }
       }
     }
@@ -204,38 +217,59 @@ struct TodaysJourneyView: View {
   }
 
   private func dotOpacity(for index: Int) -> Double {
-    let phase = (animationProgress + CGFloat(index) * 0.2).truncatingRemainder(dividingBy: 1.0)
-    return 0.3 + 0.6 * sin(phase * .pi)
+    // Simple wave: each dot slightly offset
+    let offset = Double(index) * 0.15
+    let base = animationPhase == 0 ? 0.3 : 0.9
+    return base - (offset * 0.1)
   }
 
   private func dotScale(for index: Int) -> CGFloat {
-    let phase = (animationProgress + CGFloat(index) * 0.2).truncatingRemainder(dividingBy: 1.0)
-    return 0.9 + 0.2 * sin(phase * .pi)
+    let offset = Double(index) * 0.1
+    let base = animationPhase == 0 ? 0.8 : 1.1
+    return base - CGFloat(offset * 0.05)
   }
 
   // MARK: - Timeline Content
 
   private var timelineContent: some View {
-    VStack(spacing: 0) {
-      ForEach(Array(completedItems.enumerated()), id: \.element.id) { index, item in
+    let now = Date()
+    
+    // Split completed items into "before now" and "after now" (edge case: completed in future)
+    let completedBeforeNow = completedItems.filter { item in
+      guard let time = item.completionTime else { return true }
+      return time <= now
+    }
+    
+    let hasCompletedAfterNow = completedItems.contains { item in
+      guard let time = item.completionTime else { return false }
+      return time > now
+    }
+    
+    let shouldShowMarker = shouldShowNowMarker || hasCompletedAfterNow
+    
+    return VStack(spacing: 0) {
+      // Completed items that happened before now
+      ForEach(Array(completedBeforeNow.enumerated()), id: \.element.id) { index, item in
         TodaysJourneyItemView(
           item: item,
           index: index,
           isFirst: index == 0,
-          isLast: index == completedItems.count - 1 && !shouldShowNowMarker,
+          isLast: false,
           estimatedTime: nil
         )
       }
 
-      if shouldShowNowMarker {
+      // NOW marker (only if viewing today and there are pending items OR completed items after now)
+      if shouldShowMarker {
         TodaysJourneyNowMarker()
       }
 
+      // Pending items
       ForEach(Array(pendingItems.enumerated()), id: \.element.id) { index, item in
         TodaysJourneyItemView(
           item: item,
-          index: completedItems.count + 1 + index,
-          isFirst: false,
+          index: completedBeforeNow.count + (shouldShowMarker ? 1 : 0) + index,
+          isFirst: completedBeforeNow.isEmpty && index == 0,
           isLast: index == pendingItems.count - 1,
           estimatedTime: TodaysJourneyHelpers.getEstimatedCompletionTime(for: item.habit, targetDate: selectedDate)
         )
