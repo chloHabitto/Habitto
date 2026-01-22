@@ -30,11 +30,12 @@ struct TodaysJourneyItemView: View {
   }()
 
   var body: some View {
-    HStack(alignment: .top, spacing: 12) {
+    HStack(alignment: .top, spacing: 8) {
       timeColumn
       spineColumn
       cardColumn
     }
+    .padding(.bottom, isLast ? 0 : 8) // Spacing between items, not inside card
     .opacity(hasAppeared ? 1 : 0)
     .offset(y: hasAppeared ? 0 : 20)
     .animation(
@@ -50,15 +51,15 @@ struct TodaysJourneyItemView: View {
     VStack(alignment: .trailing, spacing: 2) {
       Text(timeLine1)
         .font(.appLabelSmall)
-        .foregroundColor(item.status == .completed ? .appText03 : .appText05)
+        .foregroundColor(item.status == .completed ? .appText02 : .appText05)
       if !timeLine2.isEmpty {
         Text(timeLine2)
           .font(.appLabelSmall)
-          .foregroundColor(item.status == .completed ? .appText03 : .appText05)
+          .foregroundColor(item.status == .completed ? .appText04 : .appText05)
       }
     }
     .frame(width: 45, alignment: .trailing)
-    .padding(.top, 16)
+    .padding(.top, 16) // Align with card top
   }
 
   private var timeLine1: String {
@@ -83,36 +84,31 @@ struct TodaysJourneyItemView: View {
     }
   }
 
-  // MARK: - Spine Column (24pt) - matches TimelineEntryRow connectorColumn
+  // MARK: - Spine Column (24pt) - simplified to match TimelineEntryRow
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
-      if !isFirst {
-        spineLine(isPending: item.status == .pending)
-      }
+      // Dot at fixed position from top - NO line above
       timelineNode
-        .padding(.top, 18) // Match TimelineEntryRow dot positioning
+        .padding(.top, 18)
+      
+      // Line below the dot (only if not last item)
       if !isLast {
-        spineLine(isPending: item.status == .pending)
+        spineLineBelow
+          .padding(.top, 4)
       }
     }
     .frame(width: 24)
+    .frame(maxHeight: .infinity, alignment: .top) // Extend to fill row height
   }
-
-  private func spineLine(isPending: Bool) -> some View {
-    spineLinePath(isPending: isPending)
-      .frame(width: 3)
-      .frame(minHeight: 24) // Minimum height to extend through card padding
-  }
-
-  private func spineLinePath(isPending: Bool) -> some View {
+  
+  private var spineLineBelow: some View {
     GeometryReader { geo in
-      let h = max(24, geo.size.height) // Ensure minimum height of 24
       Group {
-        if isPending {
+        if item.status == .pending {
           Path { p in
             p.move(to: CGPoint(x: 1.5, y: 0))
-            p.addLine(to: CGPoint(x: 1.5, y: h))
+            p.addLine(to: CGPoint(x: 1.5, y: geo.size.height))
           }
           .stroke(
             Color.appOutline02,
@@ -121,26 +117,27 @@ struct TodaysJourneyItemView: View {
         } else {
           Rectangle()
             .fill(Color.appPrimary)
-            .frame(width: 3, height: h)
+            .frame(width: 3, height: geo.size.height)
         }
       }
-      .frame(width: 3, height: h)
     }
     .frame(width: 3)
+    .frame(maxHeight: .infinity) // Extend to fill available space
   }
 
   private var timelineNode: some View {
     let isCompleted = item.status == .completed
     return Circle()
       .fill(isCompleted ? Color.appPrimary : Color.white)
-      .frame(width: 14, height: 14)
+      .frame(width: 12, height: 12)
       .overlay(
         Circle()
-          .stroke(Color.appOutline02, lineWidth: isCompleted ? 0 : 2.5)
+          .stroke(isCompleted ? Color.clear : Color.appOutline02, lineWidth: 2.5)
       )
       .shadow(
-        color: isCompleted ? Color.appPrimary.opacity(0.5) : .clear,
-        radius: 3
+        color: isCompleted ? Color.appPrimary.opacity(0.3) : .clear,
+        radius: 2,
+        y: 1
       )
   }
 
@@ -200,8 +197,6 @@ struct TodaysJourneyItemView: View {
         .stroke(Color.appOutline02, lineWidth: 1)
     )
     .opacity(item.status == .pending ? 0.8 : 1)
-    .padding(.top, 16) // Match TimelineEntryRow entryCard top padding
-    .padding(.bottom, isLast ? 0 : 12) // Match TimelineEntryRow entryCard bottom padding
   }
 
   @ViewBuilder
