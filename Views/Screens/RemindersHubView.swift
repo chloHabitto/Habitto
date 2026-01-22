@@ -263,7 +263,16 @@ struct RemindersHubView: View {
         NavigationStack {
           HabitDetailView(
             habit: habit,
-            onUpdateHabit: { _ in },
+            onUpdateHabit: { updatedHabit in
+              // Save the updated habit to the repository
+              Task {
+                do {
+                  try await habitRepository.updateHabit(updatedHabit)
+                } catch {
+                  print("❌ RemindersHubView: Failed to update habit: \(error.localizedDescription)")
+                }
+              }
+            },
             selectedDate: selectedDate,
             onDeleteHabit: nil
           )
