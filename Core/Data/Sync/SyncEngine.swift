@@ -1597,7 +1597,8 @@ actor SyncEngine {
                 if let existingRecord = existingRecords.first {
                     let localTimestamp = existingRecord.updatedAt ?? existingRecord.createdAt
                     
-                    // ✅ BUG 2 FIX: Compare timestamps correctly - handle equal timestamps
+                    // ✅ CRITICAL BUG FIX: Compare timestamps - only update if remote is NEWER
+                    // Never overwrite local data with older or equal-timestamp remote data
                     if remoteTimestamp > localTimestamp {
                         // Remote is newer, update local
                         existingRecord.isCompleted = remoteIsCompleted
@@ -1611,29 +1612,31 @@ actor SyncEngine {
                         existingRecord.updatedAt = Date()
                         
                         try modelContext.save()
-                        logger.info("✅ SyncEngine: Updated completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
-                    } else if remoteTimestamp == localTimestamp {
-                        // Timestamps equal - check if values differ
+                        logger.info("✅ SyncEngine: Updated completion (remote newer) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress) | remoteTimestamp=\(remoteTimestamp.ISO8601Format()) > localTimestamp=\(localTimestamp.ISO8601Format())")
+                    } else if remoteTimestamp < localTimestamp {
+                        // ✅ CRITICAL BUG FIX: Local is newer - preserve local data, skip remote overwrite
+                        // This prevents stale Firestore data from overwriting recent local changes
+                        logger.info("⏭️ SyncEngine: Skipping completion update (local newer) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) | localProgress=\(existingRecord.progress) remoteProgress=\(remoteProgress) | localTimestamp=\(localTimestamp.ISO8601Format()) > remoteTimestamp=\(remoteTimestamp.ISO8601Format())")
+                    } else {
+                        // Timestamps equal - prefer LOCAL data to prevent overwriting user's recent changes
+                        // This handles race conditions where user saves locally but sync pulls before upload completes
                         if existingRecord.isCompleted != remoteIsCompleted || existingRecord.progress != remoteProgress {
-                            // Values differ, update to remote (resolve conflict by preferring remote)
-                            existingRecord.isCompleted = remoteIsCompleted
-                            existingRecord.progress = remoteProgress
-                            // ✅ CRITICAL FIX: Set updatedAt to current time when syncing
-                            existingRecord.updatedAt = Date()
-                            try modelContext.save()
-                            logger.info("✅ SyncEngine: Updated completion (same timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
+                            logger.info("⏭️ SyncEngine: Skipping completion update (equal timestamps, preferring local) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) | localProgress=\(existingRecord.progress) remoteProgress=\(remoteProgress) | timestamp=\(localTimestamp.ISO8601Format())")
+                            // Don't update - preserve local data
                         }
-                    } else if remoteTimestamp == Date(timeIntervalSince1970: 0) &&
-                              (existingRecord.isCompleted != remoteIsCompleted || existingRecord.progress != remoteProgress) {
-                        // ✅ FIX: Remote has invalid timestamp BUT different values
-                        // This likely means remote was updated by another device with old code
-                        // Prefer remote to ensure data consistency
+                    }
+                    
+                    // ✅ FIX: Handle invalid remote timestamp separately (after main comparison)
+                    // Only update if remote has invalid timestamp AND local also has issues
+                    if remoteTimestamp == Date(timeIntervalSince1970: 0) &&
+                       localTimestamp == Date(timeIntervalSince1970: 0) &&
+                       (existingRecord.isCompleted != remoteIsCompleted || existingRecord.progress != remoteProgress) {
+                        // Both have invalid timestamps - prefer remote for data consistency
                         existingRecord.isCompleted = remoteIsCompleted
                         existingRecord.progress = remoteProgress
-                        // ✅ CRITICAL FIX: Set updatedAt to current time when syncing
                         existingRecord.updatedAt = Date()
                         try modelContext.save()
-                        logger.info("✅ SyncEngine: Updated completion (invalid remote timestamp, different values) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
+                        logger.info("✅ SyncEngine: Updated completion (both invalid timestamps, preferring remote) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
                     }
                 } else {
                     // Create new completion record
