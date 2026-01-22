@@ -84,6 +84,8 @@ struct DailyActivityTimelineView: View {
                 TimelineEntryRow(
                     entry: entry,
                     habit: habit,
+                    index: index,
+                    isFirst: index == 0,
                     isLast: index == entries.count - 1 && isGoalComplete
                 )
             }
