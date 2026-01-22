@@ -115,7 +115,6 @@ final actor HabitStore {
           // Check if any habits have non-empty userId (authenticated user data)
           let authenticatedHabits = allHabits.filter { !$0.userId.isEmpty }
           if !authenticatedHabits.isEmpty {
-            let userIds = Set(authenticatedHabits.map { $0.userId })
             logger.info("🛑 Skipping UserDefaults migration - account data exists in SwiftData")
             return true
           }

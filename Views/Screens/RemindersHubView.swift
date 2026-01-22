@@ -365,6 +365,7 @@ struct RemindersHubView: View {
   
   private func scheduleReminderRow(for reminderWithHabit: ReminderWithHabit) -> some View {
     let isSkipped = isReminderSkipped(reminderWithHabit.reminder)
+    let isTimePassed = isReminderTimePassed(reminderWithHabit.reminder)
     
     return Button(action: {
       UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -392,7 +393,7 @@ struct RemindersHubView: View {
           }
         }
         
-        // Habit name + time + skipped status
+        // Habit name + time + skipped/passed status
         VStack(alignment: .leading, spacing: 2) {
           Text(reminderWithHabit.habit.name)
             .font(.appBodyMediumEmphasised)
@@ -411,6 +412,14 @@ struct RemindersHubView: View {
               Text("Skipped")
                 .font(.appBodySmall)
                 .foregroundColor(.orange)
+            } else if isTimePassed {
+              Text("·")
+                .font(.appBodySmall)
+                .foregroundColor(.text04)
+              
+              Text("Passed")
+                .font(.appBodySmall)
+                .foregroundColor(.text05)
             }
           }
         }
@@ -435,12 +444,13 @@ struct RemindersHubView: View {
         .toggleStyle(SwitchToggleStyle(tint: .appPrimary))
         .labelsHidden()
         .scaleEffect(0.8)  // Slightly smaller to fit nicely
+        .disabled(isTimePassed)  // Disable toggle if time has passed
         .onTapGesture {
           // Prevent row tap when toggle is tapped
         }
       }
       .padding(16)
-      .opacity(isSkipped ? 0.7 : 1.0)
+      .opacity(isSkipped || isTimePassed ? 0.7 : 1.0)  // Dim if skipped OR passed (but don't stack)
     }
     .buttonStyle(PlainButtonStyle())
   }

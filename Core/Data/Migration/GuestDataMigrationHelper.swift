@@ -110,9 +110,6 @@ final class GuestDataMigrationHelper {
           print("   Migrating \(records.count) records from userId '\(oldUserIdDisplay)'")
         }
         
-        // Store old userIds before migration for verification
-        let oldUserIdsBeforeMigration = Set(orphanedRecords.map { $0.userId })
-        
         for record in orphanedRecords {
           record.userId = userId
           record.userIdHabitIdDateKey = "\(userId)#\(record.habitId.uuidString)#\(record.dateKey)"
@@ -151,9 +148,6 @@ final class GuestDataMigrationHelper {
           let xp = awards.reduce(0) { $0 + $1.xpGranted }
           print("   Migrating \(awards.count) awards from userId '\(oldUserIdDisplay)' (Total XP: \(xp))")
         }
-        
-        // Store old userIds before migration for verification
-        let oldUserIdsBeforeMigration = Set(orphanedAwards.map { $0.userId })
         
         for award in orphanedAwards {
           award.userId = userId
@@ -223,9 +217,6 @@ final class GuestDataMigrationHelper {
             }
           }
           
-          // Store old values before migration for verification
-          let oldUserIdsBeforeMigration = Set(orphanedProgress.map { $0.userId })
-          
           // Update user progress with merged values
           userProgress.xpTotal = maxXP
           userProgress.level = maxLevel
@@ -244,7 +235,7 @@ final class GuestDataMigrationHelper {
           
           print("✅ [GUEST_MIGRATION] Migrated user progress successfully")
           print("   ✅ Migrated XP: \(maxXP), Level: \(maxLevel), Streak: \(maxStreak)")
-          if let verified = verifiedProgress {
+          if let _ = verifiedProgress {
             print("   ✅ Verification: UserProgressData now has userId '\(userId.prefix(8))...'")
             logger.info("✅ GuestMigration: Migrated user progress (XP: \(maxXP), Level: \(maxLevel)) - verified: \(verifiedProgress != nil)")
           }

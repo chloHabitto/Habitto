@@ -89,12 +89,10 @@ struct TodaysJourneyItemView: View {
     VStack(spacing: 0) {
       if !isFirst {
         spineLine(isPending: item.status == .pending)
-          .frame(minHeight: 18)
       }
       timelineNode
       if !isLast {
         spineLine(isPending: item.status == .pending)
-          .frame(minHeight: 18)
       }
     }
     .frame(width: 24)
@@ -103,11 +101,12 @@ struct TodaysJourneyItemView: View {
   private func spineLine(isPending: Bool) -> some View {
     spineLinePath(isPending: isPending)
       .frame(width: 3)
+      .frame(minHeight: 24) // Minimum height to extend through card padding
   }
 
   private func spineLinePath(isPending: Bool) -> some View {
     GeometryReader { geo in
-      let h = max(1, geo.size.height)
+      let h = max(24, geo.size.height) // Ensure minimum height of 24
       Group {
         if isPending {
           Path { p in
@@ -149,34 +148,56 @@ struct TodaysJourneyItemView: View {
   private var cardColumn: some View {
     HStack(alignment: .top, spacing: 12) {
       HabitIconView(habit: item.habit)
-        .frame(width: 36, height: 36)
+        .frame(width: 40, height: 40)
 
-      VStack(alignment: .leading, spacing: 6) {
-        Text(item.habit.name)
-          .font(.appBodyMedium)
-          .foregroundColor(.appText01)
-          .lineLimit(2)
-          .truncationMode(.tail)
-
-        HStack(spacing: 6) {
-          metaBadges
+      VStack(alignment: .leading, spacing: 8) {
+        // Header row
+        HStack {
+          Text(item.habit.name)
+            .font(.appLabelLargeEmphasised)
+            .foregroundColor(.appText01)
+            .lineLimit(2)
+            .truncationMode(.tail)
+          
+          Spacer()
+          
+          // Status icon (checkmark when completed)
+          if item.status == .completed {
+            Image(systemName: "checkmark")
+              .font(.system(size: 12, weight: .bold))
+              .foregroundColor(.white)
+              .frame(width: 24, height: 24)
+              .background(Circle().fill(Color.green))
+          }
+        }
+        
+        // Meta row with difficulty badge
+        VStack(alignment: .leading, spacing: 4) {
+          if item.status == .completed {
+            if let difficulty = item.difficulty {
+              DifficultyBadge(difficulty: difficulty)
+            }
+          } else {
+            // Pending state - show streak badges
+            HStack(spacing: 6) {
+              metaBadges
+            }
+          }
         }
       }
 
       Spacer(minLength: 0)
-
-      if item.status == .completed {
-        Image(systemName: "checkmark")
-          .font(.system(size: 12, weight: .bold))
-          .foregroundColor(.white)
-          .frame(width: 24, height: 24)
-          .background(Circle().fill(Color.appSuccess))
-      }
     }
-    .padding(12)
-    .background(cardBackground)
-    .overlay(cardBorder)
-    .clipShape(RoundedRectangle(cornerRadius: 14))
+    .padding(16)
+    .background(
+      RoundedRectangle(cornerRadius: 16)
+        .fill(Color.appSurface4)
+        .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
+    )
+    .overlay(
+      RoundedRectangle(cornerRadius: 16)
+        .stroke(Color.appOutline02, lineWidth: 1)
+    )
     .opacity(item.status == .pending ? 0.8 : 1)
     .padding(.leading, 6)
     .padding(.top, 8)
@@ -184,75 +205,17 @@ struct TodaysJourneyItemView: View {
   }
 
   @ViewBuilder
-  private var cardBackground: some View {
-    if item.status == .completed {
-      LinearGradient(
-        colors: [
-          Color.appSuccess.opacity(0.12),
-          Color.appSuccess.opacity(0.04)
-        ],
-        startPoint: .topLeading,
-        endPoint: .bottomTrailing
-      )
-    } else {
-      Color.appSurface03
-    }
-  }
-
-  @ViewBuilder
-  private var cardBorder: some View {
-    if item.status == .completed {
-      RoundedRectangle(cornerRadius: 14)
-        .stroke(Color.appSuccess, lineWidth: 1)
-    } else {
-      RoundedRectangle(cornerRadius: 14)
-        .stroke(Color.appOutline02, style: StrokeStyle(lineWidth: 1, dash: [6, 4]))
-    }
-  }
-
-  @ViewBuilder
   private var metaBadges: some View {
-    if item.status == .completed {
-      if let d = item.difficulty {
-        difficultyBadge(difficulty: d)
-      }
-      if item.currentStreak > 0 {
+    // Pending state - simpler badges
+    if item.currentStreak > 0 {
+      if item.isAtRisk {
+        // Gentler "protect streak" badge
+        protectStreakBadge(count: item.currentStreak)
+      } else {
         streakBadge(count: item.currentStreak)
       }
-    } else {
-      // Pending state - simpler badges
-      if item.currentStreak > 0 {
-        if item.isAtRisk {
-          // Gentler "protect streak" badge
-          protectStreakBadge(count: item.currentStreak)
-        } else {
-          streakBadge(count: item.currentStreak)
-        }
-      }
-      // No badge if streak is 0 - keep it clean
     }
-  }
-
-  private func difficultyBadge(difficulty: Int) -> some View {
-    let (label, bg) = difficultyLabelAndColor(difficulty)
-    return Text(label)
-      .font(.appLabelSmall)
-      .foregroundColor(.white)
-      .padding(.horizontal, 8)
-      .padding(.vertical, 3)
-      .background(bg)
-      .clipShape(RoundedRectangle(cornerRadius: 6))
-  }
-
-  private func difficultyLabelAndColor(_ d: Int) -> (String, Color) {
-    switch d {
-    case 1, 2: return ("Very Easy", Color.appSuccess)
-    case 3, 4: return ("Easy", Color.appSuccess)
-    case 5, 6: return ("Medium", Color.orange)
-    case 7, 8: return ("Hard", Color.red)
-    case 9, 10: return ("Very Hard", Color.red)
-    default: return ("Medium", Color.orange)
-    }
+    // No badge if streak is 0 - keep it clean
   }
 
   private func streakBadge(count: Int) -> some View {
