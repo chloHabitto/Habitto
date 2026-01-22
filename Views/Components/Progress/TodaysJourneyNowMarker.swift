@@ -68,9 +68,10 @@ struct TodaysJourneyNowMarker: View {
               endPoint: .bottom
             )
           )
-          .frame(width: 3, height: geo.size.height)
+          .frame(width: 3, height: max(geo.size.height, 48)) // Minimum 48pt height
       }
       .frame(width: 3)
+      .frame(minHeight: 48) // Ensure GeometryReader has minimum height
     }
     .frame(width: 24)
     .frame(maxHeight: .infinity, alignment: .top) // CRITICAL: Expand to fill row height
@@ -119,7 +120,7 @@ struct TodaysJourneyNowMarker: View {
       .padding(.top, 21) // Align with dot center: 16 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
       
       Spacer()
-        .frame(height: 32) // Add height to make row taller, gradient will extend
+        .frame(height: 48) // Add height to make row taller, gradient will extend
     }
   }
 }
