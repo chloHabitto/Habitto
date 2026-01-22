@@ -418,21 +418,6 @@ class HomeViewState: ObservableObject {
     debugLog("🎯 [3/8] HomeViewState.createHabit: creating habit")
     debugLog("  → Habit: '\(habit.name)', ID: \(habit.id)")
     
-    // ✅ DIAGNOSTIC: Log habit dates
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateStyle = .medium
-    dateFormatter.timeStyle = .short
-    debugLog("🗓️ DIAGNOSTIC: habit.startDate = \(dateFormatter.string(from: habit.startDate))")
-    if let end = habit.endDate {
-      debugLog("🗓️ DIAGNOSTIC: habit.endDate = \(dateFormatter.string(from: end))")
-    } else {
-      debugLog("🗓️ DIAGNOSTIC: habit.endDate = nil")
-    }
-    let today = Date()
-    debugLog("🗓️ DIAGNOSTIC: today = \(dateFormatter.string(from: today))")
-    debugLog("🗓️ DIAGNOSTIC: startDate is today? \(Calendar.current.isDate(habit.startDate, inSameDayAs: today))")
-    
-    debugLog("  → Current habits count: \(habits.count)")
     #endif
     
     // Check if vacation mode is active
@@ -560,8 +545,6 @@ class HomeViewState: ObservableObject {
       let elapsed = now.timeIntervalSince(lastUpdate)
       if elapsed < streakUpdateInterval {
         let remaining = streakUpdateInterval - elapsed
-        debugLog(
-          "ℹ️ STREAK_UPDATE: Skipping - updated \(String(format: "%.1f", elapsed))s ago, retrying in \(String(format: "%.2f", remaining))s")
         pendingStreakRecalculation = true
         scheduleStreakRecalculationRetry(after: remaining)
         return
@@ -1442,12 +1425,9 @@ struct HomeView: View {
         
         // ✅ CRITICAL FIX: Only recalculate streak when habits change
         // But add a small delay to ensure SwiftData has finished saving CompletionRecords
-        debugLog("🔄 REACTIVE_STREAK: Habits changed, scheduling streak recalculation...")
-        
         // Wait 100ms to allow SwiftData saves to complete
         try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
         
-        debugLog("🔄 REACTIVE_STREAK: Now recalculating streak after SwiftData sync...")
         state.requestStreakRecalculation(reason: "Habits publisher change")
       }
     }

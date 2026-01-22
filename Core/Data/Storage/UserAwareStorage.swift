@@ -25,9 +25,7 @@ class UserAwareStorage: HabitStorageProtocol {
 
     // ✅ CRITICAL FIX: Update cache with the new habits array
     // This ensures cache is always in sync with storage
-    print("🗑️ DELETE_FLOW: UserAwareStorage.saveHabits() - Updating cache with \(habits.count) habits")
     cachedHabits = habits
-    print("🗑️ DELETE_FLOW: UserAwareStorage.saveHabits() - Cache updated")
   }
 
   func loadHabits(force: Bool = false) async throws -> [Habit] {
@@ -84,19 +82,15 @@ class UserAwareStorage: HabitStorageProtocol {
   }
 
   func deleteHabit(id: UUID) async throws {
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - START for habit ID: \(id)")
     clearCacheIfUserChanged()
 
     // ✅ CRITICAL FIX: Clear cache before deletion
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Clearing cache")
     cachedHabits = nil
 
     // ✅ CRITICAL FIX: Call the actual deleteHabit method that does modelContext.delete()
     // The previous approach (load → remove → save) doesn't actually delete the HabitData record
     // We must call baseStorage.deleteHabit(id:) which properly does modelContext.delete(habitData)
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Calling baseStorage.deleteHabit()")
     try await baseStorage.deleteHabit(id: id)
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - baseStorage.deleteHabit() completed")
     
     // ✅ CRITICAL FIX: Update cache by removing from cached array if present
     // This ensures cache stays in sync after deletion
@@ -105,30 +99,22 @@ class UserAwareStorage: HabitStorageProtocol {
       cached.removeAll { $0.id == id }
       let afterCount = cached.count
       if beforeCount != afterCount {
-        print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - Updated cache: \(beforeCount) → \(afterCount) habits")
         cachedHabits = cached
       }
     }
-    
-    print("🗑️ DELETE_FLOW: UserAwareStorage.deleteHabit() - END")
   }
 
   func clearAllHabits() async throws {
-    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - START")
     clearCacheIfUserChanged()
 
     // ✅ CRITICAL FIX: Clear cache before saving to ensure consistency
-    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - Clearing cache")
     cachedHabits = nil
 
     // Use the specific saveHabits method with empty array instead of generic save
-    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - Saving empty array to base storage")
     try await baseStorage.saveHabits([], immediate: true)
 
     // ✅ CRITICAL FIX: Update cache to empty array (not nil) to prevent stale data
-    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - Setting cache to empty array")
     cachedHabits = []
-    print("🗑️ DELETE_FLOW: UserAwareStorage.clearAllHabits() - END")
   }
 
   func loadHabit(id: UUID) async throws -> Habit? {

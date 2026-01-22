@@ -159,20 +159,6 @@ class HabitFormLogic {
     print("🔍 HabitFormLogic: step1Data = \(step1Data)")
     print(
       "🔍 HabitFormLogic: goalNumber = \(goalNumber), goalUnit = \(goalUnit), goalFrequency = \(goalFrequency)")
-    
-    // ✅ DIAGNOSTIC: Log date information
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateStyle = .medium
-    dateFormatter.timeStyle = .short
-    print("🗓️ DIAGNOSTIC: startDate = \(dateFormatter.string(from: startDate))")
-    if let end = endDate {
-      print("🗓️ DIAGNOSTIC: endDate = \(dateFormatter.string(from: end))")
-    } else {
-      print("🗓️ DIAGNOSTIC: endDate = nil (no end date)")
-    }
-    let today = Date()
-    print("🗓️ DIAGNOSTIC: today = \(dateFormatter.string(from: today))")
-    print("🗓️ DIAGNOSTIC: startDate == today? \(Calendar.current.isDate(startDate, inSameDayAs: today))")
 
     // For habit building, use goal frequency; for habit breaking, use target frequency
     let scheduleFrequency = step1Data.4 == .formation ? goalFrequency : targetFrequency

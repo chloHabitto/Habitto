@@ -242,15 +242,11 @@ class FirebaseBackupService {
   }
 
   private func performHabitDeletion(habitId: UUID) async {
-    print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - START for habit ID: \(habitId)")
-    
     guard let userId = await getCurrentUserId() else {
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - No user ID, skipping")
       return
     }
 
     guard FirebaseApp.app() != nil else {
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - Firebase not configured, skipping")
       return
     }
 
@@ -260,11 +256,9 @@ class FirebaseBackupService {
         .collection("habits")
         .document(habitId.uuidString)
 
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - Calling Firestore delete()")
       try await docRef.delete()
       
     } catch {
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - ERROR: \(error.localizedDescription)")
       print("⚠️ [CLOUD_BACKUP] Habit deletion failed: \(error.localizedDescription)")
       print("   Habit ID: \(habitId.uuidString.prefix(8))...")
       logger.warning("⚠️ FirebaseBackupService: Failed to delete habit backup: \(error.localizedDescription)")
@@ -277,23 +271,17 @@ class FirebaseBackupService {
         logger.info("📝 FirebaseBackupService: Marked habit \(habitId.uuidString.prefix(8))... for retry deletion")
       }
     }
-    
-    print("🗑️ DELETE_FLOW: FirebaseBackupService.performHabitDeletion() - END")
   }
   
   /// Delete all completion records for a habit from Firestore
   /// Completion records are stored at: users/{userId}/completions/{yearMonth}/completions/{habitId}_{dateKey}
   /// Checks yearMonth collections for the last 2 years and deletes records matching the habitId prefix
   private func performCompletionRecordsDeletion(habitId: UUID) async {
-    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - START for habit ID: \(habitId)")
-    
     guard let userId = await getCurrentUserId() else {
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - No user ID, skipping")
       return
     }
 
     guard FirebaseApp.app() != nil else {
-      print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Firebase not configured, skipping")
       return
     }
 
@@ -318,8 +306,6 @@ class FirebaseBackupService {
       yearMonths.append(yearMonth)
     }
     
-    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Checking \(yearMonths.count) yearMonth collections")
-    
     var totalDeleted = 0
     
     // ✅ FIX: Check both "completions" (new) and "records" (legacy) subcollections
@@ -339,8 +325,6 @@ class FirebaseBackupService {
         guard let recordsSnapshot = recordsSnapshot, !recordsSnapshot.documents.isEmpty else {
           continue // Skip empty collections
         }
-        
-        print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Found \(recordsSnapshot.documents.count) records in \(yearMonth)/\(subcollectionName)")
         
         // Filter and delete records where document ID matches habitId
         // OR where the habitId field in the document data matches
@@ -363,27 +347,18 @@ class FirebaseBackupService {
             do {
               try await recordDoc.reference.delete()
               totalDeleted += 1
-              let matchType = matchesNewFormat ? "new ID format" : (matchesOldFormat ? "old ID format" : "field")
-              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted record: \(recordId) (matched by: \(matchType))")
             } catch {
-              print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - ERROR deleting record \(recordId): \(error.localizedDescription)")
               // Continue with other records even if one fails
             }
-          } else {
-            // Debug logging to understand why records aren't matching
-            print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Skipping record: \(recordId) (habitId in data: \(recordHabitId), expected: \(habitIdString))")
           }
         }
       }
     }
     
-    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - Deleted \(totalDeleted) completion records total")
     print("☁️ [CLOUD_BACKUP] Completion records deleted from Firestore")
     print("   Habit ID: \(habitIdString.prefix(8))...")
     print("   Total records deleted: \(totalDeleted)")
     logger.info("✅ FirebaseBackupService: Deleted \(totalDeleted) completion records for habit \(habitIdString.prefix(8))... from Firestore")
-    
-    print("🗑️ DELETE_FLOW: FirebaseBackupService.performCompletionRecordsDeletion() - END")
   }
 
   // MARK: - Retry Pending Deletions

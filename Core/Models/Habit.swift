@@ -843,9 +843,6 @@ struct Habit: Identifiable, Codable, Equatable {
     // Streak validation now always returns true since we only use computed values
     let isValid = true
 
-    print(
-      "🔍 STREAK VALIDATION DEBUG - Habit '\(name)': calculated streak=\(actualStreak), valid=\(isValid) (computed-only)")
-
     return isValid
   }
 

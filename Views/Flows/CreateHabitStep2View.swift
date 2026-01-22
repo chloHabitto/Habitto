@@ -426,21 +426,6 @@ struct CreateHabitStep2View: View {
       baselineNumber: baselineNumber,
       targetNumber: targetNumber)
     
-    #if DEBUG
-    print("🔍 VALIDATION CHECK:")
-    print("  → habitType: \(habitType)")
-    print("  → goalNumber: '\(goalNumber)'")
-    print("  → baselineNumber: '\(baselineNumber)'")
-    print("  → targetNumber: '\(targetNumber)'")
-    print("  → isFormValid: \(result)")
-    if habitType == .formation {
-      print("  → isGoalValid: \(HabitFormLogic.isGoalValid(goalNumber))")
-    } else {
-      print("  → isBaselineValid: \(HabitFormLogic.isBaselineValid(baselineNumber))")
-      print("  → isTargetValid: \(HabitFormLogic.isTargetValid(targetNumber))")
-    }
-    #endif
-    
     return result
   }
 
