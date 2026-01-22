@@ -99,31 +99,42 @@ struct TodaysJourneyView: View {
   private var headerTitle: String {
     let calendar = Calendar.current
     if calendar.isDateInToday(selectedDate) {
-      return "Today's Journey"
+      return "Today's Activity"
     } else if calendar.isDateInYesterday(selectedDate) {
-      return "Yesterday's Journey"
+      return "Yesterday's Activity"
     } else {
       let formatter = DateFormatter()
       formatter.dateFormat = "MMM d"
-      return "\(formatter.string(from: selectedDate))'s Journey"
+      return "\(formatter.string(from: selectedDate))'s Activity"
     }
   }
 
   private var header: some View {
-    HStack {
-      Text(headerTitle)
-        .font(.appTitleMediumEmphasised)
-        .foregroundColor(.appText01)
+    let calendar = Calendar.current
+    let isToday = calendar.isDateInToday(selectedDate)
+    
+    return VStack(alignment: .leading, spacing: 4) {
+      HStack {
+        Text(headerTitle)
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.appText01)
 
-      Spacer()
+        Spacer()
 
-      Text("\(completedCount) of \(totalCount)")
-        .font(.appLabelMedium)
-        .foregroundColor(.appPrimary)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Color.appPrimaryContainer)
-        .clipShape(Capsule())
+        Text("\(completedCount) of \(totalCount)")
+          .font(.appLabelMedium)
+          .foregroundColor(.appPrimary)
+          .padding(.horizontal, 12)
+          .padding(.vertical, 6)
+          .background(Color.appPrimaryContainer)
+          .clipShape(Capsule())
+      }
+      
+      if isToday {
+        Text("Your progress journey today")
+          .font(.appBodySmall)
+          .foregroundColor(.appText04)
+      }
     }
     .padding(.horizontal, 16)
     .padding(.top, 20)
