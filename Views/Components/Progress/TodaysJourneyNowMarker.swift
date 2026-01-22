@@ -28,7 +28,7 @@ struct TodaysJourneyNowMarker: View {
       spineColumn
       contentColumn
     }
-    .padding(.top, 16) // Match item row padding
+    // No top padding - line above handles the connection
   }
 
   // MARK: - Time Column (45pt, right-aligned, primary styling) - matches TimelineEntryRow
@@ -43,17 +43,22 @@ struct TodaysJourneyNowMarker: View {
         .foregroundColor(.appPrimary)
     }
     .frame(width: 45, alignment: .trailing)
-    // NO .padding(.top) - handled at row level
+    .padding(.top, 16) // Align with dot (line above is 16pt)
   }
 
-  // MARK: - Spine Column (24pt): pulsing dot + gradient line - simplified to match TodaysJourneyItemView
+  // MARK: - Spine Column (24pt): pulsing dot + gradient line - two-segment approach
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
-      // Pulsing dot at top - no padding
+      // Line ABOVE - solid primary, connects from previous completed item
+      Rectangle()
+        .fill(Color.appPrimary)
+        .frame(width: 3, height: 16)
+      
+      // Pulsing dot
       nowDot
       
-      // Gradient line below, extends to fill height
+      // Line BELOW - gradient, connects to next pending item
       GeometryReader { geo in
         Rectangle()
           .fill(
@@ -66,6 +71,7 @@ struct TodaysJourneyNowMarker: View {
           .frame(width: 3, height: geo.size.height)
       }
       .frame(width: 3)
+      .frame(maxHeight: .infinity) // Extend to fill remaining height
     }
     .frame(width: 24)
   }
@@ -107,7 +113,7 @@ struct TodaysJourneyNowMarker: View {
         .background(Color.appPrimaryContainer)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
-    .padding(.top, 6) // Small offset to align horizontal line with dot center (dot is 12pt, line is 2pt)
+    .padding(.top, 21) // Align with dot center: 16 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
   }
 }
 
