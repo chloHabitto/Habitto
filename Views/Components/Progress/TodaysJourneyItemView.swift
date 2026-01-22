@@ -35,8 +35,7 @@ struct TodaysJourneyItemView: View {
       spineColumn
       cardColumn
     }
-    .padding(.top, 16) // Apply ONCE at row level - all columns start at same y position
-    .padding(.bottom, isLast ? 0 : 0) // No extra bottom padding - lines will handle connection
+    .padding(.top, isFirst ? 16 : 0) // Only first item needs top padding; others connect via line above
     .opacity(hasAppeared ? 1 : 0)
     .offset(y: hasAppeared ? 0 : 20)
     .animation(
@@ -60,7 +59,7 @@ struct TodaysJourneyItemView: View {
       }
     }
     .frame(width: 45, alignment: .trailing)
-    // NO .padding(.top) here - handled at row level
+    .padding(.top, isFirst ? 0 : 16) // Align with dot position (line above is 16pt)
   }
 
   private var timeLine1: String {
@@ -85,36 +84,54 @@ struct TodaysJourneyItemView: View {
     }
   }
 
-  // MARK: - Spine Column (24pt) - simplified to match TimelineEntryRow
+  // MARK: - Spine Column (24pt) - two-segment approach for connected lines
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
-      // Dot at very top - no padding
+      // Line ABOVE the dot - connects to previous item
+      // Hidden for first item
+      if !isFirst {
+        lineSegment(position: .above)
+          .frame(height: 16) // Matches the row's top padding
+      }
+      
+      // The dot
       timelineNode
       
-      // Line immediately after dot, extends to fill remaining height
+      // Line BELOW the dot - connects to next item
+      // Hidden for last item
       if !isLast {
-        GeometryReader { geo in
-          let lineColor = item.status == .completed ? Color.appPrimary : Color.appOutline02
-          
-          if item.status == .pending {
-            // Dashed line for pending
-            Path { path in
-              path.move(to: CGPoint(x: 1.5, y: 0))
-              path.addLine(to: CGPoint(x: 1.5, y: geo.size.height))
-            }
-            .stroke(lineColor, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
-          } else {
-            // Solid line for completed
-            Rectangle()
-              .fill(lineColor)
-              .frame(width: 3, height: geo.size.height)
-          }
-        }
-        .frame(width: 3)
+        lineSegment(position: .below)
+          .frame(maxHeight: .infinity) // Extend to fill remaining height
       }
     }
     .frame(width: 24)
+  }
+
+  private enum LinePosition {
+    case above, below
+  }
+
+  private func lineSegment(position: LinePosition) -> some View {
+    let isPending = item.status == .pending
+    let lineColor = isPending ? Color.appOutline02 : Color.appPrimary
+    
+    return GeometryReader { geo in
+      if isPending {
+        // Dashed line for pending items
+        Path { path in
+          path.move(to: CGPoint(x: 1.5, y: 0))
+          path.addLine(to: CGPoint(x: 1.5, y: geo.size.height))
+        }
+        .stroke(lineColor, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
+      } else {
+        // Solid line for completed items
+        Rectangle()
+          .fill(lineColor)
+          .frame(width: 3, height: geo.size.height)
+      }
+    }
+    .frame(width: 3)
   }
 
   private var timelineNode: some View {
@@ -185,7 +202,7 @@ struct TodaysJourneyItemView: View {
         .stroke(Color.appOutline02, lineWidth: 1)
     )
     .opacity(item.status == .pending ? 0.8 : 1)
-    // NO padding here - all alignment handled at row level
+    .padding(.top, isFirst ? 0 : 16) // Align with dot position (line above is 16pt)
   }
 
   @ViewBuilder
