@@ -675,18 +675,28 @@ class NotificationManager: ObservableObject {
 
   /// Update notifications for a habit when reminders change
   func updateNotifications(for habit: Habit, reminders: [ReminderItem]) {
+    logScheduling("Updating notifications for habit '\(habit.name)'", metadata: [
+      "habitName": habit.name,
+      "reminderCount": reminders.count,
+      "activeReminderCount": reminders.filter { $0.isActive }.count
+    ])
+    
     // First, remove all existing notifications for this habit
     removeAllNotifications(for: habit)
 
     // Check if habit reminders are globally enabled (default to true if not set)
     let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
     if !habitReminderEnabled {
+      logInfo("Habit reminders are globally disabled - skipping notification scheduling", metadata: [
+        "habitName": habit.name
+      ])
       return
     }
 
     // Schedule notifications for the next 7 days for this specific habit
     let calendar = Calendar.current
     let today = Date()
+    var scheduledCount = 0
 
     for dayOffset in 0 ..< 7 {
       if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
@@ -729,16 +739,36 @@ class NotificationManager: ObservableObject {
             // Schedule the notification
             UNUserNotificationCenter.current().add(request) { error in
               if let error {
-                print(
-                  "❌ Error scheduling notification for \(habit.name) on \(targetDate): \(error)")
+                self.logError("Error scheduling notification for \(habit.name) on \(targetDate)", metadata: [
+                  "habitName": habit.name,
+                  "date": DateUtils.dateKey(for: targetDate),
+                  "reminderTime": reminder.time.description,
+                  "error": error.localizedDescription
+                ])
+              } else {
+                self.logNotification("✅ Scheduled notification for habit '\(habit.name)' on \(DateUtils.dateKey(for: targetDate)) at \(reminder.time)", metadata: [
+                  "habitName": habit.name,
+                  "date": DateUtils.dateKey(for: targetDate),
+                  "reminderTime": reminder.time.description,
+                  "notificationId": notificationId
+                ])
               }
             }
           }
+          scheduledCount += reminders.filter { $0.isActive }.count
         } else if habit.reminders.contains(where: { $0.isActive }) {
-          print("⚠️ NotificationManager: Habit '\(habit.name)' not scheduled for \(targetDate)")
+          logWarning("Habit '\(habit.name)' not scheduled for \(DateUtils.dateKey(for: targetDate)) - failed shouldShowHabitOnDate check", metadata: [
+            "habitName": habit.name,
+            "date": DateUtils.dateKey(for: targetDate)
+          ])
         }
       }
     }
+    
+    logScheduling("Completed updating notifications for habit '\(habit.name)'", metadata: [
+      "habitName": habit.name,
+      "scheduledCount": scheduledCount
+    ])
 
     // Note: Friendly reminders are handled by the main scheduling system
     // and will be updated when the entire notification system is refreshed
@@ -1009,11 +1039,12 @@ class NotificationManager: ObservableObject {
   }
 
   /// Remove all daily reminders (both plan and completion, including snoozed)
+  /// NOTE: This does NOT remove habit reminders - those are managed separately
   func removeAllDailyReminders() {
     removeDailyPlanReminders()
     removeDailyCompletionReminders()
     removeSnoozedCompletionReminders()
-    removeAllHabitReminders()
+    // DO NOT remove habit reminders here - they are managed separately via updateNotifications()
   }
 
   /// Remove all habit reminders
@@ -1043,13 +1074,19 @@ class NotificationManager: ObservableObject {
       return
     }
     
+    logScheduling("Starting rescheduleDailyReminders", metadata: [
+      "planReminderEnabled": planReminderEnabled,
+      "completionReminderEnabled": completionReminderEnabled,
+      "habitReminderEnabled": habitReminderEnabled
+    ])
+    
     // Step 1: Setup notification categories first (for snooze functionality)
     setupNotificationCategories()
 
-    // Step 2: Perform comprehensive cleanup
+    // Step 2: Perform comprehensive cleanup (only for daily reminders, NOT habit reminders)
     performComprehensiveDailyRemindersCleanup()
 
-    // Step 3: Remove existing daily reminders
+    // Step 3: Remove existing daily reminders (this does NOT remove habit reminders)
     removeAllDailyReminders()
 
     // Step 4: Schedule new ones based on current settings
@@ -1063,13 +1100,16 @@ class NotificationManager: ObservableObject {
     }
 
     // Step 5: Schedule habit reminders based on global setting (default to true if not set)
+    // NOTE: This is called AFTER cleanup to ensure habit reminders are not removed
     if habitReminderEnabled {
       rescheduleAllHabitReminders()
     }
 
     // Step 6: Get final count for verification
     getPendingDailyRemindersCount { count in
-      // Count retrieved, no need to log
+      self.logScheduling("Reschedule completed - daily reminders count: \(count)", metadata: [
+        "dailyReminderCount": count
+      ])
     }
 
     // Step 7: Debug - List all pending notifications
@@ -1744,22 +1784,41 @@ class NotificationManager: ObservableObject {
 
     // Check if the date is before the habit start date
     if dateKey < calendar.startOfDay(for: habit.startDate) {
+      logDebug("Habit '\(habit.name)' not scheduled - date is before start date", metadata: [
+        "date": DateUtils.dateKey(for: date),
+        "startDate": DateUtils.dateKey(for: habit.startDate)
+      ])
       return false
     }
 
     // Check if the date is after the habit end date (if set)
     if let endDate = habit.endDate, dateKey > calendar.startOfDay(for: endDate) {
+      logDebug("Habit '\(habit.name)' not scheduled - date is after end date", metadata: [
+        "date": DateUtils.dateKey(for: date),
+        "endDate": DateUtils.dateKey(for: endDate)
+      ])
       return false
     }
 
     // Check if the habit is already completed for this date (only for today, not future dates)
     let today = calendar.startOfDay(for: Date())
     if dateKey == today, habit.isCompleted(for: date) {
+      logDebug("Habit '\(habit.name)' not scheduled - already completed for today", metadata: [
+        "date": DateUtils.dateKey(for: date)
+      ])
       return false
     }
 
     // Check if the habit is scheduled for this weekday
     let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday)
+    
+    if !isScheduledForWeekday {
+      logDebug("Habit '\(habit.name)' not scheduled - not scheduled for weekday", metadata: [
+        "date": DateUtils.dateKey(for: date),
+        "weekday": weekday,
+        "schedule": habit.schedule
+      ])
+    }
 
     return isScheduledForWeekday
   }
