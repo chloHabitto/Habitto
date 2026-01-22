@@ -28,7 +28,7 @@ struct TodaysJourneyNowMarker: View {
       spineColumn
       contentColumn
     }
-    .padding(.bottom, 8) // Match item spacing
+    .padding(.top, 16) // Match item row padding
   }
 
   // MARK: - Time Column (45pt, right-aligned, primary styling) - matches TimelineEntryRow
@@ -43,32 +43,31 @@ struct TodaysJourneyNowMarker: View {
         .foregroundColor(.appPrimary)
     }
     .frame(width: 45, alignment: .trailing)
-    .padding(.top, 16)
+    // NO .padding(.top) - handled at row level
   }
 
   // MARK: - Spine Column (24pt): pulsing dot + gradient line - simplified to match TodaysJourneyItemView
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
-      // Pulsing dot
+      // Pulsing dot at top - no padding
       nowDot
-        .padding(.top, 18)
       
-      // Gradient line below
-      Rectangle()
-        .fill(
-          LinearGradient(
-            colors: [Color.appPrimary, Color.appOutline02],
-            startPoint: .top,
-            endPoint: .bottom
+      // Gradient line below, extends to fill height
+      GeometryReader { geo in
+        Rectangle()
+          .fill(
+            LinearGradient(
+              colors: [Color.appPrimary, Color.appOutline02],
+              startPoint: .top,
+              endPoint: .bottom
+            )
           )
-        )
-        .frame(width: 3)
-        .frame(maxHeight: .infinity) // Extend to fill available space
-        .padding(.top, 4)
+          .frame(width: 3, height: geo.size.height)
+      }
+      .frame(width: 3)
     }
     .frame(width: 24)
-    .frame(maxHeight: .infinity, alignment: .top)
   }
 
   private var nowDot: some View {
@@ -90,7 +89,6 @@ struct TodaysJourneyNowMarker: View {
 
   private var contentColumn: some View {
     HStack(spacing: 8) {
-      // Horizontal gradient line
       Rectangle()
         .fill(
           LinearGradient(
@@ -101,7 +99,6 @@ struct TodaysJourneyNowMarker: View {
         )
         .frame(height: 2)
 
-      // NOW badge
       Text("NOW")
         .font(.system(size: 10, weight: .bold))
         .foregroundColor(.appPrimary)
@@ -110,7 +107,7 @@ struct TodaysJourneyNowMarker: View {
         .background(Color.appPrimaryContainer)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
-    .padding(.top, 22) // Align horizontal line with center of dot (16 + 18/2 - 2/2 ≈ 22)
+    .padding(.top, 6) // Small offset to align horizontal line with dot center (dot is 12pt, line is 2pt)
   }
 }
 

@@ -35,7 +35,8 @@ struct TodaysJourneyItemView: View {
       spineColumn
       cardColumn
     }
-    .padding(.bottom, isLast ? 0 : 8) // Spacing between items, not inside card
+    .padding(.top, 16) // Apply ONCE at row level - all columns start at same y position
+    .padding(.bottom, isLast ? 0 : 0) // No extra bottom padding - lines will handle connection
     .opacity(hasAppeared ? 1 : 0)
     .offset(y: hasAppeared ? 0 : 20)
     .animation(
@@ -59,7 +60,7 @@ struct TodaysJourneyItemView: View {
       }
     }
     .frame(width: 45, alignment: .trailing)
-    .padding(.top, 16) // Align with card top
+    // NO .padding(.top) here - handled at row level
   }
 
   private var timeLine1: String {
@@ -88,41 +89,32 @@ struct TodaysJourneyItemView: View {
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
-      // Dot at fixed position from top - NO line above
+      // Dot at very top - no padding
       timelineNode
-        .padding(.top, 18)
       
-      // Line below the dot (only if not last item)
+      // Line immediately after dot, extends to fill remaining height
       if !isLast {
-        spineLineBelow
-          .padding(.top, 4)
+        GeometryReader { geo in
+          let lineColor = item.status == .completed ? Color.appPrimary : Color.appOutline02
+          
+          if item.status == .pending {
+            // Dashed line for pending
+            Path { path in
+              path.move(to: CGPoint(x: 1.5, y: 0))
+              path.addLine(to: CGPoint(x: 1.5, y: geo.size.height))
+            }
+            .stroke(lineColor, style: StrokeStyle(lineWidth: 3, dash: [6, 4]))
+          } else {
+            // Solid line for completed
+            Rectangle()
+              .fill(lineColor)
+              .frame(width: 3, height: geo.size.height)
+          }
+        }
+        .frame(width: 3)
       }
     }
     .frame(width: 24)
-    .frame(maxHeight: .infinity, alignment: .top) // Extend to fill row height
-  }
-  
-  private var spineLineBelow: some View {
-    GeometryReader { geo in
-      Group {
-        if item.status == .pending {
-          Path { p in
-            p.move(to: CGPoint(x: 1.5, y: 0))
-            p.addLine(to: CGPoint(x: 1.5, y: geo.size.height))
-          }
-          .stroke(
-            Color.appOutline02,
-            style: StrokeStyle(lineWidth: 3, dash: [6, 4])
-          )
-        } else {
-          Rectangle()
-            .fill(Color.appPrimary)
-            .frame(width: 3, height: geo.size.height)
-        }
-      }
-    }
-    .frame(width: 3)
-    .frame(maxHeight: .infinity) // Extend to fill available space
   }
 
   private var timelineNode: some View {
@@ -149,7 +141,6 @@ struct TodaysJourneyItemView: View {
         .frame(width: 40, height: 40)
 
       VStack(alignment: .leading, spacing: 8) {
-        // Header row
         HStack {
           Text(item.habit.name)
             .font(.appLabelLargeEmphasised)
@@ -159,7 +150,6 @@ struct TodaysJourneyItemView: View {
           
           Spacer()
           
-          // Status icon (checkmark when completed)
           if item.status == .completed {
             Image(systemName: "checkmark")
               .font(.system(size: 12, weight: .bold))
@@ -169,14 +159,12 @@ struct TodaysJourneyItemView: View {
           }
         }
         
-        // Meta row with difficulty badge
         VStack(alignment: .leading, spacing: 4) {
           if item.status == .completed {
             if let difficulty = item.difficulty {
               DifficultyBadge(difficulty: difficulty)
             }
           } else {
-            // Pending state - show streak badges
             HStack(spacing: 6) {
               metaBadges
             }
@@ -197,6 +185,7 @@ struct TodaysJourneyItemView: View {
         .stroke(Color.appOutline02, lineWidth: 1)
     )
     .opacity(item.status == .pending ? 0.8 : 1)
+    // NO padding here - all alignment handled at row level
   }
 
   @ViewBuilder
