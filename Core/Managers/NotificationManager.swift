@@ -672,7 +672,6 @@ class NotificationManager: ObservableObject {
     let habitNotificationIds = getNotificationIds(for: habit)
     UNUserNotificationCenter.current()
       .removePendingNotificationRequests(withIdentifiers: habitNotificationIds)
-    print("🗑️ Removed all notifications for habit: \(habit.name)")
   }
 
   /// Update notifications for a habit when reminders change

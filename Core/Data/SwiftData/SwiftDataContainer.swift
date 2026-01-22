@@ -21,10 +21,6 @@ final class SwiftDataContainer: ObservableObject {
       let migrationPlan = HabittoMigrationPlan.self
       let schema = Schema(versionedSchema: HabittoSchemaV1.self)
 
-      logger.info("🔧 SwiftData: Creating model configuration with migration plan...")
-      logger.info("🔧 SwiftData: Schema version: \(HabittoSchemaV1.versionIdentifier)")
-      logger.info("🔧 SwiftData: Schema includes \(schema.entities.count) entities")
-
       // ✅ CRITICAL FIX: Check for and remove corrupted database
       let databaseURL = URL.applicationSupportDirectory.appending(path: "default.store")
       let databaseDir = databaseURL.deletingLastPathComponent()
@@ -118,7 +114,6 @@ final class SwiftDataContainer: ObservableObject {
       
       // Skip integrity check if we just migrated from CloudKit (database was deleted)
       if finalDatabaseExists && !justMigrated {
-        logger.info("🔧 SwiftData: Database exists, checking integrity...")
         
         var needsReset = forceReset
         
@@ -135,8 +130,6 @@ final class SwiftDataContainer: ObservableObject {
               migrationPlan: migrationPlan,
               configurations: [testConfig])
             let testContext = ModelContext(testContainer)
-            
-            logger.info("🔧 SwiftData: Performing deep integrity check on all tables...")
             
             // ✅ IMPROVED: Test ALL critical tables by fetching actual data
             // fetchCount() returns 0 for missing tables instead of throwing an error
@@ -253,8 +246,6 @@ final class SwiftDataContainer: ObservableObject {
           }
         }
       } else {
-        logger.info("🔧 SwiftData: Database file not found - creating new database")
-        
         // Clear corruption flag if no database exists
         UserDefaults.standard.removeObject(forKey: corruptionFlagKey)
         
@@ -338,19 +329,16 @@ final class SwiftDataContainer: ObservableObject {
         isStoredInMemoryOnly: false,
         cloudKitDatabase: .none)  // Disabled - models need refactoring for CloudKit
 
-      logger.info("🔧 SwiftData: Creating ModelContainer with migration plan (CloudKit sync: DISABLED - models need refactoring)...")
       self.modelContainer = try ModelContainer(
         for: schema,
         migrationPlan: migrationPlan,
         configurations: [modelConfiguration])
 
-      logger.info("🔧 SwiftData: Creating ModelContext...")
       self.modelContext = ModelContext(modelContainer)
       
       // ✅ FIX #8: Disable autosave on new databases to prevent Persistent History issues
       if !finalDatabaseExists {
         modelContext.autosaveEnabled = false
-        logger.info("🔧 SwiftData: New database detected - autosave disabled to prevent history truncation")
       }
 
       logger.info("✅ SwiftData: Container initialized successfully")
@@ -362,8 +350,6 @@ final class SwiftDataContainer: ObservableObject {
       // Autosave is disabled during this process to prevent Persistent History from deleting tables
       if !finalDatabaseExists {
         do {
-          logger.info("🔧 SwiftData: New database - forcing table creation...")
-          
           let dummyHabit = HabitData(
             userId: "_dummy_",
             name: "_dummy_",
@@ -396,7 +382,6 @@ final class SwiftDataContainer: ObservableObject {
       // Test if we can access the CompletionRecord table and check for existing data
       let testRequest = FetchDescriptor<CompletionRecord>()
       let testCount = (try? modelContext.fetchCount(testRequest)) ?? -1
-      logger.info("🔧 SwiftData: CompletionRecord table test - count: \(testCount)")
       
       // Log actual data state to help with debugging
       if testCount > 0 {
@@ -420,7 +405,6 @@ final class SwiftDataContainer: ObservableObject {
       // ✅ CRITICAL FIX: DO NOT perform health check on startup
       // The health check deletes the database while it's in use, causing corruption
       // Database corruption will be handled gracefully by saveHabits/loadHabits error handlers
-      logger.info("🔧 SwiftData: Skipping health check to prevent database corruption")
 
     } catch {
       let errorDesc = error.localizedDescription
@@ -564,8 +548,6 @@ final class SwiftDataContainer: ObservableObject {
 
   /// ✅ CRITICAL FIX: Proactive database health monitoring
   func performHealthCheck() -> Bool {
-    logger.info("🔧 SwiftData: Performing proactive health check...")
-
     // ✅ FIX: Discard unused results with _
     let tests: [(String, () throws -> Void)] = [
       ("HabitData", { _ = try self.modelContext.fetch(FetchDescriptor<HabitData>()) }),

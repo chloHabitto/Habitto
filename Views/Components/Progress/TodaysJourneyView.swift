@@ -15,6 +15,7 @@ struct TodaysJourneyView: View {
   @State private var journeyItems: [JourneyHabitItem] = []
   @State private var isAnimating = false
   @State private var breathingPhase = false
+  @State private var animationProgress: CGFloat = 0
 
   private var scheduledHabits: [Habit] {
     habits.filter { StreakDataCalculator.shouldShowHabitOnDate($0, date: selectedDate) }
@@ -82,9 +83,22 @@ struct TodaysJourneyView: View {
 
   // MARK: - Header
 
+  private var headerTitle: String {
+    let calendar = Calendar.current
+    if calendar.isDateInToday(selectedDate) {
+      return "Today's Journey"
+    } else if calendar.isDateInYesterday(selectedDate) {
+      return "Yesterday's Journey"
+    } else {
+      let formatter = DateFormatter()
+      formatter.dateFormat = "MMM d"
+      return "\(formatter.string(from: selectedDate))'s Journey"
+    }
+  }
+
   private var header: some View {
     HStack {
-      Text("Today's Journey")
+      Text(headerTitle)
         .font(.appTitleMediumEmphasised)
         .foregroundColor(.appText01)
 
@@ -118,26 +132,24 @@ struct TodaysJourneyView: View {
         .font(.appBodySmall)
         .foregroundColor(.appText03)
 
+      // Breathing dots animation
       HStack(spacing: 16) {
-        ForEach(0 ..< 5, id: \.self) { index in
+        ForEach(0..<5, id: \.self) { index in
           Circle()
             .stroke(Color.appOutline02, lineWidth: 2)
             .frame(width: 12, height: 12)
-            .opacity(breathingOpacity(for: index))
-            .animation(
-              .easeInOut(duration: 0.8).repeatForever(autoreverses: true).delay(Double(index) * 0.15),
-              value: breathingPhase
-            )
+            .scaleEffect(dotScale(for: index))
+            .opacity(dotOpacity(for: index))
         }
       }
       .padding(.top, 8)
-    }
-    .padding(.vertical, 40)
-    .onAppear {
-      withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-        breathingPhase = true
+      .onAppear {
+        withAnimation(.linear(duration: 2.5).repeatForever(autoreverses: false)) {
+          animationProgress = 1
+        }
       }
     }
+    .padding(.vertical, 40)
   }
 
   // MARK: - Complete State
@@ -191,8 +203,14 @@ struct TodaysJourneyView: View {
     .padding(.vertical, 40)
   }
 
-  private func breathingOpacity(for index: Int) -> Double {
-    breathingPhase ? 0.9 : 0.35
+  private func dotOpacity(for index: Int) -> Double {
+    let phase = (animationProgress + CGFloat(index) * 0.2).truncatingRemainder(dividingBy: 1.0)
+    return 0.3 + 0.6 * sin(phase * .pi)
+  }
+
+  private func dotScale(for index: Int) -> CGFloat {
+    let phase = (animationProgress + CGFloat(index) * 0.2).truncatingRemainder(dividingBy: 1.0)
+    return 0.9 + 0.2 * sin(phase * .pi)
   }
 
   // MARK: - Timeline Content

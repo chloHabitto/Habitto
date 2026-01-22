@@ -1616,12 +1616,10 @@ actor SyncEngine {
                     } else if remoteTimestamp < localTimestamp {
                         // ✅ CRITICAL BUG FIX: Local is newer - preserve local data, skip remote overwrite
                         // This prevents stale Firestore data from overwriting recent local changes
-                        logger.info("⏭️ SyncEngine: Skipping completion update (local newer) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) | localProgress=\(existingRecord.progress) remoteProgress=\(remoteProgress) | localTimestamp=\(localTimestamp.ISO8601Format()) > remoteTimestamp=\(remoteTimestamp.ISO8601Format())")
                     } else {
                         // Timestamps equal - prefer LOCAL data to prevent overwriting user's recent changes
                         // This handles race conditions where user saves locally but sync pulls before upload completes
                         if existingRecord.isCompleted != remoteIsCompleted || existingRecord.progress != remoteProgress {
-                            logger.info("⏭️ SyncEngine: Skipping completion update (equal timestamps, preferring local) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) | localProgress=\(existingRecord.progress) remoteProgress=\(remoteProgress) | timestamp=\(localTimestamp.ISO8601Format())")
                             // Don't update - preserve local data
                         }
                     }

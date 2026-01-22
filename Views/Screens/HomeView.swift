@@ -600,12 +600,7 @@ class HomeViewState: ObservableObject {
           let deletedHabitsCount = allHabitDataList.filter { $0.deletedAt != nil }.count
           let activeHabitsCount = habitRepository.habits.count
           
-          if allHabitsCount != activeHabitsCount {
-            debugLog("⚠️ [HABIT_LOAD] MISMATCH DETECTED (but now fixed!):")
-            debugLog("   SwiftData has \(allHabitsCount) total habits (\(deletedHabitsCount) soft-deleted)")
-            debugLog("   HabitRepository has \(activeHabitsCount) active habits")
-            debugLog("   ✅ Using HabitRepository (\(activeHabitsCount) active) for streak calculation")
-          }
+          // Mismatch detection removed - informational only
         }
         #endif
         
@@ -1418,8 +1413,6 @@ struct HomeView: View {
       // When habits change, DailyAwardService will award XP via awardXP() if needed
       // XPManager observes DailyAwardService.xpState and updates automatically
       Task { @MainActor in
-        debugLog("✅ REACTIVE_XP: Habits changed - XP will update via DailyAwardService (not recalculating)")
-        
         // ✅ CRITICAL FIX: Only recalculate streak when habits change
         // But add a small delay to ensure SwiftData has finished saving CompletionRecords
         // Wait 100ms to allow SwiftData saves to complete

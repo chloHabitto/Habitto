@@ -216,14 +216,16 @@ struct TodaysJourneyItemView: View {
       if let d = item.difficulty {
         difficultyBadge(difficulty: d)
       }
-      streakBadge(count: item.currentStreak)
+      if item.currentStreak > 0 {
+        streakBadge(count: item.currentStreak)
+      }
     } else {
       if let _ = estimatedTime {
         timeHintBadge
       }
       if item.isAtRisk {
         atRiskBadge
-      } else {
+      } else if item.currentStreak > 0 {
         streakBadge(count: item.currentStreak)
       }
     }
@@ -242,11 +244,11 @@ struct TodaysJourneyItemView: View {
 
   private func difficultyLabelAndColor(_ d: Int) -> (String, Color) {
     switch d {
-    case 1: return ("Very Easy", Color.appSuccess)
-    case 2: return ("Easy", Color.appSuccess)
-    case 3: return ("Medium", Color.orange)
-    case 4: return ("Hard", Color.red)
-    case 5: return ("Very Hard", Color.red)
+    case 1, 2: return ("Very Easy", Color.appSuccess)
+    case 3, 4: return ("Easy", Color.appSuccess)
+    case 5, 6: return ("Medium", Color.orange)
+    case 7, 8: return ("Hard", Color.red)
+    case 9, 10: return ("Very Hard", Color.red)
     default: return ("Medium", Color.orange)
     }
   }
