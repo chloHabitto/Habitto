@@ -71,9 +71,9 @@ struct TodaysJourneyNowMarker: View {
           .frame(width: 3, height: geo.size.height)
       }
       .frame(width: 3)
-      .frame(maxHeight: .infinity) // Extend to fill remaining height
     }
     .frame(width: 24)
+    .frame(maxHeight: .infinity, alignment: .top) // CRITICAL: Expand to fill row height
   }
 
   private var nowDot: some View {

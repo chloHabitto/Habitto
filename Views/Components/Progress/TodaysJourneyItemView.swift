@@ -102,10 +102,10 @@ struct TodaysJourneyItemView: View {
       // Hidden for last item
       if !isLast {
         lineSegment(position: .below)
-          .frame(maxHeight: .infinity) // Extend to fill remaining height
       }
     }
     .frame(width: 24)
+    .frame(maxHeight: .infinity, alignment: .top) // CRITICAL: Expand to fill row height
   }
 
   private enum LinePosition {
@@ -132,6 +132,7 @@ struct TodaysJourneyItemView: View {
       }
     }
     .frame(width: 3)
+    // No .frame(maxHeight: .infinity) here - parent VStack handles expansion
   }
 
   private var timelineNode: some View {
