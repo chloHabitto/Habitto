@@ -181,15 +181,18 @@ struct ScheduledHabitItem: View {
         ])
     }
     .onAppear {
-      // Initialize currentProgress with the actual saved progress from the habit
-      let initialProgress = habit.getProgress(for: selectedDate)
+      // ✅ FIX: Fetch fresh habit from repository instead of using stale local copy
+      let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) ?? habit
+      let initialProgress = freshHabit.getProgress(for: selectedDate)
       withAnimation(.easeInOut(duration: 0.2)) {
         currentProgress = initialProgress
       }
 
       // Force a small delay to ensure everything is properly initialized
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-        let updatedProgress = habit.getProgress(for: selectedDate)
+        // ✅ FIX: Also use fresh habit in delayed update
+        let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) ?? habit
+        let updatedProgress = freshHabit.getProgress(for: selectedDate)
         if updatedProgress != currentProgress {
           withAnimation(.easeInOut(duration: 0.2)) {
             currentProgress = updatedProgress
@@ -214,13 +217,6 @@ struct ScheduledHabitItem: View {
       // Don't override local updates that are in progress
       guard !isLocalUpdateInProgress else { return }
 
-      // ✅ FIX: If user just made a change, wait longer before accepting external updates
-      if let lastUpdate = lastUserUpdateTimestamp,
-         Date().timeIntervalSince(lastUpdate) < 1.0 {
-        print("🔍 RACE FIX: Ignoring completionHistory update within 1s of user action")
-        return
-      }
-
       let newProgress = habit.getProgress(for: selectedDate)
       withAnimation(.easeInOut(duration: 0.2)) {
         currentProgress = newProgress
@@ -229,13 +225,6 @@ struct ScheduledHabitItem: View {
     .onChange(of: habit) { _, newHabit in
       // Don't override local updates that are in progress
       guard !isLocalUpdateInProgress else { return }
-
-      // ✅ FIX: If user just made a change, wait longer before accepting external updates
-      if let lastUpdate = lastUserUpdateTimestamp,
-         Date().timeIntervalSince(lastUpdate) < 1.0 {
-        print("🔍 RACE FIX: Ignoring habit update within 1s of user action")
-        return
-      }
 
       // Sync currentProgress when the habit object itself changes
       let newProgress = newHabit.getProgress(for: selectedDate)
