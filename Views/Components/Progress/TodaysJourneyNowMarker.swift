@@ -119,7 +119,7 @@ struct TodaysJourneyNowMarker: View {
       .padding(.top, 21) // Align with dot center: 16 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
       
       Spacer()
-        .frame(height: 24) // Add height to make row taller, gradient will extend
+        .frame(height: 32) // Add height to make row taller, gradient will extend
     }
   }
 }
