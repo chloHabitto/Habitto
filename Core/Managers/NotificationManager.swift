@@ -696,10 +696,87 @@ class NotificationManager: ObservableObject {
     // Schedule notifications for the next 7 days for this specific habit
     let calendar = Calendar.current
     let today = Date()
+    let now = Date()
     var scheduledCount = 0
 
+    // PRIORITY: Schedule today's reminders IMMEDIATELY if they haven't passed yet
+    // This ensures reminders set for later today fire even if the next reschedule cycle is later
+    if shouldShowHabitOnDate(habit, date: today) {
+      for reminder in reminders where reminder.isActive {
+        // Get the reminder time for today
+        let reminderComponents = calendar.dateComponents([.hour, .minute], from: reminder.time)
+        let todayComponents = calendar.dateComponents([.year, .month, .day], from: today)
+        
+        var combinedComponents = DateComponents()
+        combinedComponents.year = todayComponents.year
+        combinedComponents.month = todayComponents.month
+        combinedComponents.day = todayComponents.day
+        combinedComponents.hour = reminderComponents.hour
+        combinedComponents.minute = reminderComponents.minute
+        
+        if let reminderDateTime = calendar.date(from: combinedComponents) {
+          // Only schedule if the reminder time is in the future (hasn't passed yet)
+          if reminderDateTime > now {
+            let notificationId = "habit_reminder_\(habit.id.uuidString)_\(reminder.id.uuidString)_\(DateUtils.dateKey(for: today))"
+            
+            // Create content
+            let content = UNMutableNotificationContent()
+            content.title = "Habit Reminder"
+            content.body = "Time to complete: \(habit.name)"
+            content.sound = .default
+            content.badge = 1
+            
+            // Create trigger for specific date
+            let trigger = UNCalendarNotificationTrigger(
+              dateMatching: combinedComponents,
+              repeats: false)
+            
+            // Create request
+            let request = UNNotificationRequest(
+              identifier: notificationId,
+              content: content,
+              trigger: trigger)
+            
+            // Schedule the notification IMMEDIATELY
+            UNUserNotificationCenter.current().add(request) { error in
+              if let error {
+                self.logError("Error scheduling immediate notification for \(habit.name) today", metadata: [
+                  "habitName": habit.name,
+                  "date": DateUtils.dateKey(for: today),
+                  "reminderTime": reminder.time.description,
+                  "error": error.localizedDescription
+                ])
+              } else {
+                self.logNotification("✅ IMMEDIATELY scheduled notification for habit '\(habit.name)' today at \(reminder.time)", metadata: [
+                  "habitName": habit.name,
+                  "date": DateUtils.dateKey(for: today),
+                  "reminderTime": reminder.time.description,
+                  "notificationId": notificationId
+                ])
+              }
+            }
+            scheduledCount += 1
+          } else {
+            logDebug("Skipping today's reminder for \(habit.name) - reminder time \(reminder.time) has already passed", metadata: [
+              "habitName": habit.name,
+              "reminderTime": reminder.time.description,
+              "currentTime": now.description
+            ])
+          }
+        }
+      }
+    }
+
+    // Schedule notifications for the next 7 days (including today, but we'll skip today in the loop since we already handled it)
     for dayOffset in 0 ..< 7 {
       if let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: today) {
+        // Skip today - we already handled it above with immediate scheduling
+        let targetDateKey = calendar.startOfDay(for: targetDate)
+        let todayKey = calendar.startOfDay(for: today)
+        if targetDateKey == todayKey {
+          continue
+        }
+        
         // Only schedule if habit should be shown on this date
         if shouldShowHabitOnDate(habit, date: targetDate) {
           for reminder in reminders where reminder.isActive {
@@ -1850,14 +1927,12 @@ class NotificationManager: ObservableObject {
       return false
     }
 
-    // Check if the habit is already completed for this date (only for today, not future dates)
-    let today = calendar.startOfDay(for: Date())
-    if dateKey == today, habit.isCompleted(for: date) {
-      logDebug("Habit '\(habit.name)' not scheduled - already completed for today", metadata: [
-        "date": DateUtils.dateKey(for: date)
-      ])
-      return false
-    }
+    // NOTE: We do NOT check completion status here because:
+    // 1. User might set a reminder BEFORE completing the habit
+    // 2. User might want reminder even after completion
+    // 3. The completion check runs at SCHEDULING time, not delivery time
+    // The notification should be scheduled regardless of completion status.
+    // The user can dismiss it if not needed.
 
     // Check if the habit is scheduled for this weekday
     let isScheduledForWeekday = isHabitScheduledForWeekday(habit, weekday: weekday)
