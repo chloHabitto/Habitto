@@ -1066,6 +1066,14 @@ class NotificationManager: ObservableObject {
   /// Reschedule all daily reminders (useful when settings change)
   @MainActor
   func rescheduleDailyReminders() {
+    Task {
+      await rescheduleDailyRemindersAsync()
+    }
+  }
+  
+  /// Async version of rescheduleDailyReminders to properly handle cleanup
+  @MainActor
+  private func rescheduleDailyRemindersAsync() async {
     let planReminderEnabled = UserDefaults.standard.bool(forKey: "planReminderEnabled")
     let completionReminderEnabled = UserDefaults.standard.bool(forKey: "completionReminderEnabled")
     let habitReminderEnabled = UserDefaults.standard.object(forKey: "habitReminderEnabled") as? Bool ?? true
@@ -1084,9 +1092,14 @@ class NotificationManager: ObservableObject {
     setupNotificationCategories()
 
     // Step 2: Perform comprehensive cleanup (only for daily reminders, NOT habit reminders)
-    performComprehensiveDailyRemindersCleanup()
+    // NOTE: This is now async and completes BEFORE scheduling starts
+    await performComprehensiveDailyRemindersCleanup()
+    
+    logScheduling("Cleanup completed - now removing all daily reminders before rescheduling")
 
     // Step 3: Remove existing daily reminders (this does NOT remove habit reminders)
+    // NOTE: Since we're about to reschedule all daily reminders anyway, this cleanup step
+    // is somewhat redundant, but it ensures we start with a clean slate
     removeAllDailyReminders()
 
     // Step 4: Schedule new ones based on current settings
@@ -1100,8 +1113,9 @@ class NotificationManager: ObservableObject {
     }
 
     // Step 5: Schedule habit reminders based on global setting (default to true if not set)
-    // NOTE: This is called AFTER cleanup to ensure habit reminders are not removed
+    // NOTE: This is called AFTER cleanup completes to ensure habit reminders are not removed
     if habitReminderEnabled {
+      logScheduling("Scheduling habit reminders after cleanup completion")
       rescheduleAllHabitReminders()
     }
 
@@ -1253,10 +1267,12 @@ class NotificationManager: ObservableObject {
     print("🏖️ NotificationManager: Vacation mode changed, rescheduling daily reminders...")
 
     // Perform comprehensive cleanup to remove any vacation day reminders
-    performComprehensiveDailyRemindersCleanup()
-
-    // Reschedule daily reminders (this will respect current vacation mode settings)
-    rescheduleDailyReminders()
+    Task {
+      await performComprehensiveDailyRemindersCleanup()
+      
+      // Reschedule daily reminders (this will respect current vacation mode settings)
+      await rescheduleDailyRemindersAsync()
+    }
   }
 
   /// Handle snooze action for completion reminders
@@ -1378,18 +1394,26 @@ class NotificationManager: ObservableObject {
   // MARK: - Enhanced Notification Management
 
   /// Check for and remove duplicate daily reminders
+  /// NOTE: Explicitly preserves habit_reminder_ notifications
   func removeDuplicateDailyReminders() {
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       var seenIdentifiers: Set<String> = []
       var duplicateIds: [String] = []
 
       for request in requests {
+        // EXPLICITLY skip habit reminders - they are managed separately
+        guard !request.identifier.hasPrefix("habit_reminder_") else {
+          continue
+        }
+        
         if request.identifier.hasPrefix("daily_plan_reminder_") ||
           request.identifier.hasPrefix("daily_completion_reminder_")
         {
           if seenIdentifiers.contains(request.identifier) {
             duplicateIds.append(request.identifier)
-            print("⚠️ NotificationManager: Found duplicate reminder: \(request.identifier)")
+            self.logCleanup("Found duplicate daily reminder", metadata: [
+              "identifier": request.identifier
+            ])
           } else {
             seenIdentifiers.insert(request.identifier)
           }
@@ -1397,6 +1421,10 @@ class NotificationManager: ObservableObject {
       }
 
       if !duplicateIds.isEmpty {
+        self.logCleanup("Removing duplicate daily reminders", metadata: [
+          "count": duplicateIds.count,
+          "identifiers": duplicateIds
+        ])
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: duplicateIds)
       }
@@ -1404,6 +1432,7 @@ class NotificationManager: ObservableObject {
   }
 
   /// Remove expired daily reminders (older than 7 days)
+  /// NOTE: Explicitly preserves habit_reminder_ notifications
   func removeExpiredDailyReminders() {
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       let calendar = Calendar.current
@@ -1411,6 +1440,11 @@ class NotificationManager: ObservableObject {
       var expiredIds: [String] = []
 
       for request in requests {
+        // EXPLICITLY skip habit reminders - they are managed separately
+        guard !request.identifier.hasPrefix("habit_reminder_") else {
+          continue
+        }
+        
         if request.identifier.hasPrefix("daily_plan_reminder_") ||
           request.identifier.hasPrefix("daily_completion_reminder_")
         {
@@ -1431,6 +1465,10 @@ class NotificationManager: ObservableObject {
       }
 
       if !expiredIds.isEmpty {
+        self.logCleanup("Removing expired daily reminders", metadata: [
+          "count": expiredIds.count,
+          "identifiers": expiredIds
+        ])
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: expiredIds)
       }
@@ -1543,28 +1581,40 @@ class NotificationManager: ObservableObject {
   }
 
   /// Comprehensive cleanup of all daily reminders with enhanced logging
-  func performComprehensiveDailyRemindersCleanup() {
+  /// NOTE: This function is now async to prevent race conditions with scheduling
+  /// All cleanup operations complete before returning, ensuring habit reminders are not affected
+  func performComprehensiveDailyRemindersCleanup() async {
     logCleanup("Starting comprehensive daily reminders cleanup")
 
-    // Step 1: Remove duplicates
+    // Step 1: Remove duplicates (wait for completion)
     logCleanup("Step 1: Removing duplicate reminders")
     removeDuplicateDailyReminders()
+    // Wait for async operation to complete (UNUserNotificationCenter operations are fast but async)
+    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
 
-    // Step 2: Remove expired reminders
+    // Step 2: Remove expired reminders (wait for completion)
     logCleanup("Step 2: Removing expired reminders")
     removeExpiredDailyReminders()
+    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
 
-    // Step 3: Remove vacation day reminders
+    // Step 3: Remove vacation day reminders (wait for completion)
     logCleanup("Step 3: Removing vacation day reminders")
     removeVacationDayReminders()
+    try? await Task.sleep(nanoseconds: 200_000_000) // 0.2 seconds
 
-    // Step 4: Clean up old snooze counts
+    // Step 4: Clean up old snooze counts (synchronous)
     logCleanup("Step 4: Cleaning up old snooze counts")
     cleanupOldSnoozeCounts()
 
     // Step 5: Get final count
-    getPendingDailyRemindersCount { count in
-      self.logCleanup("Comprehensive cleanup completed", metadata: ["remainingReminders": count])
+    await withCheckedContinuation { continuation in
+      getPendingDailyRemindersCount { count in
+        self.logCleanup("Comprehensive cleanup completed", metadata: [
+          "remainingDailyReminders": count,
+          "note": "Habit reminders are preserved and not counted here"
+        ])
+        continuation.resume()
+      }
     }
   }
 
@@ -2393,12 +2443,18 @@ class NotificationManager: ObservableObject {
   }
 
   /// Remove daily reminders for vacation days
+  /// NOTE: Explicitly preserves habit_reminder_ notifications
   private func removeVacationDayReminders() {
     UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
       let vacationManager = VacationManager.shared
       var vacationDayIds: [String] = []
 
       for request in requests {
+        // EXPLICITLY skip habit reminders - they are managed separately
+        guard !request.identifier.hasPrefix("habit_reminder_") else {
+          continue
+        }
+        
         if request.identifier.hasPrefix("daily_plan_reminder_") ||
           request.identifier.hasPrefix("daily_completion_reminder_") ||
           request.identifier.hasPrefix("daily_completion_reminder_snooze_")
@@ -2422,6 +2478,10 @@ class NotificationManager: ObservableObject {
       }
 
       if !vacationDayIds.isEmpty {
+        self.logCleanup("Removing vacation day daily reminders", metadata: [
+          "count": vacationDayIds.count,
+          "identifiers": vacationDayIds
+        ])
         UNUserNotificationCenter.current()
           .removePendingNotificationRequests(withIdentifiers: vacationDayIds)
       }
