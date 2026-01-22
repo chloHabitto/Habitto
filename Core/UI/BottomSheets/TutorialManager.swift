@@ -4,8 +4,6 @@ class TutorialManager: ObservableObject {
   // MARK: Lifecycle
 
   init() {
-    debugLog("🔍 TutorialManager: Initializing...")
-
     // Check tutorial status on main actor
     Task { @MainActor in
       self.checkTutorialStatus()
@@ -24,24 +22,19 @@ class TutorialManager: ObservableObject {
   @Published var shouldShowTutorial = false
 
   func markTutorialAsSeen() {
-    debugLog("🔍 TutorialManager: markTutorialAsSeen() called")
     UserDefaults.standard.set(true, forKey: hasSeenTutorialKey)
     shouldShowTutorial = false
-    debugLog("🔍 TutorialManager: Tutorial marked as seen, shouldShowTutorial = false")
   }
 
   @MainActor
   func resetTutorial() {
-    debugLog("🔍 TutorialManager: resetTutorial() called")
     UserDefaults.standard.set(false, forKey: hasSeenTutorialKey)
     checkTutorialStatus() // Recheck with new logic
-    debugLog("🔍 TutorialManager: Tutorial reset, shouldShowTutorial = \(shouldShowTutorial)")
   }
 
   /// Recheck tutorial status (useful when habits change)
   @MainActor
   func recheckTutorialStatus() {
-    debugLog("🔍 TutorialManager: Rechecking tutorial status...")
     checkTutorialStatus()
   }
 
@@ -60,8 +53,5 @@ class TutorialManager: ObservableObject {
 
     // Show tutorial only if user hasn't seen it AND has no habits (truly new user)
     shouldShowTutorial = !hasSeenTutorial && !hasHabits
-
-    debugLog(
-      "🔍 TutorialManager: HasSeenTutorial = \(hasSeenTutorial), HasHabits = \(hasHabits), ShouldShowTutorial = \(shouldShowTutorial)")
   }
 }

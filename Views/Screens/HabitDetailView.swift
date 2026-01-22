@@ -245,9 +245,6 @@ struct HabitDetailView: View {
         habit: habit,
         completionDate: selectedDate,
         onDismiss: {
-          print(
-            "🎯 COMPLETION_FLOW: Detail sheet dismissed - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), sheetAction=close, reorderTriggered=true")
-
           // Reset flags
           isCompletingHabit = false
         })
@@ -990,9 +987,6 @@ struct HabitDetailView: View {
           if todayProgress > 0 {
             let newProgress = max(0, todayProgress - 1)
 
-            print(
-              "🎯 COMPLETION_FLOW: Detail - button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(extractGoalNumber(from: habit.goal)), reachedGoal=false")
-
             todayProgress = newProgress
             updateHabitProgress(todayProgress)
           }
@@ -1016,16 +1010,12 @@ struct HabitDetailView: View {
           let goalAmount = extractGoalNumber(from: habit.goal)
           let newProgress = min(todayProgress + 1, goalAmount)
 
-          print(
-            "🎯 COMPLETION_FLOW: Detail + button - habitId=\(habit.id), dateKey=\(Habit.dateKey(for: selectedDate)), source=detail, oldCount=\(todayProgress), newCount=\(newProgress), goal=\(goalAmount), reachedGoal=\(newProgress >= goalAmount)")
-
           todayProgress = newProgress
           updateHabitProgress(todayProgress)
 
           // Check if habit is completed and show completion sheet
           if newProgress >= goalAmount {
             isCompletingHabit = true
-            print("🎯 COMPLETION_FLOW: Showing completion sheet immediately")
             showingCompletionSheet = true
           }
         }) {

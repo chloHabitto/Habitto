@@ -1485,7 +1485,6 @@ final actor HabitStore {
     
     do {
       try await awardRef.delete()
-      logger.info("✅ Deleted invalid DailyAward from Firestore: \(dateKey)")
     } catch {
       logger.warning("⚠️ Failed to delete invalid DailyAward from Firestore: \(error.localizedDescription)")
       // Don't throw - this is cleanup, not critical

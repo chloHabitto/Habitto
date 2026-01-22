@@ -47,7 +47,6 @@ class SubscriptionManager: ObservableObject {
   // MARK: - Initialization
   
   private init() {
-    print("📱 SubscriptionManager: Initializing...")
     // For now, default to false (free user)
     // In the future, this will check StoreKit subscription status
     self.isPremium = false
@@ -57,14 +56,6 @@ class SubscriptionManager: ObservableObject {
     
     // Check subscription status (this runs async)
     loadSubscriptionStatus()
-    
-    print("📱 SubscriptionManager: Initialized - checking subscription status...")
-    
-    // Add a delayed check to see final state
-    Task { @MainActor in
-      try? await Task.sleep(nanoseconds: 3_000_000_000) // 3 seconds
-      print("📱 SubscriptionManager: 3s after init - isPremium: \(self.isPremium)")
-    }
   }
   
   deinit {
@@ -99,7 +90,6 @@ class SubscriptionManager: ObservableObject {
     Task {
       // Check for active subscriptions
       await checkSubscriptionStatus()
-      print("📱 SubscriptionManager: Initial subscription check complete - isPremium: \(isPremium)")
     }
   }
   

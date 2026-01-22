@@ -55,7 +55,6 @@ struct HabitCompletionBottomSheet: View {
       actionButtons
     }
     .onAppear {
-      print("🎯 HabitCompletionBottomSheet: onAppear called for habit: \(habit.name)")
       // Set default difficulty to very easy
       selectedDifficulty = .veryEasy
 
@@ -329,9 +328,6 @@ struct HabitCompletionBottomSheet: View {
       habitId: habit.id,
       date: completionDate,
       difficulty: difficultyValue)
-
-    print(
-      "🎯 HabitCompletionBottomSheet: Saved difficulty rating \(difficulty.displayName) for habit '\(habit.name)' on \(completionDate)")
   }
 }
 
@@ -354,30 +350,24 @@ struct DifficultyVideoView: UIViewRepresentable {
     // Method 1: Try path-based loading (mp4)
     if let path = Bundle.main.path(forResource: videoName, ofType: "mp4") {
       videoURL = URL(fileURLWithPath: path)
-      print("✅ DifficultyVideoView: Found video at path: \(path)")
     }
     // Method 2: Try URL-based loading (mp4)
     else if let url = Bundle.main.url(forResource: videoName, withExtension: "mp4") {
       videoURL = url
-      print("✅ DifficultyVideoView: Found video at URL: \(url)")
     }
     // Method 3: Try with subdirectory (mp4)
     else if let url = Bundle.main.url(forResource: videoName, withExtension: "mp4", subdirectory: "Animations") {
       videoURL = url
-      print("✅ DifficultyVideoView: Found video in Animations folder: \(url)")
     }
     // Method 4: Fallback to mov for backward compatibility
     else if let path = Bundle.main.path(forResource: videoName, ofType: "mov") {
       videoURL = URL(fileURLWithPath: path)
-      print("✅ DifficultyVideoView: Found video at path (mov): \(path)")
     }
     else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov") {
       videoURL = url
-      print("✅ DifficultyVideoView: Found video at URL (mov): \(url)")
     }
     else if let url = Bundle.main.url(forResource: videoName, withExtension: "mov", subdirectory: "Animations") {
       videoURL = url
-      print("✅ DifficultyVideoView: Found video in Animations folder (mov): \(url)")
     }
     else {
       print("❌ DifficultyVideoView: Failed to find video file: \(videoName).mp4 or \(videoName).mov")
@@ -408,12 +398,6 @@ struct DifficultyVideoView: UIViewRepresentable {
     // Add player layer to view
     videoView.playerLayer = playerLayer
     
-    print("✅ DifficultyVideoView: Video player setup complete")
-    print("   - Player: \(player)")
-    print("   - PlayerLayer: \(playerLayer)")
-    print("   - VideoView bounds: \(videoView.bounds)")
-    print("   - Video URL: \(url)")
-    
     // Monitor player item status
     playerItem.addObserver(coordinator, forKeyPath: "status", options: [.new], context: nil)
     
@@ -434,19 +418,15 @@ struct DifficultyVideoView: UIViewRepresentable {
       // Update player layer frame after layout - ensure it's not zero
       if !videoView.bounds.isEmpty {
         playerLayer.frame = videoView.bounds
-        print("📐 DifficultyVideoView: Updated player layer frame to: \(videoView.bounds)")
         
         // Start playing only if bounds are valid
         player.play()
-        print("▶️ DifficultyVideoView: Started playing video")
       } else {
-        print("⚠️ DifficultyVideoView: View bounds are empty, retrying...")
         // Retry after another delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
           if !videoView.bounds.isEmpty {
             playerLayer.frame = videoView.bounds
             player.play()
-            print("▶️ DifficultyVideoView: Started playing video (retry)")
           }
         }
       }
@@ -475,13 +455,13 @@ struct DifficultyVideoView: UIViewRepresentable {
         if let playerItem = object as? AVPlayerItem {
           switch playerItem.status {
           case .readyToPlay:
-            print("✅ DifficultyVideoView: Player item ready to play")
+            break
           case .failed:
             print("❌ DifficultyVideoView: Player item failed: \(playerItem.error?.localizedDescription ?? "Unknown error")")
           case .unknown:
-            print("⚠️ DifficultyVideoView: Player item status unknown")
+            break
           @unknown default:
-            print("⚠️ DifficultyVideoView: Player item status unknown")
+            break
           }
         }
       }
@@ -515,7 +495,6 @@ class VideoPlayerView: UIView {
       // Ensure frame matches bounds exactly
       if !bounds.isEmpty {
         playerLayer.frame = bounds
-        print("📐 VideoPlayerView: layoutSubviews - bounds: \(bounds), layer frame: \(playerLayer.frame)")
       }
     }
   }

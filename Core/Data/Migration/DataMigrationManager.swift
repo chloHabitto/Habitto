@@ -127,8 +127,6 @@ class DataMigrationManager: ObservableObject {
     let availableMigrations = getAvailableMigrations().sorted { $0.version < $1.version }
     let totalSteps = availableMigrations.count
 
-    print("🔄 DataMigrationManager: Starting migration from \(currentVersion.stringValue) to latest")
-
     let startTime = Date()
 
     // Record migration start
@@ -150,12 +148,8 @@ class DataMigrationManager: ObservableObject {
         currentMigrationStep = step.description
         migrationProgress = Double(index) / Double(totalSteps)
 
-        print(
-          "🔄 DataMigrationManager: Executing \(step.description) (v\(step.version.stringValue))")
-
         // Check if step already completed (idempotent)
         if await isStepCompleted(step) {
-          print("⏭️ DataMigrationManager: \(step.description) already completed, skipping")
           logMigration(step: step, result: .skipped(reason: "Already completed"), error: nil)
           currentVersion = step.version
           continue
@@ -198,7 +192,6 @@ class DataMigrationManager: ObservableObject {
             }
 
           case .skipped(let reason):
-            print("⏭️ DataMigrationManager: \(step.description) skipped: \(reason)")
             logMigration(step: step, result: .skipped(reason: reason), error: nil)
             // Update version even for skipped steps
             currentVersion = step.version
@@ -260,7 +253,6 @@ class DataMigrationManager: ObservableObject {
       throw DataMigrationError.invalidRollbackVersion
     }
 
-    print("🔄 DataMigrationManager: Rolling back to version \(version.stringValue)")
 
     let stepsToRollback = migrationSteps
       .filter { $0.version > version && $0.version <= currentVersion }

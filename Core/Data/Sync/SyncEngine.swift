@@ -78,7 +78,6 @@ actor SyncEngine {
         deletedHabitsLock.lock()
         recentlyDeletedHabitIds.remove(habitId)
         deletedHabitsLock.unlock()
-        Logger(subsystem: "com.habitto.app", category: "SyncEngine").info("✅ SyncEngine: Cleared deleted marker for habit \(habitId.uuidString.prefix(8))...")
     }
     
     // Background sync scheduler
@@ -92,8 +91,6 @@ actor SyncEngine {
         self.firestore = Firestore.firestore()
         self.habitStore = HabitStore.shared
         logger.info("SyncEngine initialized")
-        debugLog("🔄 SyncEngine: Initialized")
-        NSLog("🔄 SyncEngine: Initialized (NSLog)")
         fflush(stdout)
     }
     
@@ -1079,7 +1076,6 @@ actor SyncEngine {
         
         logger.info("🔄 Starting pull remote changes for user: \(actualUserId)")
         debugLog("🔵 SYNC_PULL_START: userId=\(actualUserId), lastSync=\(lastSync.ISO8601Format())")
-        NSLog("🔄 SyncEngine: Starting pull remote changes for user: %@", actualUserId)
         fflush(stdout)
         
         var summary = PullSyncSummary()
@@ -1115,10 +1111,8 @@ actor SyncEngine {
                 // ✅ CRITICAL FIX: Clear UserAwareStorage cache before reloading
                 // This ensures fresh data is loaded from SwiftData instead of returning stale cached habits
                 await habitStore.clearStorageCache()
-                logger.info("🔄 SyncEngine: Cleared storage cache before reloading habits after completion sync")
                 
                 await HabitRepository.shared.loadHabits(force: true)
-                logger.info("✅ SyncEngine: Reloaded habits after completion sync")
                 
                 // ✅ BUG 4 FIX: Capture value before MainActor.run to avoid Swift 6 concurrency warning
                 let pulledCount = completionsPulled
@@ -1243,7 +1237,6 @@ actor SyncEngine {
         logger.info("📥 SyncEngine: Pulled \(pulledCount) habits updated since \(since.ISO8601Format())")
         
         // STEP 3: Reconcile deletions using ALL remote habit IDs (not just pulled ones)
-        logger.info("🔄 SyncEngine: Starting reconciliation with \(remoteHabitIds.count) remote habits")
         await reconcileDeletedHabits(userId: userId, remoteHabitIds: remoteHabitIds)
         
         return pulledCount
@@ -1452,7 +1445,6 @@ actor SyncEngine {
                     existingHabit.updatedAt = remoteUpdatedAt
                     do {
                         try modelContext.save()
-                        logger.info("✅ SyncEngine: Updated habit \(habitId.uuidString.prefix(8))... from Firestore")
                     } catch {
                         logger.error("❌ SyncEngine: Failed to save updated habit \(habitId.uuidString.prefix(8))...: \(error.localizedDescription)")
                         logger.error("   Error details: \(error)")
@@ -1506,7 +1498,6 @@ actor SyncEngine {
                 modelContext.insert(habitData)
                 do {
                     try modelContext.save()
-                    logger.info("✅ SyncEngine: Created habit \(habitId.uuidString.prefix(8))... from Firestore")
                 } catch {
                     logger.error("❌ SyncEngine: Failed to save new habit \(habitId.uuidString.prefix(8))...: \(error.localizedDescription)")
                     logger.error("   Error details: \(error)")
@@ -1612,7 +1603,6 @@ actor SyncEngine {
                         existingRecord.updatedAt = Date()
                         
                         try modelContext.save()
-                        logger.info("✅ SyncEngine: Updated completion (remote newer) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress) | remoteTimestamp=\(remoteTimestamp.ISO8601Format()) > localTimestamp=\(localTimestamp.ISO8601Format())")
                     } else if remoteTimestamp < localTimestamp {
                         // ✅ CRITICAL BUG FIX: Local is newer - preserve local data, skip remote overwrite
                         // This prevents stale Firestore data from overwriting recent local changes
@@ -1634,7 +1624,6 @@ actor SyncEngine {
                         existingRecord.progress = remoteProgress
                         existingRecord.updatedAt = Date()
                         try modelContext.save()
-                        logger.info("✅ SyncEngine: Updated completion (both invalid timestamps, preferring remote) for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
                     }
                 } else {
                     // Create new completion record
@@ -1662,7 +1651,6 @@ actor SyncEngine {
                     
                     modelContext.insert(newRecord)
                     try modelContext.save()
-                    logger.info("✅ SyncEngine: Created completion for \(habitId.uuidString.prefix(8))... dateKey=\(dateKey) isCompleted=\(remoteIsCompleted) progress=\(remoteProgress)")
                 }
             } catch {
                 logger.error("❌ SyncEngine: Failed to merge completion: \(error.localizedDescription)")
@@ -1733,7 +1721,6 @@ actor SyncEngine {
         
         // If no habits were scheduled, award should not exist
         if scheduledHabits.isEmpty {
-            logger.warning("⚠️ INVALID AWARD: No habits scheduled for \(dateKey) - skipping import and deleting from Firestore")
             await deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
             return
         }
@@ -1761,12 +1748,7 @@ actor SyncEngine {
         
         // If not all habits completed, skip import and delete from Firestore
         if !allCompleted {
-            logger.warning("⚠️ INVALID AWARD: Not all habits completed for \(dateKey) - skipping import and deleting from Firestore")
-            logger.warning("   Scheduled: \(scheduledHabits.count), Completed: \(scheduledHabitIds.count - missingHabits.count)")
-            logger.warning("   Missing habits: \(missingHabits.joined(separator: ", "))")
-            logger.info("🔄 SYNC: Deleting invalid award from Firestore to prevent re-import...")
             await deleteInvalidAwardFromFirestore(dateKey: dateKey, userId: userId)
-            logger.info("✅ SYNC: Invalid award prevented from being imported - XP integrity maintained")
             return
         }
         
@@ -1807,7 +1789,6 @@ actor SyncEngine {
         
         do {
             try await awardRef.delete()
-            logger.info("✅ Deleted invalid DailyAward from Firestore: \(dateKey)")
         } catch {
             logger.warning("⚠️ Failed to delete invalid DailyAward from Firestore: \(error.localizedDescription)")
             // Don't throw - this is cleanup, not critical
@@ -2138,7 +2119,6 @@ actor SyncEngine {
                         .document(habitId.uuidString)
                     
                     try await docRef.delete()
-                    logger.info("✅ SyncEngine: Deleted orphaned habit \(habitId.uuidString.prefix(8))... from Firestore")
                     
                     // Also delete orphaned completion records
                     await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habitId)
