@@ -23,14 +23,14 @@ struct TodaysJourneyNowMarker: View {
   }()
 
   var body: some View {
-    HStack(alignment: .top, spacing: 0) {
+    HStack(alignment: .top, spacing: 12) {
       timeColumn
       spineColumn
       contentColumn
     }
   }
 
-  // MARK: - Time Column (44pt, right-aligned, primary styling)
+  // MARK: - Time Column (45pt, right-aligned, primary styling) - matches TimelineEntryRow
 
   private var timeColumn: some View {
     VStack(alignment: .trailing, spacing: 2) {
@@ -41,25 +41,43 @@ struct TodaysJourneyNowMarker: View {
         .font(.appLabelSmall)
         .foregroundColor(.appPrimary)
     }
-    .frame(width: 44, alignment: .trailing)
-    .padding(.top, 14)
+    .frame(width: 45, alignment: .trailing)
+    .padding(.top, 16)
   }
 
-  // MARK: - Spine Column (28pt): lines + pulsing dot
+  // MARK: - Spine Column (24pt): lines + pulsing dot - matches TodaysJourneyItemView
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
-      // Line above NOW – solid primary
+      // Line above NOW – solid primary (extends to connect with previous item)
+      // This connects to the line below the previous completed item
+      spineLineAbove
+      
+      // Pulsing NOW dot (aligned with timeline nodes at same vertical position)
+      nowDot
+        .padding(.top, 18) // Match TimelineEntryRow dot positioning
+      
+      // Line below NOW – gradient primary → outline02 (extends to connect with next item)
+      // This connects to the line above the next pending item
+      spineLineBelow
+    }
+    .frame(width: 24)
+  }
+  
+  private var spineLineAbove: some View {
+    GeometryReader { geo in
+      let h = max(24, geo.size.height)
       Rectangle()
         .fill(Color.appPrimary)
-        .frame(width: 3)
-        .frame(minHeight: 18)
-
-      // Pulsing NOW dot
-      nowDot
-        .padding(.vertical, 0)
-
-      // Line below NOW – gradient primary → outline02 (flexible height)
+        .frame(width: 3, height: h)
+    }
+    .frame(width: 3)
+    .frame(minHeight: 24) // Extend through card bottom padding (8pt) + spacing
+  }
+  
+  private var spineLineBelow: some View {
+    GeometryReader { geo in
+      let h = max(24, geo.size.height)
       Rectangle()
         .fill(
           LinearGradient(
@@ -68,16 +86,16 @@ struct TodaysJourneyNowMarker: View {
             endPoint: .bottom
           )
         )
-        .frame(width: 3)
-        .frame(minHeight: 18)
+        .frame(width: 3, height: h)
     }
-    .frame(width: 28)
+    .frame(width: 3)
+    .frame(minHeight: 24) // Extend through card bottom padding (8pt) + spacing
   }
 
   private var nowDot: some View {
     Circle()
       .fill(Color.appPrimary)
-      .frame(width: 12, height: 12)
+      .frame(width: 14, height: 14) // Match TodaysJourneyItemView timeline node size
       .shadow(
         color: Color.appPrimary.opacity(isPulsing ? 0.5 : 0),
         radius: isPulsing ? 8 : 0
@@ -113,9 +131,8 @@ struct TodaysJourneyNowMarker: View {
         .background(Color.appPrimaryContainer)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
-    .padding(.leading, 8)
-    .padding(.top, 8)
-    .padding(.bottom, 8)
+    .padding(.top, 16) // Match TimelineEntryRow entryCard top padding
+    .padding(.bottom, 12) // Match TimelineEntryRow entryCard bottom padding
   }
 }
 

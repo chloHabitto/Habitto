@@ -30,7 +30,7 @@ struct TodaysJourneyItemView: View {
   }()
 
   var body: some View {
-    HStack(alignment: .top, spacing: 0) {
+    HStack(alignment: .top, spacing: 12) {
       timeColumn
       spineColumn
       cardColumn
@@ -44,7 +44,7 @@ struct TodaysJourneyItemView: View {
     .onAppear { hasAppeared = true }
   }
 
-  // MARK: - Time Column (40pt, right-aligned)
+  // MARK: - Time Column (45pt, right-aligned) - matches TimelineEntryRow
 
   private var timeColumn: some View {
     VStack(alignment: .trailing, spacing: 2) {
@@ -57,8 +57,8 @@ struct TodaysJourneyItemView: View {
           .foregroundColor(item.status == .completed ? .appText03 : .appText05)
       }
     }
-    .frame(width: 40, alignment: .trailing)
-    .padding(.top, 14)
+    .frame(width: 45, alignment: .trailing)
+    .padding(.top, 16)
   }
 
   private var timeLine1: String {
@@ -83,7 +83,7 @@ struct TodaysJourneyItemView: View {
     }
   }
 
-  // MARK: - Spine Column (24pt)
+  // MARK: - Spine Column (24pt) - matches TimelineEntryRow connectorColumn
 
   private var spineColumn: some View {
     VStack(spacing: 0) {
@@ -91,6 +91,7 @@ struct TodaysJourneyItemView: View {
         spineLine(isPending: item.status == .pending)
       }
       timelineNode
+        .padding(.top, 18) // Match TimelineEntryRow dot positioning
       if !isLast {
         spineLine(isPending: item.status == .pending)
       }
@@ -199,9 +200,8 @@ struct TodaysJourneyItemView: View {
         .stroke(Color.appOutline02, lineWidth: 1)
     )
     .opacity(item.status == .pending ? 0.8 : 1)
-    .padding(.leading, 6)
-    .padding(.top, 8)
-    .padding(.bottom, isLast ? 0 : 8)
+    .padding(.top, 16) // Match TimelineEntryRow entryCard top padding
+    .padding(.bottom, isLast ? 0 : 12) // Match TimelineEntryRow entryCard bottom padding
   }
 
   @ViewBuilder
