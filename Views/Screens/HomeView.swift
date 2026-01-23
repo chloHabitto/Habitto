@@ -280,9 +280,19 @@ class HomeViewState: ObservableObject {
     do {
       try await habitRepository.deleteHabit(habit)
       
-      // ✅ Recalculate streak after delete
+      // ✅ NEW: Check if habit was restored while delete was running
+      // If deletedHabitForUndo was cleared, restore already happened
       await MainActor.run {
-        self.requestStreakRecalculation(reason: "Habit deleted")
+        if self.deletedHabitForUndo?.id != habit.id {
+          // Restore already cleared the undo state - habit should be in UI
+          // Force reload to ensure consistency with repository state
+          Task {
+            await self.habitRepository.loadHabits(force: true)
+          }
+        } else {
+          // Delete completed normally
+          self.requestStreakRecalculation(reason: "Habit deleted")
+        }
       }
     } catch {
       debugLog("❌ Failed to delete habit: \(error.localizedDescription)")
