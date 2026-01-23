@@ -58,6 +58,7 @@ struct RemindersHubView: View {
   @State private var selectedDate: Date = Date()
   @State private var currentWeekOffset: Int = 0  // 0 = current week, -1 = last week, +1 = next week
   @State private var isCalendarExpanded: Bool = false
+  @State private var currentMonth: Date = Date()
   
   // MARK: - Skip Reminder State
   // Key: "dateKey_reminderId" (e.g., "2026-01-21_uuid")
@@ -519,9 +520,16 @@ struct RemindersHubView: View {
         // Today button (visible when on different week OR when selectedDate is NOT today)
         if shouldShowTodayButton {
           Button(action: {
+            let today = Date()
+            // Always collapse to weekly view first
+            withAnimation(.easeInOut(duration: 0.3)) {
+              isCalendarExpanded = false
+            }
+            // Set selected date to today and reset offsets
             withAnimation(.easeInOut(duration: 0.08)) {
-              selectedDate = Date()
+              selectedDate = today
               currentWeekOffset = 0
+              currentMonth = today
             }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
           }) {
@@ -549,26 +557,33 @@ struct RemindersHubView: View {
       }
       .padding(.horizontal, 20)
       
-      // Swipeable week day strip
-      TabView(selection: $currentWeekOffset) {
-        ForEach(-100...100, id: \.self) { weekOffset in
-          weekView(for: weekOffset)
-            .tag(weekOffset)
+      // Calendar view (weekly or monthly)
+      if isCalendarExpanded {
+        monthlyCalendarView
+          .transition(.opacity.combined(with: .scale(scale: 0.95)))
+      } else {
+        // Swipeable week day strip
+        TabView(selection: $currentWeekOffset) {
+          ForEach(-100...100, id: \.self) { weekOffset in
+            weekView(for: weekOffset)
+              .tag(weekOffset)
+          }
         }
-      }
-      .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-      .animation(.easeInOut(duration: 0.3), value: currentWeekOffset)
-      .onChange(of: currentWeekOffset) { oldValue, newValue in
-        // Add haptic feedback when scrolling between weeks
-        if oldValue != newValue {
-          let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-          impactFeedback.impactOccurred()
+        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+        .animation(.easeInOut(duration: 0.3), value: currentWeekOffset)
+        .onChange(of: currentWeekOffset) { oldValue, newValue in
+          // Add haptic feedback when scrolling between weeks
+          if oldValue != newValue {
+            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+            impactFeedback.impactOccurred()
+          }
         }
+        .onAppear {
+          currentWeekOffset = 0
+        }
+        .frame(height: 64)
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
       }
-      .onAppear {
-        currentWeekOffset = 0
-      }
-      .frame(height: 64)
       
       // Reminder count
       HStack {
@@ -581,6 +596,14 @@ struct RemindersHubView: View {
       .padding(.top, 8)
       .padding(.horizontal, 20)
     }
+    .onAppear {
+      currentMonth = selectedDate
+    }
+    .onChange(of: selectedDate) { _, newDate in
+      // Keep currentMonth in sync with selectedDate for monthly view
+      currentMonth = newDate
+    }
+    .animation(.easeInOut(duration: 0.3), value: isCalendarExpanded)
   }
   
   private func weekView(for weekOffset: Int) -> some View {
@@ -596,6 +619,41 @@ struct RemindersHubView: View {
     let formatter = DateFormatter()
     formatter.dateFormat = "EEE, d MMM"  // "Sat, 24 Jan"
     return formatter.string(from: selectedDate)
+  }
+  
+  private var monthYearString: String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMMM yyyy"
+    return formatter.string(from: currentMonth)
+  }
+  
+  private var weekdayNames: [String] {
+    let calendar = Calendar.current
+    if calendar.firstWeekday == 2 { // Monday
+      return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    } else { // Sunday
+      return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    }
+  }
+  
+  private var calendarDays: [Date?] {
+    let calendar = Calendar.current
+    let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
+    
+    let firstWeekday = calendar.component(.weekday, from: startOfMonth)
+    let daysFromFirstWeekday = (firstWeekday - calendar.firstWeekday + 7) % 7
+    let firstDisplayDate = calendar.date(byAdding: .day, value: -daysFromFirstWeekday, to: startOfMonth) ?? startOfMonth
+    
+    var days: [Date?] = []
+    var currentDate = firstDisplayDate
+    
+    // Generate 42 days (6 weeks)
+    for _ in 0..<42 {
+      days.append(currentDate)
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
+    }
+    
+    return days
   }
   
   private func dateCell(for date: Date) -> some View {
@@ -642,6 +700,128 @@ struct RemindersHubView: View {
       )
     }
     .buttonStyle(PlainButtonStyle())
+  }
+  
+  // MARK: - Monthly Calendar View (Expanded)
+  
+  @ViewBuilder
+  private var monthlyCalendarView: some View {
+    VStack(spacing: 4) {
+      // Month navigation
+      HStack {
+        Button(action: {
+          withAnimation {
+            if let newMonth = Calendar.current.date(byAdding: .month, value: -1, to: currentMonth) {
+              currentMonth = newMonth
+            }
+          }
+        }) {
+          Image(systemName: "chevron.left")
+            .font(.system(size: 12, weight: .heavy))
+            .foregroundColor(.appOutline03)
+            .frame(width: 44, height: 44)
+        }
+        
+        Spacer()
+        
+        Text(monthYearString)
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        
+        Spacer()
+        
+        Button(action: {
+          withAnimation {
+            if let newMonth = Calendar.current.date(byAdding: .month, value: 1, to: currentMonth) {
+              currentMonth = newMonth
+            }
+          }
+        }) {
+          Image(systemName: "chevron.right")
+            .font(.system(size: 12, weight: .heavy))
+            .foregroundColor(.appOutline03)
+            .frame(width: 44, height: 44)
+        }
+      }
+      .padding(.horizontal, 20)
+      
+      // Weekday headers
+      HStack(spacing: 0) {
+        ForEach(weekdayNames, id: \.self) { day in
+          Text(day.uppercased())
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(.appText06)
+            .frame(maxWidth: .infinity)
+            .frame(height: 32)
+        }
+      }
+      .padding(.horizontal, 20)
+      
+      // Calendar grid
+      LazyVGrid(
+        columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7),
+        spacing: 0
+      ) {
+        ForEach(calendarDays, id: \.self) { date in
+          if let date = date {
+            monthlyDayCell(for: date)
+          } else {
+            Color.clear
+              .frame(height: 32)
+          }
+        }
+      }
+      .padding(.horizontal, 20)
+    }
+    .padding(.bottom, 16)
+  }
+  
+  private func monthlyDayCell(for date: Date) -> some View {
+    let calendar = Calendar.current
+    let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
+    let isToday = calendar.isDateInToday(date)
+    let isCurrentMonth = calendar.isDate(date, equalTo: currentMonth, toGranularity: .month)
+    
+    return Button(action: {
+      selectedDate = date
+      // Auto-collapse after selection
+      withAnimation(.easeInOut(duration: 0.3)) {
+        isCalendarExpanded = false
+      }
+      // Update week offset to match selected date
+      updateWeekOffsetForDate(date)
+      UIImpactFeedbackGenerator(style: .light).impactOccurred()
+    }) {
+      Text("\(calendar.component(.day, from: date))")
+        .font(.appBodyMedium)
+        .foregroundColor(isSelected ? .onPrimary : (isToday ? .primary : .text01))
+        .frame(width: 32, height: 32)
+        .background(
+          RoundedRectangle(cornerRadius: 8)
+            .fill(isSelected ? Color.primary : (isToday ? Color("appFixedPrimaryOpacity10") : Color.clear))
+        )
+        .overlay(
+          RoundedRectangle(cornerRadius: 8)
+            .stroke(isToday && !isSelected ? Color.primary : Color.clear, lineWidth: 1)
+        )
+    }
+    .buttonStyle(PlainButtonStyle())
+    .opacity(isCurrentMonth ? 1.0 : 0.3)
+  }
+  
+  private func updateWeekOffsetForDate(_ date: Date) {
+    let calendar = Calendar.current
+    let today = Date()
+    guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: today) else { return }
+    guard let selectedWeekInterval = calendar.dateInterval(of: .weekOfYear, for: date) else { return }
+    
+    let weeksDifference = calendar.dateComponents(
+      [.weekOfYear],
+      from: weekInterval.start,
+      to: selectedWeekInterval.start
+    ).weekOfYear ?? 0
+    
+    currentWeekOffset = weeksDifference
   }
   
   // MARK: - Date Helper Properties
@@ -1014,14 +1194,22 @@ struct RemindersHubView: View {
   }
   
   private func isReminderTimePassed(_ reminder: ReminderItem) -> Bool {
-    // Only check time if selected date is today
-    guard Calendar.current.isDateInToday(selectedDate) else {
-      return false // Future/past dates - nothing has "passed"
-    }
-    
     let calendar = Calendar.current
     let now = Date()
+    let startOfToday = calendar.startOfDay(for: now)
+    let startOfSelectedDate = calendar.startOfDay(for: selectedDate)
     
+    // If selected date is in the past (before today), ALL reminders have passed
+    if startOfSelectedDate < startOfToday {
+      return true
+    }
+    
+    // If selected date is in the future, nothing has passed yet
+    if startOfSelectedDate > startOfToday {
+      return false
+    }
+    
+    // If selected date is today, check if the specific reminder time has passed
     let reminderDateTime = calendar.date(
       bySettingHour: calendar.component(.hour, from: reminder.time),
       minute: calendar.component(.minute, from: reminder.time),

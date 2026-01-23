@@ -416,8 +416,9 @@ final actor HabitStore {
     // This prevents the race condition where undo happens between marking and checking
     try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
     
-    // ✅ CRITICAL FIX: Check early if habit was restored before doing any destructive operations
-    if !isHabitMarkedAsDeleted(habit.id) {
+    // ✅ CRITICAL FIX: Check BOTH markers early - SyncEngine is cleared synchronously, so it's more reliable
+    // Check if habit was restored before doing any destructive operations
+    if !isHabitMarkedAsDeleted(habit.id) || !SyncEngine.isHabitDeleted(habit.id) {
       // Habit was restored while we were waiting - abort immediately
       logger.info("⏭️ Delete aborted early - habit '\(habit.name)' was restored")
       return
@@ -436,8 +437,9 @@ final actor HabitStore {
 
     currentHabits.removeAll { $0.id == habit.id }
 
-    // ✅ CHECK AGAIN before Firestore operations - habit might have been restored during load
-    guard isHabitMarkedAsDeleted(habit.id) else {
+    // ✅ CHECK BOTH markers again before Firestore operations - habit might have been restored during load
+    // SyncEngine marker is cleared synchronously, so it's more reliable for detecting restores
+    guard isHabitMarkedAsDeleted(habit.id) && SyncEngine.isHabitDeleted(habit.id) else {
       logger.info("⏭️ Delete aborted before Firestore - habit '\(habit.name)' was restored")
       return
     }
