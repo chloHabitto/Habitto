@@ -163,7 +163,7 @@ class UserDefaultsStorage: HabitStorageProtocol {
     return try await load(Habit.self, forKey: key)
   }
 
-  func deleteHabit(id: UUID) async throws {
+  func deleteHabit(id: UUID) async throws -> Bool {
     let key = "\(individualHabitKeyPrefix)\(id.uuidString)"
     try await delete(forKey: key)
 
@@ -172,6 +172,8 @@ class UserDefaultsStorage: HabitStorageProtocol {
       cached.removeAll { $0.id == id }
       cachedHabits = cached
     }
+    
+    return true
   }
 
   func clearAllHabits() async throws {

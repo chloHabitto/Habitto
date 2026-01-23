@@ -489,18 +489,26 @@ struct RemindersHubView: View {
   
   private var dateStripSection: some View {
     VStack(spacing: 12) {
-      // Header row with month/year and Today button
+      // Header row with date and Today button
       HStack {
-        // Month/Year label
-        Text(monthYearString)
-          .font(.appTitleMediumEmphasised)
-          .foregroundColor(.text01)
+        // Date text with chevron icon
+        HStack(spacing: 0) {
+          Text(formattedSelectedDate)
+            .font(.appTitleMediumEmphasised)
+            .foregroundColor(.text02)
+          
+          Image("Icon-arrowDropDown_Filled")
+            .renderingMode(.template)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 24, height: 24)
+            .foregroundColor(.text04)
+        }
         
         Spacer()
         
         // Today button (only visible when selectedDate is NOT today)
-        let calendar = Calendar.current
-        let isTodaySelected = calendar.isDate(selectedDate, inSameDayAs: Date())
+        let isTodaySelected = Calendar.current.isDate(selectedDate, inSameDayAs: Date())
         if !isTodaySelected {
           Button(action: {
             withAnimation(.easeInOut(duration: 0.08)) {
@@ -553,17 +561,9 @@ struct RemindersHubView: View {
         currentWeekOffset = 0
       }
       .frame(height: 64)
-      .padding(.horizontal, 20)
       
-      // Selected date label + reminder count
+      // Reminder count
       HStack {
-        Text(formatSelectedDateLabel(selectedDate))
-          .font(.appBodyMediumEmphasised)
-          .foregroundColor(.text01)
-        
-        Text("·")
-          .foregroundColor(.text04)
-        
         Text("\(remindersForSelectedDate.count) reminder\(remindersForSelectedDate.count == 1 ? "" : "s")")
           .font(.appBodyMedium)
           .foregroundColor(.text04)
@@ -576,22 +576,18 @@ struct RemindersHubView: View {
   }
   
   private func weekView(for weekOffset: Int) -> some View {
-    HStack(spacing: 8) {
+    HStack(spacing: 2) {
       ForEach(datesForDisplayedWeek(weekOffset: weekOffset), id: \.self) { date in
         dateCell(for: date)
       }
     }
+    .padding(.horizontal, 20)  // Add padding INSIDE the week view
   }
   
-  private var monthYearString: String {
-    let calendar = Calendar.current
-    let displayedWeekDates = datesForDisplayedWeek(weekOffset: currentWeekOffset)
-    guard let firstDate = displayedWeekDates.first else {
-      return ""
-    }
+  private var formattedSelectedDate: String {
     let formatter = DateFormatter()
-    formatter.dateFormat = "MMMM yyyy"
-    return formatter.string(from: firstDate)
+    formatter.dateFormat = "EEE, d MMM"  // "Sat, 24 Jan"
+    return formatter.string(from: selectedDate)
   }
   
   private func dateCell(for date: Date) -> some View {
