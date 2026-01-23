@@ -1150,6 +1150,58 @@ actor SyncEngine {
         // 5. Update last sync timestamp after successful pull
         setLastSyncTimestamp(userId: actualUserId, timestamp: Date())
         
+        // ✅ TEMPORARY DIAGNOSTIC - Remove after verification
+        // Check if pulled events fix the mismatch for problem habits
+        await MainActor.run {
+            let modelContext = SwiftDataContainer.shared.modelContext
+            
+            print("📊 POST_SYNC_DIAGNOSTIC: Checking if pulled events fix the mismatch...")
+            print("   Total events pulled: \(summary.eventsPulled)")
+            
+            // Check the two problem habits from the logs
+            let problemCases = [
+                ("F93EED74", "2026-01-21", 2),  // Expected progress: 2
+                ("B8377064", "2026-01-21", 5)   // Expected progress: 5
+            ]
+            
+            for (habitIdPrefix, dateKey, expectedProgress) in problemCases {
+                // Find events for this habit/date
+                let descriptor = FetchDescriptor<ProgressEvent>(
+                    predicate: #Predicate<ProgressEvent> { event in
+                        event.dateKey == dateKey && event.userId == actualUserId
+                    }
+                )
+                
+                if let allEvents = try? modelContext.fetch(descriptor) {
+                    // Filter by habitId prefix
+                    let matchingEvents = allEvents.filter { event in
+                        event.habitId.uuidString.hasPrefix(habitIdPrefix)
+                    }
+                    
+                    // Calculate progress from events (sum of progressDelta)
+                    let calculatedProgress = matchingEvents.reduce(0) { $0 + $1.progressDelta }
+                    
+                    print("📊 POST_SYNC: habitId=\(habitIdPrefix)..., dateKey=\(dateKey)")
+                    print("   Events found: \(matchingEvents.count)")
+                    print("   Calculated progress: \(calculatedProgress)")
+                    print("   Expected progress: \(expectedProgress)")
+                    print("   Match: \(calculatedProgress == expectedProgress ? "✅" : "❌")")
+                    
+                    if !matchingEvents.isEmpty {
+                        print("   Event breakdown:")
+                        for event in matchingEvents.sorted(by: { $0.createdAt < $1.createdAt }) {
+                            print("     - \(event.eventType): delta=\(event.progressDelta), created=\(event.createdAt)")
+                        }
+                    } else {
+                        print("   ⚠️ No events found for this habit/date combination")
+                    }
+                } else {
+                    print("📊 POST_SYNC: habitId=\(habitIdPrefix)..., dateKey=\(dateKey)")
+                    print("   ❌ Failed to fetch events from ModelContext")
+                }
+            }
+        }
+        
         // ✅ ISSUE 2 FIX: Clear cache and notify UI if we pulled habits OR if reconciliation happened
         // ✅ FIX: Capture value before async closure to avoid Swift 6 concurrency warning
         let habitsPulledCount = summary.habitsPulled
