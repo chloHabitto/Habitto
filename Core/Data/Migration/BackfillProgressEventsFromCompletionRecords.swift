@@ -56,7 +56,7 @@ class BackfillProgressEventsFromCompletionRecords {
       
       var eventsCreated = 0
       var skippedCount = 0
-      var errors = 0
+      let errors = 0
       
       // Get device ID for backfill events (use a consistent identifier)
       let deviceId = "BACKFILL_MIGRATION"
