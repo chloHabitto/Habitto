@@ -480,8 +480,24 @@ class HabitRepository: ObservableObject {
       return
     }
     
+    // ✅ CRITICAL FIX: When force=true, wait for any in-progress load to complete
+    // This ensures forced reloads (e.g., after habit creation) are not skipped
+    if force && isLoading {
+      #if DEBUG
+      debugLog("🔄 LOAD_HABITS: Force reload requested, waiting for in-progress load to complete...")
+      #endif
+      // Poll until the current load completes
+      while isLoading {
+        try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+      }
+      #if DEBUG
+      debugLog("✅ LOAD_HABITS: In-progress load completed, proceeding with forced reload")
+      #endif
+    }
+    
     // ✅ FIX: Prevent concurrent loads to reduce excessive data loading
-    if isLoading {
+    // Only skip if not forcing and already loading
+    if !force && isLoading {
       debugLog("⚠️ LOAD_HABITS: Skipping load - already loading")
       return
     }
@@ -694,13 +710,22 @@ class HabitRepository: ObservableObject {
         debugLog("ℹ️ XP_CHECK: New habit '\(habit.name)' is not scheduled for today - skipping DailyAward check")
       }
 
-      // Reload habits to get the updated list
+      // Reload habits to get the updated list from storage
+      // ✅ CRITICAL FIX: Force reload ensures the newly created habit appears in UI
+      // The fix to loadHabits ensures it waits for any in-progress load before proceeding
       #if DEBUG
       debugLog("  → Reloading habits from storage")
+      debugLog("  → Current habits count before reload: \(habits.count)")
       #endif
       await loadHabits(force: true)
       #if DEBUG
       debugLog("  ✅ Success! New habits count: \(habits.count)")
+      // Verify the created habit is in the loaded array
+      if let loadedHabit = habits.first(where: { $0.id == habit.id }) {
+        debugLog("  ✅ Verified: Created habit '\(loadedHabit.name)' is in loaded array")
+      } else {
+        debugLog("  ⚠️ WARNING: Created habit '\(habit.name)' not found in loaded array - may need app restart")
+      }
       #endif
 
     } catch {
