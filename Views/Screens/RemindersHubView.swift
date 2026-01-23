@@ -57,6 +57,7 @@ struct RemindersHubView: View {
   
   @State private var selectedDate: Date = Date()
   @State private var currentWeekOffset: Int = 0  // 0 = current week, -1 = last week, +1 = next week
+  @State private var isCalendarExpanded: Bool = false
   
   // MARK: - Skip Reminder State
   // Key: "dateKey_reminderId" (e.g., "2026-01-21_uuid")
@@ -491,25 +492,32 @@ struct RemindersHubView: View {
     VStack(spacing: 12) {
       // Header row with date and Today button
       HStack {
-        // Date text with chevron icon
-        HStack(spacing: 0) {
-          Text(formattedSelectedDate)
-            .font(.appTitleMediumEmphasised)
-            .foregroundColor(.text02)
-          
-          Image("Icon-arrowDropDown_Filled")
-            .renderingMode(.template)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 24, height: 24)
-            .foregroundColor(.text04)
+        // Date text with chevron icon - tappable
+        Button(action: {
+          withAnimation(.easeInOut(duration: 0.3)) {
+            isCalendarExpanded.toggle()
+          }
+          UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }) {
+          HStack(spacing: 0) {
+            Text(formattedSelectedDate)
+              .font(.appTitleMediumEmphasised)
+              .foregroundColor(.text02)
+            
+            Image(isCalendarExpanded ? "Icon-arrowDropUp_Filled" : "Icon-arrowDropDown_Filled")
+              .renderingMode(.template)
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 24, height: 24)
+              .foregroundColor(.text04)
+          }
         }
+        .buttonStyle(PlainButtonStyle())
         
         Spacer()
         
-        // Today button (only visible when selectedDate is NOT today)
-        let isTodaySelected = Calendar.current.isDate(selectedDate, inSameDayAs: Date())
-        if !isTodaySelected {
+        // Today button (visible when on different week OR when selectedDate is NOT today)
+        if shouldShowTodayButton {
           Button(action: {
             withAnimation(.easeInOut(duration: 0.08)) {
               selectedDate = Date()
@@ -625,22 +633,25 @@ struct RemindersHubView: View {
         Text(formatDayNumber(date))
           .font(.appBodyMedium)
           .foregroundColor(isSelected ? .onPrimary : .text04)
-        
-        // Today indicator dot
-        Circle()
-          .fill(isToday ? (isSelected ? Color.onPrimary : Color.primary) : Color.clear)
-          .frame(width: 6, height: 6)
       }
-      .frame(width: 44, height: 64)
+      .frame(maxWidth: .infinity)
+      .frame(height: 48)
       .background(
         RoundedRectangle(cornerRadius: 12)
-          .fill(isSelected ? Color.primary : Color.clear)
+          .fill(isSelected ? Color.primary : (isToday ? Color("appFixedPrimaryOpacity10") : Color.clear))
       )
     }
     .buttonStyle(PlainButtonStyle())
   }
   
   // MARK: - Date Helper Properties
+  
+  private var shouldShowTodayButton: Bool {
+    let calendar = Calendar.current
+    let isTodaySelected = calendar.isDateInToday(selectedDate)
+    // Show if on different week OR if a non-today date is selected
+    return currentWeekOffset != 0 || !isTodaySelected
+  }
   
   private func datesForDisplayedWeek(weekOffset: Int) -> [Date] {
     let calendar = Calendar.current

@@ -102,7 +102,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
   }
 
   func delete(_ id: UUID) async throws {
-    try await storage.deleteHabit(id: id)
+    _ = try await storage.deleteHabit(id: id)
     await loadHabits()
   }
 
@@ -110,7 +110,7 @@ class HabitRepositoryImpl: HabitRepositoryProtocol, ObservableObject {
     guard let uuid = UUID(uuidString: id) else {
       throw RepositoryError.invalidData
     }
-    try await storage.deleteHabit(id: uuid)
+    _ = try await storage.deleteHabit(id: uuid)
     await loadHabits()
   }
 
