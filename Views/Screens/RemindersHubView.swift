@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 // MARK: - ReminderWithHabit
 
@@ -63,7 +64,16 @@ struct RemindersHubView: View {
   // MARK: - Skip Reminder State
   // Key: "dateKey_reminderId" (e.g., "2026-01-21_uuid")
   // Value: true if skipped for that date
-  @State private var skippedReminders: Set<String> = []
+  @AppStorage("skippedReminders") private var skippedRemindersData: Data = Data()
+  
+  private var skippedReminders: Set<String> {
+    get {
+      (try? JSONDecoder().decode(Set<String>.self, from: skippedRemindersData)) ?? []
+    }
+    set {
+      skippedRemindersData = (try? JSONEncoder().encode(newValue)) ?? Data()
+    }
+  }
   
   // For confirmation alert
   @State private var reminderToSkip: ReminderWithHabit? = nil
@@ -448,7 +458,7 @@ struct RemindersHubView: View {
             } else {
               // User is turning ON (un-skipping) - no confirmation needed
               let key = skipKey(for: reminderWithHabit.reminder, on: selectedDate)
-              skippedReminders.remove(key)
+              removeSkippedReminder(key)
               UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
           }
@@ -598,6 +608,7 @@ struct RemindersHubView: View {
     }
     .onAppear {
       currentMonth = selectedDate
+      cleanupOldSkipStates()
     }
     .onChange(of: selectedDate) { _, newDate in
       // Keep currentMonth in sync with selectedDate for monthly view
@@ -1078,6 +1089,20 @@ struct RemindersHubView: View {
     return "\(dateKey)_\(reminder.id.uuidString)"
   }
   
+  /// Add a reminder to the skipped set
+  private func addSkippedReminder(_ key: String) {
+    var current = skippedReminders
+    current.insert(key)
+    skippedRemindersData = (try? JSONEncoder().encode(current)) ?? Data()
+  }
+  
+  /// Remove a reminder from the skipped set
+  private func removeSkippedReminder(_ key: String) {
+    var current = skippedReminders
+    current.remove(key)
+    skippedRemindersData = (try? JSONEncoder().encode(current)) ?? Data()
+  }
+  
   /// Format date as key string (e.g., "2026-01-21")
   private func formatDateKey(_ date: Date) -> String {
     let formatter = DateFormatter()
@@ -1097,7 +1122,7 @@ struct RemindersHubView: View {
     
     if skippedReminders.contains(key) {
       // Un-skip: remove from set
-      skippedReminders.remove(key)
+      removeSkippedReminder(key)
       // Re-schedule notification for this reminder today
       // (Optional: implement if needed)
       
@@ -1115,10 +1140,10 @@ struct RemindersHubView: View {
     guard let reminderWithHabit = reminderToSkip else { return }
     
     let key = skipKey(for: reminderWithHabit.reminder, on: selectedDate)
-    skippedReminders.insert(key)
+    addSkippedReminder(key)
     
     // Cancel the notification for this specific reminder on this date
-    cancelNotificationForReminder(reminderWithHabit.reminder, on: selectedDate)
+    cancelNotificationForReminder(reminderWithHabit.reminder, on: selectedDate, habitId: reminderWithHabit.habit.id)
     
     // Haptic feedback
     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
@@ -1128,15 +1153,39 @@ struct RemindersHubView: View {
   }
   
   /// Cancel notification for a specific reminder on a specific date
-  private func cancelNotificationForReminder(_ reminder: ReminderItem, on date: Date) {
-    // Visual skip state is the main feature
-    // Actual notification cancellation can be implemented later if needed
+  private func cancelNotificationForReminder(_ reminder: ReminderItem, on date: Date, habitId: UUID) {
+    let dateKey = formatDateKey(date)
+    let notificationId = "habit_reminder_\(habitId.uuidString)_\(reminder.id.uuidString)_\(dateKey)"
+    UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
   }
   
-  /// Optional: Clean up old skip states to keep memory clean for long sessions
+  /// Clean up old skip states (keep only last 7 days)
   private func cleanupOldSkipStates() {
-    let currentDateKey = formatDateKey(selectedDate)
-    skippedReminders = skippedReminders.filter { $0.hasPrefix(currentDateKey) }
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    
+    // Keep skips from the last 7 days only
+    guard let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: today) else { return }
+    
+    let currentSkips = skippedReminders
+    var cleanedSkips = Set<String>()
+    
+    let formatter = DateFormatter()
+    formatter.dateFormat = "yyyy-MM-dd"
+    
+    for key in currentSkips {
+      // Key format: "yyyy-MM-dd_reminderId"
+      let dateString = String(key.prefix(10))
+      if let skipDate = formatter.date(from: dateString),
+         skipDate >= sevenDaysAgo {
+        cleanedSkips.insert(key)
+      }
+    }
+    
+    // Only update if something was cleaned
+    if cleanedSkips.count != currentSkips.count {
+      skippedRemindersData = (try? JSONEncoder().encode(cleanedSkips)) ?? Data()
+    }
   }
   
   // MARK: - Date Formatting Helpers
