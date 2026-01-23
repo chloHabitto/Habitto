@@ -63,88 +63,83 @@ class BackfillProgressEventsFromCompletionRecords {
       let timezoneIdentifier = TimeZone.current.identifier
       
       for record in completionRecords {
-        do {
-          // Calculate current progress from existing ProgressEvents
-          let eventDescriptor = ProgressEvent.eventsForHabitDateUser(
-            habitId: record.habitId,
-            dateKey: record.dateKey,
-            userId: record.userId
-          )
-          let existingEvents = (try? modelContext.fetch(eventDescriptor)) ?? []
-          
-          // Sum progress deltas from existing events
-          let calculatedProgress = existingEvents.reduce(0) { $0 + $1.progressDelta }
-          
-          // Only create backfill event if record.progress > calculated
-          guard record.progress > calculatedProgress else {
-            // Progress matches - no backfill needed
-            skippedCount += 1
-            continue
-          }
-          
-          // Calculate delta needed to reach record.progress
-          let delta = record.progress - calculatedProgress
-          
-          // Check if backfill event already exists (idempotency)
-          let backfillOperationId = "backfill_\(record.habitId.uuidString)_\(record.dateKey)"
-          let existingBackfillDescriptor = ProgressEvent.eventByOperationId(backfillOperationId)
-          let existingBackfillEvents = (try? modelContext.fetch(existingBackfillDescriptor)) ?? []
-          
-          if !existingBackfillEvents.isEmpty {
-            // Backfill event already exists, skip
-            skippedCount += 1
-            continue
-          }
-          
-          // Calculate UTC day boundaries for the date
-          let utcDayBoundaries = calculateUTCDayBoundaries(for: record.date)
-          
-          // Get deterministic sequence number for backfill events
-          // Use a high sequence number to ensure it doesn't conflict with real events
-          let sequenceNumber = EventSequenceCounter.shared.nextSequence(
-            deviceId: deviceId,
-            dateKey: record.dateKey
-          )
-          
-          // Create synthetic BACKFILL ProgressEvent
-          let event = ProgressEvent(
-            habitId: record.habitId,
-            dateKey: record.dateKey,
-            eventType: .backfill,
-            progressDelta: delta,
-            userId: record.userId,
-            deviceId: deviceId,
-            timezoneIdentifier: timezoneIdentifier,
-            utcDayStart: utcDayBoundaries.start,
-            utcDayEnd: utcDayBoundaries.end,
-            sequenceNumber: sequenceNumber,
-            note: "Backfilled from CompletionRecord - missing historical events",
-            metadata: "{\"backfill\":true,\"originalProgress\":\(record.progress),\"calculatedProgress\":\(calculatedProgress)}",
-            operationId: backfillOperationId
-          )
-          
-          // Use the record's original createdAt as the event's occurredAt
-          event.occurredAt = record.createdAt
-          event.createdAt = record.createdAt
-          
-          // Mark as synced=true (don't upload to Firestore - this is local reconciliation)
-          event.synced = true
-          event.lastSyncedAt = Date()
-          event.isRemote = false
-          
-          // Insert event
-          modelContext.insert(event)
-          eventsCreated += 1
-          
-          logger.info("✅ BACKFILL: Created event for habitId=\(record.habitId.uuidString.prefix(8))..., dateKey=\(record.dateKey), delta=\(delta)")
-          
-          // Log progress every 100 records
-          if eventsCreated % 100 == 0 {
-            logger.info("🔄 BACKFILL: Created \(eventsCreated) events...")
-          }
-        } catch {
-          errors += 1
-          logger.error("❌ BACKFILL: Failed to create event for habitId=\(record.habitId.uuidString.prefix(8))..., dateKey=\(record.dateKey): \(error.localizedDescription)")
+        // Calculate current progress from existing ProgressEvents
+        let eventDescriptor = ProgressEvent.eventsForHabitDateUser(
+          habitId: record.habitId,
+          dateKey: record.dateKey,
+          userId: record.userId
+        )
+        let existingEvents = (try? modelContext.fetch(eventDescriptor)) ?? []
+        
+        // Sum progress deltas from existing events
+        let calculatedProgress = existingEvents.reduce(0) { $0 + $1.progressDelta }
+        
+        // Only create backfill event if record.progress > calculated
+        guard record.progress > calculatedProgress else {
+          // Progress matches - no backfill needed
+          skippedCount += 1
+          continue
+        }
+        
+        // Calculate delta needed to reach record.progress
+        let delta = record.progress - calculatedProgress
+        
+        // Check if backfill event already exists (idempotency)
+        let backfillOperationId = "backfill_\(record.habitId.uuidString)_\(record.dateKey)"
+        let existingBackfillDescriptor = ProgressEvent.eventByOperationId(backfillOperationId)
+        let existingBackfillEvents = (try? modelContext.fetch(existingBackfillDescriptor)) ?? []
+        
+        if !existingBackfillEvents.isEmpty {
+          // Backfill event already exists, skip
+          skippedCount += 1
+          continue
+        }
+        
+        // Calculate UTC day boundaries for the date
+        let utcDayBoundaries = calculateUTCDayBoundaries(for: record.date)
+        
+        // Get deterministic sequence number for backfill events
+        // Use a high sequence number to ensure it doesn't conflict with real events
+        let sequenceNumber = EventSequenceCounter.shared.nextSequence(
+          deviceId: deviceId,
+          dateKey: record.dateKey
+        )
+        
+        // Create synthetic BACKFILL ProgressEvent
+        let event = ProgressEvent(
+          habitId: record.habitId,
+          dateKey: record.dateKey,
+          eventType: .backfill,
+          progressDelta: delta,
+          userId: record.userId,
+          deviceId: deviceId,
+          timezoneIdentifier: timezoneIdentifier,
+          utcDayStart: utcDayBoundaries.start,
+          utcDayEnd: utcDayBoundaries.end,
+          sequenceNumber: sequenceNumber,
+          note: "Backfilled from CompletionRecord - missing historical events",
+          metadata: "{\"backfill\":true,\"originalProgress\":\(record.progress),\"calculatedProgress\":\(calculatedProgress)}",
+          operationId: backfillOperationId
+        )
+        
+        // Use the record's original createdAt as the event's occurredAt
+        event.occurredAt = record.createdAt
+        event.createdAt = record.createdAt
+        
+        // Mark as synced=true (don't upload to Firestore - this is local reconciliation)
+        event.synced = true
+        event.lastSyncedAt = Date()
+        event.isRemote = false
+        
+        // Insert event
+        modelContext.insert(event)
+        eventsCreated += 1
+        
+        logger.info("✅ BACKFILL: Created event for habitId=\(record.habitId.uuidString.prefix(8))..., dateKey=\(record.dateKey), delta=\(delta)")
+        
+        // Log progress every 100 records
+        if eventsCreated % 100 == 0 {
+          logger.info("🔄 BACKFILL: Created \(eventsCreated) events...")
         }
       }
       
