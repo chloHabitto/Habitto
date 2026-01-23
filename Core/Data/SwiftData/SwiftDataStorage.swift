@@ -514,7 +514,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
           // Also try to delete it again from SwiftData (async, non-blocking)
           Task {
             do {
-              try await self.deleteHabit(id: habit.id)
+              _ = try await self.deleteHabit(id: habit.id)
             } catch {
               print("⚠️ DELETE_FLOW: Failed to re-delete habit \(habit.id): \(error.localizedDescription)")
             }

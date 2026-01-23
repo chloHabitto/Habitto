@@ -412,6 +412,17 @@ final actor HabitStore {
     markHabitAsDeleted(habit.id)  // Store in UserDefaults (legacy)
     SyncEngine.markHabitAsDeleted(habit.id)  // Store in SyncEngine for sync prevention
 
+    // ✅ EARLY RESTORATION CHECK: Wait a tiny bit to allow restore to complete if user tapped undo
+    // This prevents the race condition where undo happens between marking and checking
+    try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+    
+    // ✅ CRITICAL FIX: Check early if habit was restored before doing any destructive operations
+    if !isHabitMarkedAsDeleted(habit.id) {
+      // Habit was restored while we were waiting - abort immediately
+      logger.info("⏭️ Delete aborted early - habit '\(habit.name)' was restored")
+      return
+    }
+
     // Record user analytics
     let analytics = await userAnalytics
     await analytics.recordEvent(.featureUsed, metadata: [
@@ -424,6 +435,12 @@ final actor HabitStore {
     var currentHabits = try await loadHabits()
 
     currentHabits.removeAll { $0.id == habit.id }
+
+    // ✅ CHECK AGAIN before Firestore operations - habit might have been restored during load
+    guard isHabitMarkedAsDeleted(habit.id) else {
+      logger.info("⏭️ Delete aborted before Firestore - habit '\(habit.name)' was restored")
+      return
+    }
 
     // TODO: Update Firestore to support soft delete (mark as deleted instead of hard delete)
     // For now, we still hard-delete from Firestore but soft-delete locally for audit trail
@@ -445,7 +462,7 @@ final actor HabitStore {
     // ✅ SOFT DELETE: Clean up UserDefaults (legacy system)
     // Note: This is less critical with soft delete, but still good for cleanup
     do {
-      try await userDefaultsStorage.deleteHabit(id: habit.id)
+      _ = try await userDefaultsStorage.deleteHabit(id: habit.id)
       
       // Also ensure the SavedHabits array is updated
       var userDefaultsHabits = try await userDefaultsStorage.loadHabits()
