@@ -56,6 +56,7 @@ struct RemindersHubView: View {
   // MARK: - Date Selection
   
   @State private var selectedDate: Date = Date()
+  @State private var currentWeekOffset: Int = 0  // 0 = current week, -1 = last week, +1 = next week
   
   // MARK: - Skip Reminder State
   // Key: "dateKey_reminderId" (e.g., "2026-01-21_uuid")
@@ -488,22 +489,71 @@ struct RemindersHubView: View {
   
   private var dateStripSection: some View {
     VStack(spacing: 12) {
-      // Week day strip
-      ScrollViewReader { proxy in
-        ScrollView(.horizontal, showsIndicators: false) {
-          HStack(spacing: 8) {
-            ForEach(datesForCurrentWeek, id: \.self) { date in
-              dateCell(for: date)
-                .id(date)
+      // Header row with month/year and Today button
+      HStack {
+        // Month/Year label
+        Text(monthYearString)
+          .font(.appTitleMediumEmphasised)
+          .foregroundColor(.text01)
+        
+        Spacer()
+        
+        // Today button (only visible when selectedDate is NOT today)
+        let calendar = Calendar.current
+        let isTodaySelected = calendar.isDate(selectedDate, inSameDayAs: Date())
+        if !isTodaySelected {
+          Button(action: {
+            withAnimation(.easeInOut(duration: 0.08)) {
+              selectedDate = Date()
+              currentWeekOffset = 0
             }
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+          }) {
+            HStack(spacing: 4) {
+              Image(.iconReplay)
+                .renderingMode(.template)
+                .resizable()
+                .frame(width: 12, height: 12)
+                .foregroundColor(.appText05)
+              Text("Today")
+                .font(.appLabelMedium)
+                .foregroundColor(.appText05)
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, 8)
+            .padding(.top, 4)
+            .padding(.bottom, 4)
+            .overlay(
+              RoundedRectangle(cornerRadius: .infinity)
+                .stroke(.appText05, lineWidth: 1)
+            )
           }
-          .padding(.horizontal, 20)
-        }
-        .onAppear {
-          // Scroll to selected date
-          proxy.scrollTo(selectedDate, anchor: .center)
+          .buttonStyle(PlainButtonStyle())
         }
       }
+      .padding(.horizontal, 20)
+      
+      // Swipeable week day strip
+      TabView(selection: $currentWeekOffset) {
+        ForEach(-100...100, id: \.self) { weekOffset in
+          weekView(for: weekOffset)
+            .tag(weekOffset)
+        }
+      }
+      .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+      .animation(.easeInOut(duration: 0.3), value: currentWeekOffset)
+      .onChange(of: currentWeekOffset) { oldValue, newValue in
+        // Add haptic feedback when scrolling between weeks
+        if oldValue != newValue {
+          let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+          impactFeedback.impactOccurred()
+        }
+      }
+      .onAppear {
+        currentWeekOffset = 0
+      }
+      .frame(height: 64)
+      .padding(.horizontal, 20)
       
       // Selected date label + reminder count
       HStack {
@@ -525,6 +575,25 @@ struct RemindersHubView: View {
     }
   }
   
+  private func weekView(for weekOffset: Int) -> some View {
+    HStack(spacing: 8) {
+      ForEach(datesForDisplayedWeek(weekOffset: weekOffset), id: \.self) { date in
+        dateCell(for: date)
+      }
+    }
+  }
+  
+  private var monthYearString: String {
+    let calendar = Calendar.current
+    let displayedWeekDates = datesForDisplayedWeek(weekOffset: currentWeekOffset)
+    guard let firstDate = displayedWeekDates.first else {
+      return ""
+    }
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMMM yyyy"
+    return formatter.string(from: firstDate)
+  }
+  
   private func dateCell(for date: Date) -> some View {
     let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
     let isToday = Calendar.current.isDateInToday(date)
@@ -532,6 +601,20 @@ struct RemindersHubView: View {
     return Button(action: {
       withAnimation(.easeInOut(duration: 0.2)) {
         selectedDate = date
+        
+        // Auto-update week offset to match selected date
+        let calendar = Calendar.current
+        let today = Date()
+        guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: today) else { return }
+        guard let selectedWeekInterval = calendar.dateInterval(of: .weekOfYear, for: date) else { return }
+        
+        let weeksDifference = calendar.dateComponents(
+          [.weekOfYear],
+          from: weekInterval.start,
+          to: selectedWeekInterval.start
+        ).weekOfYear ?? 0
+        
+        currentWeekOffset = weeksDifference
       }
       UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }) {
@@ -563,7 +646,7 @@ struct RemindersHubView: View {
   
   // MARK: - Date Helper Properties
   
-  private var datesForCurrentWeek: [Date] {
+  private func datesForDisplayedWeek(weekOffset: Int) -> [Date] {
     let calendar = Calendar.current
     let today = Date()
     
@@ -572,10 +655,15 @@ struct RemindersHubView: View {
       return []
     }
     
+    // Adjust week start based on offset
+    guard let adjustedWeekStart = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: weekInterval.start) else {
+      return []
+    }
+    
     // Generate 7 days for the week
     var dates: [Date] = []
     for dayOffset in 0..<7 {
-      if let date = calendar.date(byAdding: .day, value: dayOffset, to: weekInterval.start) {
+      if let date = calendar.date(byAdding: .day, value: dayOffset, to: adjustedWeekStart) {
         dates.append(date)
       }
     }
