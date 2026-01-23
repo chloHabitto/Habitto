@@ -433,7 +433,14 @@ final actor HabitStore {
     await FirebaseBackupService.shared.deleteCompletionRecordsForHabitAwait(habitId: habit.id)
     
     // ✅ SOFT DELETE: This now soft-deletes (marks as deleted) instead of hard deleting
-    try await activeStorage.deleteHabit(id: habit.id)
+    // Returns false if deletion was skipped (e.g., habit was restored)
+    let wasDeleted = try await activeStorage.deleteHabit(id: habit.id)
+    
+    // ✅ CRITICAL FIX: If deletion was skipped (habit was restored), abort the entire operation
+    if !wasDeleted {
+      logger.info("⏭️ Delete aborted - habit '\(habit.name)' was restored while delete was in progress")
+      return
+    }
 
     // ✅ SOFT DELETE: Clean up UserDefaults (legacy system)
     // Note: This is less critical with soft delete, but still good for cleanup
@@ -451,6 +458,7 @@ final actor HabitStore {
     }
 
     // THEN save the updated array (without the soft-deleted habit)
+    // Only save if deletion actually happened
     try await saveHabits(currentHabits)
     
     logger.info("Successfully soft-deleted habit: \(habit.name)")

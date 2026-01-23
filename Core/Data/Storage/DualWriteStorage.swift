@@ -298,7 +298,7 @@ final class DualWriteStorage: HabitStorageProtocol {
     }
   }
   
-  func deleteHabit(id: UUID) async throws {
+  func deleteHabit(id: UUID) async throws -> Bool {
     print("🗑️ DELETE_START: DualWriteStorage.deleteHabit() called for ID: \(id)")
     dualWriteLogger.info("DualWriteStorage: Deleting habit \(id)")
     
@@ -322,18 +322,24 @@ final class DualWriteStorage: HabitStorageProtocol {
     // STEP 2: Delete from local storage (always execute)
     print("🗑️ DELETE_LOCAL_START: Attempting SwiftData deletion...")
     do {
-      try await secondaryStorage.deleteHabit(id: id)
-      incrementCounter("dualwrite.delete.secondary_ok")
-      print("✅ DELETE_LOCAL_SUCCESS: Habit deleted from SwiftData")
-      dualWriteLogger.info("✅ DualWriteStorage: Local delete successful")
+      let wasDeleted = try await secondaryStorage.deleteHabit(id: id)
+      if wasDeleted {
+        incrementCounter("dualwrite.delete.secondary_ok")
+        print("✅ DELETE_LOCAL_SUCCESS: Habit deleted from SwiftData")
+        dualWriteLogger.info("✅ DualWriteStorage: Local delete successful")
+      } else {
+        print("⏭️ DELETE_LOCAL_SKIPPED: Habit deletion was skipped (e.g., habit was restored)")
+        dualWriteLogger.info("⏭️ DualWriteStorage: Local delete skipped")
+      }
+      
+      print("✅ DELETE_COMPLETE: Habit deletion completed successfully")
+      return wasDeleted
     } catch {
       incrementCounter("dualwrite.secondary_err")
       print("❌ DELETE_LOCAL_FAILED: \(error.localizedDescription)")
       dualWriteLogger.error("❌ CRITICAL: Local delete failed: \(error)")
       throw error // MUST throw - local storage is critical
     }
-    
-    print("✅ DELETE_COMPLETE: Habit deletion completed successfully")
   }
   
   /// Background delete from Firestore (non-blocking)

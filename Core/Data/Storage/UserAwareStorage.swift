@@ -81,7 +81,7 @@ class UserAwareStorage: HabitStorageProtocol {
     try await saveHabits(habits, immediate: immediate)
   }
 
-  func deleteHabit(id: UUID) async throws {
+  func deleteHabit(id: UUID) async throws -> Bool {
     clearCacheIfUserChanged()
 
     // ✅ CRITICAL FIX: Clear cache before deletion
@@ -90,7 +90,7 @@ class UserAwareStorage: HabitStorageProtocol {
     // ✅ CRITICAL FIX: Call the actual deleteHabit method that does modelContext.delete()
     // The previous approach (load → remove → save) doesn't actually delete the HabitData record
     // We must call baseStorage.deleteHabit(id:) which properly does modelContext.delete(habitData)
-    try await baseStorage.deleteHabit(id: id)
+    let wasDeleted = try await baseStorage.deleteHabit(id: id)
     
     // ✅ CRITICAL FIX: Update cache by removing from cached array if present
     // This ensures cache stays in sync after deletion
@@ -102,6 +102,8 @@ class UserAwareStorage: HabitStorageProtocol {
         cachedHabits = cached
       }
     }
+    
+    return wasDeleted
   }
 
   func clearAllHabits() async throws {

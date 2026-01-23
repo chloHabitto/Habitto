@@ -247,25 +247,32 @@ final class HybridStorage: HabitStorageProtocol {
     return nil
   }
 
-  func deleteHabit(id: UUID) async throws {
+  func deleteHabit(id: UUID) async throws -> Bool {
     logger.info("🔄 HybridStorage: Deleting habit with ID: \(id)")
     
+    var localDeleted = false
     // Delete from local storage
     do {
-      try await localStorage.deleteHabit(id: id)
-      logger.info("✅ HybridStorage: Habit deleted from local storage")
+      localDeleted = try await localStorage.deleteHabit(id: id)
+      if localDeleted {
+        logger.info("✅ HybridStorage: Habit deleted from local storage")
+      } else {
+        logger.info("⏭️ HybridStorage: Habit deletion skipped in local storage")
+      }
     } catch {
       logger.error("❌ HybridStorage: Failed to delete habit from local storage: \(error.localizedDescription)")
     }
     
     // Delete from cloud storage
     do {
-      try await cloudStorage.deleteHabit(id: id)
+      _ = try await cloudStorage.deleteHabit(id: id)
       logger.info("✅ HybridStorage: Habit deleted from cloud storage")
     } catch {
       logger.warning("⚠️ HybridStorage: Failed to delete habit from cloud storage: \(error.localizedDescription)")
       // Don't throw - local delete succeeded
     }
+    
+    return localDeleted
   }
 
   func clearAllHabits() async throws {

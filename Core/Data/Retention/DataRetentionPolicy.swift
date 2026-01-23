@@ -370,10 +370,10 @@ final class DataRetentionManager {
     // Try SwiftData first, fallback to UserDefaults
     do {
       let swiftDataStorage = SwiftDataStorage()
-      try await swiftDataStorage.deleteHabit(id: habit.id)
+      _ = try await swiftDataStorage.deleteHabit(id: habit.id)
     } catch {
       let userDefaultsStorage = UserDefaultsStorage()
-      try await userDefaultsStorage.deleteHabit(id: habit.id)
+      _ = try await userDefaultsStorage.deleteHabit(id: habit.id)
     }
   }
 }

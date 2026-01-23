@@ -705,7 +705,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
     }
   }
 
-  func deleteHabit(id: UUID) async throws {
+  func deleteHabit(id: UUID) async throws -> Bool {
     logger.info("Soft-deleting habit with ID: \(id)")
 
     do {
@@ -716,14 +716,14 @@ final class SwiftDataStorage: HabitStorageProtocol {
       // Find the habit by ID using Swift filtering (not predicate)
       guard let habitData = allHabits.first(where: { $0.id == id }) else {
         logger.warning("Habit not found for deletion: \(id)")
-        return
+        return false
       }
 
       // ✅ RACE CONDITION FIX: Check if habit was restored while delete was pending
       let deletedIds = UserDefaults.standard.stringArray(forKey: "DeletedHabitIDs") ?? []
       if !deletedIds.contains(id.uuidString) {
         logger.info("Skipping soft-delete - habit \(id) was restored while delete was pending")
-        return
+        return false
       }
       
       // ✅ SOFT DELETE: Mark as deleted instead of hard deleting
@@ -735,6 +735,7 @@ final class SwiftDataStorage: HabitStorageProtocol {
       forceWALCheckpoint()
 
       logger.info("Successfully soft-deleted habit with ID: \(id)")
+      return true
 
     } catch {
       logger.error("Failed to soft-delete habit: \(error.localizedDescription)")

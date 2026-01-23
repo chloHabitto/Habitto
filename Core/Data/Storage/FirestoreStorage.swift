@@ -242,7 +242,7 @@ final class FirestoreStorage: HabitStorageProtocol {
     }
   }
 
-  func deleteHabit(id: UUID) async throws {
+  func deleteHabit(id: UUID) async throws -> Bool {
     logger.info("🔥 Deleting habit with ID: \(id)")
     
     let document = db.collection("habits").document(id.uuidString)
@@ -256,6 +256,8 @@ final class FirestoreStorage: HabitStorageProtocol {
         cached.removeAll { $0.id == id }
         cachedHabits = cached
       }
+      
+      return true
     } catch {
       logger.error("❌ Failed to delete habit with ID \(id) from Firestore: \(error.localizedDescription)")
       throw error

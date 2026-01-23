@@ -276,7 +276,7 @@ final class AtomicStorageWrapper<T: HabitStorageProtocol>: HabitStorageProtocol,
     }
   }
 
-  func deleteHabit(id: UUID) async throws {
+  func deleteHabit(id: UUID) async throws -> Bool {
     logger.debug("Deleting habit atomically by ID: \(id)")
 
     do {
@@ -286,6 +286,7 @@ final class AtomicStorageWrapper<T: HabitStorageProtocol>: HabitStorageProtocol,
       }
 
       logger.debug("Habit deleted atomically by ID: \(id)")
+      return true
     } catch {
       logger.error("Failed to delete habit atomically by ID \(id): \(error.localizedDescription)")
       throw error

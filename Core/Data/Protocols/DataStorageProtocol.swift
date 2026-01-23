@@ -61,7 +61,8 @@ protocol HabitStorageProtocol: DataStorageProtocol where DataType == Habit {
 
   /// Delete a habit by ID (soft delete)
   /// - Parameter id: The habit ID
-  func deleteHabit(id: UUID) async throws
+  /// - Returns: True if deletion occurred, false if deletion was skipped (e.g., habit was restored)
+  func deleteHabit(id: UUID) async throws -> Bool
 
   /// Clear all habit data
   func clearAllHabits() async throws
