@@ -69,7 +69,13 @@ struct TodaysJourneyItemView: View {
       return Self.timeFormatter.string(from: t)
     case .pending:
       guard let t = estimatedTime else { return "—" }
-      return "~" + Self.timeFormatter.string(from: t)
+      // Only show estimated time if it's still in the future
+      let now = Date()
+      if t > now {
+        return "~" + Self.timeFormatter.string(from: t)
+      } else {
+        return "—"
+      }
     }
   }
 
@@ -80,7 +86,13 @@ struct TodaysJourneyItemView: View {
       return Self.amPmFormatter.string(from: t)
     case .pending:
       guard let t = estimatedTime else { return "" }
-      return Self.amPmFormatter.string(from: t)
+      // Only show AM/PM if estimated time is still in the future
+      let now = Date()
+      if t > now {
+        return Self.amPmFormatter.string(from: t)
+      } else {
+        return ""
+      }
     }
   }
 
