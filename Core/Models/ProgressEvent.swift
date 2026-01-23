@@ -242,6 +242,12 @@ public enum ProgressEventType: String, Codable, CaseIterable {
   
   /// Bulk adjustment (e.g., migration, correction)
   case bulkAdjust = "BULK_ADJUST"
+  
+  /// Backfill event created to reconcile missing historical events
+  case backfill = "BACKFILL"
+  
+  /// Event created when syncing progress from remote (Firestore)
+  case syncImport = "SYNC_IMPORT"
 }
 
 // MARK: - SwiftData Queries
