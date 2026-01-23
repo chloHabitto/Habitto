@@ -147,10 +147,23 @@ struct HabitDetailView: View {
         onUpdateHabit?(updatedHabit)
       })
     }
-    .sheet(isPresented: $showingReminderSheet) {
+    // Sheet for editing existing reminders (uses item-based presentation to avoid race condition)
+    .sheet(item: $selectedReminder) { reminder in
       AddReminderSheet(
-        initialTime: selectedReminder?.time ?? defaultReminderTime(),
-        isEditing: selectedReminder != nil,
+        initialTime: reminder.time,
+        isEditing: true,
+        onSave: { selectedTime in
+          saveReminderTime(selectedTime)
+        }
+      )
+      .presentationDetents([.medium])
+      .presentationDragIndicator(.visible)
+    }
+    // Sheet for adding new reminders
+    .sheet(isPresented: $showingAddReminderSheet) {
+      AddReminderSheet(
+        initialTime: defaultReminderTime(),
+        isEditing: false,
         onSave: { selectedTime in
           saveReminderTime(selectedTime)
         }
@@ -282,6 +295,7 @@ struct HabitDetailView: View {
   @State private var showingEditView = false
   @State private var showingDeleteConfirmation = false
   @State private var showingReminderSheet = false
+  @State private var showingAddReminderSheet = false
   @State private var selectedReminder: ReminderItem?
   @State private var showingReminderDeleteConfirmation = false
   @State private var reminderToDelete: ReminderItem?
@@ -895,7 +909,7 @@ struct HabitDetailView: View {
         Spacer()
 
         Button(action: {
-          showingReminderSheet = true
+          showingAddReminderSheet = true
         }) {
           Image(systemName: "plus.circle.fill")
             .font(.system(size: 20))
@@ -1150,7 +1164,7 @@ struct HabitDetailView: View {
     // Edit button
     Button(action: {
       selectedReminder = reminder
-      showingReminderSheet = true
+      // Using sheet(item:) so no need to set showingReminderSheet
     }) {
       Image("Icon-Pen_Filled")
         .renderingMode(.template)
@@ -1418,8 +1432,9 @@ struct HabitDetailView: View {
     // Notify parent
     onUpdateHabit?(updatedHabit)
     
-    // Clear selected reminder
+    // Clear selected reminder (for editing) or add reminder flag (for adding)
     selectedReminder = nil
+    showingAddReminderSheet = false
     
     // Haptic feedback
     UINotificationFeedbackGenerator().notificationOccurred(.success)

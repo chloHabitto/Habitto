@@ -198,6 +198,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     Task.detached {
       await MigrateCompletionsToEvents.shared.performMigrationIfNeeded()
     }
+    
+    // Perform backfill migration for missing ProgressEvents
+    Task.detached {
+      await BackfillProgressEventsFromCompletionRecords.shared.performMigrationIfNeeded()
+    }
 
     // DISABLED: Sign-in functionality commented out for future use
     /*

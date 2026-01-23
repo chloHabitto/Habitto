@@ -1150,60 +1150,6 @@ actor SyncEngine {
         // 5. Update last sync timestamp after successful pull
         setLastSyncTimestamp(userId: actualUserId, timestamp: Date())
         
-        // ✅ TEMPORARY DIAGNOSTIC - Remove after verification
-        // Check if pulled events fix the mismatch for problem habits
-        // ✅ FIX: Capture value before MainActor.run to avoid Swift 6 concurrency warning
-        let eventsPulledCount = summary.eventsPulled
-        await MainActor.run {
-            let modelContext = SwiftDataContainer.shared.modelContext
-            
-            print("📊 POST_SYNC_DIAGNOSTIC: Checking if pulled events fix the mismatch...")
-            print("   Total events pulled: \(eventsPulledCount)")
-            
-            // Check the two problem habits from the logs
-            let problemCases = [
-                ("F93EED74", "2026-01-21", 2),  // Expected progress: 2
-                ("B8377064", "2026-01-21", 5)   // Expected progress: 5
-            ]
-            
-            for (habitIdPrefix, dateKey, expectedProgress) in problemCases {
-                // Find events for this habit/date
-                let descriptor = FetchDescriptor<ProgressEvent>(
-                    predicate: #Predicate<ProgressEvent> { event in
-                        event.dateKey == dateKey && event.userId == actualUserId
-                    }
-                )
-                
-                if let allEvents = try? modelContext.fetch(descriptor) {
-                    // Filter by habitId prefix
-                    let matchingEvents = allEvents.filter { event in
-                        event.habitId.uuidString.hasPrefix(habitIdPrefix)
-                    }
-                    
-                    // Calculate progress from events (sum of progressDelta)
-                    let calculatedProgress = matchingEvents.reduce(0) { $0 + $1.progressDelta }
-                    
-                    print("📊 POST_SYNC: habitId=\(habitIdPrefix)..., dateKey=\(dateKey)")
-                    print("   Events found: \(matchingEvents.count)")
-                    print("   Calculated progress: \(calculatedProgress)")
-                    print("   Expected progress: \(expectedProgress)")
-                    print("   Match: \(calculatedProgress == expectedProgress ? "✅" : "❌")")
-                    
-                    if !matchingEvents.isEmpty {
-                        print("   Event breakdown:")
-                        for event in matchingEvents.sorted(by: { $0.createdAt < $1.createdAt }) {
-                            print("     - \(event.eventType): delta=\(event.progressDelta), created=\(event.createdAt)")
-                        }
-                    } else {
-                        print("   ⚠️ No events found for this habit/date combination")
-                    }
-                } else {
-                    print("📊 POST_SYNC: habitId=\(habitIdPrefix)..., dateKey=\(dateKey)")
-                    print("   ❌ Failed to fetch events from ModelContext")
-                }
-            }
-        }
-        
         // ✅ ISSUE 2 FIX: Clear cache and notify UI if we pulled habits OR if reconciliation happened
         // ✅ FIX: Capture value before async closure to avoid Swift 6 concurrency warning
         let habitsPulledCount = summary.habitsPulled
@@ -1632,6 +1578,81 @@ actor SyncEngine {
                     // Never overwrite local data with older or equal-timestamp remote data
                     if remoteTimestamp > localTimestamp {
                         // Remote is newer, update local
+                        let oldProgress = existingRecord.progress
+                        let progressDelta = remoteProgress - oldProgress
+                        
+                        // ✅ FIX: Create ProgressEvent for synced progress if no local events exist
+                        // Only create if progress is actually changing and no local events exist
+                        if progressDelta != 0 {
+                            // Check if local events exist for this habit+date
+                            let eventDescriptor = ProgressEvent.eventsForHabitDateUser(
+                                habitId: habitId,
+                                dateKey: dateKey,
+                                userId: userId
+                            )
+                            let existingEvents = (try? modelContext.fetch(eventDescriptor)) ?? []
+                            
+                            // Only create sync event if no local events exist
+                            if existingEvents.isEmpty {
+                                // Parse dateKey to Date for event creation
+                                if let date = DateUtils.date(from: dateKey) {
+                                    // Create event directly using modelContext (synchronous, we're already on MainActor)
+                                    do {
+                                        // Calculate UTC day boundaries
+                                        let calendar = Calendar.current
+                                        let timezone = TimeZone.current
+                                        let dayStart = calendar.startOfDay(for: date)
+                                        guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+                                            throw NSError(domain: "SyncEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to calculate day end"])
+                                        }
+                                        let utcDayStart = dayStart.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayStart)))
+                                        let utcDayEnd = dayEnd.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayEnd)))
+                                        
+                                        // Get sequence number
+                                        let deviceId = "SYNC_IMPORT"
+                                        let sequenceNumber = EventSequenceCounter.shared.nextSequence(deviceId: deviceId, dateKey: dateKey)
+                                        
+                                        // Create event
+                                        let event = ProgressEvent(
+                                            habitId: habitId,
+                                            dateKey: dateKey,
+                                            eventType: .syncImport,
+                                            progressDelta: progressDelta,
+                                            userId: userId,
+                                            deviceId: deviceId,
+                                            timezoneIdentifier: timezone.identifier,
+                                            utcDayStart: utcDayStart,
+                                            utcDayEnd: utcDayEnd,
+                                            sequenceNumber: sequenceNumber,
+                                            note: "Synced from Firestore",
+                                            metadata: nil,
+                                            operationId: "sync_\(habitId.uuidString)_\(dateKey)_\(Int(Date().timeIntervalSince1970 * 1000))"
+                                        )
+                                        
+                                        // Mark as synced (already in Firestore)
+                                        event.synced = true
+                                        event.lastSyncedAt = Date()
+                                        event.isRemote = true
+                                        
+                                        // Use remote timestamps if available
+                                        if let createdAt = remoteCreatedAt {
+                                            event.createdAt = createdAt
+                                            event.occurredAt = createdAt
+                                        }
+                                        
+                                        modelContext.insert(event)
+                                        try modelContext.save()
+                                        logger.info("✅ Sync: Created SYNC_IMPORT event for habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey), delta=\(progressDelta)")
+                                    } catch {
+                                        logger.error("❌ Sync: Failed to create SYNC_IMPORT event: \(error.localizedDescription)")
+                                        // Continue with progress update even if event creation fails
+                                    }
+                                } else {
+                                    logger.error("❌ SyncEngine: Failed to parse dateKey for event creation: '\(dateKey)'")
+                                }
+                            }
+                        }
+                        
                         existingRecord.isCompleted = remoteIsCompleted
                         existingRecord.progress = remoteProgress
                         if let createdAt = remoteCreatedAt, Calendar.current.component(.year, from: createdAt) > 1900 {
@@ -1670,6 +1691,73 @@ actor SyncEngine {
                     guard let date = DateUtils.date(from: dateKey) else {
                         logger.error("❌ SyncEngine: Failed to parse dateKey: '\(dateKey)'")
                         throw NSError(domain: "SyncEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid dateKey format"])
+                    }
+                    
+                    // ✅ FIX: Create ProgressEvent for synced progress if no local events exist
+                    // Only create if progress > 0 and no local events exist
+                    if remoteProgress > 0 {
+                        // Check if local events exist for this habit+date
+                        let eventDescriptor = ProgressEvent.eventsForHabitDateUser(
+                            habitId: habitId,
+                            dateKey: dateKey,
+                            userId: userId
+                        )
+                        let existingEvents = (try? modelContext.fetch(eventDescriptor)) ?? []
+                        
+                        // Only create sync event if no local events exist
+                        if existingEvents.isEmpty {
+                            // Create event directly using modelContext (synchronous, we're already on MainActor)
+                            do {
+                                // Calculate UTC day boundaries
+                                let calendar = Calendar.current
+                                let timezone = TimeZone.current
+                                let dayStart = calendar.startOfDay(for: date)
+                                guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else {
+                                    throw NSError(domain: "SyncEngine", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to calculate day end"])
+                                }
+                                let utcDayStart = dayStart.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayStart)))
+                                let utcDayEnd = dayEnd.addingTimeInterval(-TimeInterval(timezone.secondsFromGMT(for: dayEnd)))
+                                
+                                // Get sequence number
+                                let deviceId = "SYNC_IMPORT"
+                                let sequenceNumber = EventSequenceCounter.shared.nextSequence(deviceId: deviceId, dateKey: dateKey)
+                                
+                                // Create event
+                                let event = ProgressEvent(
+                                    habitId: habitId,
+                                    dateKey: dateKey,
+                                    eventType: .syncImport,
+                                    progressDelta: remoteProgress,
+                                    userId: userId,
+                                    deviceId: deviceId,
+                                    timezoneIdentifier: timezone.identifier,
+                                    utcDayStart: utcDayStart,
+                                    utcDayEnd: utcDayEnd,
+                                    sequenceNumber: sequenceNumber,
+                                    note: "Synced from Firestore",
+                                    metadata: nil,
+                                    operationId: "sync_\(habitId.uuidString)_\(dateKey)_\(Int(Date().timeIntervalSince1970 * 1000))"
+                                )
+                                
+                                // Mark as synced (already in Firestore)
+                                event.synced = true
+                                event.lastSyncedAt = Date()
+                                event.isRemote = true
+                                
+                                // Use remote timestamps if available
+                                if let createdAt = remoteCreatedAt {
+                                    event.createdAt = createdAt
+                                    event.occurredAt = createdAt
+                                }
+                                
+                                modelContext.insert(event)
+                                try modelContext.save()
+                                logger.info("✅ Sync: Created SYNC_IMPORT event for new record habitId=\(habitId.uuidString.prefix(8))..., dateKey=\(dateKey), delta=\(remoteProgress)")
+                            } catch {
+                                logger.error("❌ Sync: Failed to create SYNC_IMPORT event: \(error.localizedDescription)")
+                                // Continue with record creation even if event creation fails
+                            }
+                        }
                     }
                     
                     let newRecord = CompletionRecord(
