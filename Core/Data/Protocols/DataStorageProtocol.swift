@@ -95,21 +95,21 @@ extension HabitStorageProtocol {
   /// Default implementation - returns empty array
   /// Only SwiftDataStorage has the real implementation
   func loadSoftDeletedHabits() async throws -> [Habit] {
-    print("⚠️ loadSoftDeletedHabits() not implemented for this storage type")
+    // Default implementation for storage types that don't support soft delete
     return []
   }
   
   /// Default implementation - returns 0
   /// Only SwiftDataStorage has the real implementation
   func countSoftDeletedHabits() async throws -> Int {
-    print("⚠️ countSoftDeletedHabits() not implemented for this storage type")
+    // Default implementation for storage types that don't support soft delete
     return 0
   }
   
   /// Default implementation - no-op
   /// Only SwiftDataStorage has the real implementation
   func permanentlyDeleteHabit(id: UUID) async throws {
-    print("⚠️ permanentlyDeleteHabit() not implemented for this storage type")
+    // Default implementation for storage types that don't support soft delete
     // No-op by default
   }
 }

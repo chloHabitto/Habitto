@@ -828,9 +828,17 @@ struct RemindersHubView: View {
   
   private var shouldShowTodayButton: Bool {
     let calendar = Calendar.current
+    let today = Date()
     let isTodaySelected = calendar.isDateInToday(selectedDate)
-    // Show if on different week OR if a non-today date is selected
-    return currentWeekOffset != 0 || !isTodaySelected
+    
+    // Check if viewing a different month (when expanded)
+    let isCurrentMonth = calendar.isDate(currentMonth, equalTo: today, toGranularity: .month)
+    
+    // Show Today button if:
+    // 1. On a different week (weekly view), OR
+    // 2. Selected date is not today, OR
+    // 3. Viewing a different month (monthly view)
+    return currentWeekOffset != 0 || !isTodaySelected || (isCalendarExpanded && !isCurrentMonth)
   }
   
   private func datesForDisplayedWeek(weekOffset: Int) -> [Date] {
