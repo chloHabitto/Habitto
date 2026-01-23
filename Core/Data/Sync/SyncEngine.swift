@@ -1152,11 +1152,13 @@ actor SyncEngine {
         
         // ✅ TEMPORARY DIAGNOSTIC - Remove after verification
         // Check if pulled events fix the mismatch for problem habits
+        // ✅ FIX: Capture value before MainActor.run to avoid Swift 6 concurrency warning
+        let eventsPulledCount = summary.eventsPulled
         await MainActor.run {
             let modelContext = SwiftDataContainer.shared.modelContext
             
             print("📊 POST_SYNC_DIAGNOSTIC: Checking if pulled events fix the mismatch...")
-            print("   Total events pulled: \(summary.eventsPulled)")
+            print("   Total events pulled: \(eventsPulledCount)")
             
             // Check the two problem habits from the logs
             let problemCases = [

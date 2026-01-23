@@ -515,6 +515,10 @@ final actor HabitStore {
       
       let progressDelta = progress - oldProgress
       
+      // ✅ TEMPORARY DIAGNOSTIC - Remove after verification
+      print("🔬 SET_PROGRESS_DEBUG: habitId=\(habit.id.uuidString.prefix(8))..., newProgress=\(progress), oldProgress=\(oldProgress)")
+      print("🔬 SET_PROGRESS_DEBUG: Will create event with type=\(eventType.rawValue), delta=\(progressDelta)")
+      
       // Always create event if there's an actual change (event sourcing is default)
       if progressDelta != 0 {
         do {
