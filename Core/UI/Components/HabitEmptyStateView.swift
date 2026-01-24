@@ -62,16 +62,16 @@ extension HabitEmptyStateView {
   static func noHabitsYet() -> HabitEmptyStateView {
     HabitEmptyStateView(
       imageName: "Habit-List-Empty-State@4x",
-      title: "No habits yet",
-      subtitle: "Create your first habit to get started")
+      title: "home.empty.noHabitsYet".localized,
+      subtitle: "home.empty.createFirstHabit".localized)
   }
 
   /// Empty state for when no habits are scheduled for today
   static func noHabitsToday() -> HabitEmptyStateView {
     HabitEmptyStateView(
       imageName: "Today-Habit-List-Empty-State@4x",
-      title: "No habits today",
-      subtitle: "Let's relax and enjoy the day!")
+      title: "home.empty.noHabitsToday".localized,
+      subtitle: "home.empty.letsRelax".localized)
   }
 
   /// Empty state for when no habits are scheduled for a specific date
@@ -89,8 +89,8 @@ extension HabitEmptyStateView {
   static func noCompletedHabits() -> HabitEmptyStateView {
     HabitEmptyStateView(
       imageName: "Habit-List-Empty-State@4x",
-      title: "No completed habits",
-      subtitle: "Start building your streak today!")
+      title: "home.empty.noCompletedHabits".localized,
+      subtitle: "home.empty.startBuildingStreak".localized)
   }
 
   /// Empty state for when no progress data exists

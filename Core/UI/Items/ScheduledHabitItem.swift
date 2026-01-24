@@ -171,10 +171,10 @@ struct ScheduledHabitItem: View {
         title: Text(habit.name),
         message: Text("Choose an action"),
         buttons: [
-          .default(Text("Edit")) {
+          .default(Text("common.edit".localized)) {
             onEdit?()
           },
-          .destructive(Text("Delete")) {
+          .destructive(Text("common.delete".localized)) {
             onDelete?()
           },
           .cancel()
@@ -371,7 +371,7 @@ struct ScheduledHabitItem: View {
           Image(systemName: "forward.fill")
             .font(.system(size: 16))
             .foregroundColor(.text04)
-          Text("Skipped")
+          Text("home.habit.skipped".localized)
             .font(.appLabelSmall)
             .foregroundColor(.text05)
         }

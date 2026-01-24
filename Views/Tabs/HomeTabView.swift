@@ -144,9 +144,9 @@ struct HomeTabView: View {
           Color.clear.onAppear { showStreakMilestone = false }
         }
       }
-      .alert("End Vacation", isPresented: $showingCancelVacationAlert) {
-        Button("Cancel", role: .cancel) { }
-        Button("End Vacation", role: .destructive) {
+      .alert("home.vacation.endVacation".localized, isPresented: $showingCancelVacationAlert) {
+        Button("common.cancel".localized, role: .cancel) { }
+        Button("home.vacation.endVacation".localized, role: .destructive) {
           VacationManager.shared.endVacation()
           
           // Show success toast after alert dismisses
@@ -155,7 +155,7 @@ struct HomeTabView: View {
           }
         }
       } message: {
-        Text("Are you sure you want to end vacation mode? All habits will resume immediately.")
+        Text("home.vacation.endVacationConfirm".localized)
       }
       .sheet(isPresented: $showingVacationModeView) {
         VacationModeView()
@@ -188,13 +188,13 @@ struct HomeTabView: View {
     pattern: "Every (\\d+) days?",
     options: .caseInsensitive)
   private static let weekdayNames = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday"
+    "home.weekday.sunday",
+    "home.weekday.monday",
+    "home.weekday.tuesday",
+    "home.weekday.wednesday",
+    "home.weekday.thursday",
+    "home.weekday.friday",
+    "home.weekday.saturday"
   ]
 
   @State private var currentWeekOffset = 0
@@ -339,10 +339,10 @@ struct HomeTabView: View {
     // dependency
     let habitsForDate = baseHabitsForSelectedDate
     return [
-      ("Total", habitsForDate.count),
+      ("home.tabs.total".localized, habitsForDate.count),
       // ✅ PHASE 5: Use prefetched completion status to prevent N+1 queries
-      ("Undone", habitsForDate.filter { !(completionStatusMap[$0.id] ?? false) }.count),
-      ("Done", habitsForDate.filter { completionStatusMap[$0.id] ?? false }.count)
+      ("home.tabs.undone".localized, habitsForDate.filter { !(completionStatusMap[$0.id] ?? false) }.count),
+      ("home.tabs.done".localized, habitsForDate.filter { completionStatusMap[$0.id] ?? false }.count)
     ]
   }
 
@@ -500,9 +500,9 @@ struct HomeTabView: View {
     if tabs.isEmpty {
       // Fallback tabs if something goes wrong
       let fallbackTabs = [
-        TabItem(title: "Total", value: "0"),
-        TabItem(title: "Undone", value: "0"),
-        TabItem(title: "Done", value: "0")
+        TabItem(title: "home.tabs.total".localized, value: "0"),
+        TabItem(title: "home.tabs.undone".localized, value: "0"),
+        TabItem(title: "home.tabs.done".localized, value: "0")
       ]
 
       UnifiedTabBarView(
@@ -542,7 +542,7 @@ struct HomeTabView: View {
                   .resizable()
                   .frame(width: 16, height: 16)
                   .foregroundColor(Color("apponBadgeBackgroundFixed"))
-                Text("On Vacation")
+                Text("home.vacation.onVacation".localized)
                   .font(.appLabelMediumEmphasised)
                   .foregroundColor(Color("apponBadgeBackgroundFixed"))
               }
@@ -581,7 +581,7 @@ struct HomeTabView: View {
           VStack(spacing: 16) {
             ProgressView()
               .scaleEffect(1.2)
-            Text("Loading habits...")
+            Text("home.loading.habits".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text02)
           }
@@ -621,20 +621,20 @@ struct HomeTabView: View {
     case 0: // Total tab
       HabitEmptyStateView(
         imageName: "Habit-List-Empty-State@4x",
-        title: "No habits for today",
-        subtitle: "Create a habit to get started")
+        title: "home.empty.noHabits".localized,
+        subtitle: "home.empty.letsRelax".localized)
 
     case 1: // Undone tab
       HabitEmptyStateView(
         imageName: "Today-Habit-List-Empty-State@4x",
-        title: "All habits completed!",
-        subtitle: "Great job! All your habits are done for today")
+        title: "home.empty.allHabitsDone".localized,
+        subtitle: "home.empty.allHabitsDoneMsg".localized)
 
     case 2: // Done tab
       HabitEmptyStateView(
         imageName: "Habit-List-Empty-State@4x",
-        title: "No completed habits",
-        subtitle: "Start building your streak today")
+        title: "home.empty.noCompletedHabits".localized,
+        subtitle: "home.empty.startBuildingStreak".localized)
 
     default:
       HabitEmptyStateView.noHabitsToday()
@@ -863,14 +863,14 @@ struct HomeTabView: View {
 
   private func getWeekdayName(_ weekday: Int) -> String {
     switch weekday {
-    case 1: "Sunday"
-    case 2: "Monday"
-    case 3: "Tuesday"
-    case 4: "Wednesday"
-    case 5: "Thursday"
-    case 6: "Friday"
-    case 7: "Saturday"
-    default: "Unknown"
+    case 1: return "home.weekday.sunday".localized
+    case 2: return "home.weekday.monday".localized
+    case 3: return "home.weekday.tuesday".localized
+    case 4: return "home.weekday.wednesday".localized
+    case 5: return "home.weekday.thursday".localized
+    case 6: return "home.weekday.friday".localized
+    case 7: return "home.weekday.saturday".localized
+    default: return "Unknown"
     }
   }
 
