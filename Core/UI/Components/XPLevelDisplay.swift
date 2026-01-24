@@ -14,7 +14,7 @@ struct XPLevelDisplay: View {
       HStack(spacing: 16) {
         // Level Badge
         VStack(spacing: 4) {
-          Text("Level")
+          Text("more.xp.level".localized)
             .font(.appLabelMediumEmphasised)
             .foregroundColor(Color("grey900"))
 
@@ -27,7 +27,7 @@ struct XPLevelDisplay: View {
         // XP Progress Bar
         VStack(alignment: .leading, spacing: 6) {
           HStack {
-            Text("XP Progress")
+            Text("more.xp.progress".localized)
               .font(.appBodySmall)
               .foregroundColor(Color("grey900"))
 
@@ -56,7 +56,7 @@ struct XPLevelDisplay: View {
           .frame(height: 8)
 
           // Total XP
-          Text("\(xpManager.totalXP) total XP")  // ✅ Read from @Published property
+          Text(String(format: "more.xp.totalXP".localized, xpManager.totalXP))
             .font(.appLabelSmall)
             .foregroundColor(Color("grey900"))
         }
@@ -142,7 +142,7 @@ struct XPLevelDisplayCompact: View {
     HStack(spacing: 12) {
       // Level Badge
       VStack(spacing: 2) {
-        Text("Level")
+        Text("more.xp.level".localized)
           .font(.system(size: 10, weight: .medium))
           .foregroundColor(.text04)
 

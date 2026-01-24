@@ -54,7 +54,7 @@ struct HeaderView: View {
                 showingProfileView = true
               }) {
                 HStack(spacing: 4) {
-                  Text("View Profile")
+                  Text("more.profile.viewProfile".localized)
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(.white)
 
@@ -75,7 +75,7 @@ struct HeaderView: View {
                 showingProfileView = true
               }) {
                 HStack(spacing: 4) {
-                  Text("View Profile")
+                  Text("more.profile.viewProfile".localized)
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(.white)
 
@@ -248,21 +248,21 @@ struct HeaderView: View {
         let firstName = displayName.components(separatedBy: " ").first ?? displayName
         // Only show first name if it's not empty (user has entered a name)
         if !firstName.isEmpty && firstName.trimmingCharacters(in: .whitespaces) != "" {
-          return "Hi \(firstName),"
+          return String(format: "more.profile.greeting".localized, firstName)
         }
       }
       // For signed-in users without a first name, show "Hi there,"
-      return "Hi there,"
+      return String(format: "more.profile.greeting".localized, "there")
     }
     // For guest users, check if they have a saved name
     if !guestName.isEmpty {
       let firstName = guestName.components(separatedBy: " ").first ?? guestName
       if !firstName.isEmpty && firstName.trimmingCharacters(in: .whitespaces) != "" {
-        return "Hi \(firstName),"
+        return String(format: "more.profile.greeting".localized, firstName)
       }
     }
     // Default greeting for guest users without a name
-    return "Hi there,"
+    return String(format: "more.profile.greeting".localized, "there")
   }
 
   // MARK: - Helper Methods

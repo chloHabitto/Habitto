@@ -10,6 +10,15 @@
 /* More Tab - Support & Legal Section Header */
 "more.section.supportLegal" = "Support & Legal";
 
+/* MoreTabView - Profile Area */
+"more.profile.greeting" = "Hi %@,";
+"more.profile.viewProfile" = "View Profile >";
+
+/* MoreTabView - XP Card */
+"more.xp.level" = "Level";
+"more.xp.progress" = "XP Progress";
+"more.xp.totalXP" = "%d total XP";
+
 /* More Tab - General Settings */
 "more.mySubscription" = "My subscription";
 "more.vacationMode" = "Vacation Mode";

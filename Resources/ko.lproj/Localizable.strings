@@ -10,6 +10,15 @@
 /* More Tab - Support & Legal Section Header */
 "more.section.supportLegal" = "지원 및 법률";
 
+/* MoreTabView - Profile Area */
+"more.profile.greeting" = "%@님, 안녕하세요";
+"more.profile.viewProfile" = "프로필 보기 >";
+
+/* MoreTabView - XP Card */
+"more.xp.level" = "레벨";
+"more.xp.progress" = "XP 진행";
+"more.xp.totalXP" = "총 %d XP";
+
 /* More Tab - General Settings */
 "more.mySubscription" = "내 구독";
 "more.vacationMode" = "휴가 모드";
