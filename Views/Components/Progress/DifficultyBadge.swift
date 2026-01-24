@@ -50,7 +50,7 @@ struct DifficultyBadge: View {
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.appSurface4)
+                .fill(Color.appSurface04)
         )
     }
 }
