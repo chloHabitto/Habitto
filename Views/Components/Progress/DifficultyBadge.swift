@@ -2,7 +2,8 @@
 //  DifficultyBadge.swift
 //  Habitto
 //
-//  Displays a difficulty rating badge with emoji and label
+//  Displays a difficulty rating badge with image and label
+//  Used in Today's Journey to show the difficulty recorded when a habit was completed
 //
 
 import SwiftUI
@@ -10,14 +11,14 @@ import SwiftUI
 struct DifficultyBadge: View {
     let difficulty: Int
     
-    private var emoji: String {
+    private var imageName: String {
         switch difficulty {
-        case 1: return "😊"
-        case 2: return "🙂"
-        case 3: return "😐"
-        case 4: return "😓"
-        case 5: return "🥵"
-        default: return "😐"
+        case 1: return "Image-VeryEasy"
+        case 2: return "Image-Easy"
+        case 3: return "Image-Medium"
+        case 4: return "Image-Hard"
+        case 5: return "Image-VeryHard"
+        default: return "Image-Medium"
         }
     }
     
@@ -34,21 +35,22 @@ struct DifficultyBadge: View {
     
     var body: some View {
         HStack(spacing: 4) {
-            Text(emoji)
-                .font(.system(size: 11))
+            Image(imageName)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 16, height: 16)
+            
             Text(label)
                 .font(.appLabelSmall)
-                .foregroundColor(.appText04)
+                .fontWeight(.semibold)
+                .foregroundColor(.appText03)
         }
-        .padding(.horizontal, 8)
+        .padding(.leading, 4)
+        .padding(.trailing, 8)
         .padding(.vertical, 4)
         .background(
-            RoundedRectangle(cornerRadius: 6)
-                .fill(Color.appSurface03)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.appOutline02, lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.appSurface4)
         )
     }
 }
