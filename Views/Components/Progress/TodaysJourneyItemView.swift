@@ -168,55 +168,98 @@ struct TodaysJourneyItemView: View {
   private var cardColumn: some View {
     HStack(alignment: .top, spacing: 12) {
       HabitIconView(habit: item.habit)
-        .frame(width: 40, height: 40)
+        .frame(width: 36, height: 36)
 
-      VStack(alignment: .leading, spacing: 8) {
-        HStack {
-          Text(item.habit.name)
-            .font(.appLabelLargeEmphasised)
-            .foregroundColor(.appText01)
-            .lineLimit(2)
-            .truncationMode(.tail)
-          
-          Spacer()
-          
-          if item.status == .completed {
-            Image(systemName: "checkmark")
-              .font(.system(size: 12, weight: .bold))
-              .foregroundColor(.white)
-              .frame(width: 24, height: 24)
-              .background(Circle().fill(Color.green))
-          }
-        }
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
+      VStack(alignment: .leading, spacing: 4) {
+        Text(item.habit.name)
+          .font(.appLabelLargeEmphasised)
+          .foregroundColor(.appText01)
+          .lineLimit(2)
+          .truncationMode(.tail)
         
-        VStack(alignment: .leading, spacing: 4) {
-          if item.status == .completed {
-            if let difficulty = item.difficulty {
-              DifficultyBadge(difficulty: difficulty)
-            }
-          } else {
-            HStack(spacing: 6) {
-              metaBadges
-            }
+        if item.status == .completed {
+          if let difficulty = item.difficulty {
+            DifficultyBadge(difficulty: difficulty)
           }
+        } else {
+          // Pending - show progress
+          progressContent
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
+      
+      if item.status == .completed {
+        Image(systemName: "checkmark")
+          .font(.system(size: 12, weight: .bold))
+          .foregroundColor(.white)
+          .frame(width: 24, height: 24)
+          .background(Circle().fill(Color.green))
+      }
     }
-    .padding(16)
+    .padding(.top, 12)
+    .padding(.leading, 12)
+    .padding(.trailing, 12)
+    .padding(.bottom, 16)
     .background(
       RoundedRectangle(cornerRadius: 16)
-        .fill(Color.appSurface4)
+        .fill(Color.appSurface01Variant)
         .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
     )
     .overlay(
       RoundedRectangle(cornerRadius: 16)
-        .stroke(Color.appOutline02, lineWidth: 1)
+        .stroke(Color.appOutline1Variant, lineWidth: 1)
     )
     .opacity(item.status == .pending ? 0.8 : 1)
     .padding(.top, isFirst ? 0 : 16) // Align with dot position (line above is 16pt)
+  }
+  
+  @ViewBuilder
+  private var progressContent: some View {
+    VStack(alignment: .leading, spacing: 4) {
+      // Progress text
+      Text("Progress: \(todayProgress)/\(goalAmount)")
+        .font(.appLabelSmall)
+        .foregroundColor(.appText05)
+      
+      // Progress bar
+      GeometryReader { geo in
+        ZStack(alignment: .leading) {
+          RoundedRectangle(cornerRadius: 6)
+            .fill(Color.appOutline02)
+            .frame(height: 6)
+          
+          RoundedRectangle(cornerRadius: 6)
+            .fill(item.habit.color.color)
+            .frame(width: geo.size.width * progressPercentage, height: 6)
+        }
+      }
+      .frame(height: 6)
+    }
+  }
+  
+  private var todayProgress: Int {
+    let dateKey = DateUtils.dateKey(for: Date())
+    return item.habit.completionHistory[dateKey] ?? 0
+  }
+  
+  private var goalAmount: Int {
+    // Parse the goal string to extract the numeric value
+    let goalString = item.habit.goal
+    if let number = Int(goalString) {
+      return number
+    }
+    // Try to extract number from strings like "1 session", "20 pages", etc.
+    let components = goalString.split(separator: " ")
+    if let firstComponent = components.first, let number = Int(firstComponent) {
+      return number
+    }
+    return 1 // Default to 1 if parsing fails
+  }
+  
+  private var progressPercentage: Double {
+    let goal = Double(goalAmount)
+    let progress = Double(todayProgress)
+    return goal > 0 ? min(progress / goal, 1.0) : 0
   }
 
   @ViewBuilder
