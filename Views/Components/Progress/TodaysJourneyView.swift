@@ -33,7 +33,7 @@ struct TodaysJourneyView: View {
 
   private var pendingItems: [JourneyHabitItem] {
     journeyItems
-      .filter { $0.status == .pending }
+      .filter { $0.status == .pending || $0.status == .inProgress }
       .sorted { (a, b) in
         let e1 = TodaysJourneyHelpers.getEstimatedCompletionTime(for: a.habit, targetDate: selectedDate)
         let e2 = TodaysJourneyHelpers.getEstimatedCompletionTime(for: b.habit, targetDate: selectedDate)
@@ -301,11 +301,28 @@ struct TodaysJourneyView: View {
     var items: [JourneyHabitItem] = []
 
     for habit in scheduled {
-      let completed = habit.isCompletedForDate(selectedDate)
+      // Get current progress and goal
+      let progress = habit.completionHistory[dateKey] ?? 0
+      let goalAmount = habit.goalAmount(for: selectedDate)
+      
+      // Determine completion status: completed = progress >= goal
+      let isFullyCompleted = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
+      let hasPartialProgress = progress > 0 && !isFullyCompleted
+      
+      // Determine status
+      let status: JourneyItemStatus
+      if isFullyCompleted {
+        status = .completed
+      } else if hasPartialProgress {
+        status = .inProgress
+      } else {
+        status = .pending
+      }
+      
       let completionTime: Date?
       let difficulty: Int?
 
-      if completed {
+      if isFullyCompleted {
         let timestamps = habit.completionTimestamps[dateKey]
         completionTime = timestamps?.last
         difficulty = habit.getDifficulty(for: selectedDate)
@@ -319,7 +336,7 @@ struct TodaysJourneyView: View {
       items.append(JourneyHabitItem(
         id: habit.id,
         habit: habit,
-        status: completed ? .completed : .pending,
+        status: status,
         completionTime: completionTime,
         difficulty: difficulty,
         currentStreak: habit.computedStreak(),
