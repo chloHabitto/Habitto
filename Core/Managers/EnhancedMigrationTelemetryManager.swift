@@ -243,7 +243,9 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
         do {
           guard let url = URL(string: urlString) else { continue }
           let (data, _) = try await URLSession.shared.data(from: url)
-          let config = try JSONDecoder().decode(RemoteConfig.self, from: data)
+          let decoder = JSONDecoder()
+          decoder.dateDecodingStrategy = .iso8601
+          let config = try decoder.decode(RemoteConfig.self, from: data)
 
           await MainActor.run {
             self.applyRemoteConfig(config)
