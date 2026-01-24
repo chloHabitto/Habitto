@@ -1,0 +1,66 @@
+/* Tab Bar */
+"tab.home" = "Home";
+"tab.progress" = "Progress";
+"tab.habits" = "Habits";
+"tab.more" = "More";
+
+/* More Tab - General Settings */
+"more.mySubscription" = "My subscription";
+"more.vacationMode" = "Vacation Mode";
+"more.language" = "Language";
+"more.appearance" = "Appearance";
+"more.account" = "Account";
+"more.settings" = "Settings";
+
+/* More Tab - Support & Legal */
+"more.aboutUs" = "About us";
+"more.tutorialTips" = "Tutorial & Tips";
+"more.faq" = "FAQ";
+"more.sendFeedback" = "Send Feedback";
+"more.rateUs" = "Rate Us";
+"more.privacyPolicy" = "Privacy Policy";
+"more.termsOfUse" = "Terms of Use";
+
+/* Language Screen */
+"language.title" = "Language";
+"language.description" = "Choose your preferred language";
+"language.currentLanguage" = "Current Language";
+"language.save" = "Save";
+
+/* Common Buttons & Actions */
+"common.save" = "Save";
+"common.cancel" = "Cancel";
+"common.done" = "Done";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.on" = "On";
+"common.off" = "Off";
+"common.free" = "Free";
+"common.premium" = "Premium";
+
+/* Settings Screen */
+"settings.title" = "Settings";
+"settings.general" = "General";
+"settings.customisation" = "Customisation";
+"settings.dataPrivacy" = "Data & Privacy";
+"settings.notifications" = "Notifications";
+"settings.dateCalendar" = "Date & Calendar";
+"settings.streakMode" = "Streak Mode";
+"settings.exportData" = "Export Data";
+"settings.backupRecovery" = "Backup & Recovery";
+"settings.deleteData" = "Delete Data";
+
+/* Toast Messages */
+"toast.languageChanged" = "Language changed";
+"toast.settingsSaved" = "Settings saved successfully";
+"toast.nameSaved" = "Name updated successfully";
+"toast.birthdaySaved" = "Birthday saved successfully";
+
+/* Language Names */
+"language.english" = "English";
+"language.korean" = "한국어";
+"language.japanese" = "日本語";
+"language.dutch" = "Nederlands";
+"language.german" = "Deutsch";
+"language.chinese" = "中文";
+"language.thai" = "ไทย";

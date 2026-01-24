@@ -1,0 +1,66 @@
+/* Tab Bar */
+"tab.home" = "홈";
+"tab.progress" = "진행";
+"tab.habits" = "습관";
+"tab.more" = "더보기";
+
+/* More Tab - General Settings */
+"more.mySubscription" = "내 구독";
+"more.vacationMode" = "휴가 모드";
+"more.language" = "언어";
+"more.appearance" = "테마";
+"more.account" = "계정";
+"more.settings" = "설정";
+
+/* More Tab - Support & Legal */
+"more.aboutUs" = "소개";
+"more.tutorialTips" = "튜토리얼 & 팁";
+"more.faq" = "자주 묻는 질문";
+"more.sendFeedback" = "피드백 보내기";
+"more.rateUs" = "평가하기";
+"more.privacyPolicy" = "개인정보 처리방침";
+"more.termsOfUse" = "이용약관";
+
+/* Language Screen */
+"language.title" = "언어";
+"language.description" = "원하는 언어를 선택하세요";
+"language.currentLanguage" = "현재 언어";
+"language.save" = "저장";
+
+/* Common Buttons & Actions */
+"common.save" = "저장";
+"common.cancel" = "취소";
+"common.done" = "완료";
+"common.delete" = "삭제";
+"common.edit" = "수정";
+"common.on" = "켜짐";
+"common.off" = "꺼짐";
+"common.free" = "무료";
+"common.premium" = "프리미엄";
+
+/* Settings Screen */
+"settings.title" = "설정";
+"settings.general" = "일반";
+"settings.customisation" = "사용자 지정";
+"settings.dataPrivacy" = "데이터 및 개인정보";
+"settings.notifications" = "알림";
+"settings.dateCalendar" = "날짜 및 달력";
+"settings.streakMode" = "연속 모드";
+"settings.exportData" = "데이터 내보내기";
+"settings.backupRecovery" = "백업 및 복구";
+"settings.deleteData" = "데이터 삭제";
+
+/* Toast Messages */
+"toast.languageChanged" = "언어가 변경되었습니다";
+"toast.settingsSaved" = "설정이 저장되었습니다";
+"toast.nameSaved" = "이름이 업데이트되었습니다";
+"toast.birthdaySaved" = "생일이 저장되었습니다";
+
+/* Language Names */
+"language.english" = "English";
+"language.korean" = "한국어";
+"language.japanese" = "日本語";
+"language.dutch" = "Nederlands";
+"language.german" = "Deutsch";
+"language.chinese" = "中文";
+"language.thai" = "ไทย";

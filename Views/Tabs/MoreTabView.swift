@@ -29,6 +29,9 @@ struct MoreTabView: View {
   
   // Language preferences
   @ObservedObject private var i18nManager = I18nPreferencesManager.shared
+  
+  // Localization manager for runtime language switching
+  @ObservedObject private var localizationManager = LocalizationManager.shared
 
   var body: some View {
     return WhiteSheetContainer(
@@ -280,37 +283,37 @@ struct MoreTabView: View {
         title: "General Settings",
         items: [
           SettingItem(
-            title: "My subscription",
-            value: subscriptionManager.isPremium ? "Premium" : "Free",
+            title: "more.mySubscription".localized,
+            value: subscriptionManager.isPremium ? "common.premium".localized : "common.free".localized,
             hasChevron: true,
             action: {
               showingSubscriptionView = true
             }),
           SettingItem(
-            title: "Vacation Mode",
-            value: vacationManager.isActive ? "On" : "Off",
+            title: "more.vacationMode".localized,
+            value: vacationManager.isActive ? "common.on".localized : "common.off".localized,
             hasChevron: true,
             action: {
               showingVacationMode = true
             }),
           SettingItem(
-            title: "Language",
+            title: "more.language".localized,
             value: getNativeLanguageName(),
             hasChevron: true,
             action: {
               showingLanguageView = true
             }),
           SettingItem(
-            title: "Appearance",
+            title: "more.appearance".localized,
             value: themeManager.colorSchemePreference.displayName,
             hasChevron: true,
             action: {
               showingThemeView = true
             }),
-          SettingItem(title: "Account", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.account".localized, value: nil, hasChevron: true, action: {
             showingAccountView = true
           }),
-          SettingItem(title: "Settings", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.settings".localized, value: nil, hasChevron: true, action: {
             showingSettingsView = true
           })
         ])
@@ -319,29 +322,29 @@ struct MoreTabView: View {
       settingsGroup(
         title: "Support & Legal",
         items: [
-          SettingItem(title: "About us", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.aboutUs".localized, value: nil, hasChevron: true, action: {
             showingAboutUs = true
           }),
-          SettingItem(title: "Tutorial & Tips", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.tutorialTips".localized, value: nil, hasChevron: true, action: {
             // Show tutorial directly instead of resetting it
             tutorialManager.shouldShowTutorial = true
           }),
-          SettingItem(title: "FAQ", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.faq".localized, value: nil, hasChevron: true, action: {
             showingFAQ = true
           }),
           // SettingItem(title: "Contact us", value: nil, hasChevron: true, action: {
           //     showingContactUs = true
           // }) // Hidden for now, can be used in the future
-          SettingItem(title: "Send Feedback", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.sendFeedback".localized, value: nil, hasChevron: true, action: {
             showingSendFeedback = true
           }),
-          SettingItem(title: "Rate Us", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.rateUs".localized, value: nil, hasChevron: true, action: {
             showingCustomRating = true
           }),
-          SettingItem(title: "Privacy Policy", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.privacyPolicy".localized, value: nil, hasChevron: true, action: {
             openPrivacyPolicy()
           }),
-          SettingItem(title: "Terms of Use", value: nil, hasChevron: true, action: {
+          SettingItem(title: "more.termsOfUse".localized, value: nil, hasChevron: true, action: {
             openTermsOfUse()
           })
         ])
