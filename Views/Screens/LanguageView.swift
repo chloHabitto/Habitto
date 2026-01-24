@@ -13,7 +13,7 @@ struct LanguageView: View {
           ScrollView {
             VStack(spacing: 24) {
               // Description text
-              Text("Choose your preferred language")
+              Text("language.description".localized)
                 .font(.appBodyMedium)
                 .foregroundColor(.text05)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -36,7 +36,7 @@ struct LanguageView: View {
         }
       }
       .background(Color.sheetBackground)
-      .navigationTitle("Language")
+      .navigationTitle("language.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -114,7 +114,7 @@ struct LanguageView: View {
         .frame(width: 32, height: 32)
 
       VStack(alignment: .leading, spacing: 2) {
-        Text("Current Language")
+        Text("language.currentLanguage".localized)
           .font(.system(size: 14, weight: .regular))
           .foregroundColor(.text04)
 
@@ -206,7 +206,7 @@ struct LanguageView: View {
   private var saveButtonSection: some View {
     HStack {
       HabittoButton.largeFillPrimary(
-        text: "Save",
+        text: "language.save".localized,
         state: hasChanges ? .default : .disabled,
         action: saveLanguage)
     }
@@ -217,7 +217,12 @@ struct LanguageView: View {
   /// Save language and post notification for parent to show toast
   private func saveLanguage() {
     let selectedCode = selectedLanguageCode
+    
+    // Save to I18nPreferencesManager
     i18nManager.setLanguage(selectedCode)
+    
+    // Update LocalizationManager for immediate UI refresh
+    LocalizationManager.shared.setLanguage(selectedCode)
     
     // Post notification with the success message in the selected language
     let message = getSuccessMessage(for: selectedCode)
