@@ -43,7 +43,7 @@ struct NextActionRow: View {
         VStack(spacing: 0) {
             // Line ABOVE - connects from previous entry
             Rectangle()
-                .fill(Color.appPrimary.opacity(0.5))
+                .fill(Color.appPrimaryOpacity10)
                 .frame(width: 3, height: 16)
             
             // Pulsing dot
@@ -57,6 +57,10 @@ struct NextActionRow: View {
         Circle()
             .fill(Color.appPrimary)
             .frame(width: 12, height: 12)
+            .overlay(
+                Circle()
+                    .stroke(Color.appOutline03, lineWidth: 2)
+            )
             .shadow(
                 color: Color.appPrimary.opacity(isPulsing ? 0.5 : 0),
                 radius: isPulsing ? 8 : 0
@@ -80,8 +84,7 @@ struct NextActionRow: View {
                 .frame(width: 40, height: 40)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white)
-                        .shadow(color: Color.appPrimary.opacity(0.15), radius: 2, y: 1)
+                        .fill(Color.appOutline02)
                 )
             
             // Text
@@ -89,36 +92,17 @@ struct NextActionRow: View {
                 Text("\(remainingCount) more to reach your goal")
                     .font(.appLabelLargeEmphasised)
                     .foregroundColor(.appText01)
-                    .lineLimit(1)
                 
                 Text("Complete this habit from Home")
                     .font(.appBodySmall)
                     .foregroundColor(.appText03)
-                    .lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // Chevron arrow
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.appText04)
-                .frame(width: 24, height: 24)
         }
         .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.appPrimary.opacity(0.08), Color.appPrimary.opacity(0.03)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .strokeBorder(Color.appPrimary.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                .strokeBorder(Color.appOutline03, style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
         )
         .padding(.top, 16)
     }

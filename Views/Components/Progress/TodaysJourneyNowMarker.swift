@@ -61,13 +61,7 @@ struct TodaysJourneyNowMarker: View {
       // Line BELOW - gradient with FIXED height that extends past row
       // Using fixed 100pt ensures it overlaps with pending item's line-above
       Rectangle()
-        .fill(
-          LinearGradient(
-            colors: [Color.appPrimary.opacity(0.5), Color.appOutline02],
-            startPoint: .top,
-            endPoint: .bottom
-          )
-        )
+        .fill(Color.appPrimaryOpacity10)
         .frame(width: 3, height: 100)
     }
     .frame(width: 24, alignment: .top)
@@ -76,10 +70,10 @@ struct TodaysJourneyNowMarker: View {
 
   private var nowDot: some View {
     Circle()
-      .fill(Color.appPrimaryContainerFocus)
+      .fill(Color.appPrimaryFocus)
       .frame(width: 12, height: 12)
       .shadow(
-        color: Color.appPrimary.opacity(isPulsing ? 0.5 : 0),
+        color: Color.appPrimaryFocus.opacity(isPulsing ? 0.5 : 0),
         radius: isPulsing ? 8 : 0
       )
       .onAppear {
@@ -95,13 +89,7 @@ struct TodaysJourneyNowMarker: View {
     HStack(spacing: 8) {
       // Horizontal gradient line
       Rectangle()
-        .fill(
-          LinearGradient(
-            colors: [Color.appPrimary.opacity(0.5), Color.appOutline02],
-            startPoint: .leading,
-            endPoint: .trailing
-          )
-        )
+        .fill(Color.appPrimaryOpacity10)
         .frame(height: 2)
 
       // NOW badge

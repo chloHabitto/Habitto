@@ -38,8 +38,10 @@ struct DailyActivityTimelineView: View {
                 timelineContent
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 16)
+        .padding(.leading, 12)
+        .padding(.trailing, 20)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.appSurface02)
