@@ -252,6 +252,7 @@ struct AccountView: View {
 
   @Environment(\.dismiss) private var dismiss
   @ObservedObject private var avatarManager = AvatarManager.shared
+  @ObservedObject private var birthdayManager = BirthdayManager.shared
   @ObservedObject private var permissionManager = PermissionManager.shared
 
   // State variables for showing different screens
@@ -270,8 +271,6 @@ struct AccountView: View {
   @State private var editedName = ""
   @FocusState private var isNameFieldFocused: Bool
   @State private var showingBirthdayView = false
-  @State private var selectedBirthday: Date = Date()
-  @State private var hasSetBirthday = false
   @State private var showingGenderView = false
   @State private var userID: String = ""
   @State private var copiedUserID = false
@@ -360,19 +359,15 @@ struct AccountView: View {
     .frame(maxWidth: .infinity)
     .onAppear {
       loadUserID()
-      loadBirthday()
     }
   }
   
-  private func loadBirthday() {
-    // Load birthday from UserDefaults if available
-    if let savedBirthday = UserDefaults.standard.object(forKey: "UserBirthday") as? Date {
-      selectedBirthday = savedBirthday
-      hasSetBirthday = true
+  private func loadUserID() {
+    Task {
+      let currentUser = CurrentUser()
+      userID = await currentUser.id
     }
   }
-  
-  // MARK: - User Information Section
   
   private var userInformationSection: some View {
     VStack(spacing: 0) {
@@ -431,8 +426,8 @@ struct AccountView: View {
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
             
-            if hasSetBirthday {
-              Text(formattedBirthday)
+            if birthdayManager.hasSetBirthday, let birthday = birthdayManager.birthday {
+              Text(formattedBirthday(birthday))
                 .font(.system(size: 14, weight: .regular))
                 .foregroundColor(.text04)
             }
@@ -470,13 +465,13 @@ struct AccountView: View {
     .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
     .sheet(isPresented: $showingBirthdayView) {
       BirthdayBottomSheet(
-        selectedDate: $selectedBirthday,
+        selectedDate: birthdayManager.birthday ?? Date(),
         onClose: {
           showingBirthdayView = false
         },
-        onSave: {
-          // Save birthday logic here
-          saveBirthday()
+        onSave: { selectedDate in
+          // Save birthday through manager
+          birthdayManager.saveBirthday(selectedDate)
         })
     }
     .sheet(isPresented: $showingGenderView) {
@@ -628,13 +623,6 @@ struct AccountView: View {
       return email
     }
     return ""
-  }
-  
-  private func loadUserID() {
-    Task {
-      let currentUser = CurrentUser()
-      userID = await currentUser.id
-    }
   }
   
   private func copyUserID() {
@@ -819,24 +807,6 @@ struct AccountView: View {
     }
   }
   
-  private func saveBirthday() {
-    hasSetBirthday = true
-    UserDefaults.standard.set(selectedBirthday, forKey: "UserBirthday")
-    print("✅ Birthday saved: \(selectedBirthday)")
-    showingBirthdayView = false
-    
-    // Show success toast after sheet dismisses
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-      showBirthdayUpdatedToast = true
-    }
-  }
-  
-  private var formattedBirthday: String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "MMM d, yyyy" // e.g., "Dec 16, 2006"
-    return formatter.string(from: selectedBirthday)
-  }
-  
   private func saveName() {
     let newDisplayName = editedName.trimmingCharacters(in: .whitespacesAndNewlines)
     
@@ -887,14 +857,20 @@ struct AccountView: View {
       }
     }
   }
+
+  private func formattedBirthday(_ date: Date) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMM d, yyyy" // e.g., "Dec 16, 2006"
+    return formatter.string(from: date)
+  }
 }
 
 // MARK: - BirthdayBottomSheet
 
 struct BirthdayBottomSheet: View {
-  @Binding var selectedDate: Date
+  let initialDate: Date
   let onClose: () -> Void
-  let onSave: () -> Void
+  let onSave: (Date) -> Void
   
   @State private var selectedMonth: Int
   @State private var selectedDay: Int
@@ -904,16 +880,16 @@ struct BirthdayBottomSheet: View {
   private let currentYear = Calendar.current.component(.year, from: Date())
   private let minYear = 1930
   private let maxYear: Int
-  
-  init(selectedDate: Binding<Date>, onClose: @escaping () -> Void, onSave: @escaping () -> Void) {
-    self._selectedDate = selectedDate
+
+  init(selectedDate: Date, onClose: @escaping () -> Void, onSave: @escaping (Date) -> Void) {
+    self.initialDate = selectedDate
     self.onClose = onClose
     self.onSave = onSave
     
     let calendar = Calendar.current
     let today = Date()
     let todayComponents = calendar.dateComponents([.year, .month, .day], from: today)
-    let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate.wrappedValue)
+    let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
     
     let todayYear = todayComponents.year ?? calendar.component(.year, from: today)
     let selectedYear = selectedComponents.year ?? todayYear
@@ -936,7 +912,6 @@ struct BirthdayBottomSheet: View {
       useSimpleCloseButton: true,
       confirmButton: {
         updateSelectedDate()
-        onSave()
       },
       confirmButtonTitle: "Done")
     {
@@ -1013,7 +988,8 @@ struct BirthdayBottomSheet: View {
     components.day = selectedDay
     
     if let date = calendar.date(from: components) {
-      selectedDate = date
+      onSave(date)
+      onClose()
     }
   }
 }
