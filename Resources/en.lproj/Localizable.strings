@@ -168,3 +168,47 @@
 
 /* Loading & Progress */
 "home.loading.habits" = "Loading habits...";
+
+/* ==================== */
+/* DATE FORMATTING      */
+/* ==================== */
+
+/* Months - Full */
+"date.month.january" = "January";
+"date.month.february" = "February";
+"date.month.march" = "March";
+"date.month.april" = "April";
+"date.month.may" = "May";
+"date.month.june" = "June";
+"date.month.july" = "July";
+"date.month.august" = "August";
+"date.month.september" = "September";
+"date.month.october" = "October";
+"date.month.november" = "November";
+"date.month.december" = "December";
+
+/* Months - Short */
+"date.month.short.jan" = "Jan";
+"date.month.short.feb" = "Feb";
+"date.month.short.mar" = "Mar";
+"date.month.short.apr" = "Apr";
+"date.month.short.may" = "May";
+"date.month.short.jun" = "Jun";
+"date.month.short.jul" = "Jul";
+"date.month.short.aug" = "Aug";
+"date.month.short.sep" = "Sep";
+"date.month.short.oct" = "Oct";
+"date.month.short.nov" = "Nov";
+"date.month.short.dec" = "Dec";
+
+/* Weekday Names - Short */
+"date.weekday.short.monday" = "Mon";
+"date.weekday.short.tuesday" = "Tue";
+"date.weekday.short.wednesday" = "Wed";
+"date.weekday.short.thursday" = "Thu";
+"date.weekday.short.friday" = "Fri";
+"date.weekday.short.saturday" = "Sat";
+"date.weekday.short.sunday" = "Sun";
+
+/* Date/Time Strings */
+"date.today" = "Today";

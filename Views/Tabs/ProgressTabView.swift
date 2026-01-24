@@ -2064,7 +2064,7 @@ struct ProgressTabView: View {
   // MARK: - Helper Functions for Calendar
 
   private func formatMonthYear(_ date: Date) -> String {
-    AppDateFormatter.shared.formatMonthYear(date)
+    LocalizationManager.shared.localizedMonthYear(for: date)
   }
 
   private func getFirstDayOfMonth(_ date: Date) -> Date {
@@ -2153,7 +2153,7 @@ struct ProgressTabView: View {
   }
 
   private func formatMonth(_ date: Date) -> String {
-    AppDateFormatter.shared.formatMonthYear(date)
+    LocalizationManager.shared.localizedMonthYear(for: date)
   }
 
   private func formatYear(_ date: Date) -> String {

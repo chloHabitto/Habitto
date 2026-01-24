@@ -451,7 +451,7 @@ enum CalendarGridComponents {
   }
 
   static func monthYearString(from date: Date) -> String {
-    AppDateFormatter.shared.formatMonthYear(date)
+    LocalizationManager.shared.localizedMonthYear(for: date)
   }
 
   static func getDateForDay(day: Int, currentDate: Date) -> Date {

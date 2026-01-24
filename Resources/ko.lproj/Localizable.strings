@@ -168,3 +168,47 @@
 
 /* Loading & Progress */
 "home.loading.habits" = "습관 로드 중...";
+
+/* ==================== */
+/* DATE FORMATTING      */
+/* ==================== */
+
+/* Months - Full */
+"date.month.january" = "1월";
+"date.month.february" = "2월";
+"date.month.march" = "3월";
+"date.month.april" = "4월";
+"date.month.may" = "5월";
+"date.month.june" = "6월";
+"date.month.july" = "7월";
+"date.month.august" = "8월";
+"date.month.september" = "9월";
+"date.month.october" = "10월";
+"date.month.november" = "11월";
+"date.month.december" = "12월";
+
+/* Months - Short */
+"date.month.short.jan" = "1월";
+"date.month.short.feb" = "2월";
+"date.month.short.mar" = "3월";
+"date.month.short.apr" = "4월";
+"date.month.short.may" = "5월";
+"date.month.short.jun" = "6월";
+"date.month.short.jul" = "7월";
+"date.month.short.aug" = "8월";
+"date.month.short.sep" = "9월";
+"date.month.short.oct" = "10월";
+"date.month.short.nov" = "11월";
+"date.month.short.dec" = "12월";
+
+/* Weekday Names - Short */
+"date.weekday.short.monday" = "월";
+"date.weekday.short.tuesday" = "화";
+"date.weekday.short.wednesday" = "수";
+"date.weekday.short.thursday" = "목";
+"date.weekday.short.friday" = "금";
+"date.weekday.short.saturday" = "토";
+"date.weekday.short.sunday" = "일";
+
+/* Date/Time Strings */
+"date.today" = "오늘";
