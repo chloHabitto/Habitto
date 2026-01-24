@@ -29,20 +29,19 @@ struct ExpandableCalendar: View {
   @State private var isExpanded = false
   @State private var currentWeekOffset = 0
   @State private var currentMonth = Date()
-  @EnvironmentObject var localizationManager: LocalizationManager
 
   private var weekdayNames: [String] {
-    localizationManager.localizedWeekdayArray(shortForm: true)
+    LocalizationManager.shared.localizedWeekdayArray(shortForm: true)
   }
 
   // MARK: - Helper Properties and Functions
 
   private var formattedCurrentDate: String {
-    localizationManager.localizedShortDate(for: selectedDate)
+    LocalizationManager.shared.localizedShortDate(for: selectedDate)
   }
 
   private var monthYearString: String {
-    localizationManager.localizedMonthYear(for: currentMonth)
+    LocalizationManager.shared.localizedMonthYear(for: currentMonth)
   }
 
   private var calendarDays: [Date?] {
