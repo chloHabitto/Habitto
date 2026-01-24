@@ -52,7 +52,7 @@ struct TodaysJourneyNowMarker: View {
     VStack(spacing: 0) {
       // Line ABOVE - solid primary, connects from previous completed item
       Rectangle()
-        .fill(Color.appPrimary.opacity(0.5))
+        .fill(Color.appPrimaryOpacity10)
         .frame(width: 3, height: 16)
       
       // Pulsing dot
@@ -76,7 +76,7 @@ struct TodaysJourneyNowMarker: View {
 
   private var nowDot: some View {
     Circle()
-      .fill(Color.appPrimary)
+      .fill(Color.appPrimaryContainerFocus)
       .frame(width: 12, height: 12)
       .shadow(
         color: Color.appPrimary.opacity(isPulsing ? 0.5 : 0),
