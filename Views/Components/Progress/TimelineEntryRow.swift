@@ -118,55 +118,46 @@ struct TimelineEntryRow: View {
     // MARK: - Entry Card
     
     private var entryCard: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Habit Icon
-            HabitIconView(habit: habit)
-                .frame(width: 40, height: 40)
-            
+        HStack(alignment: .top, spacing: 16) {
             // Content
             VStack(alignment: .leading, spacing: 8) {
-                // Header row
-                HStack {
-                    Text(entry.deltaDisplayText)
-                        .font(.appLabelLargeEmphasised)
-                        .foregroundColor(.appText01)
-                    
-                    Spacer()
-                    
-                    // Status icon (checkmark/plus/minus based on entry type)
-                    statusIcon
-                }
-                
-                // Meta row with difficulty badge
+                // Text content
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Progress: \(entry.runningTotal)/\(entry.goalAmount)")
-                        .font(.appBodySmall)
-                        .foregroundColor(.appText03)
+                    Text(entry.deltaDisplayText)
+                        .font(.appTitleMediumEmphasised)
+                        .foregroundColor(.appText02)
                     
-                    if let difficulty = entry.difficulty {
-                        DifficultyBadge(difficulty: difficulty)
-                    }
+                    Text("Progress: \(entry.runningTotal)/\(entry.goalAmount)")
+                        .font(.appLabelSmall)
+                        .foregroundColor(.appText05)
                 }
                 
                 // Progress bar
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(Color.appSurface03)
-                            .frame(height: 6)
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.appOutline02)
+                            .frame(height: 8)
                         
-                        RoundedRectangle(cornerRadius: 3)
+                        RoundedRectangle(cornerRadius: 8)
                             .fill(habit.color.color)
-                            .frame(width: geo.size.width * entry.progressPercentage, height: 6)
+                            .frame(width: geo.size.width * entry.progressPercentage, height: 8)
                     }
                 }
-                .frame(height: 6)
+                .frame(height: 8)
             }
+            
+            Spacer()
+            
+            // Status icon (checkmark)
+            statusIcon
         }
-        .padding(16)
+        .padding(.top, 12)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(Color.appSurface4)
+                .fill(Color.appSurface01Variant)
                 .shadow(color: Color.black.opacity(0.04), radius: 4, y: 2)
         )
         .overlay(
