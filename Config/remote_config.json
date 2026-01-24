@@ -9,7 +9,6 @@
   "showNewProgressUI": false,
   "enableAdvancedAnalytics": false,
   "maintenanceMode": false,
-  "configVersion": "1.0.2",
-  "lastUpdated": "2025-10-18T00:00:00Z",
-  "_comment": "MIGRATION MODE: Firestore sync + backfill enabled. Legacy fallback active during migration."
+  "configVersion": "1.0.3",
+  "lastUpdated": "2026-01-24T00:00:00Z"
 }
