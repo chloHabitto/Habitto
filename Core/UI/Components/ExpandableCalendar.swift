@@ -29,6 +29,11 @@ struct ExpandableCalendar: View {
   @State private var isExpanded = false
   @State private var currentWeekOffset = 0
   @State private var currentMonth = Date()
+  
+  /// Helper to get calendar with user's locale and preferences
+  private var userCalendar: Calendar {
+    LocalizationManager.shared.getLocalizedCalendar()
+  }
 
   private var weekdayNames: [String] {
     LocalizationManager.shared.localizedWeekdayArray(shortForm: true)
@@ -45,7 +50,7 @@ struct ExpandableCalendar: View {
   }
 
   private var calendarDays: [Date?] {
-    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let calendar = userCalendar
     let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
 
     // Find the first day of the week based on user preference
@@ -99,7 +104,7 @@ struct ExpandableCalendar: View {
       Spacer()
 
       // Today button (shown when not on current week or selected date is not today)
-      let calendar = AppDateFormatter.shared.getUserCalendar()
+      let calendar = userCalendar
       let today = Date()
       let isTodayInCurrentWeek = daysOfWeek(for: currentWeekOffset).contains { date in
         calendar.isDate(date, inSameDayAs: today)
@@ -208,8 +213,8 @@ struct ExpandableCalendar: View {
         // Day headers
         ForEach(weekdayNames, id: \.self) { day in
           Text(day.uppercased())
-            .font(.system(size: 10, weight: .bold))
-            .foregroundColor(.appText06)
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.text02)
             .frame(height: 32)
         }
 
@@ -218,13 +223,13 @@ struct ExpandableCalendar: View {
           if let date {
             MonthlyCalendarDayView(
               date: date,
-              isSelected: AppDateFormatter.shared.getUserCalendar().isDate(
+              isSelected: userCalendar.isDate(
                 date,
                 inSameDayAs: selectedDate),
-              isToday: AppDateFormatter.shared.getUserCalendar().isDate(
+              isToday: userCalendar.isDate(
                 date,
                 inSameDayAs: Date()),
-              isCurrentMonth: AppDateFormatter.shared.getUserCalendar().isDate(
+              isCurrentMonth: userCalendar.isDate(
                 date,
                 equalTo: currentMonth,
                 toGranularity: .month))
@@ -253,17 +258,17 @@ struct ExpandableCalendar: View {
   }
   
   private func isDateSelected(_ date: Date) -> Bool {
-    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let calendar = userCalendar
     return calendar.isDate(date, inSameDayAs: selectedDate)
   }
   
   private func isDateToday(_ date: Date) -> Bool {
-    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let calendar = userCalendar
     return calendar.isDate(date, inSameDayAs: Date())
   }
 
   private func daysOfWeek(for weekOffset: Int) -> [Date] {
-    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let calendar = userCalendar
     let today = Date()
     let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
     let adjustedWeekStart = calendar
@@ -295,7 +300,7 @@ struct ExpandableCalendar: View {
     }
 
     // Update week offset to match selected date
-    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let calendar = userCalendar
     let today = Date()
     let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
     let selectedWeekStart = calendar.dateInterval(of: .weekOfYear, for: date)?.start ?? date
@@ -327,7 +332,7 @@ struct ExpandableCalendar: View {
   }
 
   private func changeMonth(by value: Int) {
-    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let calendar = userCalendar
     if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
       currentMonth = newMonth
     }
@@ -363,7 +368,7 @@ fileprivate struct WeekDayButton: View {
   }
   
   private var calendar: Calendar {
-    AppDateFormatter.shared.getUserCalendar()
+    LocalizationManager.shared.getLocalizedCalendar()
   }
   
   private var dayNumberColor: Color {
@@ -413,7 +418,7 @@ struct MonthlyCalendarDayView: View {
   let isCurrentMonth: Bool
 
   var body: some View {
-    let calendar = AppDateFormatter.shared.getUserCalendar()
+    let calendar = LocalizationManager.shared.getLocalizedCalendar()
     Text("\(calendar.component(.day, from: date))")
       .font(.appBodyMedium)
       .foregroundColor(textColor)

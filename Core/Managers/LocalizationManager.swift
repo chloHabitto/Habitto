@@ -115,15 +115,18 @@ extension LocalizationManager {
     return localizedString(keys[weekday])
   }
   
-  /// Format date as "Sat, 24 Jan" or "토, 1월 24일"
+  /// Format date as "Sat, 24 Jan" (English) or "1월 25일 토" (Korean)
+  /// For Korean, weekday appears at the end to match the Year/Month/Day format preference
   func localizedShortDate(for date: Date) -> String {
     let weekday = localizedWeekday(for: date, short: true)
     let month = localizedMonth(for: date, short: true)
     let day = Calendar.current.component(.day, from: date)
     
     if currentLanguage == "ko" {
-      return "\(weekday), \(month) \(day)일"
+      // Korean: Month Day Weekday (e.g., "1월 25일 토")
+      return "\(month) \(day)일 \(weekday)"
     } else {
+      // English: Weekday, Day Month (e.g., "Sat, 25 Jan")
       return "\(weekday), \(day) \(month)"
     }
   }
@@ -150,16 +153,19 @@ extension LocalizationManager {
   }
   
   /// Get localized array of weekday names (for calendar headers)
+  /// Respects user's first weekday preference from I18nPreferencesManager
   func localizedWeekdayArray(shortForm: Bool = true) -> [String] {
-    let calendar = Calendar.current
-    let firstWeekday = calendar.firstWeekday
+    // Get user's first weekday preference (1 = Sunday, 2 = Monday, etc.)
+    let firstWeekday = I18nPreferencesManager.shared.preferences.firstWeekday
     
     // Calendar weekdays: 1=Sunday, 2=Monday, etc.
     var weekdayIndices = Array(1...7)
     
-    // Rotate if Monday is first
-    if firstWeekday == 2 {
-      weekdayIndices = Array(2...7) + [1]
+    // Rotate array to start from user's preferred first day
+    // If firstWeekday is 2 (Monday), move Sunday (1) to the end
+    if firstWeekday > 1 {
+      let rotateBy = firstWeekday - 1
+      weekdayIndices = Array(weekdayIndices[rotateBy...]) + Array(weekdayIndices[..<rotateBy])
     }
     
     return weekdayIndices.map { weekday in
@@ -172,6 +178,13 @@ extension LocalizationManager {
       ]
       return localizedString(keys[weekday])
     }
+  }
+  
+  /// Get calendar configured with user's locale and first weekday preference
+  func getLocalizedCalendar() -> Calendar {
+    var calendar = I18nPreferencesManager.shared.preferences.calendar
+    // Ensure the calendar is properly configured
+    return calendar
   }
 }
 
