@@ -55,20 +55,6 @@ struct LanguageView: View {
         selectedLanguageCode = i18nManager.preferences.languageTag
       }
     }
-    
-    // Toast overlay for success message
-    if showSavedToast {
-      ZStack(alignment: .bottom) {
-        Color.clear
-          .ignoresSafeArea()
-        
-        SuccessToastView(message: getSuccessMessage(for: selectedLanguageCode)) {
-          showSavedToast = false
-        }
-        .padding(.horizontal, 16)
-        .padding(.bottom, ToastConstants.bottomPadding)
-      }
-    }
   }
 
   // MARK: Private
@@ -79,7 +65,6 @@ struct LanguageView: View {
   // State variables for language selection
   @State private var selectedLanguageCode: String = "en"
   @State private var showingLanguageDropdown = false
-  @State private var showSavedToast = false
 
   /// Available languages with flags and native names
   private let languages = [
@@ -229,14 +214,21 @@ struct LanguageView: View {
     .padding(.bottom, 40)
   }
 
-  /// Save language and show success toast
+  /// Save language and post notification for parent to show toast
   private func saveLanguage() {
-    i18nManager.setLanguage(selectedLanguageCode)
-    showSavedToast = true
+    let selectedCode = selectedLanguageCode
+    i18nManager.setLanguage(selectedCode)
     
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-      dismiss()
-    }
+    // Post notification with the success message in the selected language
+    let message = getSuccessMessage(for: selectedCode)
+    NotificationCenter.default.post(
+      name: NSNotification.Name("ShowLanguageSavedToast"),
+      object: nil,
+      userInfo: ["message": message]
+    )
+    
+    // Dismiss immediately
+    dismiss()
   }
 
   /// Get localized success message for the selected language
