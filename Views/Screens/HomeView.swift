@@ -1140,28 +1140,28 @@ struct HomeView: View {
         // Home Tab
         homeTabContent
           .tabItem {
-            Label("Home", image: "Icon-home-filled")
+            Label("tab.home".localized, image: "Icon-home-filled")
           }
           .tag(Tab.home)
         
         // Progress Tab
         progressTabContent
           .tabItem {
-            Label("Progress", image: "Icon-chart-filled")
+            Label("tab.progress".localized, image: "Icon-chart-filled")
           }
           .tag(Tab.progress)
         
         // Habits Tab
         habitsTabContent
           .tabItem {
-            Label("Habits", image: "Icon-book-filled")
+            Label("tab.habits".localized, image: "Icon-book-filled")
           }
           .tag(Tab.habits)
         
         // More Tab
         moreTabContent
           .tabItem {
-            Label("More", image: "Icon-more-filled")
+            Label("tab.more".localized, image: "Icon-more-filled")
           }
           .tag(Tab.more)
       }

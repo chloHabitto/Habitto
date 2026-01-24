@@ -280,7 +280,7 @@ struct MoreTabView: View {
     VStack(spacing: 24) {
       // General Settings Group
       settingsGroup(
-        title: "General Settings",
+        title: "more.section.generalSettings".localized,
         items: [
           SettingItem(
             icon: "Icon-crown_Filled",
@@ -334,7 +334,7 @@ struct MoreTabView: View {
 
       // Support/Legal Group
       settingsGroup(
-        title: "Support & Legal",
+        title: "more.section.supportLegal".localized,
         items: [
           SettingItem(
             icon: "Icon-ChatRoundLike_Filled",
@@ -555,7 +555,7 @@ struct MoreTabView: View {
         Spacer()
       }
       .padding(.horizontal, 12)
-      .padding(.bottom, title == "General Settings" || title == "Support & Legal" ? 12 : 16)
+      .padding(.bottom, title == "more.section.generalSettings".localized || title == "more.section.supportLegal".localized ? 12 : 16)
 
       // Options container with rounded background
       VStack(spacing: 0) {

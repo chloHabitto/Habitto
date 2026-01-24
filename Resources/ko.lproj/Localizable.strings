@@ -4,6 +4,12 @@
 "tab.habits" = "습관";
 "tab.more" = "더보기";
 
+/* More Tab - General Settings Section Header */
+"more.section.generalSettings" = "일반 설정";
+
+/* More Tab - Support & Legal Section Header */
+"more.section.supportLegal" = "지원 및 법률";
+
 /* More Tab - General Settings */
 "more.mySubscription" = "내 구독";
 "more.vacationMode" = "휴가 모드";
