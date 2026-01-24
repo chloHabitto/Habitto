@@ -4,6 +4,12 @@
 "tab.habits" = "Habits";
 "tab.more" = "More";
 
+/* More Tab - General Settings Section Header */
+"more.section.generalSettings" = "General Settings";
+
+/* More Tab - Support & Legal Section Header */
+"more.section.supportLegal" = "Support & Legal";
+
 /* More Tab - General Settings */
 "more.mySubscription" = "My subscription";
 "more.vacationMode" = "Vacation Mode";
