@@ -1,6 +1,6 @@
 /* Tab Bar */
 "tab.home" = "홈";
-"tab.progress" = "진행";
+"tab.progress" = "통계";
 "tab.habits" = "습관";
 "tab.more" = "더보기";
 
@@ -11,8 +11,8 @@
 "more.section.supportLegal" = "지원 및 법률";
 
 /* MoreTabView - Profile Area */
-"more.profile.greeting" = "%@님, 안녕하세요";
-"more.profile.viewProfile" = "프로필 보기 >";
+"more.profile.greeting" = "%@님,";
+"more.profile.viewProfile" = "프로필 보기";
 
 /* MoreTabView - XP Card */
 "more.xp.level" = "레벨";
