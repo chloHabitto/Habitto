@@ -281,11 +281,10 @@ class EnhancedMigrationTelemetryManager: ObservableObject {
   private let configKey = "MigrationConfig"
   private let localOverrideKey = "MigrationLocalOverride"
 
-  /// Remote config endpoints (with fallbacks)
+  /// Remote config endpoint (GitHub raw - primary source)
+  /// Falls back to local defaults if fetch fails
   private let remoteConfigURLs = [
-    "https://raw.githubusercontent.com/chloe-lee/Habitto/main/remote_config.json",
-    "https://habitto-config.s3.amazonaws.com/remote_config.json",
-    "https://habitto-config.firebaseapp.com/remote_config.json"
+    "https://raw.githubusercontent.com/chloHabitto/Habitto/main/Config/remote_config.json"
   ]
 
   /// Local default config (used when remote fails)
