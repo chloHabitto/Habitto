@@ -79,3 +79,92 @@
 "language.german" = "Deutsch";
 "language.chinese" = "中文";
 "language.thai" = "ไทย";
+
+/* ==================== */
+/* HOME TAB             */
+/* ==================== */
+
+/* Date Headers */
+"home.date.today" = "오늘";
+"home.date.tomorrow" = "내일";
+"home.date.yesterday" = "어제";
+
+/* Weekdays - Full */
+"home.weekday.sunday" = "일요일";
+"home.weekday.monday" = "월요일";
+"home.weekday.tuesday" = "화요일";
+"home.weekday.wednesday" = "수요일";
+"home.weekday.thursday" = "목요일";
+"home.weekday.friday" = "금요일";
+"home.weekday.saturday" = "토요일";
+
+/* Weekdays - Short */
+"home.weekday.short.sun" = "일";
+"home.weekday.short.mon" = "월";
+"home.weekday.short.tue" = "화";
+"home.weekday.short.wed" = "수";
+"home.weekday.short.thu" = "목";
+"home.weekday.short.fri" = "금";
+"home.weekday.short.sat" = "토";
+
+/* Habit Card States */
+"home.habit.complete" = "완료";
+"home.habit.completed" = "완료됨";
+"home.habit.skip" = "건너뛰기";
+"home.habit.skipped" = "건너뜀";
+"home.habit.pending" = "대기 중";
+"home.habit.tapToComplete" = "탭하여 완료";
+
+/* Empty States */
+"home.empty.noHabits" = "오늘 습관이 없습니다";
+"home.empty.allDone" = "모두 완료!";
+"home.empty.greatJob" = "잘했어요!";
+"home.empty.noHabitsYet" = "습관이 없습니다";
+"home.empty.createFirstHabit" = "첫 번째 습관을 만들어 시작하세요";
+"home.empty.noHabitsToday" = "오늘 습관이 없습니다";
+"home.empty.letsRelax" = "휴식을 취하고 하루를 즐기세요!";
+"home.empty.allHabitsDone" = "모든 습관 완료!";
+"home.empty.allHabitsDoneMsg" = "잘했어요! 오늘의 모든 습관을 완료했습니다";
+"home.empty.noCompletedHabits" = "완료된 습관이 없습니다";
+"home.empty.startBuildingStreak" = "오늘부터 연속 기록을 시작하세요!";
+
+/* Headers & Sections */
+"home.section.todaysHabits" = "오늘의 습관";
+"home.section.upcoming" = "다가오는";
+"home.section.morning" = "아침";
+"home.section.afternoon" = "오후";
+"home.section.evening" = "저녁";
+"home.section.anytime" = "언제든지";
+
+/* Actions */
+"home.action.addHabit" = "습관 추가";
+"home.action.viewAll" = "전체 보기";
+"home.action.markComplete" = "완료 표시";
+
+/* Streak & Progress */
+"home.streak.currentStreak" = "현재 연속";
+"home.streak.days" = "일";
+"home.streak.day" = "일";
+
+/* Completion Messages */
+"home.completion.perfect" = "완벽해요!";
+"home.completion.keepGoing" = "계속 가세요!";
+"home.completion.almostThere" = "거의 다 왔어요!";
+
+/* Time of Day Greeting */
+"home.greeting.morning" = "좋은 아침이에요";
+"home.greeting.afternoon" = "좋은 오후예요";
+"home.greeting.evening" = "좋은 저녁이에요";
+
+/* Vacation & Special States */
+"home.vacation.onVacation" = "휴가 중";
+"home.vacation.endVacation" = "휴가 종료";
+"home.vacation.endVacationConfirm" = "휴가 모드를 정말로 종료하시겠습니까? 모든 습관이 즉시 재개됩니다.";
+
+/* Tabs & Stats */
+"home.tabs.total" = "전체";
+"home.tabs.undone" = "미완료";
+"home.tabs.done" = "완료";
+
+/* Loading & Progress */
+"home.loading.habits" = "습관 로드 중...";

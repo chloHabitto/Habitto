@@ -79,3 +79,92 @@
 "language.german" = "Deutsch";
 "language.chinese" = "中文";
 "language.thai" = "ไทย";
+
+/* ==================== */
+/* HOME TAB             */
+/* ==================== */
+
+/* Date Headers */
+"home.date.today" = "Today";
+"home.date.tomorrow" = "Tomorrow";
+"home.date.yesterday" = "Yesterday";
+
+/* Weekdays - Full */
+"home.weekday.sunday" = "Sunday";
+"home.weekday.monday" = "Monday";
+"home.weekday.tuesday" = "Tuesday";
+"home.weekday.wednesday" = "Wednesday";
+"home.weekday.thursday" = "Thursday";
+"home.weekday.friday" = "Friday";
+"home.weekday.saturday" = "Saturday";
+
+/* Weekdays - Short */
+"home.weekday.short.sun" = "Sun";
+"home.weekday.short.mon" = "Mon";
+"home.weekday.short.tue" = "Tue";
+"home.weekday.short.wed" = "Wed";
+"home.weekday.short.thu" = "Thu";
+"home.weekday.short.fri" = "Fri";
+"home.weekday.short.sat" = "Sat";
+
+/* Habit Card States */
+"home.habit.complete" = "Complete";
+"home.habit.completed" = "Completed";
+"home.habit.skip" = "Skip";
+"home.habit.skipped" = "Skipped";
+"home.habit.pending" = "Pending";
+"home.habit.tapToComplete" = "Tap to complete";
+
+/* Empty States */
+"home.empty.noHabits" = "No habits for today";
+"home.empty.allDone" = "All done!";
+"home.empty.greatJob" = "Great job!";
+"home.empty.noHabitsYet" = "No habits yet";
+"home.empty.createFirstHabit" = "Create your first habit to get started";
+"home.empty.noHabitsToday" = "No habits today";
+"home.empty.letsRelax" = "Let's relax and enjoy the day!";
+"home.empty.allHabitsDone" = "All habits completed!";
+"home.empty.allHabitsDoneMsg" = "Great job! All your habits are done for today";
+"home.empty.noCompletedHabits" = "No completed habits";
+"home.empty.startBuildingStreak" = "Start building your streak today!";
+
+/* Headers & Sections */
+"home.section.todaysHabits" = "Today's Habits";
+"home.section.upcoming" = "Upcoming";
+"home.section.morning" = "Morning";
+"home.section.afternoon" = "Afternoon";
+"home.section.evening" = "Evening";
+"home.section.anytime" = "Anytime";
+
+/* Actions */
+"home.action.addHabit" = "Add Habit";
+"home.action.viewAll" = "View All";
+"home.action.markComplete" = "Mark Complete";
+
+/* Streak & Progress */
+"home.streak.currentStreak" = "Current Streak";
+"home.streak.days" = "days";
+"home.streak.day" = "day";
+
+/* Completion Messages */
+"home.completion.perfect" = "Perfect!";
+"home.completion.keepGoing" = "Keep going!";
+"home.completion.almostThere" = "Almost there!";
+
+/* Time of Day Greeting */
+"home.greeting.morning" = "Good morning";
+"home.greeting.afternoon" = "Good afternoon";
+"home.greeting.evening" = "Good evening";
+
+/* Vacation & Special States */
+"home.vacation.onVacation" = "On Vacation";
+"home.vacation.endVacation" = "End Vacation";
+"home.vacation.endVacationConfirm" = "Are you sure you want to end vacation mode? All habits will resume immediately.";
+
+/* Tabs & Stats */
+"home.tabs.total" = "Total";
+"home.tabs.undone" = "Undone";
+"home.tabs.done" = "Done";
+
+/* Loading & Progress */
+"home.loading.habits" = "Loading habits...";
