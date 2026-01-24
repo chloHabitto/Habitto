@@ -67,7 +67,7 @@ struct TodaysJourneyItemView: View {
     case .completed:
       guard let t = item.completionTime else { return "—" }
       return Self.timeFormatter.string(from: t)
-    case .pending:
+    case .inProgress, .pending:
       guard let t = estimatedTime else { return "—" }
       // Only show estimated time if it's still in the future
       let now = Date()
@@ -84,7 +84,7 @@ struct TodaysJourneyItemView: View {
     case .completed:
       guard let t = item.completionTime else { return "" }
       return Self.amPmFormatter.string(from: t)
-    case .pending:
+    case .inProgress, .pending:
       guard let t = estimatedTime else { return "" }
       // Only show AM/PM if estimated time is still in the future
       let now = Date()
@@ -125,7 +125,7 @@ struct TodaysJourneyItemView: View {
   }
 
   private func lineSegment(position: LinePosition) -> some View {
-    let isPending = item.status == .pending
+    let isPending = item.status == .pending || item.status == .inProgress
     let lineColor = isPending ? Color.appOutline02 : Color.appPrimaryOpacity10
     
     return GeometryReader { geo in
@@ -177,17 +177,19 @@ struct TodaysJourneyItemView: View {
           .lineLimit(2)
           .truncationMode(.tail)
         
-        if item.status == .completed {
+        switch item.status {
+        case .completed:
           if let difficulty = item.difficulty {
             DifficultyBadge(difficulty: difficulty)
           }
-        } else {
-          // Pending - show progress
+        case .inProgress, .pending:
+          // Both show progress content
           progressContent
         }
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       
+      // Checkmark ONLY for completed
       if item.status == .completed {
         Image(systemName: "checkmark")
           .font(.system(size: 12, weight: .bold))
@@ -209,8 +211,8 @@ struct TodaysJourneyItemView: View {
       RoundedRectangle(cornerRadius: 16)
         .stroke(Color.appOutline1Variant, lineWidth: 1)
     )
-    .opacity(item.status == .pending ? 0.8 : 1)
-    .padding(.top, isFirst ? 0 : 16) // Align with dot position (line above is 16pt)
+    .opacity(item.status == .completed ? 1 : 0.8)  // Both pending and inProgress get reduced opacity
+    .padding(.top, isFirst ? 0 : 16)
   }
   
   @ViewBuilder
@@ -352,11 +354,11 @@ struct TodaysJourneyItemView: View {
       item: JourneyHabitItem(
         id: habit2.id,
         habit: habit2,
-        status: .pending,
+        status: .inProgress,
         completionTime: nil,
         difficulty: nil,
         currentStreak: 3,
-        isAtRisk: true
+        isAtRisk: false
       ),
       index: 1,
       isFirst: false,

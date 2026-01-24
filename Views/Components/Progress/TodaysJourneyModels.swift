@@ -12,7 +12,8 @@ import Foundation
 
 enum JourneyItemStatus: Equatable {
   case completed
-  case pending
+  case inProgress  // has progress but not yet completed
+  case pending     // not started (0 progress)
 }
 
 // MARK: - JourneyHabitItem
