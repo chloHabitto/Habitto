@@ -26,6 +26,9 @@ struct MoreTabView: View {
   
   // Subscription manager
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+  
+  // Language preferences
+  @ObservedObject private var i18nManager = I18nPreferencesManager.shared
 
   var body: some View {
     return WhiteSheetContainer(
@@ -158,6 +161,28 @@ struct MoreTabView: View {
         // Check iCloud status when view appears
         await icloudStatus.checkStatus()
       }
+      .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("ShowLanguageSavedToast"))) { notification in
+        if let message = notification.userInfo?["message"] as? String {
+          languageSavedMessage = message
+          // Small delay to ensure sheet is fully dismissed
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            showLanguageSavedToast = true
+          }
+        }
+      }
+      .overlay(alignment: .bottom) {
+        if showLanguageSavedToast {
+          SuccessToastView(message: languageSavedMessage) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+              showLanguageSavedToast = false
+            }
+          }
+          .padding(.horizontal, 16)
+          .padding(.bottom, 40)
+          .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+      }
+      .animation(.spring(response: 0.4, dampingFraction: 0.75), value: showLanguageSavedToast)
       #if DEBUG
       .onAppear {
         // 🔍 DEBUG: Log XP when tab appears
@@ -200,6 +225,10 @@ struct MoreTabView: View {
   @State private var showingRepairAlert = false
   @State private var repairMessage = ""
   @State private var isRepairing = false
+  
+  // Language saved toast state
+  @State private var showLanguageSavedToast = false
+  @State private var languageSavedMessage = ""
   
   // ✅ DEBUG: Habit Investigation
   #if DEBUG
@@ -266,7 +295,7 @@ struct MoreTabView: View {
             }),
           SettingItem(
             title: "Language",
-            value: "English",
+            value: getNativeLanguageName(),
             hasChevron: true,
             action: {
               showingLanguageView = true
@@ -763,6 +792,21 @@ struct MoreTabView: View {
         print("❌ MoreTabView: Failed to open Terms of Use URL")
       }
     }
+  }
+  
+  /// Get the native language name for the current language setting
+  private func getNativeLanguageName() -> String {
+    let languageMap: [String: String] = [
+      "en": "English",
+      "ko": "한국어",
+      "ja": "日本語",
+      "nl": "Nederlands",
+      "de": "Deutsch",
+      "zh": "中文",
+      "th": "ไทย"
+    ]
+    
+    return languageMap[i18nManager.preferences.languageTag] ?? "English"
   }
 }
 
