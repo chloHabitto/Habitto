@@ -32,21 +32,21 @@ enum SkipReason: String, Codable, CaseIterable, Equatable {
     }
   }
   
-  /// Icon name for the skip reason
+  /// Icon name for the skip reason (SF Symbols)
   var icon: String {
     switch self {
     case .medical:
-      return "Icon-MedicalKit_Filled"
+      return "cross.case.fill"
     case .travel:
-      return "Icon-Plane_Filled"
+      return "airplane"
     case .equipment:
-      return "Icon-Tools_Filled"
+      return "wrench.and.screwdriver.fill"
     case .weather:
       return "cloud.rain.fill"
     case .emergency:
-      return "Icon-DangerTriangle_Filled"
+      return "exclamationmark.triangle.fill"
     case .rest:
-      return "Icon-Bed_Filled"
+      return "bed.double.fill"
     case .other:
       return "ellipsis.circle.fill"
     }
@@ -54,12 +54,7 @@ enum SkipReason: String, Codable, CaseIterable, Equatable {
   
   /// Whether this icon is a custom asset (true) or SF Symbol (false)
   var isCustomIcon: Bool {
-    switch self {
-    case .medical, .travel, .equipment, .emergency, .rest:
-      return true
-    case .weather, .other:
-      return false
-    }
+    return false  // All icons are now SF Symbols
   }
   
   /// Short label for compact display
