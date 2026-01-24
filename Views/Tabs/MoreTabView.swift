@@ -283,6 +283,7 @@ struct MoreTabView: View {
         title: "General Settings",
         items: [
           SettingItem(
+            icon: "Icon-crown_Filled",
             title: "more.mySubscription".localized,
             value: subscriptionManager.isPremium ? "common.premium".localized : "common.free".localized,
             hasChevron: true,
@@ -290,6 +291,7 @@ struct MoreTabView: View {
               showingSubscriptionView = true
             }),
           SettingItem(
+            icon: "Icon-Vacation_Filled",
             title: "more.vacationMode".localized,
             value: vacationManager.isActive ? "common.on".localized : "common.off".localized,
             hasChevron: true,
@@ -297,6 +299,7 @@ struct MoreTabView: View {
               showingVacationMode = true
             }),
           SettingItem(
+            icon: "Icon-Language_Filled",
             title: "more.language".localized,
             value: getNativeLanguageName(),
             hasChevron: true,
@@ -304,49 +307,95 @@ struct MoreTabView: View {
               showingLanguageView = true
             }),
           SettingItem(
+            icon: "Icon-Theme_Filled",
             title: "more.appearance".localized,
             value: themeManager.colorSchemePreference.displayName,
             hasChevron: true,
             action: {
               showingThemeView = true
             }),
-          SettingItem(title: "more.account".localized, value: nil, hasChevron: true, action: {
-            showingAccountView = true
-          }),
-          SettingItem(title: "more.settings".localized, value: nil, hasChevron: true, action: {
-            showingSettingsView = true
-          })
+          SettingItem(
+            icon: "Icon-Profile_Filled",
+            title: "more.account".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              showingAccountView = true
+            }),
+          SettingItem(
+            icon: "Icon-Setting_Filled",
+            title: "more.settings".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              showingSettingsView = true
+            })
         ])
 
       // Support/Legal Group
       settingsGroup(
         title: "Support & Legal",
         items: [
-          SettingItem(title: "more.aboutUs".localized, value: nil, hasChevron: true, action: {
-            showingAboutUs = true
-          }),
-          SettingItem(title: "more.tutorialTips".localized, value: nil, hasChevron: true, action: {
-            // Show tutorial directly instead of resetting it
-            tutorialManager.shouldShowTutorial = true
-          }),
-          SettingItem(title: "more.faq".localized, value: nil, hasChevron: true, action: {
-            showingFAQ = true
-          }),
+          SettingItem(
+            icon: "Icon-ChatRoundLike_Filled",
+            title: "more.aboutUs".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              showingAboutUs = true
+            }),
+          SettingItem(
+            icon: "Icon-Notes_Filled",
+            title: "more.tutorialTips".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              // Show tutorial directly instead of resetting it
+              tutorialManager.shouldShowTutorial = true
+            }),
+          SettingItem(
+            icon: "Icon-QuestionCircle_Filled",
+            title: "more.faq".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              showingFAQ = true
+            }),
           // SettingItem(title: "Contact us", value: nil, hasChevron: true, action: {
           //     showingContactUs = true
           // }) // Hidden for now, can be used in the future
-          SettingItem(title: "more.sendFeedback".localized, value: nil, hasChevron: true, action: {
-            showingSendFeedback = true
-          }),
-          SettingItem(title: "more.rateUs".localized, value: nil, hasChevron: true, action: {
-            showingCustomRating = true
-          }),
-          SettingItem(title: "more.privacyPolicy".localized, value: nil, hasChevron: true, action: {
-            openPrivacyPolicy()
-          }),
-          SettingItem(title: "more.termsOfUse".localized, value: nil, hasChevron: true, action: {
-            openTermsOfUse()
-          })
+          SettingItem(
+            icon: "Icon-Letter_Filled",
+            title: "more.sendFeedback".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              showingSendFeedback = true
+            }),
+          SettingItem(
+            icon: "Icon-Hearts_Filled",
+            title: "more.rateUs".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              showingCustomRating = true
+            }),
+          SettingItem(
+            icon: "Icon-DocumentText_Filled",
+            title: "more.privacyPolicy".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              openPrivacyPolicy()
+            }),
+          SettingItem(
+            icon: "Icon-DocumentText_Filled",
+            title: "more.termsOfUse".localized,
+            value: nil,
+            hasChevron: true,
+            action: {
+              openTermsOfUse()
+            })
         ])
       
       #if DEBUG
@@ -512,24 +561,24 @@ struct MoreTabView: View {
       VStack(spacing: 0) {
         ForEach(Array(items.enumerated()), id: \.offset) { index, item in
           HStack(spacing: 12) {
-            // Icon based on item type
-            if iconForSetting(item.title).hasPrefix("Icon-") {
+            // Icon based on item icon property
+            if item.icon.hasPrefix("Icon-") {
               // Custom icon
-              Image(iconForSetting(item.title))
+              Image(item.icon)
                 .renderingMode(.template)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 24, height: 24)
-                .foregroundColor(iconColorForSetting(item.title))
+                .foregroundColor(iconColorForSetting(item.icon))
             } else {
               // System icon
               Group {
                 if item.title == "Sync Status" {
                   let isSyncing = habitRepository.syncStatus == .syncing
                   // Animated sync icon when syncing
-                  Image(systemName: iconForSetting(item.title))
+                  Image(systemName: item.icon)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(iconColorForSetting(item.title))
+                    .foregroundColor(iconColorForSetting(item.icon))
                     .frame(width: 24, height: 24)
                     .rotationEffect(.degrees(isSyncing ? 360 : 0))
                     .animation(
@@ -539,9 +588,9 @@ struct MoreTabView: View {
                       value: isSyncing
                     )
                 } else {
-                  Image(systemName: iconForSetting(item.title))
+                  Image(systemName: item.icon)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(iconColorForSetting(item.title))
+                    .foregroundColor(iconColorForSetting(item.icon))
                     .frame(width: 24, height: 24)
                 }
               }
@@ -606,6 +655,7 @@ struct MoreTabView: View {
   private var syncStatusItem: SettingItem {
     // Use iCloud sync status instead of Firebase sync status
     return SettingItem(
+      icon: "arrow.clockwise",
       title: "iCloud Sync",
       value: icloudStatus.statusMessage,
       hasChevron: false,
@@ -818,7 +868,8 @@ struct MoreTabView: View {
 struct SettingItem {
   // MARK: Lifecycle
 
-  init(title: String, value: String? = nil, hasChevron: Bool = false, badgeCount: Int? = nil, action: (() -> Void)? = nil) {
+  init(icon: String, title: String, value: String? = nil, hasChevron: Bool = false, badgeCount: Int? = nil, action: (() -> Void)? = nil) {
+    self.icon = icon
     self.title = title
     self.value = value
     self.hasChevron = hasChevron
@@ -828,6 +879,7 @@ struct SettingItem {
 
   // MARK: Internal
 
+  let icon: String
   let title: String
   let value: String?
   let hasChevron: Bool
