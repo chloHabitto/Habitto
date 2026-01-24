@@ -450,6 +450,7 @@ enum CalendarGridComponents {
     return range?.count ?? 0
   }
 
+  @MainActor
   static func monthYearString(from date: Date) -> String {
     LocalizationManager.shared.localizedMonthYear(for: date)
   }
