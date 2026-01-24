@@ -80,7 +80,7 @@ struct TimelineEntryRow: View {
     }
     
     private func lineSegment(position: LinePosition) -> some View {
-        let lineColor = Color.appPrimary.opacity(0.5)
+        let lineColor = Color.appPrimaryOpacity10
         
         return GeometryReader { geo in
             Rectangle()
@@ -92,10 +92,10 @@ struct TimelineEntryRow: View {
     
     private var timelineNode: some View {
         Circle()
-            .fill(Color.appPrimary)
+            .fill(Color.appPrimaryContainerFocus)
             .frame(width: 12, height: 12)
             .shadow(
-                color: Color.appPrimary.opacity(0.3),
+                color: Color.appPrimaryContainerFocus.opacity(0.3),
                 radius: 2,
                 y: 1
             )

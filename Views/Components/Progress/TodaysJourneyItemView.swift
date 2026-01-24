@@ -126,7 +126,7 @@ struct TodaysJourneyItemView: View {
 
   private func lineSegment(position: LinePosition) -> some View {
     let isPending = item.status == .pending
-    let lineColor = isPending ? Color.appOutline02 : Color.appPrimary.opacity(0.5)
+    let lineColor = isPending ? Color.appOutline02 : Color.appPrimaryOpacity10
     
     return GeometryReader { geo in
       if isPending {
@@ -150,7 +150,7 @@ struct TodaysJourneyItemView: View {
   private var timelineNode: some View {
     let isCompleted = item.status == .completed
     return Circle()
-      .fill(isCompleted ? Color.appPrimary : Color.white)
+      .fill(isCompleted ? Color.appPrimaryContainerFocus : Color.white)
       .frame(width: 12, height: 12)
       .overlay(
         Circle()
