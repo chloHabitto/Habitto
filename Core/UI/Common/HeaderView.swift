@@ -278,13 +278,7 @@ struct HeaderView: View {
   }
 
   private func pluralizeStreak(_ streak: Int) -> String {
-    if streak == 0 {
-      "0 day"
-    } else if streak == 1 {
-      "1 day"
-    } else {
-      "\(streak) days"
-    }
+    LocalizationManager.shared.localizedStreakDays(streak)
   }
   
   private func handleSignInWithApple() {

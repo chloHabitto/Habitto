@@ -113,7 +113,7 @@ struct SecureHabitDetailsView: View {
           HStack {
             Text("Current Streak")
             Spacer()
-            Text("\(habit.streak) days")
+            Text(LocalizationManager.shared.localizedStreakDays(habit.streak))
               .foregroundColor(.secondary)
           }
 

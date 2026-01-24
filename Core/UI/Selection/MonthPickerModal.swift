@@ -110,7 +110,7 @@ struct MonthPickerModal: View {
   }
 
   private func monthText(from date: Date) -> String {
-    AppDateFormatter.shared.formatMonthYear(date)
+    LocalizationManager.shared.localizedMonthYear(for: date)
   }
 }
 

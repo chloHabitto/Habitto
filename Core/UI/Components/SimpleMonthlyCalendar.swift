@@ -172,7 +172,7 @@ struct SimpleMonthlyCalendar: View {
   // MARK: - Helper Properties and Functions
 
   private var monthYearString: String {
-    AppDateFormatter.shared.formatMonthYear(currentMonth)
+    LocalizationManager.shared.localizedMonthYear(for: currentMonth)
   }
 
   private var calendarDays: [Date?] {

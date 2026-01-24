@@ -29,37 +29,20 @@ struct ExpandableCalendar: View {
   @State private var isExpanded = false
   @State private var currentWeekOffset = 0
   @State private var currentMonth = Date()
+  @EnvironmentObject var localizationManager: LocalizationManager
 
   private var weekdayNames: [String] {
-    let calendar = AppDateFormatter.shared.getUserCalendar()
-    if calendar.firstWeekday == 1 { // Sunday
-      return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    } else { // Monday
-      return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    }
+    localizationManager.localizedWeekdayArray(shortForm: true)
   }
 
   // MARK: - Helper Properties and Functions
 
   private var formattedCurrentDate: String {
-    let formatter = DateFormatter()
-    let dateFormat = DatePreferences.shared.dateFormat
-    
-    // Format without year, respecting user's date format preference
-    switch dateFormat {
-    case .dayMonthYear:
-      formatter.dateFormat = "E, d MMM" // Fri, 9 Aug
-    case .monthDayYear:
-      formatter.dateFormat = "E, MMM d" // Fri, Aug 9
-    case .yearMonthDay:
-      formatter.dateFormat = "MMM d, E" // Aug 9, Fri
-    }
-    
-    return formatter.string(from: selectedDate)
+    localizationManager.localizedShortDate(for: selectedDate)
   }
 
   private var monthYearString: String {
-    AppDateFormatter.shared.formatMonthYear(currentMonth)
+    localizationManager.localizedMonthYear(for: currentMonth)
   }
 
   private var calendarDays: [Date?] {
@@ -142,7 +125,7 @@ struct ExpandableCalendar: View {
               .resizable()
               .frame(width: 12, height: 12)
               .foregroundColor(.appText05)
-            Text("Today")
+            Text("date.today".localized)
               .font(.appLabelMedium)
               .foregroundColor(.appText05)
           }
