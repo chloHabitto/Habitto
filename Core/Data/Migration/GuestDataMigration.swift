@@ -120,27 +120,35 @@ final class GuestDataMigration: ObservableObject {
       // Step 4: Migrate backup files
       let step4Timestamp = Date()
       migrationStatus = "Migrating backups..."
-      migrationProgress = 0.7
+      migrationProgress = 0.65
       print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Migrating backup files...")
       try await migrateGuestBackups(to: currentUser.uid)
       print("✅ [MIGRATION] \(Date()) Step 4: Backup migration completed")
 
-      // Step 5: Save to cloud storage for cross-device sync
+      // Step 5: Migrate user profile data (birthday, etc.)
       let step5Timestamp = Date()
+      migrationStatus = "Migrating user profile..."
+      migrationProgress = 0.75
+      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Migrating user profile data...")
+      migrateGuestUserProfile(to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 5: User profile migration completed")
+
+      // Step 6: Save to cloud storage for cross-device sync
+      let step6Timestamp = Date()
       migrationStatus = "Syncing to cloud..."
       migrationProgress = 0.9
-      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Syncing to cloud...")
+      print("🔄 [MIGRATION] \(step6Timestamp) Step 6: Syncing to cloud...")
       try await syncMigratedDataToCloud(migratedHabits)
-      print("✅ [MIGRATION] \(Date()) Step 5: Cloud sync completed")
+      print("✅ [MIGRATION] \(Date()) Step 6: Cloud sync completed")
 
-      // Step 6: Mark migration as complete
-      let step6Timestamp = Date()
+      // Step 7: Mark migration as complete
+      let step7Timestamp = Date()
       migrationStatus = "Finalizing migration..."
       migrationProgress = 0.95
-      print("🔄 [MIGRATION] \(step6Timestamp) Step 6: Finalizing migration...")
+      print("🔄 [MIGRATION] \(step7Timestamp) Step 7: Finalizing migration...")
       let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
       userDefaults.set(true, forKey: migrationKey)
-      print("✅ [MIGRATION] \(Date()) Step 6: Migration marked as complete in UserDefaults")
+      print("✅ [MIGRATION] \(Date()) Step 7: Migration marked as complete in UserDefaults")
 
       // Step 7: Migration complete
       migrationStatus = "Migration complete!"
@@ -359,22 +367,30 @@ final class GuestDataMigration: ObservableObject {
       try await migrateGuestBackups(to: currentUser.uid)
       print("✅ [MIGRATION] \(Date()) Step 3: Backup migration completed")
 
-      // Step 4: Save to cloud storage for cross-device sync
+      // Step 4: Migrate user profile data (birthday, etc.)
       let step4Timestamp = Date()
+      migrationStatus = "Migrating user profile..."
+      migrationProgress = 0.75
+      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Migrating user profile data...")
+      migrateGuestUserProfile(to: currentUser.uid)
+      print("✅ [MIGRATION] \(Date()) Step 4: User profile migration completed")
+
+      // Step 5: Save to cloud storage for cross-device sync
+      let step5Timestamp = Date()
       migrationStatus = "Syncing to cloud..."
       migrationProgress = 0.9
-      print("🔄 [MIGRATION] \(step4Timestamp) Step 4: Syncing to cloud...")
+      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Syncing to cloud...")
       try await syncMigratedDataToCloud(migratedHabits)
-      print("✅ [MIGRATION] \(Date()) Step 4: Cloud sync completed")
+      print("✅ [MIGRATION] \(Date()) Step 5: Cloud sync completed")
 
-      // Step 5: Mark migration as complete
-      let step5Timestamp = Date()
+      // Step 6: Mark migration as complete
+      let step6Timestamp = Date()
       migrationStatus = "Finalizing..."
       migrationProgress = 1.0
-      print("🔄 [MIGRATION] \(step5Timestamp) Step 5: Finalizing...")
+      print("🔄 [MIGRATION] \(step6Timestamp) Step 6: Finalizing...")
       let migrationKey = "\(guestDataMigratedKey)_\(currentUser.uid)"
       userDefaults.set(true, forKey: migrationKey)
-      print("✅ [MIGRATION] \(Date()) Step 5: Migration marked as complete in UserDefaults")
+      print("✅ [MIGRATION] \(Date()) Step 6: Migration marked as complete in UserDefaults")
 
       migrationStatus = "Merge complete!"
       
@@ -659,6 +675,16 @@ final class GuestDataMigration: ObservableObject {
     userDefaults.set(userBackupCount + guestBackupCount, forKey: userBackupCountKey)
 
     print("✅ GuestDataMigration: Migrated guest backups to user \(userId)")
+  }
+
+  /// Migrate guest user profile data (birthday, etc.) to authenticated user
+  private func migrateGuestUserProfile(to userId: String) {
+    print("🎂 GuestDataMigration: Migrating guest user profile...")
+
+    // Migrate birthday if guest has one set
+    BirthdayManager.shared.migrateGuestBirthdayToUser()
+
+    print("✅ GuestDataMigration: Guest user profile migrated")
   }
 
   /// Delete all account data from both Firestore AND SwiftData for the given user
