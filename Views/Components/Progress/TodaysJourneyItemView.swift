@@ -35,7 +35,7 @@ struct TodaysJourneyItemView: View {
       spineColumn
       cardColumn
     }
-    .padding(.top, isFirst ? 16 : 0) // Only first item needs top padding; others connect via line above
+    .padding(.top, isFirst ? 12 : 0) // Only first item needs top padding; others connect via line above
     .opacity(hasAppeared ? 1 : 0)
     .offset(y: hasAppeared ? 0 : 20)
     .animation(
@@ -59,7 +59,7 @@ struct TodaysJourneyItemView: View {
       }
     }
     .frame(width: 45, alignment: .trailing)
-    .padding(.top, isFirst ? 0 : 16) // Align with dot position (line above is 16pt)
+    .padding(.top, isFirst ? 0 : 10) // Align with dot position (line above is 10pt)
   }
 
   private var timeLine1: String {
@@ -104,7 +104,7 @@ struct TodaysJourneyItemView: View {
       // Hidden for first item
       if !isFirst {
         lineSegment(position: .above)
-          .frame(height: 16) // Matches the row's top padding
+          .frame(height: 10) // Matches the row's top padding (reduced for tighter spacing)
       }
       
       // The dot
@@ -201,7 +201,7 @@ struct TodaysJourneyItemView: View {
     .padding(.top, 12)
     .padding(.leading, 12)
     .padding(.trailing, 12)
-    .padding(.bottom, 16)
+    .padding(.bottom, 12)
     .background(
       RoundedRectangle(cornerRadius: 16)
         .fill(Color.appSurface01Variant)
@@ -212,7 +212,7 @@ struct TodaysJourneyItemView: View {
         .stroke(Color.appOutline1Variant, lineWidth: 1)
     )
     .opacity(item.status == .completed ? 1 : 0.8)  // Both pending and inProgress get reduced opacity
-    .padding(.top, isFirst ? 0 : 16)
+    .padding(.top, isFirst ? 0 : 10)
   }
   
   @ViewBuilder
