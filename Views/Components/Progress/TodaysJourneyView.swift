@@ -136,9 +136,10 @@ struct TodaysJourneyView: View {
         .background(Color.appPrimaryContainer)
         .clipShape(Capsule())
     }
-    .padding(.horizontal, 16)
+    .padding(.leading, 16)
+    .padding(.trailing, 20)
     .padding(.top, 20)
-    .padding(.bottom, 16)
+    .padding(.bottom, 10)
   }
 
   // MARK: - Empty State
@@ -287,7 +288,7 @@ struct TodaysJourneyView: View {
       }
     }
     .padding(.horizontal, 12)
-    .padding(.bottom, 20)
+    .padding(.bottom, 12)
   }
 
   // MARK: - Data Loading
