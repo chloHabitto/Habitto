@@ -43,7 +43,7 @@ struct TodaysJourneyNowMarker: View {
         .foregroundColor(.appPrimary)
     }
     .frame(width: 45, alignment: .trailing)
-    .padding(.top, 16) // Align with dot (line above is 16pt)
+    .padding(.top, 10) // Align with dot (line above is 10pt)
   }
 
   // MARK: - Spine Column (24pt): pulsing dot + gradient line - fixed height approach
@@ -53,7 +53,7 @@ struct TodaysJourneyNowMarker: View {
       // Line ABOVE - solid primary, connects from previous completed item
       Rectangle()
         .fill(Color.appPrimaryOpacity10)
-        .frame(width: 3, height: 16)
+        .frame(width: 3, height: 10)
       
       // Pulsing dot
       nowDot
@@ -101,7 +101,7 @@ struct TodaysJourneyNowMarker: View {
         .background(Color.appPrimaryContainer)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
-    .padding(.top, 21) // Align with dot center
+    .padding(.top, 15) // Align with dot center: 10 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
   }
 }
 
