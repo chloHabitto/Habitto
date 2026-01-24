@@ -43,7 +43,7 @@ struct TodaysJourneyNowMarker: View {
         .foregroundColor(.appPrimary)
     }
     .frame(width: 45, alignment: .trailing)
-    .padding(.top, 10) // Align with dot (line above is 10pt)
+    .padding(.top, 6) // Align with dot (line above is 6pt)
   }
 
   // MARK: - Spine Column (24pt): pulsing dot + gradient line - fixed height approach
@@ -53,16 +53,16 @@ struct TodaysJourneyNowMarker: View {
       // Line ABOVE - solid primary, connects from previous completed item
       Rectangle()
         .fill(Color.appPrimaryOpacity10)
-        .frame(width: 3, height: 10)
+        .frame(width: 3, height: 6)
       
       // Pulsing dot
       nowDot
       
       // Line BELOW - gradient with FIXED height that extends past row
-      // Using fixed 100pt ensures it overlaps with pending item's line-above
+      // Using fixed 60pt ensures it overlaps with pending item's line-above
       Rectangle()
         .fill(Color.appPrimaryOpacity10)
-        .frame(width: 3, height: 100)
+        .frame(width: 3, height: 60)
     }
     .frame(width: 24, alignment: .top)
     // Note: Remove .frame(maxHeight: .infinity) - we don't need it anymore
@@ -101,7 +101,7 @@ struct TodaysJourneyNowMarker: View {
         .background(Color.appPrimaryContainer)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
-    .padding(.top, 15) // Align with dot center: 10 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
+    .padding(.top, 11) // Align with dot center: 6 (line above) + 6 (half of 12pt dot) - 1 (half of 2pt line)
   }
 }
 
