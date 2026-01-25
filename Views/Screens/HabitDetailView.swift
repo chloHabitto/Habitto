@@ -183,6 +183,24 @@ struct HabitDetailView: View {
       .presentationDetents([.height(520)])
       .presentationDragIndicator(.visible)
     }
+    .sheet(isPresented: $showingDifficultyEditSheet) {
+      HabitCompletionBottomSheet(
+        isPresented: $showingDifficultyEditSheet,
+        habit: habit,
+        completionDate: selectedDate,
+        onDismiss: {
+          if let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
+            habit = freshHabit
+          }
+        },
+        initialDifficulty: habit.getDifficulty(for: selectedDate)
+          .flatMap { HabitCompletionBottomSheet.HabitDifficulty(rawValue: $0) },
+        isEditMode: true
+      )
+      .presentationDetents([.height(500)])
+      .presentationDragIndicator(.hidden)
+      .presentationCornerRadius(40)
+    }
     .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
       Button("Cancel", role: .cancel) { }
       Button("Delete", role: .destructive) {
@@ -308,6 +326,7 @@ struct HabitDetailView: View {
   @State private var isCompletingHabit = false
   @State private var showingNotificationsSettings = false
   @State private var showingSkipSheet = false
+  @State private var showingDifficultyEditSheet = false
   @State private var isHabitSkipped = false
   @State private var currentSkipReason: SkipReason?
 
@@ -754,6 +773,12 @@ struct HabitDetailView: View {
       // Completion Ring Section
       completionRingSection
 
+      if habit.isCompleted(for: selectedDate) && !isHabitSkipped {
+        Divider()
+          .padding(.horizontal, 16)
+        difficultySection
+      }
+
       Divider()
         .padding(.horizontal, 16)
 
@@ -845,6 +870,101 @@ struct HabitDetailView: View {
     .frame(maxWidth: .infinity)
     .padding(.horizontal, 16)
     .padding(.vertical, 24)
+  }
+
+  // MARK: - Difficulty Section (for completed habits)
+
+  @ViewBuilder
+  private var difficultySection: some View {
+    let isCompleted = habit.isCompleted(for: selectedDate)
+    let existingDifficulty = habit.getDifficulty(for: selectedDate)
+
+    if isCompleted && !isHabitSkipped {
+      VStack(alignment: .leading, spacing: 12) {
+        HStack {
+          Text("Difficulty")
+            .font(.appTitleSmallEmphasised)
+            .foregroundColor(.text01)
+          Spacer()
+        }
+
+        Button(action: {
+          showingDifficultyEditSheet = true
+        }) {
+          HStack(spacing: 12) {
+            difficultyIcon(for: existingDifficulty)
+              .frame(width: 40, height: 40)
+
+            VStack(alignment: .leading, spacing: 2) {
+              if let difficulty = existingDifficulty,
+                 let level = HabitCompletionBottomSheet.HabitDifficulty(rawValue: difficulty) {
+                Text(level.displayName)
+                  .font(.appBodyMediumEmphasised)
+                  .foregroundColor(.text01)
+              } else {
+                Text("Not rated")
+                  .font(.appBodyMediumEmphasised)
+                  .foregroundColor(.text03)
+              }
+
+              Text(existingDifficulty != nil ? "Tap to change" : "Tap to rate")
+                .font(.appBodySmall)
+                .foregroundColor(.text05)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+              .font(.system(size: 14, weight: .medium))
+              .foregroundColor(.text05)
+          }
+          .padding(16)
+          .background(Color.surface2)
+          .cornerRadius(12)
+        }
+        .buttonStyle(PlainButtonStyle())
+      }
+      .padding(.horizontal, 16)
+      .padding(.vertical, 12)
+    }
+  }
+
+  @ViewBuilder
+  private func difficultyIcon(for difficulty: Int?) -> some View {
+    let level = difficulty.flatMap { HabitCompletionBottomSheet.HabitDifficulty(rawValue: $0) }
+
+    Group {
+      switch level {
+      case .veryEasy:
+        Image("Difficulty-VeryEasy@4x")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+      case .easy:
+        Image("Difficulty-Easy@4x")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+      case .medium:
+        Image("Difficulty-Medium@4x")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+      case .hard:
+        Image("Difficulty-Hard@4x")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+      case .veryHard:
+        Image("Difficulty-VeryHard@4x")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+      case .none:
+        Circle()
+          .fill(Color.surface3)
+          .overlay(
+            Text("?")
+              .font(.appTitleMedium)
+              .foregroundColor(.text05)
+          )
+      }
+    }
   }
   
   // MARK: - Quick Stats Section

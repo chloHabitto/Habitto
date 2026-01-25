@@ -9,7 +9,25 @@ struct HabitCompletionBottomSheet: View {
   let completionDate: Date
   @State private var selectedDifficulty: HabitDifficulty?
   let onDismiss: (() -> Void)?
+  let initialDifficulty: HabitDifficulty?
+  let isEditMode: Bool
   @Environment(\.colorScheme) var colorScheme
+
+  init(
+    isPresented: Binding<Bool>,
+    habit: Habit,
+    completionDate: Date,
+    onDismiss: (() -> Void)?,
+    initialDifficulty: HabitDifficulty? = nil,
+    isEditMode: Bool = false
+  ) {
+    self._isPresented = isPresented
+    self.habit = habit
+    self.completionDate = completionDate
+    self.onDismiss = onDismiss
+    self.initialDifficulty = initialDifficulty
+    self.isEditMode = isEditMode
+  }
 
   enum HabitDifficulty: Int, CaseIterable {
     case veryEasy = 1
@@ -56,8 +74,8 @@ struct HabitCompletionBottomSheet: View {
       actionButtons
     }
     .onAppear {
-      // Set default difficulty to very easy
-      selectedDifficulty = .veryEasy
+      // Use initial difficulty if editing, otherwise default to very easy
+      selectedDifficulty = initialDifficulty ?? .veryEasy
 
       // Haptic feedback for completion celebration
       let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -93,13 +111,13 @@ struct HabitCompletionBottomSheet: View {
       .padding(.top, 8)
 
       // Title
-      Text("Good job!")
+      Text(isEditMode ? "Edit Difficulty" : "Good job!")
         .font(Font.appHeadlineSmallEmphasised)
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .center)
 
       // Difficulty question
-      Text("How difficult was this habit today?")
+      Text(isEditMode ? "Change how difficult this felt" : "How difficult was this habit today?")
         .font(Font.appBodyMediumEmphasised)
         .foregroundColor(.text05)
         .frame(maxWidth: .infinity, alignment: .center)

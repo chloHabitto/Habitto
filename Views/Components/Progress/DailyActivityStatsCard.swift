@@ -88,7 +88,7 @@ struct DailyActivityStatsCard: View {
                 HStack(spacing: 4) {
                     Text("🔥")
                         .font(.system(size: 12))
-                    Text("\(streak) day streak")
+                    Text(String(format: "progress.journey.dayStreak".localized, streak))
                         .font(.appLabelSmall)
                         .foregroundColor(.appText03)
                 }
@@ -104,7 +104,7 @@ struct DailyActivityStatsCard: View {
         HStack(spacing: 0) {
             // Progress
             statColumn(
-                title: "Progress",
+                title: "progress.title".localized,
                 value: "\(currentProgress)/\(goalAmount)"
             )
             
@@ -114,7 +114,7 @@ struct DailyActivityStatsCard: View {
             
             // Sessions
             statColumn(
-                title: "Sessions",
+                title: "progress.journey.sessions".localized,
                 value: "\(entries.count)"
             )
             
@@ -124,7 +124,7 @@ struct DailyActivityStatsCard: View {
             
             // Avg. Effort
             statColumn(
-                title: "Avg. Effort",
+                title: "progress.journey.avgEffort".localized,
                 value: averageDifficulty
             )
         }
