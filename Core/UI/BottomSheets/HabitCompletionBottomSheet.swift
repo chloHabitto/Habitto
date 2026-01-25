@@ -10,6 +10,7 @@ struct HabitCompletionBottomSheet: View {
   @State private var selectedDifficulty: HabitDifficulty?
   @State private var hasChangedDifficulty = false
   let onDismiss: (() -> Void)?
+  let onSave: ((Int) -> Void)?
   let initialDifficulty: HabitDifficulty?
   let isEditMode: Bool
   @Environment(\.colorScheme) var colorScheme
@@ -19,6 +20,7 @@ struct HabitCompletionBottomSheet: View {
     habit: Habit,
     completionDate: Date,
     onDismiss: (() -> Void)?,
+    onSave: ((Int) -> Void)? = nil,
     initialDifficulty: HabitDifficulty? = nil,
     isEditMode: Bool = false
   ) {
@@ -26,6 +28,7 @@ struct HabitCompletionBottomSheet: View {
     self.habit = habit
     self.completionDate = completionDate
     self.onDismiss = onDismiss
+    self.onSave = onSave
     self.initialDifficulty = initialDifficulty
     self.isEditMode = isEditMode
   }
@@ -327,6 +330,7 @@ struct HabitCompletionBottomSheet: View {
       Button(action: {
         if let difficulty = selectedDifficulty {
           saveDifficultyRating(difficulty)
+          onSave?(difficulty.rawValue)
         }
         isPresented = false
         onDismiss?()
@@ -562,6 +566,7 @@ extension View {
       startDate: Date(),
       endDate: nil),
     completionDate: Date(),
-    onDismiss: { })
+    onDismiss: { },
+    onSave: nil)
     .background(.surface2)
 }

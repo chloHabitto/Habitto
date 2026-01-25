@@ -587,8 +587,6 @@
 /* ==================== */
 
 "create.title" = "습관 만들기";
-"create.step1" = "1단계";
-"create.step2" = "2단계";
 "create.button.next" = "다음";
 "create.button.back" = "뒤로";
 "create.button.create" = "만들기";
@@ -629,7 +627,7 @@
 "create.iconPicker.description" = "습관 아이콘을 선택하세요";
 "create.iconPicker.tapEmoji" = "탭하여 이모지 입력";
 "create.iconPicker.selectEmoji" = "습관용 이모지를 선택하세요";
-"create.iconPicker.none" = "없음";
+"create.iconPicker.none" = "선택 안됨";
 
 "create.colorPicker.title" = "색상";
 "create.colorPicker.description" = "습관 색상을 설정하세요";
@@ -645,6 +643,11 @@
 "create.schedule.selectDays" = "요일 선택";
 "create.schedule.onThoseDays" = "선택한 요일";
 "create.schedule.notSelected" = "미선택";
+"create.schedule.everyday" = "매일";
+"create.schedule.everyXDays" = "%d일마다";
+"create.schedule.daysPerWeek" = "주 %d일";
+"create.schedule.daysPerMonth" = "월 %d일";
+"create.schedule.onSpecificDays" = "특정 요일";
 "create.schedule.onceAWeek" = "주 1회";
 "create.schedule.twiceAWeek" = "주 2회";
 "create.schedule.daysAWeek" = "주 %d회";
@@ -670,7 +673,7 @@
 "create.period.title" = "습관 기간의 날짜를 선택하세요";
 "create.period.noEndDate" = "종료일 없음";
 
-"create.goal.description" = "어떤 목표를 이루고 싶나요?";
+"create.goal.description" = "얼마나 자주, 얼마나 할지 설정하세요";
 "create.goal.currentDescription" = "현재 얼마나 하고 있나요?";
 "create.goal.reduceDescription" = "얼마나 줄이고 싶나요?";
 

@@ -587,8 +587,6 @@
 /* ==================== */
 
 "create.title" = "Create Habit";
-"create.step1" = "Step 1";
-"create.step2" = "Step 2";
 "create.button.next" = "Next";
 "create.button.back" = "Back";
 "create.button.create" = "Create";
@@ -645,6 +643,11 @@
 "create.schedule.selectDays" = "Select days";
 "create.schedule.onThoseDays" = "On those days";
 "create.schedule.notSelected" = "Not Selected";
+"create.schedule.everyday" = "Every day";
+"create.schedule.everyXDays" = "Every %d days";
+"create.schedule.daysPerWeek" = "%d days per week";
+"create.schedule.daysPerMonth" = "%d days per month";
+"create.schedule.onSpecificDays" = "On specific days";
 "create.schedule.onceAWeek" = "once a week";
 "create.schedule.twiceAWeek" = "twice a week";
 "create.schedule.daysAWeek" = "%d days a week";
@@ -670,7 +673,7 @@
 "create.period.title" = "Select a date for your habit period";
 "create.period.noEndDate" = "No end date";
 
-"create.goal.description" = "What do you want to achieve?";
+"create.goal.description" = "Set how often and how much you want to do";
 "create.goal.currentDescription" = "How much do you currently do?";
 "create.goal.reduceDescription" = "How much do you want to reduce to?";
 
