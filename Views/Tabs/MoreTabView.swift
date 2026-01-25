@@ -298,14 +298,15 @@ struct MoreTabView: View {
             action: {
               showingVacationMode = true
             }),
-          SettingItem(
-            icon: "Icon-Language_Filled",
-            title: "more.language".localized,
-            value: getNativeLanguageName(),
-            hasChevron: true,
-            action: {
-              showingLanguageView = true
-            }),
+          // TODO: Language setting - hidden for now, will continue on it later
+          // SettingItem(
+          //   icon: "Icon-Language_Filled",
+          //   title: "more.language".localized,
+          //   value: getNativeLanguageName(),
+          //   hasChevron: true,
+          //   action: {
+          //     showingLanguageView = true
+          //   }),
           SettingItem(
             icon: "Icon-Theme_Filled",
             title: "more.appearance".localized,
@@ -405,19 +406,27 @@ struct MoreTabView: View {
       }
       #endif
       
-      // Version Information
+      // Instagram Link
       VStack(spacing: 0) {
         Spacer()
 
-        Text("Habitto v1")
-          .font(.system(size: 12, weight: .regular))
-          .foregroundColor(.text04)
-          .padding(.bottom, 20)
-          .onTapGesture(count: 5) {
-            #if DEBUG
-            showDebugTools.toggle()
-            #endif
-          }
+        Button(action: {
+          openInstagram()
+        }) {
+          Image("Icon-instagram_outlined")
+            .resizable()
+            .renderingMode(.template)
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 16, height: 16)
+            .foregroundColor(.text04)
+            .frame(width: 32, height: 32)
+        }
+        .padding(.bottom, 20)
+      }
+      .onTapGesture(count: 5) {
+        #if DEBUG
+        showDebugTools.toggle()
+        #endif
       }
     }
   }
@@ -843,6 +852,24 @@ struct MoreTabView: View {
         print("✅ MoreTabView: Opened Apple's standard Terms of Use")
       } else {
         print("❌ MoreTabView: Failed to open Terms of Use URL")
+      }
+    }
+  }
+  
+  /// Open Instagram profile in Safari
+  private func openInstagram() {
+    let instagramURL = "https://www.instagram.com/habitto_official/?hl=en"
+    
+    guard let url = URL(string: instagramURL) else {
+      print("❌ MoreTabView: Failed to create Instagram URL")
+      return
+    }
+    
+    UIApplication.shared.open(url) { success in
+      if success {
+        print("✅ MoreTabView: Opened Instagram profile")
+      } else {
+        print("❌ MoreTabView: Failed to open Instagram URL")
       }
     }
   }
