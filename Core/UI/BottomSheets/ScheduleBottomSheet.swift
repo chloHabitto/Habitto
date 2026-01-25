@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ScheduleBottomSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Lifecycle
 
   init(
@@ -21,35 +23,35 @@ struct ScheduleBottomSheet: View {
 
   var body: some View {
     BaseBottomSheet(
-      title: "Schedule",
-      description: "Set which day(s) you'd like to do this habit",
+      title: "create.schedule.title".localized,
+      description: "create.schedule.description".localized,
       onClose: onClose,
       useSimpleCloseButton: true,
       confirmButton: {
         onScheduleSelected(selectedScheduleText)
         onClose()
       },
-      confirmButtonTitle: "Confirm")
+      confirmButtonTitle: "create.button.confirm".localized)
     {
       VStack(spacing: 0) {
         // Tab Menu
         TabMenu(
           selectedTab: $selectedTab,
-          tabs: ["Interval", "Frequency"])
+          tabs: ["create.schedule.interval".localized, "create.schedule.frequency".localized])
 
         // Content based on selected tab
         if selectedTab == 0 {
           VStack(spacing: 0) {
             // 1. VStack: Text and Pill
             VStack(alignment: .leading, spacing: 12) {
-              Text("I want to repeat this habit")
+              Text("create.schedule.repeatHint".localized)
                 .titleMediumFont()
                 .foregroundColor(.text01)
 
               HStack {
                 if selectedSchedule == "Weekly" {
                   if pillTexts.isEmpty {
-                    Text("Select days")
+                    Text("create.schedule.selectDays".localized)
                       .appBodyLargeFont()
                       .foregroundColor(.onPrimary)
                       .padding(.horizontal, 16)
@@ -95,9 +97,9 @@ struct ScheduleBottomSheet: View {
 
             // 3. Segmented Picker
             VStack(spacing: 12) {
-              Picker("Frequency", selection: $selectedSchedule) {
-                Text("Daily").tag("Daily")
-                Text("Weekly").tag("Weekly")
+              Picker("create.schedule.frequency".localized, selection: $selectedSchedule) {
+                Text("habits.frequency.daily".localized).tag("Daily")
+                Text("habits.frequency.weekly".localized).tag("Weekly")
               }
               .pickerStyle(SegmentedPickerStyle())
             }
@@ -109,7 +111,7 @@ struct ScheduleBottomSheet: View {
                 Spacer()
                   .frame(height: 16)
 
-                Text("On those days")
+                Text("create.schedule.onThoseDays".localized)
                   .titleSmallFont()
                   .foregroundColor(.text05)
 
@@ -167,7 +169,7 @@ struct ScheduleBottomSheet: View {
           VStack(spacing: 0) {
             // 1. VStack: Text and Pill
             VStack(alignment: .leading, spacing: 12) {
-              Text("I want to repeat this habit")
+              Text("create.schedule.repeatHint".localized)
                 .titleMediumFont()
                 .foregroundColor(.text01)
 
@@ -204,9 +206,9 @@ struct ScheduleBottomSheet: View {
 
             // 3. Segmented Picker
             VStack(spacing: 12) {
-              Picker("Frequency", selection: $selectedFrequency) {
-                Text("Weekly").tag("Weekly")
-                Text("Monthly").tag("Monthly")
+              Picker("create.schedule.frequency".localized, selection: $selectedFrequency) {
+                Text("habits.frequency.weekly".localized).tag("Weekly")
+                Text("habits.frequency.monthly".localized).tag("Monthly")
               }
               .pickerStyle(SegmentedPickerStyle())
             }

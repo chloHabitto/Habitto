@@ -1,14 +1,16 @@
 import SwiftUI
 
 struct IconBottomSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   @Binding var selectedIcon: String
 
   let onClose: () -> Void
 
   var body: some View {
     BaseBottomSheet(
-      title: "Select Icon",
-      description: "Choose an icon for your habit",
+      title: "create.iconPicker.title".localized,
+      description: "create.iconPicker.description".localized,
       onClose: onClose,
       useGlassCloseButton: true)
     {

@@ -581,3 +581,101 @@
 "progress.difficulty.message.medium" = "잘하고 있어요! 👍";
 "progress.difficulty.message.hard" = "조금만 더 힘내요! 🔥";
 "progress.difficulty.message.veryHard" = "점점 강해지고 있어요! 💎";
+
+/* ==================== */
+/* CREATE HABIT         */
+/* ==================== */
+
+"create.title" = "습관 만들기";
+"create.step1" = "1단계";
+"create.step2" = "2단계";
+"create.button.next" = "다음";
+"create.button.back" = "뒤로";
+"create.button.create" = "만들기";
+"create.button.continue" = "계속";
+"create.button.cancel" = "취소";
+"create.button.save" = "저장";
+"create.button.done" = "완료";
+"create.button.confirm" = "확인";
+"create.button.select" = "선택";
+"create.button.close" = "닫기";
+"create.button.edit" = "수정";
+"create.button.add" = "추가";
+"create.button.reset" = "초기화";
+
+"create.label.name" = "이름";
+"create.label.description" = "설명";
+"create.label.icon" = "아이콘";
+"create.label.color" = "색상";
+"create.label.reminder" = "알림";
+"create.label.startDate" = "시작일";
+"create.label.endDate" = "종료일";
+"create.label.period" = "기간";
+"create.label.goal" = "목표";
+"create.label.current" = "현재";
+"create.label.habitType" = "습관 유형";
+
+"create.placeholder.name" = "습관 이름";
+"create.placeholder.description" = "설명 (선택)";
+"create.placeholder.customUnit" = "예: 페이지, 챕터, 세트";
+
+"create.validation.enterName" = "습관 이름을 입력하세요";
+"create.validation.duplicateName" = "같은 이름의 습관이 이미 있습니다";
+"create.validation.enterNumber" = "0보다 큰 숫자를 입력하세요";
+"create.validation.enterNumberOrZero" = "0 이상의 숫자를 입력하세요";
+"create.validation.maxChars" = "최대 %d자까지 입력 가능";
+
+"create.iconPicker.title" = "아이콘 선택";
+"create.iconPicker.description" = "습관 아이콘을 선택하세요";
+"create.iconPicker.tapEmoji" = "탭하여 이모지 입력";
+"create.iconPicker.selectEmoji" = "습관용 이모지를 선택하세요";
+"create.iconPicker.none" = "없음";
+
+"create.colorPicker.title" = "색상";
+"create.colorPicker.description" = "습관 색상을 설정하세요";
+"create.color.yellow" = "노랑";
+"create.color.blue" = "파랑";
+"create.color.purple" = "보라";
+
+"create.schedule.title" = "일정";
+"create.schedule.description" = "이 습관을 할 요일을 선택하세요";
+"create.schedule.interval" = "간격";
+"create.schedule.frequency" = "빈도";
+"create.schedule.repeatHint" = "이 습관을 반복하고 싶어요";
+"create.schedule.selectDays" = "요일 선택";
+"create.schedule.onThoseDays" = "선택한 요일";
+"create.schedule.notSelected" = "미선택";
+"create.schedule.onceAWeek" = "주 1회";
+"create.schedule.twiceAWeek" = "주 2회";
+"create.schedule.daysAWeek" = "주 %d회";
+"create.schedule.onceAMonth" = "월 1회";
+"create.schedule.twiceAMonth" = "월 2회";
+"create.schedule.daysAMonth" = "월 %d회";
+
+"create.reminder.title" = "알림";
+"create.reminder.description" = "이 습관 알림을 받을 시간을 선택하세요";
+"create.reminder.addReminder" = "알림 추가";
+"create.reminder.noReminder" = "알림 없음";
+"create.reminder.selectTime" = "시간 선택";
+"create.reminder.time" = "시간";
+"create.reminder.reminderCount" = "알림 %d개";
+"create.reminder.remindersCount" = "알림 %d개";
+
+"create.unit.title" = "단위 선택";
+"create.unit.description" = "목표 단위를 선택하세요";
+"create.unit.enterCustom" = "맞춤 단위 이름 입력";
+"create.unit.addCustom" = "맞춤 단위 추가";
+"create.unit.custom" = "맞춤";
+
+"create.period.title" = "습관 기간의 날짜를 선택하세요";
+"create.period.noEndDate" = "종료일 없음";
+
+"create.goal.description" = "어떤 목표를 이루고 싶나요?";
+"create.goal.currentDescription" = "현재 얼마나 하고 있나요?";
+"create.goal.reduceDescription" = "얼마나 줄이고 싶나요?";
+
+"create.vacation.title" = "휴가 모드";
+"create.vacation.message" = "휴가 모드 중에는 습관을 만들 수 없습니다. 휴가 모드를 끝내면 새 습관을 만들 수 있어요.";
+
+"create.periodSection.notSelected" = "미선택";
+"create.periodSection.today" = "오늘";

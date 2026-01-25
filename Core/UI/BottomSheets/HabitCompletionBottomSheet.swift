@@ -8,6 +8,7 @@ struct HabitCompletionBottomSheet: View {
   let habit: Habit
   let completionDate: Date
   @State private var selectedDifficulty: HabitDifficulty?
+  @State private var hasChangedDifficulty = false
   let onDismiss: (() -> Void)?
   let initialDifficulty: HabitDifficulty?
   let isEditMode: Bool
@@ -76,6 +77,7 @@ struct HabitCompletionBottomSheet: View {
     .onAppear {
       // Use initial difficulty if editing, otherwise default to very easy
       selectedDifficulty = initialDifficulty ?? .veryEasy
+      hasChangedDifficulty = false
 
       // Haptic feedback for completion celebration
       let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -260,17 +262,18 @@ struct HabitCompletionBottomSheet: View {
               return 1.0 // Default to very easy
             },
             set: { value in
-              // Convert slider value to difficulty
               let difficultyValue = Int(round(value))
               let newDifficulty = HabitDifficulty(rawValue: difficultyValue) ?? .veryEasy
 
-              // Only trigger haptic if difficulty actually changed
               if selectedDifficulty != newDifficulty {
                 withAnimation(.easeInOut(duration: 0.25)) {
                   selectedDifficulty = newDifficulty
                 }
 
-                // Haptic feedback for slider movement
+                if isEditMode {
+                  hasChangedDifficulty = (newDifficulty != initialDifficulty)
+                }
+
                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                 impactFeedback.impactOccurred()
               }
@@ -297,14 +300,21 @@ struct HabitCompletionBottomSheet: View {
 
   // MARK: - Action Buttons
 
+  private var saveButtonEnabled: Bool {
+    if isEditMode {
+      return hasChangedDifficulty && selectedDifficulty != nil
+    } else {
+      return selectedDifficulty != nil
+    }
+  }
+
   private var actionButtons: some View {
     HStack(spacing: 16) {
-      // Skip button
       Button(action: {
         isPresented = false
         onDismiss?()
       }) {
-        Text("Skip")
+        Text(isEditMode ? "Cancel" : "Skip")
           .font(Font.appButtonText1)
           .foregroundColor(.text04)
           .frame(maxWidth: .infinity)
@@ -314,25 +324,23 @@ struct HabitCompletionBottomSheet: View {
       }
       .buttonStyle(PlainButtonStyle())
 
-      // Submit button
       Button(action: {
-        // Save difficulty rating to habit data
         if let difficulty = selectedDifficulty {
           saveDifficultyRating(difficulty)
         }
         isPresented = false
         onDismiss?()
       }) {
-        Text("Submit")
+        Text(isEditMode ? "Save" : "Submit")
           .font(Font.appButtonText1)
           .foregroundColor(.onPrimary)
           .frame(maxWidth: .infinity)
           .padding(.vertical, 16)
-          .background(selectedDifficulty != nil ? .primary : .disabledBackground)
+          .background(saveButtonEnabled ? .primary : .disabledBackground)
           .cornerRadius(30)
       }
       .buttonStyle(PlainButtonStyle())
-      .disabled(false)
+      .disabled(!saveButtonEnabled)
     }
   }
 

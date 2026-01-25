@@ -581,3 +581,101 @@
 "progress.difficulty.message.medium" = "You're doing well! 👍";
 "progress.difficulty.message.hard" = "Keep pushing through! 🔥";
 "progress.difficulty.message.veryHard" = "You're building strength! 💎";
+
+/* ==================== */
+/* CREATE HABIT         */
+/* ==================== */
+
+"create.title" = "Create Habit";
+"create.step1" = "Step 1";
+"create.step2" = "Step 2";
+"create.button.next" = "Next";
+"create.button.back" = "Back";
+"create.button.create" = "Create";
+"create.button.continue" = "Continue";
+"create.button.cancel" = "Cancel";
+"create.button.save" = "Save";
+"create.button.done" = "Done";
+"create.button.confirm" = "Confirm";
+"create.button.select" = "Select";
+"create.button.close" = "Close";
+"create.button.edit" = "Edit";
+"create.button.add" = "Add";
+"create.button.reset" = "Reset";
+
+"create.label.name" = "Name";
+"create.label.description" = "Description";
+"create.label.icon" = "Icon";
+"create.label.color" = "Colour";
+"create.label.reminder" = "Reminder";
+"create.label.startDate" = "Start Date";
+"create.label.endDate" = "End Date";
+"create.label.period" = "Period";
+"create.label.goal" = "Goal";
+"create.label.current" = "Current";
+"create.label.habitType" = "Habit Type";
+
+"create.placeholder.name" = "Habit name";
+"create.placeholder.description" = "Description (Optional)";
+"create.placeholder.customUnit" = "e.g., pages, chapters, sets";
+
+"create.validation.enterName" = "Please enter a habit name";
+"create.validation.duplicateName" = "A habit with this name already exists";
+"create.validation.enterNumber" = "Please enter a number greater than 0";
+"create.validation.enterNumberOrZero" = "Please enter a number greater than or equal to 0";
+"create.validation.maxChars" = "Maximum %d characters reached";
+
+"create.iconPicker.title" = "Choose Icon";
+"create.iconPicker.description" = "Choose an icon for your habit";
+"create.iconPicker.tapEmoji" = "Tap to enter an emoji";
+"create.iconPicker.selectEmoji" = "Select an emoji for your habit";
+"create.iconPicker.none" = "None";
+
+"create.colorPicker.title" = "Colour";
+"create.colorPicker.description" = "Set a colour for your habit";
+"create.color.yellow" = "Yellow";
+"create.color.blue" = "Blue";
+"create.color.purple" = "Purple";
+
+"create.schedule.title" = "Schedule";
+"create.schedule.description" = "Set which day(s) you'd like to do this habit";
+"create.schedule.interval" = "Interval";
+"create.schedule.frequency" = "Frequency";
+"create.schedule.repeatHint" = "I want to repeat this habit";
+"create.schedule.selectDays" = "Select days";
+"create.schedule.onThoseDays" = "On those days";
+"create.schedule.notSelected" = "Not Selected";
+"create.schedule.onceAWeek" = "once a week";
+"create.schedule.twiceAWeek" = "twice a week";
+"create.schedule.daysAWeek" = "%d days a week";
+"create.schedule.onceAMonth" = "once a month";
+"create.schedule.twiceAMonth" = "twice a month";
+"create.schedule.daysAMonth" = "%d days a month";
+
+"create.reminder.title" = "Reminder";
+"create.reminder.description" = "Choose when you want to be reminded about this habit";
+"create.reminder.addReminder" = "Add a reminder";
+"create.reminder.noReminder" = "No reminder";
+"create.reminder.selectTime" = "Select Time";
+"create.reminder.time" = "Time";
+"create.reminder.reminderCount" = "%d reminder";
+"create.reminder.remindersCount" = "%d reminders";
+
+"create.unit.title" = "Select Unit";
+"create.unit.description" = "Choose a unit for your goal";
+"create.unit.enterCustom" = "Enter custom unit name";
+"create.unit.addCustom" = "Add Custom Unit";
+"create.unit.custom" = "Custom";
+
+"create.period.title" = "Select a date for your habit period";
+"create.period.noEndDate" = "No end date";
+
+"create.goal.description" = "What do you want to achieve?";
+"create.goal.currentDescription" = "How much do you currently do?";
+"create.goal.reduceDescription" = "How much do you want to reduce to?";
+
+"create.vacation.title" = "Vacation Mode Active";
+"create.vacation.message" = "Habit creation is paused during vacation mode. You can create new habits when vacation mode ends.";
+
+"create.periodSection.notSelected" = "Not Selected";
+"create.periodSection.today" = "Today";

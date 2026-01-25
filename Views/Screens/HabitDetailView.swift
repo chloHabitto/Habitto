@@ -39,7 +39,8 @@ struct HabitDetailView: View {
         }
         
         todayProgress = habit.getProgress(for: selectedDate)
-        
+        displayedDifficulty = habit.getDifficulty(for: selectedDate)
+
         // Always recalculate active state based on current habit's dates
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
@@ -137,6 +138,7 @@ struct HabitDetailView: View {
           habit = freshHabit
         }
         todayProgress = habit.getProgress(for: selectedDate)
+        displayedDifficulty = habit.getDifficulty(for: selectedDate)
         isHabitSkipped = habit.isSkipped(for: selectedDate)
         currentSkipReason = habit.getSkipReason(for: selectedDate) // NEW
       }
@@ -191,6 +193,7 @@ struct HabitDetailView: View {
         onDismiss: {
           if let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
             habit = freshHabit
+            displayedDifficulty = freshHabit.getDifficulty(for: selectedDate)
           }
         },
         initialDifficulty: habit.getDifficulty(for: selectedDate)
@@ -327,6 +330,7 @@ struct HabitDetailView: View {
   @State private var showingNotificationsSettings = false
   @State private var showingSkipSheet = false
   @State private var showingDifficultyEditSheet = false
+  @State private var displayedDifficulty: Int?
   @State private var isHabitSkipped = false
   @State private var currentSkipReason: SkipReason?
 
@@ -877,7 +881,7 @@ struct HabitDetailView: View {
   @ViewBuilder
   private var difficultySection: some View {
     let isCompleted = habit.isCompleted(for: selectedDate)
-    let existingDifficulty = habit.getDifficulty(for: selectedDate)
+    let existingDifficulty = displayedDifficulty
 
     if isCompleted && !isHabitSkipped {
       VStack(alignment: .leading, spacing: 12) {
@@ -936,23 +940,23 @@ struct HabitDetailView: View {
     Group {
       switch level {
       case .veryEasy:
-        Image("Difficulty-VeryEasy@4x")
+        Image("Image-VeryEasy")
           .resizable()
           .aspectRatio(contentMode: .fit)
       case .easy:
-        Image("Difficulty-Easy@4x")
+        Image("Image-Easy")
           .resizable()
           .aspectRatio(contentMode: .fit)
       case .medium:
-        Image("Difficulty-Medium@4x")
+        Image("Image-Medium")
           .resizable()
           .aspectRatio(contentMode: .fit)
       case .hard:
-        Image("Difficulty-Hard@4x")
+        Image("Image-Hard")
           .resizable()
           .aspectRatio(contentMode: .fit)
       case .veryHard:
-        Image("Difficulty-VeryHard@4x")
+        Image("Image-VeryHard")
           .resizable()
           .aspectRatio(contentMode: .fit)
       case .none:

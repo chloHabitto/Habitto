@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 struct CreateHabitStep2View: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Internal
 
   @Binding var name: String
@@ -50,9 +52,11 @@ struct CreateHabitStep2View: View {
             reminders = updatedReminders
             let activeReminders = updatedReminders.filter { $0.isActive }
             if !activeReminders.isEmpty {
-              reminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
+              reminder = activeReminders.count == 1
+              ? String(format: "create.reminder.reminderCount".localized, activeReminders.count)
+              : String(format: "create.reminder.remindersCount".localized, activeReminders.count)
             } else {
-              reminder = "No reminder"
+              reminder = "create.reminder.noReminder".localized
             }
             showingReminderSheet = false
 
@@ -494,7 +498,7 @@ struct CreateHabitStep2View: View {
       .toolbar {
         ToolbarItemGroup(placement: .keyboard) {
           Spacer()
-          Button("Done") {
+          Button("create.button.done".localized) {
             // Dismiss all focused fields
             isGoalNumberFocused = false
             isBaselineFieldFocused = false

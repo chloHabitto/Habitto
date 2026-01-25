@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CreateHabitFlowView: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Lifecycle
 
   init(onSave: @escaping (Habit) -> Void, habitToEdit: Habit? = nil) {
@@ -34,12 +36,11 @@ struct CreateHabitFlowView: View {
             }
 
           VStack(spacing: 12) {
-            Text("Vacation Mode Active")
+            Text("create.vacation.title".localized)
               .font(.appTitleMediumEmphasised)
               .foregroundColor(.text01)
 
-            Text(
-              "Habit creation is paused during vacation mode. You can create new habits when vacation mode ends.")
+            Text("create.vacation.message".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text02)
               .multilineTextAlignment(.center)
@@ -56,7 +57,7 @@ struct CreateHabitFlowView: View {
             HStack(spacing: 8) {
               Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 16, weight: .medium))
-              Text("Close")
+              Text("create.button.close".localized)
                 .font(.appBodyMediumEmphasised)
             }
             .foregroundColor(.white)
@@ -122,6 +123,9 @@ struct CreateHabitFlowView: View {
     }
     .onAppear {
       HabitRepository.shared.pauseSyncMonitoring()
+      if habitToEdit == nil {
+        reminder = "create.reminder.noReminder".localized
+      }
       // Initialize values if editing
       if let habit = habitToEdit {
         name = habit.name
@@ -134,7 +138,7 @@ struct CreateHabitFlowView: View {
         // Note: This is a simplified initialization - you may need to parse the habit's
         // goal/schedule
         // to populate the individual fields (goalNumber, goalUnit, goalFrequency, etc.)
-        reminder = habit.reminder.isEmpty ? "No reminder" : habit.reminder
+        reminder = habit.reminder.isEmpty ? "create.reminder.noReminder".localized : habit.reminder
         startDate = habit.startDate
         endDate = habit.endDate
 

@@ -15,6 +15,8 @@ import SwiftUI
 /// 10. Ultra-minimal initial view for instant keyboard response
 /// 11. Lazy loading and background processing to eliminate UI hangs
 struct CreateHabitStep1View: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Internal
 
   @Binding var name: String
@@ -38,10 +40,10 @@ struct CreateHabitStep1View: View {
         VStack(spacing: 12) {
           // Name field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
-            FormInputComponents.FormSectionHeader(title: "Name")
+            FormInputComponents.FormSectionHeader(title: "create.label.name".localized)
             
             LimitedTextField(
-              placeholder: "Habit name",
+              placeholder: "create.placeholder.name".localized,
               text: $name,
               isFocused: $isNameFieldFocused,
               maxLength: 50,
@@ -56,7 +58,7 @@ struct CreateHabitStep1View: View {
                   let isDuplicate = existingHabits.contains {
                     $0.name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == trimmedName.lowercased()
                   }
-                  duplicateError = isDuplicate ? "A habit with this name already exists" : nil
+                  duplicateError = isDuplicate ? "create.validation.duplicateName".localized : nil
                 } else {
                   duplicateError = nil
                 }
@@ -90,10 +92,10 @@ struct CreateHabitStep1View: View {
 
           // Description field - container with surface background and stroke
           VStack(alignment: .leading, spacing: 12) {
-            FormInputComponents.FormSectionHeader(title: "Description")
+            FormInputComponents.FormSectionHeader(title: "create.label.description".localized)
             
             LimitedTextField(
-              placeholder: "Description (Optional)",
+              placeholder: "create.placeholder.description".localized,
               text: $description,
               isFocused: $isDescriptionFieldFocused,
               maxLength: 50,
@@ -112,7 +114,7 @@ struct CreateHabitStep1View: View {
 
           // Colour selection
           HStack(spacing: 12) {
-            Text("Colour")
+            Text("create.label.color".localized)
               .font(.appTitleMedium)
               .foregroundColor(.text02)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -145,7 +147,7 @@ struct CreateHabitStep1View: View {
 
         // Icon selection
           HStack(spacing: 12) {
-            Text("Icon")
+            Text("create.label.icon".localized)
               .font(.appTitleMedium)
               .foregroundColor(.text01)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -197,20 +199,20 @@ struct CreateHabitStep1View: View {
 
           // Habit type selection
           VStack(alignment: .leading, spacing: 12) {
-            Text("Habit Type")
+            Text("create.label.habitType".localized)
               .font(.appTitleMedium)
               .foregroundColor(.text02)
 
             HStack(spacing: 12) {
               // Habit Building button
               FormInputComponents.HabitTypeButton(
-                title: "Habit Building",
+                title: "habits.type.habitBuilding".localized,
                 isSelected: isFormationSelected,
                 action: { habitType = .formation })
 
               // Habit Breaking button
               FormInputComponents.HabitTypeButton(
-                title: "Habit Breaking",
+                title: "habits.type.habitBreaking".localized,
                 isSelected: isBreakingSelected,
                 action: { habitType = .breaking })
             }
@@ -241,7 +243,7 @@ struct CreateHabitStep1View: View {
           
           // Check empty
           if trimmedName.isEmpty {
-            validationError = "Please enter a habit name"
+            validationError = "create.validation.enterName".localized
             return
           }
           
@@ -254,7 +256,7 @@ struct CreateHabitStep1View: View {
           validationError = nil
           onNext(name, description, icon, color, habitType)
         }) {
-          Text("Continue")
+          Text("create.button.continue".localized)
             .font(.appButtonText1)
             .foregroundColor(continueButtonColor)
             .frame(width: screenWidth * 0.5)
@@ -401,7 +403,7 @@ struct CreateHabitStep1View: View {
         HStack {
           // Limit reached message
           if limitReached.wrappedValue {
-            Text("Maximum \(maxLength) characters reached")
+            Text(String(format: "create.validation.maxChars".localized, maxLength))
               .font(.appBodySmall)
               .foregroundColor(.warning)
           }
@@ -474,29 +476,19 @@ struct CreateHabitStep1View: View {
   /// Helper functions for color and icon processing
   private func getColorName(for color: Color) -> String {
     // Use the same color definitions as ColorBottomSheet for consistency
-    let colors: [(color: Color, name: String)] = [
-      (Color("pastelYellow"), "Yellow"),
-      (Color("pastelBlue"), "Blue"),
-      (Color("pastelPurple"), "Purple")
-    ]
-
-    // Find the matching color and return its name
-    for (colorOption, name) in colors {
-      if color == colorOption {
-        return name
-      }
-    }
-
-    return "Blue" // Default fallback to pastelBlue
+    if color == Color("pastelYellow") { return "create.color.yellow".localized }
+    if color == Color("pastelBlue") { return "create.color.blue".localized }
+    if color == Color("pastelPurple") { return "create.color.purple".localized }
+    return "create.color.blue".localized // Default fallback to pastelBlue
   }
 
   private func getIconDisplayValue(_ icon: String) -> String {
-    icon == "None" ? "None" : ""
+    icon == "None" ? "create.iconPicker.none".localized : ""
   }
 
   /// Helper function to get appropriate display value for icon
   private func iconDisplayValue(_ icon: String) -> String {
-    icon == "None" ? "None" : ""
+    icon == "None" ? "create.iconPicker.none".localized : ""
   }
 }
 
