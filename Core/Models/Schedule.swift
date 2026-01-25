@@ -21,35 +21,37 @@ enum Schedule: String, CaseIterable, Codable {
 
   // MARK: - Display Properties
 
+  @MainActor
   var displayName: String {
     switch self {
-    case .daily: "Daily"
-    case .weekdays: "Weekdays"
-    case .weekends: "Weekends"
-    case .monday: "Monday"
-    case .tuesday: "Tuesday"
-    case .wednesday: "Wednesday"
-    case .thursday: "Thursday"
-    case .friday: "Friday"
-    case .saturday: "Saturday"
-    case .sunday: "Sunday"
-    case .custom: "Custom"
+    case .daily: "habits.frequency.daily".localized
+    case .weekdays: "habits.frequency.weekdays".localized
+    case .weekends: "habits.frequency.weekends".localized
+    case .monday: "home.weekday.monday".localized
+    case .tuesday: "home.weekday.tuesday".localized
+    case .wednesday: "home.weekday.wednesday".localized
+    case .thursday: "home.weekday.thursday".localized
+    case .friday: "home.weekday.friday".localized
+    case .saturday: "home.weekday.saturday".localized
+    case .sunday: "home.weekday.sunday".localized
+    case .custom: "habits.frequency.custom".localized
     }
   }
 
+  @MainActor
   var description: String {
     switch self {
-    case .daily: "Every day"
-    case .weekdays: "Monday through Friday"
-    case .weekends: "Saturday and Sunday"
-    case .monday: "Every Monday"
-    case .tuesday: "Every Tuesday"
-    case .wednesday: "Every Wednesday"
-    case .thursday: "Every Thursday"
-    case .friday: "Every Friday"
-    case .saturday: "Every Saturday"
-    case .sunday: "Every Sunday"
-    case .custom: "Custom schedule"
+    case .daily: "habits.frequency.everyday".localized
+    case .weekdays: String(format: "%@ through %@", "home.weekday.monday".localized, "home.weekday.friday".localized)
+    case .weekends: String(format: "%@ and %@", "home.weekday.saturday".localized, "home.weekday.sunday".localized)
+    case .monday: String(format: "Every %@", "home.weekday.monday".localized)
+    case .tuesday: String(format: "Every %@", "home.weekday.tuesday".localized)
+    case .wednesday: String(format: "Every %@", "home.weekday.wednesday".localized)
+    case .thursday: String(format: "Every %@", "home.weekday.thursday".localized)
+    case .friday: String(format: "Every %@", "home.weekday.friday".localized)
+    case .saturday: String(format: "Every %@", "home.weekday.saturday".localized)
+    case .sunday: String(format: "Every %@", "home.weekday.sunday".localized)
+    case .custom: "habits.frequency.custom".localized
     }
   }
 

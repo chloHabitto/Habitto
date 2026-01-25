@@ -20,13 +20,14 @@ struct HabitCompletionBottomSheet: View {
 
     // MARK: Internal
 
+    @MainActor
     var displayName: String {
       switch self {
-      case .veryEasy: "Very Easy"
-      case .easy: "Easy"
-      case .medium: "Medium"
-      case .hard: "Hard"
-      case .veryHard: "Very Hard"
+      case .veryEasy: "habits.difficulty.veryEasy".localized
+      case .easy: "habits.difficulty.easy".localized
+      case .medium: "habits.difficulty.medium".localized
+      case .hard: "habits.difficulty.hard".localized
+      case .veryHard: "habits.difficulty.veryHard".localized
       }
     }
 

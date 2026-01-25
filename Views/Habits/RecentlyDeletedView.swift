@@ -18,7 +18,7 @@ struct RecentlyDeletedView: View {
       ZStack {
         if isLoading {
           // Loading state
-          ProgressView("Loading...")
+          ProgressView("habits.recentlyDeleted.loading".localized)
             .progressViewStyle(.circular)
         } else if let error = errorMessage {
           // Error state
@@ -27,7 +27,7 @@ struct RecentlyDeletedView: View {
               .font(.system(size: 48))
               .foregroundColor(.orange)
             
-            Text("Error Loading Deleted Habits")
+            Text("habits.recentlyDeleted.error".localized)
               .font(.appHeadlineSmall)
             
             Text(error)
@@ -36,7 +36,7 @@ struct RecentlyDeletedView: View {
               .multilineTextAlignment(.center)
               .padding(.horizontal, 32)
             
-            Button("Try Again") {
+            Button("habits.recentlyDeleted.tryAgain".localized) {
               Task {
                 await loadSoftDeletedHabits()
               }
@@ -50,10 +50,10 @@ struct RecentlyDeletedView: View {
               .font(.system(size: 48))
               .foregroundColor(.secondary)
             
-            Text("No Recently Deleted Habits")
+            Text("habits.recentlyDeleted.noDeleted".localized)
               .font(.appHeadlineSmall)
             
-            Text("Deleted habits will appear here for 30 days before being permanently removed.")
+            Text("habits.recentlyDeleted.description".localized)
               .font(.appBodyLarge)
               .foregroundColor(.secondary)
               .multilineTextAlignment(.center)
@@ -69,7 +69,7 @@ struct RecentlyDeletedView: View {
                   .font(.system(size: 20))
                   .foregroundColor(.orange)
                 
-                Text("Habits are permanently deleted after 30 days")
+                Text("habits.recentlyDeleted.warning".localized)
                   .font(.appCaptionMedium)
                   .foregroundColor(.secondary)
               }
@@ -102,11 +102,11 @@ struct RecentlyDeletedView: View {
           .listStyle(.plain)
         }
       }
-      .navigationTitle("Recently Deleted")
+      .navigationTitle("habits.recentlyDeleted.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
+          Button("common.done".localized) {
             dismiss()
           }
         }
@@ -237,7 +237,7 @@ private struct RecentlyDeletedRowWithData: View {
           // Deletion info
           HStack(spacing: 8) {
             if let deletedAt = habitData.deletedAt {
-              Text("Deleted \(daysAgo(from: deletedAt)) days ago")
+              Text(String(format: "habits.recentlyDeleted.deletedDaysAgo".localized, daysAgo(from: deletedAt)))
                 .font(.appCaptionMedium)
                 .foregroundColor(.secondary)
               
@@ -246,7 +246,7 @@ private struct RecentlyDeletedRowWithData: View {
                 .foregroundColor(.secondary)
               
               let daysLeft = daysLeftToRecover(from: deletedAt)
-              Text("\(daysLeft) days left to recover")
+              Text(String(format: "habits.recentlyDeleted.daysLeftToRecover".localized, daysLeft))
                 .font(.appCaptionMedium)
                 .foregroundColor(daysLeft <= 7 ? .orange : .secondary)
             }
@@ -263,7 +263,7 @@ private struct RecentlyDeletedRowWithData: View {
           HStack(spacing: 6) {
             Image(systemName: "arrow.uturn.backward")
               .font(.system(size: 14, weight: .semibold))
-            Text("Restore")
+            Text("habits.recentlyDeleted.restore".localized)
               .font(.appButtonText2)
           }
           .foregroundColor(.white)
@@ -280,7 +280,7 @@ private struct RecentlyDeletedRowWithData: View {
           HStack(spacing: 6) {
             Image(systemName: "trash")
               .font(.system(size: 14, weight: .semibold))
-            Text("Delete Forever")
+            Text("habits.recentlyDeleted.deleteForever".localized)
               .font(.appButtonText2)
           }
           .foregroundColor(.red)
@@ -297,13 +297,13 @@ private struct RecentlyDeletedRowWithData: View {
     .padding(.horizontal, 16)
     .background(Color(.systemGray6))
     .cornerRadius(12)
-    .alert("Delete Forever", isPresented: $showingDeleteConfirmation) {
-      Button("Cancel", role: .cancel) { }
-      Button("Delete Forever", role: .destructive) {
+    .alert("habits.recentlyDeleted.deleteForever".localized, isPresented: $showingDeleteConfirmation) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("habits.recentlyDeleted.deleteForever".localized, role: .destructive) {
         onDeleteForever()
       }
     } message: {
-      Text("Are you sure you want to permanently delete \"\(habit.name)\"? This action cannot be undone.")
+      Text(String(format: "habits.recentlyDeleted.deleteForeverConfirm".localized, habit.name))
     }
   }
   

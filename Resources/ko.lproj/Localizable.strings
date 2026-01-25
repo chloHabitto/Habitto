@@ -212,3 +212,124 @@
 
 /* Date/Time Strings */
 "date.today" = "오늘";
+
+/* ==================== */
+/* HABITS TAB           */
+/* ==================== */
+
+/* Headers */
+"habits.title" = "습관";
+"habits.myHabits" = "내 습관";
+"habits.allHabits" = "모든 습관";
+
+/* Filters */
+"habits.filter.all" = "전체";
+"habits.filter.active" = "활성";
+"habits.filter.archived" = "보관됨";
+"habits.filter.paused" = "일시정지";
+"habits.filter.formation" = "형성";
+"habits.filter.breaking" = "끊기";
+"habits.filter.inactive" = "비활성";
+
+/* Empty States */
+"habits.empty.noHabits" = "습관이 없습니다";
+"habits.empty.noActiveHabits" = "활성 습관이 없습니다";
+"habits.empty.noInactiveHabits" = "비활성 습관이 없습니다";
+"habits.empty.noArchivedHabits" = "보관된 습관이 없습니다";
+"habits.empty.createFirst" = "첫 번째 습관을 만들어보세요";
+"habits.empty.tapToAdd" = "+를 눌러 습관 추가";
+"habits.empty.allActive" = "모든 습관이 현재 활성 상태입니다";
+"habits.empty.allInactive" = "모든 습관이 현재 비활성 또는 완료되었습니다";
+"habits.empty.noHabitsFound" = "습관을 찾을 수 없습니다";
+"habits.empty.tryAdjustingFilters" = "필터를 조정해보세요";
+
+/* Habit Card Info */
+"habits.card.streak" = "연속";
+"habits.card.goal" = "목표";
+"habits.card.progress" = "진행";
+"habits.card.difficulty" = "난이도";
+"habits.card.frequency" = "빈도";
+"habits.card.reminder" = "알림";
+"habits.card.reminders" = "알림";
+"habits.card.noReminder" = "알림 없음";
+"habits.card.noDescription" = "설명 없음";
+
+/* Habit Status */
+"habits.status.active" = "활성";
+"habits.status.paused" = "일시정지";
+"habits.status.archived" = "보관됨";
+"habits.status.completed" = "완료됨";
+"habits.status.inactive" = "비활성";
+
+/* Habit Type */
+"habits.type.formation" = "형성";
+"habits.type.breaking" = "끊기";
+"habits.type.formationDesc" = "새로운 습관 만들기";
+"habits.type.breakingDesc" = "나쁜 습관 끊기";
+"habits.type.habitBuilding" = "습관 형성";
+"habits.type.habitBreaking" = "습관 끊기";
+
+/* Frequency */
+"habits.frequency.daily" = "매일";
+"habits.frequency.weekly" = "매주";
+"habits.frequency.monthly" = "매월";
+"habits.frequency.custom" = "사용자 지정";
+"habits.frequency.timesPerDay" = "하루 %d회";
+"habits.frequency.timesPerWeek" = "주 %d회";
+"habits.frequency.timesPerMonth" = "월 %d회";
+"habits.frequency.everyday" = "매일";
+"habits.frequency.everyWeekday" = "평일마다";
+"habits.frequency.everyWeekend" = "주말마다";
+"habits.frequency.weekdays" = "평일";
+"habits.frequency.weekends" = "주말";
+
+/* Difficulty */
+"habits.difficulty.trivial" = "아주 쉬움";
+"habits.difficulty.easy" = "쉬움";
+"habits.difficulty.medium" = "보통";
+"habits.difficulty.hard" = "어려움";
+"habits.difficulty.epic" = "매우 어려움";
+"habits.difficulty.veryEasy" = "매우 쉬움";
+"habits.difficulty.veryHard" = "매우 어려움";
+
+/* Time of Day */
+"habits.timeOfDay.morning" = "아침";
+"habits.timeOfDay.afternoon" = "오후";
+"habits.timeOfDay.evening" = "저녁";
+"habits.timeOfDay.anytime" = "언제든지";
+"habits.timeOfDay.allDay" = "하루 종일";
+
+/* Actions */
+"habits.action.add" = "습관 추가";
+"habits.action.edit" = "수정";
+"habits.action.delete" = "삭제";
+"habits.action.archive" = "보관";
+"habits.action.unarchive" = "보관 해제";
+"habits.action.pause" = "일시정지";
+"habits.action.resume" = "재개";
+
+/* Sorting */
+"habits.sort.name" = "이름";
+"habits.sort.dateCreated" = "생성일";
+"habits.sort.streak" = "연속";
+"habits.sort.completion" = "완료율";
+
+/* Stats on Card */
+"habits.stats.completionRate" = "완료율";
+"habits.stats.totalCompletions" = "총 완료";
+"habits.stats.bestStreak" = "최고 연속";
+"habits.stats.currentStreak" = "현재 연속";
+
+/* Recently Deleted */
+"habits.recentlyDeleted.title" = "최근 삭제됨";
+"habits.recentlyDeleted.noDeleted" = "최근 삭제된 습관 없음";
+"habits.recentlyDeleted.description" = "삭제된 습관은 영구적으로 제거되기 전까지 30일 동안 여기에 표시됩니다.";
+"habits.recentlyDeleted.warning" = "습관은 30일 후 영구적으로 삭제됩니다";
+"habits.recentlyDeleted.loading" = "로드 중...";
+"habits.recentlyDeleted.error" = "삭제된 습관 로드 오류";
+"habits.recentlyDeleted.tryAgain" = "다시 시도";
+"habits.recentlyDeleted.restore" = "복원";
+"habits.recentlyDeleted.deleteForever" = "영구 삭제";
+"habits.recentlyDeleted.deleteForeverConfirm" = "\"%@\"을(를) 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.";
+"habits.recentlyDeleted.deletedDaysAgo" = "%d일 전에 삭제됨";
+"habits.recentlyDeleted.daysLeftToRecover" = "복원 가능 %d일 남음";
