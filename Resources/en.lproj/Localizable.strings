@@ -212,3 +212,124 @@
 
 /* Date/Time Strings */
 "date.today" = "Today";
+
+/* ==================== */
+/* HABITS TAB           */
+/* ==================== */
+
+/* Headers */
+"habits.title" = "Habits";
+"habits.myHabits" = "My Habits";
+"habits.allHabits" = "All Habits";
+
+/* Filters */
+"habits.filter.all" = "All";
+"habits.filter.active" = "Active";
+"habits.filter.archived" = "Archived";
+"habits.filter.paused" = "Paused";
+"habits.filter.formation" = "Formation";
+"habits.filter.breaking" = "Breaking";
+"habits.filter.inactive" = "Inactive";
+
+/* Empty States */
+"habits.empty.noHabits" = "No habits yet";
+"habits.empty.noActiveHabits" = "No active habits";
+"habits.empty.noInactiveHabits" = "No inactive habits";
+"habits.empty.noArchivedHabits" = "No archived habits";
+"habits.empty.createFirst" = "Create your first habit";
+"habits.empty.tapToAdd" = "Tap + to add a habit";
+"habits.empty.allActive" = "All your habits are currently active";
+"habits.empty.allInactive" = "All your habits are currently inactive or completed";
+"habits.empty.noHabitsFound" = "No habits found";
+"habits.empty.tryAdjustingFilters" = "Try adjusting your filters";
+
+/* Habit Card Info */
+"habits.card.streak" = "Streak";
+"habits.card.goal" = "Goal";
+"habits.card.progress" = "Progress";
+"habits.card.difficulty" = "Difficulty";
+"habits.card.frequency" = "Frequency";
+"habits.card.reminder" = "Reminder";
+"habits.card.reminders" = "Reminders";
+"habits.card.noReminder" = "No reminder";
+"habits.card.noDescription" = "No description";
+
+/* Habit Status */
+"habits.status.active" = "Active";
+"habits.status.paused" = "Paused";
+"habits.status.archived" = "Archived";
+"habits.status.completed" = "Completed";
+"habits.status.inactive" = "Inactive";
+
+/* Habit Type */
+"habits.type.formation" = "Formation";
+"habits.type.breaking" = "Breaking";
+"habits.type.formationDesc" = "Build a new habit";
+"habits.type.breakingDesc" = "Break a bad habit";
+"habits.type.habitBuilding" = "Habit Building";
+"habits.type.habitBreaking" = "Habit Breaking";
+
+/* Frequency */
+"habits.frequency.daily" = "Daily";
+"habits.frequency.weekly" = "Weekly";
+"habits.frequency.monthly" = "Monthly";
+"habits.frequency.custom" = "Custom";
+"habits.frequency.timesPerDay" = "%d times per day";
+"habits.frequency.timesPerWeek" = "%d times per week";
+"habits.frequency.timesPerMonth" = "%d times per month";
+"habits.frequency.everyday" = "Every day";
+"habits.frequency.everyWeekday" = "Every weekday";
+"habits.frequency.everyWeekend" = "Every weekend";
+"habits.frequency.weekdays" = "Weekdays";
+"habits.frequency.weekends" = "Weekends";
+
+/* Difficulty */
+"habits.difficulty.trivial" = "Trivial";
+"habits.difficulty.easy" = "Easy";
+"habits.difficulty.medium" = "Medium";
+"habits.difficulty.hard" = "Hard";
+"habits.difficulty.epic" = "Epic";
+"habits.difficulty.veryEasy" = "Very Easy";
+"habits.difficulty.veryHard" = "Very Hard";
+
+/* Time of Day */
+"habits.timeOfDay.morning" = "Morning";
+"habits.timeOfDay.afternoon" = "Afternoon";
+"habits.timeOfDay.evening" = "Evening";
+"habits.timeOfDay.anytime" = "Anytime";
+"habits.timeOfDay.allDay" = "All Day";
+
+/* Actions */
+"habits.action.add" = "Add Habit";
+"habits.action.edit" = "Edit";
+"habits.action.delete" = "Delete";
+"habits.action.archive" = "Archive";
+"habits.action.unarchive" = "Unarchive";
+"habits.action.pause" = "Pause";
+"habits.action.resume" = "Resume";
+
+/* Sorting */
+"habits.sort.name" = "Name";
+"habits.sort.dateCreated" = "Date Created";
+"habits.sort.streak" = "Streak";
+"habits.sort.completion" = "Completion";
+
+/* Stats on Card */
+"habits.stats.completionRate" = "Completion Rate";
+"habits.stats.totalCompletions" = "Total Completions";
+"habits.stats.bestStreak" = "Best Streak";
+"habits.stats.currentStreak" = "Current Streak";
+
+/* Recently Deleted */
+"habits.recentlyDeleted.title" = "Recently Deleted";
+"habits.recentlyDeleted.noDeleted" = "No Recently Deleted Habits";
+"habits.recentlyDeleted.description" = "Deleted habits will appear here for 30 days before being permanently removed.";
+"habits.recentlyDeleted.warning" = "Habits are permanently deleted after 30 days";
+"habits.recentlyDeleted.loading" = "Loading...";
+"habits.recentlyDeleted.error" = "Error Loading Deleted Habits";
+"habits.recentlyDeleted.tryAgain" = "Try Again";
+"habits.recentlyDeleted.restore" = "Restore";
+"habits.recentlyDeleted.deleteForever" = "Delete Forever";
+"habits.recentlyDeleted.deleteForeverConfirm" = "Are you sure you want to permanently delete \"%@\"? This action cannot be undone.";
+"habits.recentlyDeleted.deletedDaysAgo" = "Deleted %d days ago";
+"habits.recentlyDeleted.daysLeftToRecover" = "%d days left to recover";

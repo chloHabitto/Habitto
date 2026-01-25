@@ -168,17 +168,19 @@ struct PillTabButton: View {
 // MARK: - Convenience Extensions
 
 extension TabItem {
+  @MainActor
   static func createStatsTabs(activeCount: Int, inactiveCount: Int) -> [TabItem] {
     [
-      TabItem(title: "Active", value: "\(activeCount)"),
-      TabItem(title: "Inactive", value: "\(inactiveCount)")
+      TabItem(title: "habits.filter.active".localized, value: "\(activeCount)"),
+      TabItem(title: "habits.filter.inactive".localized, value: "\(inactiveCount)")
     ]
   }
 
+  @MainActor
   static func createHabitTypeTabs(buildingCount: Int, breakingCount: Int) -> [TabItem] {
     [
-      TabItem(title: "Habit Building", value: "\(buildingCount)", data: HabitType.formation),
-      TabItem(title: "Habit Breaking", value: "\(breakingCount)", data: HabitType.breaking)
+      TabItem(title: "habits.type.habitBuilding".localized, value: "\(buildingCount)", data: HabitType.formation),
+      TabItem(title: "habits.type.habitBreaking".localized, value: "\(breakingCount)", data: HabitType.breaking)
     ]
   }
 

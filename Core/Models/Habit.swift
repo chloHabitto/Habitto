@@ -1073,4 +1073,16 @@ struct Habit: Identifiable, Codable, Equatable {
 enum HabitType: String, CaseIterable, Codable {
   case formation = "Habit Building"
   case breaking = "Habit Breaking"
+  
+  // MARK: Internal
+  
+  @MainActor
+  var localizedName: String {
+    switch self {
+    case .formation:
+      return "habits.type.formation".localized
+    case .breaking:
+      return "habits.type.breaking".localized
+    }
+  }
 }

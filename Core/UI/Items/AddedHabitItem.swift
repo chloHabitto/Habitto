@@ -57,7 +57,7 @@ struct AddedHabitItem: View {
             }
 
             // Middle row: Description
-            Text(habit.description.isEmpty ? "No description" : habit.description)
+            Text(habit.description.isEmpty ? "habits.card.noDescription".localized : habit.description)
               .font(.appBodyExtraSmall)
               .foregroundColor(.text05)
               .lineLimit(1)
@@ -97,7 +97,7 @@ struct AddedHabitItem: View {
                 onEdit?()
               }) {
                 Label {
-                  Text("Edit")
+                  Text("habits.action.edit".localized)
                 } icon: {
                   Image("Icon-Pen_Filled")
                     .renderingMode(.template)
@@ -109,7 +109,7 @@ struct AddedHabitItem: View {
                 onDelete?()
               }) {
                 Label {
-                  Text("Delete")
+                  Text("habits.action.delete".localized)
                 } icon: {
                   Image("Icon-TrashBin3_Filled")
                     .renderingMode(.template)

@@ -44,7 +44,7 @@ struct HabitsTabView: View {
 
   var body: some View {
     WhiteSheetContainer(
-      title: "Habits",
+      title: "habits.title".localized,
       headerContent: {
         AnyView(
           VStack(spacing: 0) {
@@ -114,7 +114,7 @@ struct HabitsTabView: View {
                       .font(.system(size: 18))
                       .foregroundColor(.secondary)
                     
-                    Text("Recently Deleted")
+                    Text("habits.recentlyDeleted.title".localized)
                       .font(.appBodyLarge)
                       .foregroundColor(.secondary)
                     
@@ -270,20 +270,20 @@ struct HabitsTabView: View {
     case 0: // Active tab
       HabitEmptyStateView(
         imageName: "Habit-List-Empty-State@4x",
-        title: "No active habits",
-        subtitle: "All your habits are currently inactive or completed")
+        title: "habits.empty.noActiveHabits".localized,
+        subtitle: "habits.empty.allInactive".localized)
 
     case 1: // Inactive tab
       HabitEmptyStateView(
         imageName: "Today-Habit-List-Empty-State@4x",
-        title: "No inactive habits",
-        subtitle: "All your habits are currently active")
+        title: "habits.empty.noInactiveHabits".localized,
+        subtitle: "habits.empty.allActive".localized)
 
     default:
       HabitEmptyStateView(
         imageName: "Habit-List-Empty-State@4x",
-        title: "No habits found",
-        subtitle: "Try adjusting your filters")
+        title: "habits.empty.noHabitsFound".localized,
+        subtitle: "habits.empty.tryAdjustingFilters".localized)
     }
   }
 
