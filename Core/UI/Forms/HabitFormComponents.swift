@@ -88,7 +88,7 @@ struct UnifiedInputElement: View {
       }
 
       // Descriptive text showing what the user has selected (for Goal and Current)
-      if title == "Goal" {
+      if title == "create.label.goal".localized {
         Text(formatGoalSentence(numberText: numberText, unitText: unitText, frequencyText: frequencyText))
           .font(.appBodyMedium)
           .foregroundColor(.text04)
@@ -97,7 +97,7 @@ struct UnifiedInputElement: View {
           .background(Color(hex: "1C274C").opacity(0.1))
           .clipShape(RoundedRectangle(cornerRadius: 8))
           .padding(.top, 8)
-      } else if title == "Current" {
+      } else if title == "create.label.current".localized {
         Text(formatCurrentSentence(numberText: numberText, unitText: unitText, frequencyText: frequencyText))
           .font(.appBodyMedium)
           .foregroundColor(.text04)
@@ -123,6 +123,8 @@ struct UnifiedInputElement: View {
 // MARK: - ReminderSection
 
 struct ReminderSection: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Internal
 
   let reminders: [ReminderItem]
@@ -132,14 +134,15 @@ struct ReminderSection: View {
     VStack(alignment: .leading, spacing: 8) {
       // Main reminder row
       HStack {
-      Text("Reminder")
+      Text("create.label.reminder".localized)
         .font(.appTitleMedium)
         .foregroundColor(.text02)
         Spacer()
         Text(reminders.isEmpty
-          ? "Add"
-          :
-          "\(reminders.filter { $0.isActive }.count) reminder\(reminders.filter { $0.isActive }.count == 1 ? "" : "s")")
+          ? "create.button.add".localized
+          : reminders.filter { $0.isActive }.count == 1
+            ? String(format: "create.reminder.reminderCount".localized, reminders.filter { $0.isActive }.count)
+            : String(format: "create.reminder.remindersCount".localized, reminders.filter { $0.isActive }.count))
           .font(.appBodyLarge)
           .foregroundColor(.appText04)
         Image(systemName: "chevron.right")
@@ -164,7 +167,7 @@ struct ReminderSection: View {
                 .font(.appBodyMedium)
                 .foregroundColor(.text01)
               Spacer()
-              Text("Active")
+              Text("habits.filter.active".localized)
                 .font(.appLabelSmall)
                 .foregroundColor(.primary)
             }
@@ -203,6 +206,8 @@ struct ReminderSection: View {
 // MARK: - PeriodSection
 
 struct PeriodSection: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Internal
 
   let startDate: Date
@@ -212,7 +217,7 @@ struct PeriodSection: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Period")
+      Text("create.label.period".localized)
         .font(.appTitleMedium)
         .foregroundColor(.text02)
 
@@ -220,10 +225,10 @@ struct PeriodSection: View {
         // Start Date
         Button(action: onStartDateTap) {
           VStack(alignment: .leading, spacing: 4) {
-            Text("Start Date")
+            Text("create.label.startDate".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text05)
-            Text(isToday(startDate) ? "Today" : formatDate(startDate))
+            Text(isToday(startDate) ? "create.periodSection.today".localized : formatDate(startDate))
               .font(.appBodyLarge)
               .foregroundColor(.text04)
               .frame(maxWidth: .infinity, alignment: .center)
@@ -235,10 +240,10 @@ struct PeriodSection: View {
         // End Date
         Button(action: onEndDateTap) {
           VStack(alignment: .leading, spacing: 4) {
-            Text("End Date")
+            Text("create.label.endDate".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text05)
-            Text(endDate == nil ? "Not Selected" : formatDate(endDate!))
+            Text(endDate == nil ? "create.periodSection.notSelected".localized : formatDate(endDate!))
               .font(.appBodyLarge)
               .foregroundColor(.text04)
               .frame(maxWidth: .infinity, alignment: .center)
@@ -275,6 +280,8 @@ struct PeriodSection: View {
 // MARK: - HabitBuildingForm
 
 struct HabitBuildingForm: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   @Binding var goalNumber: String
   let pluralizedGoalUnit: String
   let goalFrequency: String
@@ -289,13 +296,13 @@ struct HabitBuildingForm: View {
     VStack(spacing: 12) {
       // Goal
       UnifiedInputElement(
-        title: "Goal",
-        description: "What do you want to achieve?",
+        title: "create.label.goal".localized,
+        description: "create.goal.description".localized,
         numberText: $goalNumber,
         unitText: pluralizedGoalUnit,
         frequencyText: goalFrequency,
         isValid: isGoalValid,
-        errorMessage: "Please enter a number greater than 0",
+        errorMessage: "create.validation.enterNumber".localized,
         onUnitTap: onGoalUnitTap,
         onFrequencyTap: onGoalFrequencyTap,
         isFocused: $isGoalNumberFocused)
@@ -312,6 +319,8 @@ struct HabitBuildingForm: View {
 // MARK: - HabitBreakingForm
 
 struct HabitBreakingForm: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   @Binding var baselineNumber: String
   @Binding var targetNumber: String
   let pluralizedBaselineUnit: String
@@ -333,26 +342,26 @@ struct HabitBreakingForm: View {
     VStack(spacing: 12) {
       // Current
       UnifiedInputElement(
-        title: "Current",
-        description: "How much do you currently do?",
+        title: "create.label.current".localized,
+        description: "create.goal.currentDescription".localized,
         numberText: $baselineNumber,
         unitText: pluralizedBaselineUnit,
         frequencyText: baselineFrequency,
         isValid: isBaselineValid,
-        errorMessage: "Please enter a number greater than 0",
+        errorMessage: "create.validation.enterNumber".localized,
         onUnitTap: onBaselineUnitTap,
         onFrequencyTap: onBaselineFrequencyTap,
         isFocused: $isBaselineFieldFocused)
 
       // Goal
       UnifiedInputElement(
-        title: "Goal",
-        description: "How much do you want to reduce to?",
+        title: "create.label.goal".localized,
+        description: "create.goal.reduceDescription".localized,
         numberText: $targetNumber,
         unitText: pluralizedTargetUnit,
         frequencyText: targetFrequency,
         isValid: isTargetValid,
-        errorMessage: "Please enter a number greater than or equal to 0",
+        errorMessage: "create.validation.enterNumberOrZero".localized,
         onUnitTap: onTargetUnitTap,
         onFrequencyTap: onTargetFrequencyTap,
         isFocused: $isTargetFieldFocused)
@@ -369,6 +378,8 @@ struct HabitBreakingForm: View {
 // MARK: - FormActionButtons
 
 struct FormActionButtons: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Internal
 
   let isFormValid: Bool
@@ -392,7 +403,7 @@ struct FormActionButtons: View {
       Spacer()
 
       Button(action: onSave) {
-        Text("Save")
+        Text("create.button.save".localized)
           .font(.appButtonText1)
           .foregroundColor(isFormValid ? .onPrimary : .text06)
           .frame(width: screenWidth * 0.5)

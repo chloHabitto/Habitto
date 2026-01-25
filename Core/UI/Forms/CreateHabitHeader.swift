@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct CreateHabitHeader: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Lifecycle
 
   init(
@@ -45,7 +47,7 @@ struct CreateHabitHeader: View {
         // Top layer: Cancel button - right aligned
         HStack {
           Spacer()
-          Button("Cancel") {
+          Button("common.cancel".localized) {
             onCancel()
           }
           .foregroundColor(.blue)
@@ -56,19 +58,17 @@ struct CreateHabitHeader: View {
 
       // Header
       VStack(alignment: .leading, spacing: 8) {
-        Text(title)
+        Text("create.title".localized)
           .font(.appHeadlineMediumEmphasised)
           .foregroundColor(.text01)
-        Text(subtitle)
+        Text(stepNumber == 1 ? "create.step1".localized : "create.step2".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text04)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 20)
       .padding(.top, 28)
-//            .padding(.bottom, 28)
     }
-//        .background(.red)
   }
 }
 

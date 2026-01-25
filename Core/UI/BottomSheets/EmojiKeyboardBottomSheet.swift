@@ -3,6 +3,8 @@ import SwiftUI
 // MARK: - Emoji Keyboard Bottom Sheet
 
 struct EmojiKeyboardBottomSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Internal
 
   @Binding var selectedEmoji: String
@@ -12,14 +14,14 @@ struct EmojiKeyboardBottomSheet: View {
 
   var body: some View {
     BaseBottomSheet(
-      title: "Choose Icon",
-      description: "Select an emoji for your habit",
+      title: "create.iconPicker.title".localized,
+      description: "create.iconPicker.selectEmoji".localized,
       onClose: onClose,
       useSimpleCloseButton: true,
       confirmButton: {
         onSave(selectedEmoji)
       },
-      confirmButtonTitle: "Save")
+      confirmButtonTitle: "common.save".localized)
     {
       VStack(spacing: 20) {
         // Emoji text field with visual feedback
@@ -49,7 +51,7 @@ struct EmojiKeyboardBottomSheet: View {
                   isTextFieldFocused ? .primary : .outline3,
                   lineWidth: isTextFieldFocused ? 2 : 1.5))
 
-          Text("Tap to enter an emoji")
+          Text("create.iconPicker.tapEmoji".localized)
             .font(.appLabelSmall)
             .foregroundColor(.text03)
             .multilineTextAlignment(.center)

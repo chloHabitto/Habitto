@@ -3,6 +3,8 @@ import SwiftUI
 // MARK: - ColorBottomSheet
 
 struct ColorBottomSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Lifecycle
 
   init(
@@ -26,14 +28,14 @@ struct ColorBottomSheet: View {
 
   var body: some View {
     BaseBottomSheet(
-      title: "Colour",
-      description: "Set a colour for your habit",
+      title: "create.colorPicker.title".localized,
+      description: "create.colorPicker.description".localized,
       onClose: onClose,
       useSimpleCloseButton: true,
       confirmButton: {
         onSave(selectedColor)
       },
-      confirmButtonTitle: "Save")
+      confirmButtonTitle: "common.save".localized)
     {
       VStack(spacing: 0) {
         HStack(spacing: 16) {
@@ -64,11 +66,13 @@ struct ColorBottomSheet: View {
 
   @State private var selectedColor: Color
 
-  private let colors: [(color: Color, name: String)] = [
-    (Color("pastelYellow"), "Yellow"),
-    (Color("pastelBlue"), "Blue"),
-    (Color("pastelPurple"), "Purple")
-  ]
+  private var colors: [(color: Color, name: String)] {
+    [
+      (Color("pastelYellow"), "create.color.yellow".localized),
+      (Color("pastelBlue"), "create.color.blue".localized),
+      (Color("pastelPurple"), "create.color.purple".localized)
+    ]
+  }
 }
 
 // MARK: - ColorButton

@@ -10,6 +10,8 @@ struct CalendarDay: Identifiable {
 // MARK: - PeriodBottomSheet
 
 struct PeriodBottomSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Lifecycle
 
   init(
@@ -42,8 +44,8 @@ struct PeriodBottomSheet: View {
 
   var body: some View {
     BaseBottomSheet(
-      title: isSelectingStartDate ? "Start Date" : "End Date",
-      description: "Select a date for your habit period",
+      title: isSelectingStartDate ? "create.label.startDate".localized : "create.label.endDate".localized,
+      description: "create.period.title".localized,
       onClose: {
         dismiss()
       },
@@ -56,7 +58,7 @@ struct PeriodBottomSheet: View {
         }
         dismiss()
       },
-      confirmButtonTitle: "Confirm")
+      confirmButtonTitle: "create.button.confirm".localized)
     {
       // Custom Calendar View
       VStack(spacing: 24) {
@@ -147,7 +149,7 @@ struct PeriodBottomSheet: View {
             HStack {
               Image(systemName: "xmark.circle.fill")
                 .foregroundColor(.text04)
-              Text("No end date")
+              Text("create.period.noEndDate".localized)
                 .font(Font.appBodyLarge)
                 .foregroundColor(.text04)
             }
@@ -168,7 +170,7 @@ struct PeriodBottomSheet: View {
             HStack {
               Image(systemName: "arrow.clockwise")
                 .foregroundColor(.text04)
-              Text("Reset")
+              Text("create.button.reset".localized)
                 .font(Font.appBodyLarge)
                 .foregroundColor(.text04)
             }

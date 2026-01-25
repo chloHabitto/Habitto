@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct UnitBottomSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Internal
 
   let onClose: () -> Void
@@ -9,8 +11,8 @@ struct UnitBottomSheet: View {
 
   var body: some View {
     BaseBottomSheet(
-      title: "Select Unit",
-      description: "Choose a unit for your goal",
+      title: "create.unit.title".localized,
+      description: "create.unit.description".localized,
       onClose: onClose,
       useSimpleCloseButton: true,
       confirmButton: {
@@ -19,18 +21,18 @@ struct UnitBottomSheet: View {
         }
         onClose()
       },
-      confirmButtonTitle: showingCustomUnitInput ? "Add Custom Unit" : "Select")
+      confirmButtonTitle: showingCustomUnitInput ? "create.unit.addCustom".localized : "create.button.select".localized)
     {
       VStack(spacing: 0) {
         if showingCustomUnitInput {
           // Custom unit input
           VStack(spacing: 16) {
-            Text("Enter custom unit name")
+            Text("create.unit.enterCustom".localized)
               .font(Font.appTitleMedium)
               .foregroundColor(.text01)
               .frame(maxWidth: .infinity, alignment: .leading)
 
-            TextField("e.g., pages, chapters, sets", text: $customUnit)
+            TextField("create.placeholder.customUnit".localized, text: $customUnit)
               .font(Font.appBodyLarge)
               .foregroundColor(.text01)
               .accentColor(.text01)
@@ -78,7 +80,7 @@ struct UnitBottomSheet: View {
               HStack(spacing: 4) {
                 Image(systemName: "plus")
                   .font(Font.appLabelSmall)
-                Text("Custom")
+                Text("create.unit.custom".localized)
                   .font(Font.appBodyMedium)
               }
               .foregroundColor(ColorTokens.primary)

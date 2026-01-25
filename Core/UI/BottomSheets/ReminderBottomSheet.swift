@@ -11,6 +11,8 @@ struct ReminderItem: Identifiable, Codable, Equatable {
 // MARK: - ReminderBottomSheet
 
 struct ReminderBottomSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Lifecycle
 
   init(
@@ -35,8 +37,8 @@ struct ReminderBottomSheet: View {
 
   var body: some View {
     BaseBottomSheet(
-      title: "Reminder",
-      description: "Choose when you want to be reminded about this habit",
+      title: "create.reminder.title".localized,
+      description: "create.reminder.description".localized,
       onClose: onClose,
       useSimpleCloseButton: true,
       confirmButton: {
@@ -48,13 +50,13 @@ struct ReminderBottomSheet: View {
           onRemindersUpdated(reminders)
         }
       },
-      confirmButtonTitle: reminders.isEmpty ? "Add a reminder" : "Confirm")
+      confirmButtonTitle: reminders.isEmpty ? "create.reminder.addReminder".localized : "create.button.confirm".localized)
     {
       VStack(spacing: 0) {
         // Custom Buttons - only show when there are reminders
         if !reminders.isEmpty {
           HStack {
-            Button(isEditMode ? "Done" : "Edit") {
+            Button(isEditMode ? "create.button.done".localized : "create.button.edit".localized) {
               isEditMode.toggle()
             }
             .font(Font.appButtonText2)
@@ -154,7 +156,7 @@ struct ReminderBottomSheet: View {
           VStack {
             Spacer()
 
-            Text("No reminder")
+            Text("create.reminder.noReminder".localized)
               .font(.appBodyLarge)
               .foregroundColor(.text04)
 
@@ -235,6 +237,8 @@ struct ReminderBottomSheet: View {
 // MARK: - AddReminderSheet
 
 struct AddReminderSheet: View {
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+
   // MARK: Lifecycle
 
   init(initialTime: Date = Date(), isEditing: Bool = false, onSave: @escaping (Date) -> Void) {
@@ -269,7 +273,7 @@ struct AddReminderSheet: View {
       .padding(.top, 8)
 
       // Title
-      Text("Select Time")
+      Text("create.reminder.selectTime".localized)
         .font(Font.appHeadlineSmallEmphasised)
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -281,7 +285,7 @@ struct AddReminderSheet: View {
         .frame(height: 16)
 
       // Time Picker
-      DatePicker("Time", selection: $selectedTime, displayedComponents: .hourAndMinute)
+      DatePicker("create.reminder.time".localized, selection: $selectedTime, displayedComponents: .hourAndMinute)
         .datePickerStyle(WheelDatePickerStyle())
         .labelsHidden()
         .padding(.horizontal, 24)
@@ -290,7 +294,7 @@ struct AddReminderSheet: View {
 
       // Save/Add Button
       HabittoButton.largeFillPrimary(
-        text: isEditing ? "Save" : "Add",
+        text: isEditing ? "common.save".localized : "create.button.add".localized,
         state: isEditing && selectedTime == originalTime ? .disabled : .default,
         action: {
           onSave(selectedTime)
