@@ -600,9 +600,12 @@ class HabitRepository: ObservableObject {
         if let habitIndex = habits.firstIndex(where: { $0.id == habitId }) {
           habits[habitIndex].recordDifficulty(Int(difficulty), for: date)
           objectWillChange.send()
+
+          // Sync updated habit to Firestore so difficulty persists across reinstalls
+          await MainActor.run {
+            FirebaseBackupService.shared.backupHabit(habits[habitIndex])
+          }
         }
-
-
       } catch {
         debugLog("❌ HabitRepository: Failed to save difficulty: \(error.localizedDescription)")
       }
