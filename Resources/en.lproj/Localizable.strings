@@ -12,7 +12,7 @@
 
 /* MoreTabView - Profile Area */
 "more.profile.greeting" = "Hi %@,";
-"more.profile.viewProfile" = "View Profile >";
+"more.profile.viewProfile" = "View Profile";
 
 /* MoreTabView - XP Card */
 "more.xp.level" = "Level";

@@ -15,6 +15,9 @@ struct HeaderView: View {
   @ObservedObject private var avatarManager = AvatarManager.shared
   @State private var showingProfileView = false
   @State private var guestName: String = ""
+  
+  // Localization manager for runtime language switching
+  @ObservedObject private var localizationManager = LocalizationManager.shared
 
   var body: some View {
     // Removed verbose debug logging - HeaderView renders frequently
