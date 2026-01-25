@@ -48,6 +48,9 @@ struct HomeTabView: View {
   @Binding var selectedStatsTab: Int
   @EnvironmentObject var themeManager: ThemeManager
   
+  // Localization manager for runtime language switching
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+  
   // ✅ FIX: Use @Environment to properly observe @Observable changes
   @Environment(XPManager.self) private var xpManager
 

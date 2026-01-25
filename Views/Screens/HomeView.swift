@@ -958,6 +958,9 @@ struct HomeView: View {
   // ✅ FIX: Use @Environment to properly observe @Observable changes
   @Environment(XPManager.self) private var xpManager
   
+  // Localization manager for runtime language switching
+  @ObservedObject private var localizationManager = LocalizationManager.shared
+  
 
   // MARK: - Tab Content Views
   
