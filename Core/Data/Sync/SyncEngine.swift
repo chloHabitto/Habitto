@@ -1219,9 +1219,12 @@ actor SyncEngine {
             // Merge habit into SwiftData
             // ✅ BUG FIX: Errors are now logged inside mergeHabitFromFirestore, sync continues
             await mergeHabitFromFirestore(data: data, habitId: uuid, userId: userId)
+            if let difficultyHistory = data["difficultyHistory"] as? [String: Int] {
+                logger.info("📊 SyncEngine: Habit \(uuid.uuidString.prefix(8))... has \(difficultyHistory.count) difficulty entries in Firestore")
+            }
             pulledCount += 1
         }
-        
+
         logger.info("📥 SyncEngine: Pulled \(pulledCount) habits updated since \(since.ISO8601Format())")
         
         // STEP 3: Reconcile deletions using ALL remote habit IDs (not just pulled ones)
@@ -2121,8 +2124,28 @@ actor SyncEngine {
                 }
             }
         }
+
+        // ✅ FIX: Update difficulty history from Firestore (persists across reinstall)
+        if let difficultyHistory = data["difficultyHistory"] as? [String: Int], !difficultyHistory.isEmpty {
+            let modelContext = SwiftDataContainer.shared.modelContext
+
+            habitData.difficultyHistory.removeAll()
+
+            for (dateKey, difficulty) in difficultyHistory {
+                let difficultyRecord = DifficultyRecord(
+                    userId: habitData.userId,
+                    habitId: habitData.id,
+                    dateKey: dateKey,
+                    difficulty: difficulty
+                )
+                modelContext.insert(difficultyRecord)
+                habitData.difficultyHistory.append(difficultyRecord)
+            }
+
+            print("✅ SyncEngine: Updated \(difficultyHistory.count) difficulty records for habit '\(habitData.name)'")
+        }
     }
-    
+
     /// Create HabitData from Firestore data
     @MainActor
     private static func createHabitData(from data: [String: Any], habitId: UUID, userId: String) -> HabitData? {
@@ -2183,7 +2206,25 @@ actor SyncEngine {
                 }
             }
         }
-        
+
+        // ✅ FIX: Create difficulty history from Firestore (persists across reinstall)
+        if let difficultyHistory = data["difficultyHistory"] as? [String: Int], !difficultyHistory.isEmpty {
+            let modelContext = SwiftDataContainer.shared.modelContext
+
+            for (dateKey, difficulty) in difficultyHistory {
+                let difficultyRecord = DifficultyRecord(
+                    userId: userId,
+                    habitId: habitId,
+                    dateKey: dateKey,
+                    difficulty: difficulty
+                )
+                modelContext.insert(difficultyRecord)
+                habitData.difficultyHistory.append(difficultyRecord)
+            }
+
+            print("✅ SyncEngine: Created \(difficultyHistory.count) difficulty records for new habit '\(name)'")
+        }
+
         return habitData
     }
     
