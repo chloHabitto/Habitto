@@ -24,12 +24,12 @@ struct DifficultyBadge: View {
     
     private var label: String {
         switch difficulty {
-        case 1: return "Very Easy"
-        case 2: return "Easy"
-        case 3: return "Medium"
-        case 4: return "Hard"
-        case 5: return "Very Hard"
-        default: return "Medium"
+        case 1: return "habits.difficulty.veryEasy".localized
+        case 2: return "habits.difficulty.easy".localized
+        case 3: return "habits.difficulty.medium".localized
+        case 4: return "habits.difficulty.hard".localized
+        case 5: return "habits.difficulty.veryHard".localized
+        default: return "habits.difficulty.medium".localized
         }
     }
     

@@ -67,11 +67,11 @@ struct DailyActivityTimelineView: View {
     
     private var timelineHeader: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Today's Activity")
+            Text("progress.journey.todaysActivity".localized)
                 .font(.appTitleMediumEmphasised)
                 .foregroundColor(.appText02)
             
-            Text("Your progress journey today")
+            Text("progress.journey.progressToday".localized)
                 .font(.appBodySmall)
                 .foregroundColor(.appText04)
         }
@@ -119,11 +119,11 @@ struct DailyActivityTimelineView: View {
                 )
             
             VStack(spacing: 8) {
-                Text("Your day is just beginning")
+                Text("progress.journey.yourDayBeginning".localized)
                     .font(.appTitleMediumEmphasised)
                     .foregroundColor(.appText01)
                 
-                Text("Complete this habit from Home to start\nbuilding today's timeline")
+                Text("progress.journey.completeFromHomeToStart".localized)
                     .font(.appBodyMedium)
                     .foregroundColor(.appText03)
                     .multilineTextAlignment(.center)

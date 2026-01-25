@@ -127,7 +127,7 @@ struct TimelineEntryRow: View {
                         .font(.appTitleMediumEmphasised)
                         .foregroundColor(.appText02)
                     
-                    Text("Progress: \(entry.runningTotal)/\(entry.goalAmount)")
+                    Text(String(format: "progress.journey.progressLabel".localized, entry.runningTotal, entry.goalAmount))
                         .font(.appLabelSmall)
                         .foregroundColor(.appText05)
                 }

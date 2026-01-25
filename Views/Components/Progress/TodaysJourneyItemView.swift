@@ -219,7 +219,7 @@ struct TodaysJourneyItemView: View {
   private var progressContent: some View {
     VStack(alignment: .leading, spacing: 4) {
       // Progress text
-      Text("Progress: \(todayProgress)/\(goalAmount)")
+      Text(String(format: "progress.journey.progressLabel".localized, todayProgress, goalAmount))
         .font(.appLabelSmall)
         .foregroundColor(.appText05)
       

@@ -333,3 +333,251 @@
 "habits.recentlyDeleted.deleteForeverConfirm" = "\"%@\"을(를) 영구적으로 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.";
 "habits.recentlyDeleted.deletedDaysAgo" = "%d일 전에 삭제됨";
 "habits.recentlyDeleted.daysLeftToRecover" = "복원 가능 %d일 남음";
+
+/* ==================== */
+/* PROGRESS TAB         */
+/* ==================== */
+
+/* Headers */
+"progress.title" = "진행";
+"progress.statistics" = "통계";
+"progress.analytics" = "분석";
+"progress.overview" = "개요";
+"progress.insights" = "인사이트";
+"progress.history" = "기록";
+
+/* Time Periods */
+"progress.period.today" = "오늘";
+"progress.period.thisWeek" = "이번 주";
+"progress.period.thisMonth" = "이번 달";
+"progress.period.thisYear" = "올해";
+"progress.period.allTime" = "전체";
+"progress.period.last7Days" = "최근 7일";
+"progress.period.last30Days" = "최근 30일";
+"progress.period.last90Days" = "최근 90일";
+"progress.period.last365Days" = "최근 365일";
+"progress.period.custom" = "사용자 지정";
+"progress.period.daily" = "일간";
+"progress.period.weekly" = "주간";
+"progress.period.monthly" = "월간";
+"progress.period.yearly" = "연간";
+
+/* Time Period Short */
+"progress.period.short.day" = "일";
+"progress.period.short.week" = "주";
+"progress.period.short.month" = "월";
+"progress.period.short.year" = "년";
+
+/* Chart Labels */
+"progress.chart.completionRate" = "완료율";
+"progress.chart.streak" = "연속";
+"progress.chart.bestStreak" = "최고 연속";
+"progress.chart.currentStreak" = "현재 연속";
+"progress.chart.averageStreak" = "평균 연속";
+"progress.chart.totalCompleted" = "총 완료";
+"progress.chart.totalSkipped" = "총 건너뜀";
+"progress.chart.totalMissed" = "총 놓침";
+"progress.chart.average" = "평균";
+"progress.chart.best" = "최고";
+"progress.chart.worst" = "최저";
+"progress.chart.completion" = "완료";
+"progress.chart.consistency" = "꾸준함";
+
+/* Stats */
+"progress.stats.total" = "전체";
+"progress.stats.completed" = "완료";
+"progress.stats.skipped" = "건너뜀";
+"progress.stats.missed" = "놓침";
+"progress.stats.pending" = "대기 중";
+"progress.stats.rate" = "비율";
+"progress.stats.count" = "횟수";
+"progress.stats.days" = "일";
+"progress.stats.times" = "회";
+"progress.stats.streakDay" = "%d일";
+"progress.stats.streakDays" = "%d일";
+
+/* Habit Stats */
+"progress.habit.perfectDays" = "완벽한 날";
+"progress.habit.totalDays" = "총 일수";
+"progress.habit.activeDays" = "활동 일수";
+"progress.habit.longestStreak" = "최장 연속";
+"progress.habit.currentStreak" = "현재 연속";
+"progress.habit.averagePerWeek" = "주간 평균";
+"progress.habit.averagePerMonth" = "월간 평균";
+"progress.habit.successRate" = "성공률";
+
+/* Filters */
+"progress.filter.allHabits" = "전체 습관";
+"progress.filter.allHabitsShort" = "전체 습관";
+"progress.filter.selectHabit" = "습관 선택";
+
+/* Empty States */
+"progress.empty.noData" = "데이터가 없습니다";
+"progress.empty.startTracking" = "습관을 기록하여 진행 상황을 확인하세요";
+"progress.empty.noHabitsCompleted" = "아직 완료된 습관이 없습니다";
+"progress.empty.selectHabit" = "세부 정보를 보려면 습관을 선택하세요";
+"progress.empty.noStatsAvailable" = "통계를 사용할 수 없습니다";
+"progress.empty.noHabitsYet" = "습관이 없습니다";
+"progress.empty.createFirstToTrack" = "첫 번째 습관을 만들어 진행을 기록하세요";
+"progress.empty.noHighlightsYet" = "아직 강조할 습관이 없습니다";
+"progress.empty.noTrendsYet" = "아직 표시할 추세가 없습니다";
+"progress.empty.noDifficultyYet" = "아직 난이도 없음";
+"progress.empty.noDifficultySubtitle" = "습관을 완료한 후 난이도를 기록할 수 있어요!";
+"progress.empty.noDifficultyData" = "아직 난이도 데이터가 없습니다";
+"progress.empty.completeForDifficultyTrends" = "이 습관을 몇 번 완료하면 난이도 추세를 볼 수 있어요";
+"progress.empty.noCompletionData" = "아직 완료 데이터가 없습니다";
+"progress.empty.completeForTimePatterns" = "이 습관을 몇 번 완료하면 시간 패턴을 볼 수 있어요";
+"progress.empty.noScheduledThisWeek" = "이번 주에 예정된 습관이 없습니다";
+"progress.empty.noScheduledThisMonth" = "이번 달에 예정된 습관이 없습니다";
+"progress.empty.noScheduledWeek" = "이번 주에 예정된 습관이 없습니다";
+"progress.empty.noScheduledMonth" = "이번 달에 예정된 습관이 없습니다";
+"progress.empty.completeToSeeChampion" = "이번 달 습관을 완료하면 챔피언을 확인할 수 있어요!";
+
+/* Insights */
+"progress.insight.greatJob" = "잘했어요!";
+"progress.insight.keepItUp" = "계속 파이팅!";
+"progress.insight.improving" = "점점 좋아지고 있어요!";
+"progress.insight.onTrack" = "순조롭게 진행 중!";
+"progress.insight.almostThere" = "거의 다 왔어요!";
+"progress.insight.needsWork" = "조금 더 노력이 필요해요";
+"progress.insight.perfectWeek" = "완벽한 한 주!";
+"progress.insight.perfectMonth" = "완벽한 한 달!";
+"progress.insight.keepUpGreatWork" = "잘하고 있어요!";
+"progress.insight.keepUpExcellent" = "훌륭해요!";
+"progress.insight.allDoingGreat" = "모든 습관이 잘되고 있어요!";
+"progress.insight.greatProgress" = "좋은 진행";
+"progress.insight.steadyImprovement" = "꾸준한 향상";
+"progress.insight.buildingMomentum" = "모멘텀 쌓는 중";
+"progress.insight.gettingStarted" = "시작 단계";
+"progress.insight.outstandingConsistency" = "탁월한 월간 꾸준함!";
+"progress.insight.couldUseNudge" = "조금 더 신경 쓸 것";
+"progress.insight.topPerformer" = "최고 수행";
+"progress.insight.monthlyChampion" = "월간 챔피언";
+"progress.insight.thisMonthsFocus" = "이번 달 포커스";
+"progress.insight.personalizedTips" = "나만의 여정 팁";
+
+/* Comparisons */
+"progress.compare.vsLastWeek" = "지난주 대비";
+"progress.compare.vsLastMonth" = "지난달 대비";
+"progress.compare.vsLastYear" = "작년 대비";
+"progress.compare.better" = "향상";
+"progress.compare.worse" = "하락";
+"progress.compare.same" = "동일";
+"progress.compare.up" = "상승";
+"progress.compare.down" = "하락";
+
+/* Date Ranges */
+"progress.range.from" = "시작";
+"progress.range.to" = "종료";
+"progress.range.selectRange" = "기간 선택";
+"progress.range.weekLabel" = "W%d";
+
+/* Summary */
+"progress.summary.dailyAverage" = "일일 평균";
+"progress.summary.weeklyAverage" = "주간 평균";
+"progress.summary.monthlyAverage" = "월간 평균";
+"progress.summary.overallProgress" = "전체 진행률";
+"progress.summary.habitBreakdown" = "습관별 분석";
+
+/* XP Related */
+"progress.xp.earned" = "획득 XP";
+"progress.xp.totalEarned" = "총 획득 XP";
+"progress.xp.thisWeek" = "이번 주 XP";
+"progress.xp.thisMonth" = "이번 달 XP";
+"progress.xp.plus50Earned" = "+50 XP 획득";
+
+/* Actions */
+"progress.action.viewDetails" = "상세 보기";
+"progress.action.shareProgress" = "진행 상황 공유";
+"progress.action.exportData" = "데이터 내보내기";
+"progress.action.seeMoreProgress" = "더 많은 진행 보기";
+"progress.action.createHabit" = "습관 만들기";
+"progress.action.gotIt" = "확인";
+
+/* Today's Progress / Daily */
+"progress.daily.progressFor" = "%@ 진행";
+"progress.daily.todaysProgress" = "오늘의 진행";
+"progress.daily.noProgressToday" = "오늘 진행 없음";
+"progress.daily.notScheduledFor" = "%@은(는) %@에 예정되어 있지 않습니다";
+"progress.daily.thisHabit" = "이 습관";
+"progress.daily.habitsCompleted" = "%d개 중 %d개 습관 완료";
+"progress.daily.completedOne" = "완료";
+"progress.daily.notCompleted" = "미완료";
+"progress.daily.level" = "레벨 %d";
+"progress.daily.todaysDifficulty" = "오늘의 난이도";
+"progress.daily.basedOnScheduled" = "예정된 습관 기준";
+"progress.daily.monthlyCompletions" = "월간 완료";
+
+/* Weekly */
+"progress.weekly.title" = "이번 주 진행";
+"progress.weekly.highlights" = "이번 주 하이라이트";
+"progress.weekly.completionThisWeek" = "이번 주 %d%% 완료";
+"progress.weekly.trends" = "주간 추세";
+"progress.weekly.analysis" = "월간 분석";
+
+/* Monthly */
+"progress.monthly.title" = "이번 달 진행";
+"progress.monthly.highlights" = "이번 달 하이라이트";
+"progress.monthly.completionThisMonth" = "이번 달 %d%% 완료";
+"progress.monthly.insights" = "월간 인사이트";
+
+/* Difficulty */
+"progress.difficulty.title" = "난이도";
+"progress.difficulty.stat" = "난이도 통계";
+"progress.difficulty.whatIs" = "난이도란?";
+"progress.difficulty.explanation" = "난이도는 습관을 완료했을 때 얼마나 어려웠는지를 나타냅니다. 습관 완료 후 매우 쉬움(1)부터 매우 어려움(5)까지 평가합니다. 여기 표시되는 통계는 해당 날짜 예정 습관의 평균 난이도입니다.";
+"progress.difficulty.levels" = "난이도 단계:";
+"progress.difficulty.whatDoesStatMean" = "이 통계는 무엇을 의미하나요?";
+"progress.difficulty.trends" = "난이도 추세";
+"progress.difficulty.howChallengingWeek" = "이번 주 이 습관이 얼마나 어려웠는지";
+"progress.difficulty.howChallengingMonth" = "이번 달 이 습관이 얼마나 어려웠는지";
+
+/* Time of Day (charts) */
+"progress.timeCompletion.title" = "시간대별 완료";
+"progress.timeCompletion.whenYouComplete" = "이 습관을 주로 완료하는 시간대";
+"progress.timeCompletion.morning" = "아침";
+"progress.timeCompletion.lunch" = "점심";
+"progress.timeCompletion.afternoon" = "오후";
+"progress.timeCompletion.evening" = "저녁";
+"progress.timeCompletion.night" = "밤";
+"progress.timeCompletion.noData" = "데이터 없음";
+"progress.timeCompletion.mostSuccessfulIn" = "이 습관은 %@에 가장 잘 수행되는 것 같아요";
+
+/* Today's Journey */
+"progress.journey.todaysActivity" = "오늘의 활동";
+"progress.journey.yesterdaysActivity" = "어제의 활동";
+"progress.journey.activityOn" = "%@ 활동";
+"progress.journey.progressToday" = "오늘의 진행 여정";
+"progress.journey.yourDayAwaits" = "하루가 기다리고 있어요!";
+"progress.journey.noHabitsScheduledToday" = "오늘 예정된 습관이 없습니다";
+"progress.journey.perfectDay" = "완벽한 하루!";
+"progress.journey.completedAllHabits" = "모든 습관을 완료했어요";
+"progress.journey.progressLabel" = "진행: %d/%d";
+"progress.journey.moreToReachGoal" = "목표까지 %d개 더";
+"progress.journey.completeFromHome" = "홈에서 이 습관 완료하기";
+"progress.journey.completeFromHomeToStart" = "홈에서 이 습관을 완료하여\n오늘 타임라인을 쌓아보세요";
+"progress.journey.yourDayBeginning" = "하루가 막 시작됐어요";
+"progress.journey.now" = "지금";
+"progress.journey.dayStreak" = "%d일 연속";
+"progress.journey.dailyGoalComplete" = "일일 목표 완료!";
+"progress.journey.streakKeepItUp" = "%d일 연속이에요. 계속해요!";
+"progress.journey.sessions" = "세션";
+"progress.journey.avgEffort" = "평균 노력";
+
+/* Weekly helper messages */
+"progress.weekly.readyToStart" = "이번 주도 파이팅! 💪";
+"progress.weekly.completeToSeeTopPerformer" = "이번 주 습관을 완료하면 최고 수행 습관을 확인할 수 있어요!";
+"progress.weekly.noScheduledCheckSchedules" = "이번 주 예정된 습관이 없습니다. 습관 일정을 확인하세요!";
+"progress.weekly.allPerformingWell" = "이번 주 모든 습관이 잘되고 있어요!";
+"progress.weekly.allDoingGreatKeepUp" = "모든 습관이 훌륭해요! 계속 파이팅!";
+"progress.weekly.outstandingWeek" = "탁월한 한 주!";
+"progress.weekly.oneDayTrackMore" = "1일 기록했어요. 조금 더 기록하면 추세를 볼 수 있어요!";
+"progress.weekly.completeFewDaysForTrends" = "며칠간 습관을 완료하면 주간 추세를 볼 수 있어요!";
+"progress.weekly.noScheduledAddSchedules" = "이번 주 예정된 습관이 없습니다. 일정을 추가하면 하이라이트를 볼 수 있어요!";
+
+/* Difficulty messages */
+"progress.difficulty.message.veryEasy" = "완벽해요! 🚀";
+"progress.difficulty.message.easy" = "잘했어요! 💪";
+"progress.difficulty.message.medium" = "잘하고 있어요! 👍";
+"progress.difficulty.message.hard" = "조금만 더 힘내요! 🔥";
+"progress.difficulty.message.veryHard" = "점점 강해지고 있어요! 💎";

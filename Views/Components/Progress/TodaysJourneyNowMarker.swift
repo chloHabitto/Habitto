@@ -93,7 +93,7 @@ struct TodaysJourneyNowMarker: View {
         .frame(height: 2)
 
       // NOW badge
-      Text("NOW")
+      Text("progress.journey.now".localized)
         .font(.system(size: 10, weight: .bold))
         .foregroundColor(.appPrimary)
         .padding(.horizontal, 10)

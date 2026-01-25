@@ -29,7 +29,7 @@ struct NextActionRow: View {
     
     private var timeColumn: some View {
         VStack {
-            Text("Now")
+            Text("progress.journey.now".localized)
                 .font(.appLabelMedium)
                 .foregroundColor(.appText04)
         }
@@ -89,11 +89,11 @@ struct NextActionRow: View {
             
             // Text
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(remainingCount) more to reach your goal")
+                Text(String(format: "progress.journey.moreToReachGoal".localized, remainingCount))
                     .font(.appLabelLargeEmphasised)
                     .foregroundColor(.appText01)
                 
-                Text("Complete this habit from Home")
+                Text("progress.journey.completeFromHome".localized)
                     .font(.appBodySmall)
                     .foregroundColor(.appText03)
             }

@@ -333,3 +333,251 @@
 "habits.recentlyDeleted.deleteForeverConfirm" = "Are you sure you want to permanently delete \"%@\"? This action cannot be undone.";
 "habits.recentlyDeleted.deletedDaysAgo" = "Deleted %d days ago";
 "habits.recentlyDeleted.daysLeftToRecover" = "%d days left to recover";
+
+/* ==================== */
+/* PROGRESS TAB         */
+/* ==================== */
+
+/* Headers */
+"progress.title" = "Progress";
+"progress.statistics" = "Statistics";
+"progress.analytics" = "Analytics";
+"progress.overview" = "Overview";
+"progress.insights" = "Insights";
+"progress.history" = "History";
+
+/* Time Periods */
+"progress.period.today" = "Today";
+"progress.period.thisWeek" = "This Week";
+"progress.period.thisMonth" = "This Month";
+"progress.period.thisYear" = "This Year";
+"progress.period.allTime" = "All Time";
+"progress.period.last7Days" = "Last 7 Days";
+"progress.period.last30Days" = "Last 30 Days";
+"progress.period.last90Days" = "Last 90 Days";
+"progress.period.last365Days" = "Last 365 Days";
+"progress.period.custom" = "Custom";
+"progress.period.daily" = "Daily";
+"progress.period.weekly" = "Weekly";
+"progress.period.monthly" = "Monthly";
+"progress.period.yearly" = "Yearly";
+
+/* Time Period Short */
+"progress.period.short.day" = "D";
+"progress.period.short.week" = "W";
+"progress.period.short.month" = "M";
+"progress.period.short.year" = "Y";
+
+/* Chart Labels */
+"progress.chart.completionRate" = "Completion Rate";
+"progress.chart.streak" = "Streak";
+"progress.chart.bestStreak" = "Best Streak";
+"progress.chart.currentStreak" = "Current Streak";
+"progress.chart.averageStreak" = "Average Streak";
+"progress.chart.totalCompleted" = "Total Completed";
+"progress.chart.totalSkipped" = "Total Skipped";
+"progress.chart.totalMissed" = "Total Missed";
+"progress.chart.average" = "Average";
+"progress.chart.best" = "Best";
+"progress.chart.worst" = "Worst";
+"progress.chart.completion" = "Completion";
+"progress.chart.consistency" = "Consistency";
+
+/* Stats */
+"progress.stats.total" = "Total";
+"progress.stats.completed" = "Completed";
+"progress.stats.skipped" = "Skipped";
+"progress.stats.missed" = "Missed";
+"progress.stats.pending" = "Pending";
+"progress.stats.rate" = "Rate";
+"progress.stats.count" = "Count";
+"progress.stats.days" = "Days";
+"progress.stats.times" = "Times";
+"progress.stats.streakDay" = "%d day";
+"progress.stats.streakDays" = "%d days";
+
+/* Habit Stats */
+"progress.habit.perfectDays" = "Perfect Days";
+"progress.habit.totalDays" = "Total Days";
+"progress.habit.activeDays" = "Active Days";
+"progress.habit.longestStreak" = "Longest Streak";
+"progress.habit.currentStreak" = "Current Streak";
+"progress.habit.averagePerWeek" = "Average per Week";
+"progress.habit.averagePerMonth" = "Average per Month";
+"progress.habit.successRate" = "Success Rate";
+
+/* Filters */
+"progress.filter.allHabits" = "All habits";
+"progress.filter.allHabitsShort" = "All habits";
+"progress.filter.selectHabit" = "Select Habit";
+
+/* Empty States */
+"progress.empty.noData" = "No data yet";
+"progress.empty.startTracking" = "Start tracking habits to see your progress";
+"progress.empty.noHabitsCompleted" = "No habits completed yet";
+"progress.empty.selectHabit" = "Select a habit to view details";
+"progress.empty.noStatsAvailable" = "No statistics available";
+"progress.empty.noHabitsYet" = "No habits yet";
+"progress.empty.createFirstToTrack" = "Create your first habit to start tracking progress";
+"progress.empty.noHighlightsYet" = "No habits to highlight yet";
+"progress.empty.noTrendsYet" = "No trends to show yet";
+"progress.empty.noDifficultyYet" = "No Difficulty yet";
+"progress.empty.noDifficultySubtitle" = "You can record the difficulty once you complete the habit!";
+"progress.empty.noDifficultyData" = "No difficulty data yet";
+"progress.empty.completeForDifficultyTrends" = "Complete this habit a few times to see your difficulty trends";
+"progress.empty.noCompletionData" = "No completion data yet";
+"progress.empty.completeForTimePatterns" = "Complete this habit a few times to see your time patterns";
+"progress.empty.noScheduledThisWeek" = "No habits scheduled this week yet";
+"progress.empty.noScheduledThisMonth" = "No habits scheduled this month yet";
+"progress.empty.noScheduledWeek" = "No habits scheduled this week";
+"progress.empty.noScheduledMonth" = "No habits scheduled this month";
+"progress.empty.completeToSeeChampion" = "Complete some habits this month to see your champion!";
+
+/* Insights */
+"progress.insight.greatJob" = "Great job!";
+"progress.insight.keepItUp" = "Keep it up!";
+"progress.insight.improving" = "You're improving!";
+"progress.insight.onTrack" = "You're on track!";
+"progress.insight.almostThere" = "Almost there!";
+"progress.insight.needsWork" = "Needs some work";
+"progress.insight.perfectWeek" = "Perfect week!";
+"progress.insight.perfectMonth" = "Perfect month!";
+"progress.insight.keepUpGreatWork" = "Keep up the great work!";
+"progress.insight.keepUpExcellent" = "Keep up the excellent work!";
+"progress.insight.allDoingGreat" = "All habits are doing great!";
+"progress.insight.greatProgress" = "Great Progress";
+"progress.insight.steadyImprovement" = "Steady Improvement";
+"progress.insight.buildingMomentum" = "Building Momentum";
+"progress.insight.gettingStarted" = "Getting Started";
+"progress.insight.outstandingConsistency" = "Outstanding monthly consistency!";
+"progress.insight.couldUseNudge" = "Could Use a Nudge";
+"progress.insight.topPerformer" = "Top Performer";
+"progress.insight.monthlyChampion" = "Monthly Champion";
+"progress.insight.thisMonthsFocus" = "This Month's Focus";
+"progress.insight.personalizedTips" = "Personalized tips for your journey";
+
+/* Comparisons */
+"progress.compare.vsLastWeek" = "vs last week";
+"progress.compare.vsLastMonth" = "vs last month";
+"progress.compare.vsLastYear" = "vs last year";
+"progress.compare.better" = "better";
+"progress.compare.worse" = "worse";
+"progress.compare.same" = "same";
+"progress.compare.up" = "up";
+"progress.compare.down" = "down";
+
+/* Date Ranges */
+"progress.range.from" = "From";
+"progress.range.to" = "To";
+"progress.range.selectRange" = "Select Range";
+"progress.range.weekLabel" = "W%d";
+
+/* Summary */
+"progress.summary.dailyAverage" = "Daily Average";
+"progress.summary.weeklyAverage" = "Weekly Average";
+"progress.summary.monthlyAverage" = "Monthly Average";
+"progress.summary.overallProgress" = "Overall Progress";
+"progress.summary.habitBreakdown" = "Habit Breakdown";
+
+/* XP Related */
+"progress.xp.earned" = "XP Earned";
+"progress.xp.totalEarned" = "Total XP Earned";
+"progress.xp.thisWeek" = "XP This Week";
+"progress.xp.thisMonth" = "XP This Month";
+"progress.xp.plus50Earned" = "+50 XP earned";
+
+/* Actions */
+"progress.action.viewDetails" = "View Details";
+"progress.action.shareProgress" = "Share Progress";
+"progress.action.exportData" = "Export Data";
+"progress.action.seeMoreProgress" = "See more progress";
+"progress.action.createHabit" = "Create Habit";
+"progress.action.gotIt" = "Got it";
+
+/* Today's Progress / Daily */
+"progress.daily.progressFor" = "Progress for %@";
+"progress.daily.todaysProgress" = "Today's Progress";
+"progress.daily.noProgressToday" = "No Progress Today";
+"progress.daily.notScheduledFor" = "%@ is not scheduled for %@";
+"progress.daily.thisHabit" = "This habit";
+"progress.daily.habitsCompleted" = "%d of %d habits completed";
+"progress.daily.completedOne" = "Completed";
+"progress.daily.notCompleted" = "Not completed";
+"progress.daily.level" = "Level %d";
+"progress.daily.todaysDifficulty" = "Today's Difficulty";
+"progress.daily.basedOnScheduled" = "Based on your scheduled habits";
+"progress.daily.monthlyCompletions" = "Monthly Completions";
+
+/* Weekly */
+"progress.weekly.title" = "This Week's Progress";
+"progress.weekly.highlights" = "This Week's Highlights";
+"progress.weekly.completionThisWeek" = "%d%% completion this week";
+"progress.weekly.trends" = "Weekly Trends";
+"progress.weekly.analysis" = "Monthly Analysis";
+
+/* Monthly */
+"progress.monthly.title" = "This Month's Progress";
+"progress.monthly.highlights" = "This Month's Highlights";
+"progress.monthly.completionThisMonth" = "%d%% completion this month";
+"progress.monthly.insights" = "Monthly Insights";
+
+/* Difficulty */
+"progress.difficulty.title" = "Difficulty";
+"progress.difficulty.stat" = "Difficulty Stat";
+"progress.difficulty.whatIs" = "What is Difficulty?";
+"progress.difficulty.explanation" = "Difficulty measures how challenging your habits felt when you completed them. After completing a habit, you rate it from Very Easy (1) to Very Hard (5). The stat shown here is the average difficulty of all your scheduled habits for this day.";
+"progress.difficulty.levels" = "Difficulty Levels:";
+"progress.difficulty.whatDoesStatMean" = "What does this stat mean?";
+"progress.difficulty.trends" = "Difficulty Trends";
+"progress.difficulty.howChallengingWeek" = "How challenging this habit felt this week";
+"progress.difficulty.howChallengingMonth" = "How challenging this habit felt this month";
+
+/* Time of Day (charts) */
+"progress.timeCompletion.title" = "Time base completion";
+"progress.timeCompletion.whenYouComplete" = "When you typically complete this habit";
+"progress.timeCompletion.morning" = "Morning";
+"progress.timeCompletion.lunch" = "Lunch";
+"progress.timeCompletion.afternoon" = "Afternoon";
+"progress.timeCompletion.evening" = "Evening";
+"progress.timeCompletion.night" = "Night";
+"progress.timeCompletion.noData" = "No data";
+"progress.timeCompletion.mostSuccessfulIn" = "This habit seems to be most successful in the %@";
+
+/* Today's Journey */
+"progress.journey.todaysActivity" = "Today's Activity";
+"progress.journey.yesterdaysActivity" = "Yesterday's Activity";
+"progress.journey.activityOn" = "%@'s Activity";
+"progress.journey.progressToday" = "Your progress journey today";
+"progress.journey.yourDayAwaits" = "Your day awaits!";
+"progress.journey.noHabitsScheduledToday" = "No habits scheduled for today";
+"progress.journey.perfectDay" = "Perfect day!";
+"progress.journey.completedAllHabits" = "You completed all your habits";
+"progress.journey.progressLabel" = "Progress: %d/%d";
+"progress.journey.moreToReachGoal" = "%d more to reach your goal";
+"progress.journey.completeFromHome" = "Complete this habit from Home";
+"progress.journey.completeFromHomeToStart" = "Complete this habit from Home to start\nbuilding today's timeline";
+"progress.journey.yourDayBeginning" = "Your day is just beginning";
+"progress.journey.now" = "NOW";
+"progress.journey.dayStreak" = "%d day streak";
+"progress.journey.dailyGoalComplete" = "Daily Goal Complete!";
+"progress.journey.streakKeepItUp" = "You're on a %d-day streak. Keep it up!";
+"progress.journey.sessions" = "Sessions";
+"progress.journey.avgEffort" = "Avg. Effort";
+
+/* Weekly helper messages */
+"progress.weekly.readyToStart" = "Ready to start your week strong! 💪";
+"progress.weekly.completeToSeeTopPerformer" = "Complete some habits this week to see your top performer!";
+"progress.weekly.noScheduledCheckSchedules" = "No habits scheduled this week. Check your habit schedules!";
+"progress.weekly.allPerformingWell" = "All habits are performing well this week!";
+"progress.weekly.allDoingGreatKeepUp" = "All habits are doing great! Keep up the excellent work!";
+"progress.weekly.outstandingWeek" = "Outstanding Week!";
+"progress.weekly.oneDayTrackMore" = "You've logged 1 active day. Track a bit more to see trends!";
+"progress.weekly.completeFewDaysForTrends" = "Complete habits for a few days to see your weekly trends!";
+"progress.weekly.noScheduledAddSchedules" = "No habits scheduled this week. Add schedules to see highlights!";
+
+/* Difficulty messages */
+"progress.difficulty.message.veryEasy" = "You're crushing it! 🚀";
+"progress.difficulty.message.easy" = "Great job! 💪";
+"progress.difficulty.message.medium" = "You're doing well! 👍";
+"progress.difficulty.message.hard" = "Keep pushing through! 🔥";
+"progress.difficulty.message.veryHard" = "You're building strength! 💎";

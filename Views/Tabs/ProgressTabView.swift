@@ -167,6 +167,7 @@ struct ProgressTabView: View {
   // MARK: - Subscription
   
   @ObservedObject private var subscriptionManager = SubscriptionManager.shared
+  @ObservedObject private var localizationManager = LocalizationManager.shared
 
   // MARK: - State
 
@@ -261,7 +262,7 @@ struct ProgressTabView: View {
           activeSheet = .habitSelector
         }) {
           HStack(spacing: 0) {
-            Text(selectedHabit?.name ?? "All habits")
+            Text(selectedHabit?.name ?? "progress.filter.allHabits".localized)
               .font(.appTitleMediumEmphasised)
               .lineSpacing(8)
               .foregroundColor(.text02)
@@ -283,10 +284,10 @@ struct ProgressTabView: View {
       // Second Filter - Period Selection
       UnifiedTabBarView(
         tabs: [
-          TabItem(title: "Daily"),
-          TabItem(title: "Weekly"),
-          TabItem(title: "Monthly"),
-          TabItem(title: "Yearly")
+          TabItem(title: "progress.period.daily".localized),
+          TabItem(title: "progress.period.weekly".localized),
+          TabItem(title: "progress.period.monthly".localized),
+          TabItem(title: "progress.period.yearly".localized)
         ],
         selectedIndex: selectedTimePeriod,
         style: .underline,
@@ -313,7 +314,10 @@ struct ProgressTabView: View {
         weeklyProgressCard
 
         // Empty state instead of calendar grid and analysis card
-        HabitEmptyStateView.noHabitsYet()
+        HabitEmptyStateView(
+          imageName: "Habit-List-Empty-State@4x",
+          title: "progress.empty.noHabitsYet".localized,
+          subtitle: "progress.empty.createFirstToTrack".localized)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.top, 40)
           .padding(.bottom, 60)
@@ -416,7 +420,10 @@ struct ProgressTabView: View {
         monthlyProgressCard
 
         // Empty state instead of calendar grid
-        HabitEmptyStateView.noHabitsYet()
+        HabitEmptyStateView(
+          imageName: "Habit-List-Empty-State@4x",
+          title: "progress.empty.noHabitsYet".localized,
+          subtitle: "progress.empty.createFirstToTrack".localized)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.top, 40)
           .padding(.bottom, 60)
@@ -482,7 +489,10 @@ struct ProgressTabView: View {
       // Show empty state when no habits exist
       VStack(spacing: 20) {
         // Empty state for yearly view
-        HabitEmptyStateView.noHabitsYet()
+        HabitEmptyStateView(
+          imageName: "Habit-List-Empty-State@4x",
+          title: "progress.empty.noHabitsYet".localized,
+          subtitle: "progress.empty.createFirstToTrack".localized)
           .frame(maxWidth: .infinity, alignment: .center)
           .padding(.top, 40)
           .padding(.bottom, 60)
@@ -495,8 +505,8 @@ struct ProgressTabView: View {
         MonthlyCompletionBarChartWrapper(
           data: calculateMonthlyCompletionDataForAllHabits(),
           accentColor: .primary,
-          title: "Monthly Completions",
-          subtitle: "All habits • \(selectedYear)"
+          title: "progress.daily.monthlyCompletions".localized,
+          subtitle: "\("progress.filter.allHabits".localized) • \(selectedYear)"
         )
         
         // Yearly Calendar Grid
@@ -522,7 +532,7 @@ struct ProgressTabView: View {
         MonthlyCompletionBarChartWrapper(
           data: calculateMonthlyCompletionDataForHabit(selectedHabit),
           accentColor: selectedHabit.color.color,
-          title: "Monthly Completions",
+          title: "progress.daily.monthlyCompletions".localized,
           subtitle: "\(selectedHabit.name) • \(selectedYear)"
         )
       }
@@ -686,7 +696,7 @@ struct ProgressTabView: View {
           .allowsHitTesting(true)
           
           // CTA Button - positioned at bottom of gradient using ZStack alignment
-          HabittoButton.largeFillPrimary(text: "See more progress") {
+          HabittoButton.largeFillPrimary(text: "progress.action.seeMoreProgress".localized) {
             activeSheet = .paywall
           }
           .overlay(
@@ -947,7 +957,7 @@ struct ProgressTabView: View {
 
   private var habitSelectorHeader: some View {
     HStack {
-      Text("Select Habit")
+      Text("progress.filter.selectHabit".localized)
         .font(.appTitleLargeEmphasised)
         .foregroundColor(.text01)
 
@@ -970,9 +980,9 @@ struct ProgressTabView: View {
 
   private var habitFilterPills: some View {
     HStack(spacing: 8) {
-      habitFilterPill(title: "All", status: .all)
-      habitFilterPill(title: "Active", status: .active)
-      habitFilterPill(title: "Inactive", status: .inactive)
+      habitFilterPill(title: "habits.filter.all".localized, status: .all)
+      habitFilterPill(title: "habits.filter.active".localized, status: .active)
+      habitFilterPill(title: "habits.filter.inactive".localized, status: .inactive)
       Spacer()
     }
     .padding(.leading, 20)
@@ -1037,7 +1047,7 @@ struct ProgressTabView: View {
 
         // VStack with title and description
         VStack(alignment: .leading, spacing: 2) {
-          Text("All habits")
+          Text("progress.filter.allHabits".localized)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(.text02)
             .lineLimit(1)
@@ -1144,7 +1154,7 @@ struct ProgressTabView: View {
 
             // Active/Inactive badge
             if isHabitActive(habit) {
-              Text("Active")
+              Text("habits.filter.active".localized)
                 .font(.appLabelSmall)
                 .foregroundColor(.onGreenBadgeBackground)
                 .padding(.horizontal, 8)
@@ -1154,7 +1164,7 @@ struct ProgressTabView: View {
                     .fill(Color.greenBadgeBackground)
                 )
             } else {
-              Text("Inactive")
+              Text("habits.filter.inactive".localized)
                 .font(.appLabelSmall)
                 .foregroundColor(.onBadgeBackground)
                 .padding(.horizontal, 8)
@@ -1262,11 +1272,11 @@ struct ProgressTabView: View {
       // Header
       HStack {
         VStack(alignment: .leading, spacing: 4) {
-          Text("Today's Difficulty")
+          Text("progress.daily.todaysDifficulty".localized)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(.onPrimaryContainer)
 
-          Text("Based on your scheduled habits")
+          Text("progress.daily.basedOnScheduled".localized)
             .font(.appBodySmall)
             .foregroundColor(.text02)
         }
@@ -1278,7 +1288,7 @@ struct ProgressTabView: View {
             .font(.appTitleMediumEmphasised)
             .foregroundColor(difficultyInfo.color)
 
-          Text("Level \(difficultyInfo.level.rawValue)")
+          Text(String(format: "progress.daily.level".localized, difficultyInfo.level.rawValue))
             .font(.appBodySmall)
             .foregroundColor(.text02)
         }
@@ -1333,7 +1343,7 @@ struct ProgressTabView: View {
             .font(.appBodyMedium)
             .foregroundColor(.onPrimaryContainer)
 
-          Text("Keep up the great work!")
+          Text("progress.insight.keepUpGreatWork".localized)
             .font(.appBodySmall)
             .foregroundColor(.text02)
         }
@@ -1423,7 +1433,7 @@ struct ProgressTabView: View {
                   .resizable()
                   .frame(width: 12, height: 12)
                   .foregroundColor(.primaryFocus)
-                Text("Today")
+                Text("progress.period.today".localized)
                   .font(.appLabelMedium)
                   .foregroundColor(.primaryFocus)
               }
@@ -1451,7 +1461,7 @@ struct ProgressTabView: View {
                   .resizable()
                   .frame(width: 12, height: 12)
                   .foregroundColor(.primaryFocus)
-                Text("This week")
+                Text("progress.period.thisWeek".localized)
                   .font(.appLabelMedium)
                   .foregroundColor(.primaryFocus)
               }
@@ -1476,7 +1486,7 @@ struct ProgressTabView: View {
                   .resizable()
                   .frame(width: 12, height: 12)
                   .foregroundColor(.primaryFocus)
-                Text("This month")
+                Text("progress.period.thisMonth".localized)
                   .font(.appLabelMedium)
                   .foregroundColor(.primaryFocus)
               }
@@ -1501,7 +1511,7 @@ struct ProgressTabView: View {
                   .resizable()
                   .frame(width: 12, height: 12)
                   .foregroundColor(.primaryFocus)
-                Text("This year")
+                Text("progress.period.thisYear".localized)
                   .font(.appLabelMedium)
                   .foregroundColor(.primaryFocus)
               }
@@ -1539,7 +1549,7 @@ struct ProgressTabView: View {
         }) {
           HStack {
             // Left: "Goal" label
-            Text("Goal")
+            Text("habits.card.goal".localized)
               .font(.appLabelLargeEmphasised)
               .foregroundColor(Color("grey700"))
             
@@ -1606,7 +1616,7 @@ struct ProgressTabView: View {
                   .font(.appTitleMediumEmphasised)
                   .foregroundColor(.onPrimaryContainer)
 
-                Text("Progress for \(getDateText())")
+                Text(String(format: "progress.daily.progressFor".localized, getDateText()))
                   .font(.appBodySmall)
                   .foregroundColor(.text02)
               }
@@ -1624,7 +1634,7 @@ struct ProgressTabView: View {
               // Progress bar
               VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                  Text("Progress")
+                  Text("progress.title".localized)
                     .font(.appBodyMedium)
                     .foregroundColor(.onPrimaryContainer)
 
@@ -1642,7 +1652,7 @@ struct ProgressTabView: View {
 
               // Goal details
               VStack(alignment: .leading, spacing: 8) {
-                Text("Goal")
+                Text("habits.card.goal".localized)
                   .font(.appBodyMedium)
                   .foregroundColor(.onPrimaryContainer)
 
@@ -1654,7 +1664,7 @@ struct ProgressTabView: View {
               // Reminders
               if !selectedHabit.reminders.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                  Text("Reminders")
+                  Text("habits.card.reminders".localized)
                     .font(.appBodyMedium)
                     .foregroundColor(.onPrimaryContainer)
 
@@ -1689,11 +1699,11 @@ struct ProgressTabView: View {
               .font(.system(size: 60))
               .foregroundColor(.text03)
 
-            Text("No habits yet")
+            Text("progress.empty.noHabitsYet".localized)
               .font(.appTitleMedium)
               .foregroundColor(.text01)
 
-            Text("Create your first habit to start tracking progress")
+            Text("progress.empty.createFirstToTrack".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text02)
               .multilineTextAlignment(.center)
@@ -1701,7 +1711,7 @@ struct ProgressTabView: View {
             Button(action: {
               // Navigate to create habit
             }) {
-              Text("Create Habit")
+              Text("progress.action.createHabit".localized)
                 .font(.appBodyMediumEmphasised)
                 .foregroundColor(.white)
                 .padding(.horizontal, 24)
@@ -2234,12 +2244,11 @@ struct ProgressTabView: View {
       if selectedHabit != nil, getScheduledHabitsCount() == 0 {
         // Empty state for individual habit not scheduled
         VStack(spacing: 12) {
-          Text("No Progress Today")
+          Text("progress.daily.noProgressToday".localized)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(Color("greyBlack"))
 
-          Text(
-            "\(selectedHabit?.name ?? "This habit") is not scheduled for \(formatDate(selectedProgressDate))")
+          Text(String(format: "progress.daily.notScheduledFor".localized, selectedHabit?.name ?? "progress.daily.thisHabit".localized, formatDate(selectedProgressDate)))
             .font(.appBodySmall)
             .foregroundColor(.text02)
             .multilineTextAlignment(.center)
@@ -2252,17 +2261,17 @@ struct ProgressTabView: View {
         HStack(spacing: 20) {
           // Left side: Text content (vertically centered)
           VStack(alignment: .leading, spacing: 4) {
-            Text("Today's Progress")
+            Text("progress.daily.todaysProgress".localized)
               .font(.appTitleMediumEmphasised)
               .foregroundColor(Color("greyBlack"))
 
             if selectedHabit != nil {
-              Text(getCompletedHabitsCount() == 1 ? "Completed" : "Not completed")
+              Text(getCompletedHabitsCount() == 1 ? "progress.daily.completedOne".localized : "progress.daily.notCompleted".localized)
                 .font(.appBodySmall)
                 .foregroundColor(Color("navy400"))
                 .multilineTextAlignment(.leading)
             } else {
-              Text("\(getCompletedHabitsCount()) of \(getScheduledHabitsCount()) habits completed")
+              Text(String(format: "progress.daily.habitsCompleted".localized, getCompletedHabitsCount(), getScheduledHabitsCount()))
                 .font(.appBodySmall)
                 .foregroundColor(Color("navy400"))
                 .multilineTextAlignment(.leading)
@@ -2303,7 +2312,7 @@ struct ProgressTabView: View {
       HStack(spacing: 20) {
         // Left side: Text content (vertically centered)
         VStack(alignment: .leading, spacing: 4) {
-          Text("This Week's Progress")
+          Text("progress.weekly.title".localized)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(Color("greyBlack"))
 
@@ -2344,7 +2353,7 @@ struct ProgressTabView: View {
     VStack(spacing: 0) {
       // Header with title and page controls (inside the card)
       HStack {
-        Text("This Week's Highlights")
+        Text("progress.weekly.highlights".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.onPrimaryContainer)
 
@@ -2418,7 +2427,7 @@ struct ProgressTabView: View {
 
           // Content with habit info
           VStack(alignment: .leading, spacing: 8) {
-            Text("Top Performer")
+            Text("progress.insight.topPerformer".localized)
               .font(.appLabelMedium)
               .foregroundColor(.text02)
               .padding(.horizontal, 8)
@@ -2433,7 +2442,7 @@ struct ProgressTabView: View {
               .lineLimit(2)
 
             let rate = getWeeklyHabitCompletionRate(topHabit)
-            Text("\(Int(rate))% completion this week")
+            Text(String(format: "progress.weekly.completionThisWeek".localized, Int(rate)))
               .font(.appBodyMedium)
               .foregroundColor(.yellow)
               .fontWeight(.semibold)
@@ -2449,7 +2458,7 @@ struct ProgressTabView: View {
             .font(.system(size: 14, weight: .semibold))
             .foregroundColor(.yellow)
 
-          Text("Keep up the excellent work!")
+          Text("progress.insight.keepUpExcellent".localized)
             .font(.appBodySmall)
             .foregroundColor(.text03)
 
@@ -2459,7 +2468,7 @@ struct ProgressTabView: View {
       } else {
         // Empty state when no habits
         VStack(spacing: 12) {
-          Text("No habits to highlight yet")
+          Text("progress.empty.noHighlightsYet".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
 
@@ -2495,7 +2504,7 @@ struct ProgressTabView: View {
 
           // Content with habit info
           VStack(alignment: .leading, spacing: 8) {
-            Text("Could Use a Nudge")
+            Text("progress.insight.couldUseNudge".localized)
               .font(.appLabelMedium)
               .foregroundColor(.text02)
               .padding(.horizontal, 8)
@@ -2510,7 +2519,7 @@ struct ProgressTabView: View {
               .lineLimit(2)
 
             let rate = getWeeklyHabitCompletionRate(strugglingHabit)
-            Text("\(Int(rate))% completion this week")
+            Text(String(format: "progress.weekly.completionThisWeek".localized, Int(rate)))
               .font(.appBodyMedium)
               .foregroundColor(.orange)
               .fontWeight(.semibold)
@@ -2537,7 +2546,7 @@ struct ProgressTabView: View {
       } else {
         // No struggling habits
         VStack(spacing: 12) {
-          Text("All habits are doing great!")
+          Text("progress.insight.allDoingGreat".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
 
@@ -2571,7 +2580,7 @@ struct ProgressTabView: View {
           }
 
           VStack(alignment: .leading, spacing: 8) {
-            Text("Weekly Trends")
+            Text("progress.weekly.trends".localized)
               .font(.appLabelMedium)
               .foregroundColor(.text02)
               .padding(.horizontal, 8)
@@ -2612,7 +2621,7 @@ struct ProgressTabView: View {
       } else {
         // Empty state when no meaningful trends
         VStack(spacing: 12) {
-          Text("No trends to show yet")
+          Text("progress.empty.noTrendsYet".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
 
@@ -2647,7 +2656,7 @@ struct ProgressTabView: View {
 
   private func getWeeklyTrendsEmptyStateMessage() -> String {
     if habitRepository.habits.isEmpty {
-      return "Create your first habit to start tracking progress!"
+      return "progress.empty.createFirstToTrack".localized
     } else {
       // Check if any habits are scheduled this week
       let calendar = Calendar.current
@@ -2666,12 +2675,12 @@ struct ProgressTabView: View {
       if hasScheduledHabits {
         let weeklyMetrics = getWeeklyMetrics()
         if weeklyMetrics.activeDays == 1 {
-          return "You've logged 1 active day. Track a bit more to see trends!"
+          return "progress.weekly.oneDayTrackMore".localized
         } else {
-          return "Complete habits for a few days to see your weekly trends!"
+          return "progress.weekly.completeFewDaysForTrends".localized
         }
       } else {
-        return "No habits scheduled this week. Add schedules to see highlights!"
+        return "progress.weekly.noScheduledAddSchedules".localized
       }
     }
   }
@@ -2845,11 +2854,11 @@ struct ProgressTabView: View {
 
     // Handle edge cases
     if totalPossibleDays == 0 {
-      return "No habits scheduled this week yet"
+      return "progress.empty.noScheduledThisWeek".localized
     }
 
     if completedDays == 0 {
-      return "Ready to start your week strong! 💪"
+      return "progress.weekly.readyToStart".localized
     }
 
     // Generate encouraging messages based on completion rate
@@ -3047,7 +3056,7 @@ struct ProgressTabView: View {
 
   private func getTopPerformerEmptyStateMessage() -> String {
     if habitRepository.habits.isEmpty {
-      return "Create your first habit to start tracking progress!"
+      return "progress.empty.createFirstToTrack".localized
     } else {
       // Check if any habits are scheduled this week
       let calendar = Calendar.current
@@ -3064,9 +3073,9 @@ struct ProgressTabView: View {
       }
 
       if hasScheduledHabits {
-        return "Complete some habits this week to see your top performer!"
+        return "progress.weekly.completeToSeeTopPerformer".localized
       } else {
-        return "No habits scheduled this week. Check your habit schedules!"
+        return "progress.weekly.noScheduledCheckSchedules".localized
       }
     }
   }
@@ -3173,15 +3182,15 @@ struct ProgressTabView: View {
   private func getDifficultyMessage(for level: HabitDifficulty) -> String {
     switch level {
     case .veryEasy:
-      "You're crushing it! 🚀"
+      "progress.difficulty.message.veryEasy".localized
     case .easy:
-      "Great job! 💪"
+      "progress.difficulty.message.easy".localized
     case .medium:
-      "You're doing well! 👍"
+      "progress.difficulty.message.medium".localized
     case .hard:
-      "Keep pushing through! 🔥"
+      "progress.difficulty.message.hard".localized
     case .veryHard:
-      "You're building strength! 💎"
+      "progress.difficulty.message.veryHard".localized
     }
   }
   
@@ -3191,7 +3200,7 @@ struct ProgressTabView: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Text("Difficulty Stat")
+        Text("progress.difficulty.stat".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
         
@@ -3204,16 +3213,16 @@ struct ProgressTabView: View {
       // Scrollable content
       ScrollView {
         VStack(alignment: .leading, spacing: 16) {
-          Text("What is Difficulty?")
+          Text("progress.difficulty.whatIs".localized)
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text01)
           
-          Text("Difficulty measures how challenging your habits felt when you completed them. After completing a habit, you rate it from Very Easy (1) to Very Hard (5). The stat shown here is the average difficulty of all your scheduled habits for this day.")
+          Text("progress.difficulty.explanation".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
             .fixedSize(horizontal: false, vertical: true)
           
-          Text("Difficulty Levels:")
+          Text("progress.difficulty.levels".localized)
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text01)
             .padding(.top, 8)
@@ -3221,11 +3230,11 @@ struct ProgressTabView: View {
           // Horizontal compact layout for difficulty levels
           ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 12) {
-              difficultyLevelCompact(level: "Very Easy", color: .green)
-              difficultyLevelCompact(level: "Easy", color: .mint)
-              difficultyLevelCompact(level: "Medium", color: .orange)
-              difficultyLevelCompact(level: "Hard", color: .red)
-              difficultyLevelCompact(level: "Very Hard", color: .purple)
+              difficultyLevelCompact(level: "habits.difficulty.veryEasy".localized, color: .green)
+              difficultyLevelCompact(level: "habits.difficulty.easy".localized, color: .mint)
+              difficultyLevelCompact(level: "habits.difficulty.medium".localized, color: .orange)
+              difficultyLevelCompact(level: "habits.difficulty.hard".localized, color: .red)
+              difficultyLevelCompact(level: "habits.difficulty.veryHard".localized, color: .purple)
             }
             .padding(.vertical, 4)
           }
@@ -3237,7 +3246,7 @@ struct ProgressTabView: View {
       Button(action: {
         activeSheet = nil
       }) {
-        Text("Got it")
+        Text("progress.action.gotIt".localized)
           .font(.appButtonText1)
           .foregroundColor(.onPrimary)
           .frame(maxWidth: .infinity)
@@ -3319,7 +3328,7 @@ struct ProgressTabView: View {
     VStack(alignment: .leading, spacing: 0) {
       // Header
       HStack {
-        Text("Difficulty")
+        Text("progress.difficulty.title".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.appText03)
 
@@ -3382,7 +3391,7 @@ struct ProgressTabView: View {
               Button(action: {
                 activeSheet = .difficultyExplanation
               }) {
-                Text("What does this stat mean?")
+                Text("progress.difficulty.whatDoesStatMean".localized)
                   .font(.appBodySmall)
                   .foregroundColor(.text02)
               }
@@ -3395,8 +3404,8 @@ struct ProgressTabView: View {
           // Empty state when no difficulty recorded
           HabitEmptyStateView(
             imageName: "Habit-List-Empty-State@4x",
-            title: "No Difficulty yet",
-            subtitle: "You can record the difficulty once you complete the habit!")
+            title: "progress.empty.noDifficultyYet".localized,
+            subtitle: "progress.empty.noDifficultySubtitle".localized)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 20)
             .padding(.vertical, 40)
@@ -3563,7 +3572,7 @@ struct ProgressTabView: View {
 
   private func getNeedsAttentionEmptyStateMessage() -> String {
     if habitRepository.habits.isEmpty {
-      return "Create your first habit to start tracking progress!"
+      return "progress.empty.createFirstToTrack".localized
     } else {
       // Check if any habits are scheduled this week
       let calendar = Calendar.current
@@ -3583,12 +3592,12 @@ struct ProgressTabView: View {
         // Check if all habits are performing well (average ≥80%)
         let weeklyMetrics = getWeeklyMetrics()
         if weeklyMetrics.overallCompletion >= HighlightsConfig.greatAvgFloor {
-          return "All habits are doing great! Keep up the excellent work!"
+          return "progress.weekly.allDoingGreatKeepUp".localized
         } else {
-          return "All habits are performing well this week!"
+          return "progress.weekly.allPerformingWell".localized
         }
       } else {
-        return "No habits scheduled this week. Check your habit schedules!"
+        return "progress.weekly.noScheduledCheckSchedules".localized
       }
     }
   }
@@ -3614,15 +3623,15 @@ struct ProgressTabView: View {
 
     switch progressPercentage {
     case 0.8 ... 1.0:
-      return "Outstanding Week!"
+      return "progress.weekly.outstandingWeek".localized
     case 0.6 ..< 0.8:
-      return "Great Progress"
+      return "progress.insight.greatProgress".localized
     case 0.4 ..< 0.6:
-      return "Steady Improvement"
+      return "progress.insight.steadyImprovement".localized
     case 0.2 ..< 0.4:
-      return "Building Momentum"
+      return "progress.insight.buildingMomentum".localized
     default:
-      return "Getting Started"
+      return "progress.insight.gettingStarted".localized
     }
   }
 
@@ -3861,7 +3870,7 @@ struct ProgressTabView: View {
       HStack(spacing: 20) {
         // Left side: Text content (vertically centered)
         VStack(alignment: .leading, spacing: 4) {
-          Text("This Month's Progress")
+          Text("progress.monthly.title".localized)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(Color("greyBlack"))
 
@@ -3902,7 +3911,7 @@ struct ProgressTabView: View {
     VStack(spacing: 0) {
       // Header with title and page controls (inside the card)
       HStack {
-        Text("This Month's Highlights")
+        Text("progress.monthly.highlights".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.onPrimaryContainer)
 
@@ -3975,7 +3984,7 @@ struct ProgressTabView: View {
 
           // Content with habit info
           VStack(alignment: .leading, spacing: 8) {
-            Text("Monthly Champion")
+            Text("progress.insight.monthlyChampion".localized)
               .font(.appLabelMedium)
               .foregroundColor(.text02)
               .padding(.horizontal, 8)
@@ -3990,7 +3999,7 @@ struct ProgressTabView: View {
               .lineLimit(2)
 
             let rate = getMonthlyHabitProgressPercentage(for: topHabit)
-            Text("\(Int(rate * 100))% completion this month")
+            Text(String(format: "progress.monthly.completionThisMonth".localized, Int(rate * 100)))
               .font(.appBodyMedium)
               .foregroundColor(.green)
               .fontWeight(.semibold)
@@ -4006,7 +4015,7 @@ struct ProgressTabView: View {
             .font(.system(size: 14, weight: .semibold))
             .foregroundColor(.green)
 
-          Text("Outstanding monthly consistency!")
+          Text("progress.insight.outstandingConsistency".localized)
             .font(.appBodySmall)
             .foregroundColor(.text03)
 
@@ -4016,11 +4025,11 @@ struct ProgressTabView: View {
       } else {
         // Empty state when no habits
         VStack(spacing: 12) {
-          Text("No habits to highlight yet")
+          Text("progress.empty.noHighlightsYet".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
 
-          Text("Complete some habits this month to see your champion!")
+          Text("progress.empty.completeToSeeChampion".localized)
             .font(.appBodySmall)
             .foregroundColor(.text03)
             .multilineTextAlignment(.center)
@@ -4107,11 +4116,11 @@ struct ProgressTabView: View {
         }
 
         VStack(alignment: .leading, spacing: 4) {
-          Text("Monthly Insights")
+          Text("progress.monthly.insights".localized)
             .font(.appTitleMediumEmphasised)
             .foregroundColor(.text01)
 
-          Text("Personalized tips for your journey")
+          Text("progress.insight.personalizedTips".localized)
             .font(.appBodySmall)
             .foregroundColor(.text02)
         }
@@ -4126,7 +4135,7 @@ struct ProgressTabView: View {
             .font(.system(size: 14, weight: .semibold))
             .foregroundColor(.yellow)
 
-          Text("This Month's Focus")
+          Text("progress.insight.thisMonthsFocus".localized)
             .font(.appLabelMedium)
             .foregroundColor(.text02)
         }
@@ -4166,11 +4175,11 @@ struct ProgressTabView: View {
 
     // Handle edge cases
     if scheduledCount == 0 {
-      return "No habits scheduled this month yet"
+      return "progress.empty.noScheduledThisMonth".localized
     }
 
     if completedCount == 0 {
-      return "Ready to start your month strong! 💪"
+      return "progress.weekly.readyToStart".localized
     }
 
     // Generate encouraging messages based on completion rate
@@ -4429,11 +4438,11 @@ struct ProgressTabView: View {
     VStack(alignment: .leading, spacing: 16) {
       // Header
       VStack(alignment: .leading, spacing: 4) {
-        Text("Difficulty Trends")
+        Text("progress.difficulty.trends".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.appText02)
 
-        Text("How challenging this habit felt this week")
+        Text("progress.difficulty.howChallengingWeek".localized)
           .font(.appBodySmall)
           .foregroundColor(.appText04)
       }
@@ -4448,11 +4457,11 @@ struct ProgressTabView: View {
               .font(.system(size: 32))
               .foregroundColor(.outline3)
 
-            Text("No difficulty data yet")
+            Text("progress.empty.noDifficultyData".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text02)
 
-            Text("Complete this habit a few times to see your difficulty trends")
+            Text("progress.empty.completeForDifficultyTrends".localized)
               .font(.appBodySmall)
               .foregroundColor(.text03)
               .multilineTextAlignment(.center)
@@ -4513,11 +4522,11 @@ struct ProgressTabView: View {
     VStack(alignment: .leading, spacing: 16) {
       // Header
       VStack(alignment: .leading, spacing: 4) {
-        Text("Difficulty Trends")
+        Text("progress.difficulty.trends".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.appText02)
 
-        Text("How challenging this habit felt this month")
+        Text("progress.difficulty.howChallengingMonth".localized)
           .font(.appBodySmall)
           .foregroundColor(.appText04)
       }
@@ -4532,11 +4541,11 @@ struct ProgressTabView: View {
               .font(.system(size: 32))
               .foregroundColor(.outline3)
 
-            Text("No difficulty data yet")
+            Text("progress.empty.noDifficultyData".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text02)
 
-            Text("Complete this habit a few times to see your difficulty trends")
+            Text("progress.empty.completeForDifficultyTrends".localized)
               .font(.appBodySmall)
               .foregroundColor(.text03)
               .multilineTextAlignment(.center)
@@ -4579,11 +4588,11 @@ struct ProgressTabView: View {
     VStack(alignment: .leading, spacing: 16) {
       // Header
       VStack(alignment: .leading, spacing: 4) {
-        Text("Time base completion")
+        Text("progress.timeCompletion.title".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.appText02)
 
-        Text("When you typically complete this habit")
+        Text("progress.timeCompletion.whenYouComplete".localized)
           .font(.appBodySmall)
           .foregroundColor(.appText04)
       }
@@ -4598,11 +4607,11 @@ struct ProgressTabView: View {
               .font(.system(size: 32))
               .foregroundColor(.outline3)
 
-            Text("No completion data yet")
+            Text("progress.empty.noCompletionData".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text02)
 
-            Text("Complete this habit a few times to see your time patterns")
+            Text("progress.empty.completeForTimePatterns".localized)
               .font(.appBodySmall)
               .foregroundColor(.text03)
               .multilineTextAlignment(.center)
@@ -5004,7 +5013,7 @@ struct TimeBaseCompletionChart: View {
         Spacer().frame(width: 40) // Align with chart area
 
         ForEach(data, id: \.id) { item in
-          Text(item.timePeriod)
+          Text(localizedTimePeriod(item.timePeriod))
             .font(.appLabelSmallEmphasised)
             .foregroundColor(.appText05)
             .frame(maxWidth: .infinity)
@@ -5028,16 +5037,17 @@ struct TimeBaseCompletionChart: View {
     guard let bestTime, bestTime.completionRate > 0 else { return AnyView(EmptyView()) }
 
     let isDayTime = bestTime.timePeriod == "Morning" || bestTime.timePeriod == "Lunch"
+    let localizedPeriod = localizedTimePeriod(bestTime.timePeriod)
 
     return AnyView(
       HStack(spacing: 0) {
         VStack(alignment: .leading, spacing: 4) {
-          Text("\(bestTime.timePeriod)!")
+          Text("\(localizedPeriod)!")
             .font(.appTitleMediumEmphasised)
             .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
             .frame(maxWidth: .infinity, alignment: .leading)
 
-          Text("This habit seems to be most successful in the \(bestTime.timePeriod.lowercased())")
+          Text(String(format: "progress.timeCompletion.mostSuccessfulIn".localized, localizedPeriod))
             .font(.appBodyMediumEmphasised)
             .foregroundColor(isDayTime ? Color(hex: "296399") : Color.white)
             .multilineTextAlignment(.leading)
@@ -5059,6 +5069,17 @@ struct TimeBaseCompletionChart: View {
       .background(
         RoundedRectangle(cornerRadius: 24)
           .fill(Color(hex: isDayTime ? "C9E5FF" : "121E3D"))))
+  }
+
+  /// Localized display name for time period (Morning, Lunch, etc.)
+  private func localizedTimePeriod(_ period: String) -> String {
+    switch period {
+    case "Morning": return "progress.timeCompletion.morning".localized
+    case "Lunch": return "progress.timeCompletion.lunch".localized
+    case "Evening": return "progress.timeCompletion.evening".localized
+    case "Night": return "progress.timeCompletion.night".localized
+    default: return period
+    }
   }
 
   /// Maps time period names to their corresponding image names in Time/Stickers.xcassets
@@ -5814,22 +5835,17 @@ struct AnimatedCircularProgressRing: View {
 
 // MARK: - Helper Functions
 
-private func pluralizeDay(_ count: Int) -> String {
-  if count == 0 {
-    "0 day"
-  } else if count == 1 {
-    "1 day"
-  } else {
-    "\(count) days"
-  }
-}
-
 // MARK: - WeeklySummaryStatsView
 
 struct WeeklySummaryStatsView: View {
   let completionRate: Int
   let bestStreak: Int
   let consistencyRate: Int
+
+  private func pluralizeDay(_ count: Int) -> String {
+    let dayKey = count == 0 || count == 1 ? "progress.stats.streakDay" : "progress.stats.streakDays"
+    return String(format: dayKey.localized, count)
+  }
 
   var body: some View {
     HStack(spacing: 0) {
@@ -5838,7 +5854,7 @@ struct WeeklySummaryStatsView: View {
         Text("\(completionRate)%")
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
-        Text("Completion")
+        Text("progress.chart.completion".localized)
           .font(.appBodySmall)
           .foregroundColor(.text04)
       }
@@ -5854,7 +5870,7 @@ struct WeeklySummaryStatsView: View {
         Text(pluralizeDay(bestStreak))
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
-        Text("Best Streak")
+        Text("progress.chart.bestStreak".localized)
           .font(.appBodySmall)
           .foregroundColor(.text04)
       }
@@ -5870,7 +5886,7 @@ struct WeeklySummaryStatsView: View {
         Text("\(consistencyRate)%")
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
-        Text("Consistency")
+        Text("progress.chart.consistency".localized)
           .font(.appBodySmall)
           .foregroundColor(.text04)
       }

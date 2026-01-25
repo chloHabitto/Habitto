@@ -15,11 +15,11 @@ struct GoalCompleteCelebration: View {
             Text("🎉")
                 .font(.system(size: 32))
             
-            Text("Daily Goal Complete!")
+            Text("progress.journey.dailyGoalComplete".localized)
                 .font(.appTitleMediumEmphasised)
                 .foregroundColor(.appText01)
             
-            Text("You're on a \(streak)-day streak. Keep it up!")
+            Text(String(format: "progress.journey.streakKeepItUp".localized, streak))
                 .font(.appBodyMedium)
                 .foregroundColor(.appText03)
         }

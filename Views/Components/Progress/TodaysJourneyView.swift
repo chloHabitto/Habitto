@@ -99,13 +99,13 @@ struct TodaysJourneyView: View {
   private var headerTitle: String {
     let calendar = Calendar.current
     if calendar.isDateInToday(selectedDate) {
-      return "Today's Activity"
+      return "progress.journey.todaysActivity".localized
     } else if calendar.isDateInYesterday(selectedDate) {
-      return "Yesterday's Activity"
+      return "progress.journey.yesterdaysActivity".localized
     } else {
       let formatter = DateFormatter()
       formatter.dateFormat = "MMM d"
-      return "\(formatter.string(from: selectedDate))'s Activity"
+      return String(format: "progress.journey.activityOn".localized, formatter.string(from: selectedDate))
     }
   }
 
@@ -120,7 +120,7 @@ struct TodaysJourneyView: View {
           .foregroundColor(.appText01)
         
         if isToday {
-          Text("Your progress journey today")
+          Text("progress.journey.progressToday".localized)
             .font(.appBodySmall)
             .foregroundColor(.appText04)
         }
@@ -149,11 +149,11 @@ struct TodaysJourneyView: View {
       Text("☀️")
         .font(.system(size: 48))
 
-      Text("Your day awaits!")
+      Text("progress.journey.yourDayAwaits".localized)
         .font(.appTitleMediumEmphasised)
         .foregroundColor(.appText01)
 
-      Text("No habits scheduled for today")
+      Text("progress.journey.noHabitsScheduledToday".localized)
         .font(.appBodySmall)
         .foregroundColor(.appText03)
 
@@ -185,17 +185,17 @@ struct TodaysJourneyView: View {
         .font(.system(size: 56))
         .modifier(BounceAnimation())
 
-      Text("Perfect day!")
+      Text("progress.journey.perfectDay".localized)
         .font(.appTitleLargeEmphasised)
         .foregroundColor(.appText01)
 
-      Text("You completed all your habits")
+      Text("progress.journey.completedAllHabits".localized)
         .font(.appBodySmall)
         .foregroundColor(.appText03)
 
       HStack(spacing: 6) {
         Text("⭐")
-        Text("+50 XP earned")
+        Text("progress.xp.plus50Earned".localized)
           .font(.appLabelMediumEmphasised)
       }
       .foregroundColor(Color(red: 0.45, green: 0.26, blue: 0.06))
