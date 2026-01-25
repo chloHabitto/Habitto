@@ -66,8 +66,8 @@ struct PeriodBottomSheet: View {
         HStack {
           Button(action: {
             withAnimation {
-              currentMonth = Calendar.current
-                .date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
+              let cal = LocalizationManager.shared.getLocalizedCalendar()
+              currentMonth = cal.date(byAdding: .month, value: -1, to: currentMonth) ?? currentMonth
             }
           }) {
             Image(systemName: "chevron.left")
@@ -77,7 +77,7 @@ struct PeriodBottomSheet: View {
 
           Spacer()
 
-          Text(monthYearString(from: currentMonth))
+          Text(LocalizationManager.shared.localizedMonthYear(for: currentMonth))
             .font(Font.appTitleMediumEmphasised)
             .foregroundColor(.text01)
 
@@ -85,8 +85,8 @@ struct PeriodBottomSheet: View {
 
           Button(action: {
             withAnimation {
-              currentMonth = Calendar.current
-                .date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
+              let cal = LocalizationManager.shared.getLocalizedCalendar()
+              currentMonth = cal.date(byAdding: .month, value: 1, to: currentMonth) ?? currentMonth
             }
           }) {
             Image(systemName: "chevron.right")
@@ -98,8 +98,8 @@ struct PeriodBottomSheet: View {
 
         // Calendar Grid
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-          // Day headers
-          ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
+          // Day headers – localized, respect first day of week
+          ForEach(LocalizationManager.shared.localizedWeekdayArray(shortForm: true), id: \.self) { day in
             Text(day)
               .font(Font.appLabelMedium)
               .foregroundColor(.text05)
@@ -119,7 +119,7 @@ struct PeriodBottomSheet: View {
                   }
                 }
               }) {
-                Text("\(Calendar.current.component(.day, from: date))")
+                Text("\(userCalendar.component(.day, from: date))")
                   .font(Font.appBodyMedium)
                   .foregroundColor(dateColor(for: date))
                   .frame(width: 40, height: 40)
@@ -194,47 +194,33 @@ struct PeriodBottomSheet: View {
   @State private var selectedDate: Date
   @State private var currentMonth: Date
 
-  /// Helper functions
-  private func monthYearString(from date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "MMMM yyyy"
-    return formatter.string(from: date)
+  private var userCalendar: Calendar {
+    LocalizationManager.shared.getLocalizedCalendar()
   }
 
+  /// Calendar grid respecting user's first day of week (e.g. Monday vs Sunday).
   private func daysInMonth() -> [CalendarDay] {
-    let calendar = Calendar.current
+    let calendar = userCalendar
     let startOfMonth = calendar.dateInterval(of: .month, for: currentMonth)?.start ?? currentMonth
     let firstWeekday = calendar.component(.weekday, from: startOfMonth)
-    let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)?.count ?? 0
+    let daysFromFirstWeekday = (firstWeekday - calendar.firstWeekday + 7) % 7
+    let firstDisplayDate = calendar.date(
+      byAdding: .day,
+      value: -daysFromFirstWeekday,
+      to: startOfMonth) ?? startOfMonth
 
     var days: [CalendarDay] = []
-    var dayIndex = 0
-
-    // Add empty cells for days before the first day of the month
-    for _ in 1 ..< firstWeekday {
-      days.append(CalendarDay(id: "empty_\(dayIndex)", date: nil))
-      dayIndex += 1
+    var currentDate = firstDisplayDate
+    for i in 0 ..< 42 {
+      let inMonth = calendar.isDate(currentDate, equalTo: currentMonth, toGranularity: .month)
+      days.append(CalendarDay(id: "day_\(i)", date: inMonth ? currentDate : nil))
+      currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
     }
-
-    // Add all days in the month
-    for day in 1 ... daysInMonth {
-      if let date = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth) {
-        days.append(CalendarDay(id: "day_\(day)", date: date))
-      }
-      dayIndex += 1
-    }
-
-    // Add empty cells to complete the grid (6 rows * 7 columns = 42 cells)
-    while days.count < 42 {
-      days.append(CalendarDay(id: "empty_\(dayIndex)", date: nil))
-      dayIndex += 1
-    }
-
     return days
   }
 
   private func dateColor(for date: Date) -> Color {
-    let calendar = Calendar.current
+    let calendar = userCalendar
     let today = Date()
 
     if calendar.isDate(date, inSameDayAs: selectedDate) {
@@ -257,18 +243,18 @@ struct PeriodBottomSheet: View {
       return false // Allow past dates for testing
     }
 
-    let calendar = Calendar.current
+    let calendar = userCalendar
     let today = Date()
     return calendar.compare(date, to: today, toGranularity: .day) == .orderedAscending
   }
 
   private func isDateBeforeOrEqualToStartDate(_ date: Date) -> Bool {
-    let calendar = Calendar.current
+    let calendar = userCalendar
     return calendar.compare(date, to: startDate, toGranularity: .day) != .orderedDescending
   }
 
   private func backgroundForDate(_ date: Date) -> Color {
-    let calendar = Calendar.current
+    let calendar = userCalendar
     let today = Date()
 
     if calendar.isDate(date, inSameDayAs: selectedDate) {

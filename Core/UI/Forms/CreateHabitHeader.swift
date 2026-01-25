@@ -61,13 +61,11 @@ struct CreateHabitHeader: View {
         Text("create.title".localized)
           .font(.appHeadlineMediumEmphasised)
           .foregroundColor(.text01)
-        Text(stepNumber == 1 ? "create.step1".localized : "create.step2".localized)
-          .font(.appBodyMedium)
-          .foregroundColor(.text04)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
       .padding(.horizontal, 20)
       .padding(.top, 28)
+      .padding(.bottom, 20)
     }
   }
 }

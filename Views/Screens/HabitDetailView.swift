@@ -193,10 +193,13 @@ struct HabitDetailView: View {
         onDismiss: {
           if let freshHabit = HabitRepository.shared.habits.first(where: { $0.id == habit.id }) {
             habit = freshHabit
-            displayedDifficulty = freshHabit.getDifficulty(for: selectedDate)
           }
         },
-        initialDifficulty: habit.getDifficulty(for: selectedDate)
+        onSave: { savedDifficulty in
+          displayedDifficulty = savedDifficulty
+          showDifficultySavedToast = true
+        },
+        initialDifficulty: displayedDifficulty
           .flatMap { HabitCompletionBottomSheet.HabitDifficulty(rawValue: $0) },
         isEditMode: true
       )
@@ -306,6 +309,34 @@ struct HabitDetailView: View {
     .fullScreenCover(isPresented: $showingNotificationsSettings) {
       NotificationsView()
     }
+    .overlay(alignment: .bottom) {
+      if showDifficultySavedToast {
+        HStack(spacing: 8) {
+          Image(systemName: "checkmark.circle.fill")
+            .foregroundColor(.green)
+          Text("Difficulty saved")
+            .font(.appBodyMediumEmphasised)
+            .foregroundColor(.text01)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(
+          RoundedRectangle(cornerRadius: 25)
+            .fill(Color.surface2)
+            .shadow(color: .black.opacity(0.15), radius: 8, x: 0, y: 4)
+        )
+        .padding(.bottom, 100)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .onAppear {
+          DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation(.easeOut(duration: 0.3)) {
+              showDifficultySavedToast = false
+            }
+          }
+        }
+      }
+    }
+    .animation(.spring(response: 0.4, dampingFraction: 0.8), value: showDifficultySavedToast)
   }
 
   // MARK: Private
@@ -331,6 +362,7 @@ struct HabitDetailView: View {
   @State private var showingSkipSheet = false
   @State private var showingDifficultyEditSheet = false
   @State private var displayedDifficulty: Int?
+  @State private var showDifficultySavedToast = false
   @State private var isHabitSkipped = false
   @State private var currentSkipReason: SkipReason?
 

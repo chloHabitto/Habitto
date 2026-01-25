@@ -61,7 +61,7 @@ struct ScheduleBottomSheet: View {
                   } else {
                     ScrollView(.horizontal, showsIndicators: false) {
                       HStack(spacing: 8) {
-                        ForEach(pillTexts, id: \.self) { pillText in
+                        ForEach(localizedPillTexts, id: \.self) { pillText in
                           Text(pillText)
                             .appBodyLargeFont()
                             .foregroundColor(.onPrimary)
@@ -74,12 +74,12 @@ struct ScheduleBottomSheet: View {
                     }
                   }
                 } else {
-                  Text(selectedDays)
+                  Text(localizedDayOptionDisplay(selectedDays))
                     .appBodyLargeFont()
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                            .background(ColorTokens.primary)
+                    .background(ColorTokens.primary)
                     .clipShape(Capsule())
                 }
               }
@@ -116,7 +116,7 @@ struct ScheduleBottomSheet: View {
                   .foregroundColor(.text05)
 
                 HStack(spacing: 8) {
-                  ForEach(["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"], id: \.self) { day in
+                  ForEach(Self.weekdayCodes, id: \.self) { day in
                     Button(action: {
                       if selectedWeekDays.contains(day) {
                         selectedWeekDays.remove(day)
@@ -124,7 +124,7 @@ struct ScheduleBottomSheet: View {
                         selectedWeekDays.insert(day)
                       }
                     }) {
-                      Text(day)
+                      Text(Self.localizedWeekdayShort(day))
                         .labelMediumEmphasisedFont()
                         .foregroundColor(selectedWeekDays.contains(day)
                           ? .onPrimary
@@ -150,9 +150,9 @@ struct ScheduleBottomSheet: View {
             // 4. iOS scrollable date picker (only show when Daily is selected)
             if selectedSchedule == "Daily" {
               VStack(spacing: 12) {
-                Picker("Frequency", selection: $selectedDays) {
+                Picker("create.schedule.frequency".localized, selection: $selectedDays) {
                   ForEach(dayOptions, id: \.self) { option in
-                    Text(option).tag(option)
+                    Text(localizedDayOptionDisplay(option)).tag(option)
                   }
                 }
                 .pickerStyle(WheelPickerStyle())
@@ -175,20 +175,20 @@ struct ScheduleBottomSheet: View {
 
               HStack {
                 if selectedFrequency == "Monthly" {
-                  Text(formatMonthlyFrequency(monthlyValue))
+                  Text(formatMonthlyFrequencyDisplay(monthlyValue))
                     .appBodyLargeFont()
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                            .background(ColorTokens.primary)
+                    .background(ColorTokens.primary)
                     .clipShape(Capsule())
                 } else {
-                  Text(formatWeeklyFrequency(weeklyValue))
+                  Text(formatWeeklyFrequencyDisplay(weeklyValue))
                     .appBodyLargeFont()
                     .foregroundColor(.onPrimary)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
-                            .background(ColorTokens.primary)
+                    .background(ColorTokens.primary)
                     .clipShape(Capsule())
                 }
               }
@@ -359,30 +359,80 @@ struct ScheduleBottomSheet: View {
   private let dayOptions = ScheduleOptions.dayOptions
   private let frequencyOptions = ScheduleOptions.frequencyOptions
 
+  private static let weekdayCodes = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
+
+  private static let weekdayShortKeys: [String: String] = [
+    "MON": "date.weekday.short.monday",
+    "TUE": "date.weekday.short.tuesday",
+    "WED": "date.weekday.short.wednesday",
+    "THU": "date.weekday.short.thursday",
+    "FRI": "date.weekday.short.friday",
+    "SAT": "date.weekday.short.saturday",
+    "SUN": "date.weekday.short.sunday"
+  ]
+
   private var pillTexts: [String] {
-    // Sort days in chronological order (Mon -> Sun), not alphabetically
-    let weekdayOrder = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
     let sortedDays = selectedWeekDays.sorted { day1, day2 in
-      let index1 = weekdayOrder.firstIndex(of: day1) ?? 0
-      let index2 = weekdayOrder.firstIndex(of: day2) ?? 0
-      return index1 < index2
+      let i1 = Self.weekdayCodes.firstIndex(of: day1) ?? 0
+      let i2 = Self.weekdayCodes.firstIndex(of: day2) ?? 0
+      return i1 < i2
     }
-    return sortedDays.compactMap { day in
-      ScheduleOptions.dayMapping[day]
+    return sortedDays.compactMap { ScheduleOptions.dayMapping[$0] }
+  }
+
+  /// Localized short weekday labels for pill display (e.g. "Mon", "월").
+  private var localizedPillTexts: [String] {
+    let sortedDays = selectedWeekDays.sorted { day1, day2 in
+      let i1 = Self.weekdayCodes.firstIndex(of: day1) ?? 0
+      let i2 = Self.weekdayCodes.firstIndex(of: day2) ?? 0
+      return i1 < i2
+    }
+    return sortedDays.map { Self.localizedWeekdayShort($0) }
+  }
+
+  private static func localizedWeekdayShort(_ code: String) -> String {
+    (weekdayShortKeys[code] ?? code).localized
+  }
+
+  private func localizedDayOptionDisplay(_ option: String) -> String {
+    if option == "Everyday" {
+      return "create.schedule.everyday".localized
+    }
+    let prefix = "Every "
+    let suffix = " days"
+    if option.hasPrefix(prefix), option.hasSuffix(suffix) {
+      let mid = option.dropFirst(prefix.count).dropLast(suffix.count)
+      if let n = Int(mid) {
+        return String(format: "create.schedule.everyXDays".localized, n)
+      }
+    }
+    return option
+  }
+
+  private func formatWeeklyFrequencyDisplay(_ days: Int) -> String {
+    switch days {
+    case 1: return "create.schedule.onceAWeek".localized
+    case 2: return "create.schedule.twiceAWeek".localized
+    case 7: return "create.schedule.everyday".localized
+    default: return String(format: "create.schedule.daysPerWeek".localized, days)
+    }
+  }
+
+  private func formatMonthlyFrequencyDisplay(_ days: Int) -> String {
+    switch days {
+    case 1: return "create.schedule.onceAMonth".localized
+    case 2: return "create.schedule.twiceAMonth".localized
+    default: return String(format: "create.schedule.daysPerMonth".localized, days)
     }
   }
 
   private var frequencyPillTexts: [String] {
-    // Sort days in chronological order (Mon -> Sun), not alphabetically
-    let weekdayOrder = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"]
     let sortedDays = selectedFrequencyWeekDays.sorted { day1, day2 in
-      let index1 = weekdayOrder.firstIndex(of: day1) ?? 0
-      let index2 = weekdayOrder.firstIndex(of: day2) ?? 0
-      return index1 < index2
+      let i1 = Self.weekdayCodes.firstIndex(of: day1) ?? 0
+      let i2 = Self.weekdayCodes.firstIndex(of: day2) ?? 0
+      return i1 < i2
     }
-    return sortedDays.compactMap { day in
-      ScheduleOptions.dayMapping[day]
-    }
+    return sortedDays.compactMap { ScheduleOptions.dayMapping[$0] }
   }
 
   private var selectedScheduleText: String {
