@@ -213,8 +213,8 @@ struct ExpandableCalendar: View {
         // Day headers
         ForEach(weekdayNames, id: \.self) { day in
           Text(day.uppercased())
-            .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.text02)
+            .font(.system(size: 10, weight: .bold))
+            .foregroundColor(.appText06)
             .frame(height: 32)
         }
 
@@ -401,9 +401,8 @@ fileprivate struct WeekDayButton: View {
   }
   
   private func dayAbbreviation(for date: Date) -> String {
-    let formatter = DateFormatter()
-    formatter.dateFormat = "E"
-    return formatter.string(from: date)
+    // Use LocalizationManager for proper localization
+    return LocalizationManager.shared.localizedWeekday(for: date, short: true)
   }
 }
 
