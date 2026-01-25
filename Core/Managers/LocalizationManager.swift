@@ -182,7 +182,7 @@ extension LocalizationManager {
   
   /// Get calendar configured with user's locale and first weekday preference
   func getLocalizedCalendar() -> Calendar {
-    var calendar = I18nPreferencesManager.shared.preferences.calendar
+    let calendar = I18nPreferencesManager.shared.preferences.calendar
     // Ensure the calendar is properly configured
     return calendar
   }
