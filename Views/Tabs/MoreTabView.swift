@@ -385,7 +385,8 @@ struct MoreTabView: View {
             icon: "Icon-DocumentText_Filled",
             title: "more.privacyPolicy".localized,
             value: nil,
-            hasChevron: true,
+            hasChevron: false,
+            useExternalLinkIcon: true,
             action: {
               openPrivacyPolicy()
             }),
@@ -393,7 +394,8 @@ struct MoreTabView: View {
             icon: "Icon-DocumentText_Filled",
             title: "more.termsOfUse".localized,
             value: nil,
-            hasChevron: true,
+            hasChevron: false,
+            useExternalLinkIcon: true,
             action: {
               openTermsOfUse()
             })
@@ -406,20 +408,32 @@ struct MoreTabView: View {
       }
       #endif
       
-      // Instagram Link
+      // Instagram & Website Links
       VStack(spacing: 0) {
         Spacer()
 
-        Button(action: {
-          openInstagram()
-        }) {
-          Image("Icon-instagram_outlined")
-            .resizable()
-            .renderingMode(.template)
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 16, height: 16)
-            .foregroundColor(.text04)
-            .frame(width: 32, height: 32)
+        HStack(spacing: 8) {
+          Button(action: {
+            openInstagram()
+          }) {
+            Text("Instagram")
+              .font(.system(size: 14, weight: .medium))
+              .foregroundColor(.appText06)
+              .underline()
+          }
+
+          Text("·")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.appText06)
+
+          Button(action: {
+            openWebsite()
+          }) {
+            Text("Website")
+              .font(.system(size: 14, weight: .medium))
+              .foregroundColor(.appText06)
+              .underline()
+          }
         }
         .padding(.bottom, 20)
       }
@@ -630,7 +644,11 @@ struct MoreTabView: View {
                   .clipShape(Capsule())
               }
 
-              if item.hasChevron {
+              if item.useExternalLinkIcon {
+                Image(systemName: "arrow.up.right")
+                  .font(.system(size: 12, weight: .heavy))
+                  .foregroundColor(.appOutline03)
+              } else if item.hasChevron {
                 Image(systemName: "chevron.right")
                   .font(.system(size: 12, weight: .heavy))
                   .foregroundColor(.appOutline03)
@@ -859,17 +877,35 @@ struct MoreTabView: View {
   /// Open Instagram profile in Safari
   private func openInstagram() {
     let instagramURL = "https://www.instagram.com/habitto_official/?hl=en"
-    
+
     guard let url = URL(string: instagramURL) else {
       print("❌ MoreTabView: Failed to create Instagram URL")
       return
     }
-    
+
     UIApplication.shared.open(url) { success in
       if success {
         print("✅ MoreTabView: Opened Instagram profile")
       } else {
         print("❌ MoreTabView: Failed to open Instagram URL")
+      }
+    }
+  }
+
+  /// Open Habitto website in Safari
+  private func openWebsite() {
+    let websiteURL = "https://habitto.nl/"
+
+    guard let url = URL(string: websiteURL) else {
+      print("❌ MoreTabView: Failed to create website URL")
+      return
+    }
+
+    UIApplication.shared.open(url) { success in
+      if success {
+        print("✅ MoreTabView: Opened website")
+      } else {
+        print("❌ MoreTabView: Failed to open website URL")
       }
     }
   }
@@ -895,11 +931,12 @@ struct MoreTabView: View {
 struct SettingItem {
   // MARK: Lifecycle
 
-  init(icon: String, title: String, value: String? = nil, hasChevron: Bool = false, badgeCount: Int? = nil, action: (() -> Void)? = nil) {
+  init(icon: String, title: String, value: String? = nil, hasChevron: Bool = false, useExternalLinkIcon: Bool = false, badgeCount: Int? = nil, action: (() -> Void)? = nil) {
     self.icon = icon
     self.title = title
     self.value = value
     self.hasChevron = hasChevron
+    self.useExternalLinkIcon = useExternalLinkIcon
     self.badgeCount = badgeCount
     self.action = action
   }
@@ -910,6 +947,7 @@ struct SettingItem {
   let title: String
   let value: String?
   let hasChevron: Bool
+  let useExternalLinkIcon: Bool
   let badgeCount: Int?
   let action: (() -> Void)?
 }
