@@ -23,6 +23,8 @@ struct OnboardingFeatureScreen: View {
         VStack(spacing: 0) {
           Spacer()
 
+          Color.clear.frame(height: 32)  // reserve space for fixed dots above
+
           Text(title)
             .font(.appHeadlineSmallEmphasised)
             .foregroundColor(.appText04)
@@ -36,7 +38,7 @@ struct OnboardingFeatureScreen: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
 
-          Color.clear.frame(height: 160)
+          Color.clear.frame(height: 120)  // reserve space for fixed button below
         }
         .padding(.top, geometry.safeAreaInsets.top)
         .padding(.bottom, geometry.safeAreaInsets.bottom)
