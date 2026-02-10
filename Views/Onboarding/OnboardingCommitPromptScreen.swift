@@ -21,17 +21,9 @@ struct OnboardingCommitPromptScreen: View {
 
       Spacer()
 
-      HabittoButton(
-        size: .large,
-        style: .fillPrimary,
-        content: .text("Yes, I am ready!"),
-        state: .default,
-        action: {
-          UIImpactFeedbackGenerator(style: .light).impactOccurred()
-          viewModel.goToNext()
-        }
-      )
-      .padding(.horizontal, 20)
+      OnboardingButton.primary(text: "Yes, I am ready!") {
+        viewModel.goToNext()
+      }
       .padding(.bottom, 40)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
