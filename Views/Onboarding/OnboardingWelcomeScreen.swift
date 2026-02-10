@@ -60,7 +60,6 @@ struct OnboardingWelcomeScreen: View {
         }
         .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 20)
-        .opacity(buttonOpacity)
         .accessibilityLabel("Get Started")
 
         Button(action: {
@@ -73,10 +72,10 @@ struct OnboardingWelcomeScreen: View {
             .frame(height: 48)
         }
         .buttonStyle(PlainButtonStyle())
-        .opacity(buttonOpacity)
         .accessibilityLabel("I already have an account")
       }
       .padding(.bottom, 40)
+      .background(backgroundColor)
     }
     .onAppear {
       withAnimation(.easeOut(duration: 0.5)) {
