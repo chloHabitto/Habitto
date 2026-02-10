@@ -60,6 +60,8 @@ struct OnboardingFlowView: View {
         VStack(spacing: 0) {
           Spacer()
             .allowsHitTesting(false)
+
+          // Step indicator — positioned above where text appears
           HStack(spacing: 8) {
             ForEach(0 ..< 2, id: \.self) { index in
               Circle()
@@ -67,11 +69,13 @@ struct OnboardingFlowView: View {
                 .frame(width: 8, height: 8)
             }
           }
-          .padding(.bottom, 16)
           .allowsHitTesting(false)
-          Spacer()
-            .frame(height: 40)
+
+          // Transparent gap — text from OnboardingFeatureScreen shows through here
+          Color.clear.frame(height: 110)
             .allowsHitTesting(false)
+
+          // Continue button at the bottom
           OnboardingButton.primary(text: "Continue") {
             viewModel.goToNext()
           }
