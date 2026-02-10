@@ -36,8 +36,7 @@ struct OnboardingFeatureScreen: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
 
-          Spacer()
-            .frame(minHeight: 160)
+          Color.clear.frame(height: 160)
         }
         .padding(.top, geometry.safeAreaInsets.top)
         .padding(.bottom, geometry.safeAreaInsets.bottom)
