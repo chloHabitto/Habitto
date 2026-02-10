@@ -13,15 +13,10 @@ struct OnboardingFeatureScreen: View {
   var body: some View {
     ZStack {
       // Video layer — fills full screen (edge to edge, no letterboxing; overflow is ok)
-      ZStack {
-        OnboardingVideoPlayer(videoName: videoName, contentMode: .fill)
-          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-          .clipped()
-
-        Color.black.opacity(0.4)
-      }
-      .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
-      .ignoresSafeArea(edges: .all)
+      OnboardingVideoPlayer(videoName: videoName, contentMode: .fill)
+        .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+        .clipped()
+        .ignoresSafeArea(edges: .all)
 
       // Content layer: texts only (step indicator and button are fixed in OnboardingFlowView)
       GeometryReader { geometry in
