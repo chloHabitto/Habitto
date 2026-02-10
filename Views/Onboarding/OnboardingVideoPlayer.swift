@@ -1,5 +1,6 @@
 import AVKit
 import SwiftUI
+import UIKit
 
 // MARK: - OnboardingVideoPlayer
 
@@ -12,10 +13,14 @@ struct OnboardingVideoPlayer: View {
   var body: some View {
     Group {
       if let player = player {
-        VideoPlayer(player: player)
-          .disabled(true)
-          .aspectRatio(contentMode: contentMode)
-          .clipShape(RoundedRectangle(cornerRadius: contentMode == .fill ? 0 : 20))
+        if contentMode == .fill {
+          OnboardingVideoLayerView(player: player, fill: true)
+        } else {
+          VideoPlayer(player: player)
+            .disabled(true)
+            .aspectRatio(contentMode: .fit)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+        }
       } else {
         RoundedRectangle(cornerRadius: contentMode == .fill ? 0 : 20)
           .fill(Color.white.opacity(0.1))
@@ -46,5 +51,54 @@ struct OnboardingVideoPlayer: View {
         NotificationCenter.default.removeObserver(observer)
       }
     }
+  }
+}
+
+// MARK: - OnboardingVideoLayerView (AVPlayerLayer with resizeAspectFill for true full-screen fill)
+
+struct OnboardingVideoLayerView: UIViewRepresentable {
+  let player: AVPlayer
+  let fill: Bool
+
+  func makeUIView(context: Context) -> OnboardingVideoLayerUIView {
+    let view = OnboardingVideoLayerUIView()
+    let layer = AVPlayerLayer(player: player)
+    layer.videoGravity = fill ? .resizeAspectFill : .resizeAspect
+    view.playerLayer = layer
+    return view
+  }
+
+  func updateUIView(_ uiView: OnboardingVideoLayerUIView, context: Context) {
+    uiView.playerLayer?.videoGravity = fill ? .resizeAspectFill : .resizeAspect
+  }
+}
+
+final class OnboardingVideoLayerUIView: UIView {
+  var playerLayer: AVPlayerLayer? {
+    didSet {
+      oldValue?.removeFromSuperlayer()
+      guard let layer = playerLayer else { return }
+      self.layer.addSublayer(layer)
+      setNeedsLayout()
+    }
+  }
+
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    if let playerLayer = playerLayer, !bounds.isEmpty {
+      playerLayer.frame = bounds
+    }
+  }
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    backgroundColor = .clear
+    clipsToBounds = true
+  }
+
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+    backgroundColor = .clear
+    clipsToBounds = true
   }
 }
