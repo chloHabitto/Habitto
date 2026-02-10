@@ -38,7 +38,7 @@ struct OnboardingFeatureScreen: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
 
-          Color.clear.frame(height: 120)  // reserve space for fixed button below
+          Color.clear.frame(height: 150)  // reserve space for fixed button below
         }
         .padding(.top, geometry.safeAreaInsets.top)
         .padding(.bottom, geometry.safeAreaInsets.bottom)
