@@ -30,7 +30,7 @@ enum OnboardingButton {
         .foregroundColor(disabled ? darkNavy.opacity(0.5) : darkNavy)
         .frame(maxWidth: .infinity)
         .frame(height: 48)
-        .background(disabled ? accentBlue.opacity(0.5) : accentBlue)
+        .background(disabled ? accentBlue.opacity(0.5) : Color.red) // DEBUG: red to confirm correct view is rendering
         .clipShape(Capsule())
     }
     .buttonStyle(PlainButtonStyle())
