@@ -57,7 +57,7 @@ struct OnboardingFeatureScreen: View {
           OnboardingButton.primary(text: "Continue") {
             viewModel.goToNext()
           }
-          .padding(.bottom, 40)
+          .padding(.bottom, 64)
         }
         .padding(.top, geometry.safeAreaInsets.top)
         .padding(.bottom, geometry.safeAreaInsets.bottom)
