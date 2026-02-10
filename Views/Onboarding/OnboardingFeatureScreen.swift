@@ -14,7 +14,7 @@ struct OnboardingFeatureScreen: View {
 
   var body: some View {
     ZStack {
-      // Video layer — fills full screen (edge to edge, including safe areas)
+      // Video layer — fills full screen (edge to edge, no letterboxing; overflow is ok)
       ZStack {
         OnboardingVideoPlayer(videoName: videoName, contentMode: .fill)
           .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
@@ -25,8 +25,8 @@ struct OnboardingFeatureScreen: View {
       .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
       .ignoresSafeArea(edges: .all)
 
-      // Content layer: texts, step indicators, button
-      ZStack {
+      // Content layer: texts, step indicators, button (respects safe area)
+      GeometryReader { geometry in
         VStack(spacing: 0) {
           Spacer()
 
@@ -57,12 +57,17 @@ struct OnboardingFeatureScreen: View {
           OnboardingButton.primary(text: "Continue") {
             viewModel.goToNext()
           }
+          .padding(.top, 40)
           .padding(.bottom, 40)
         }
+        .padding(.top, geometry.safeAreaInsets.top)
+        .padding(.bottom, geometry.safeAreaInsets.bottom)
+        .frame(width: geometry.size.width, height: geometry.size.height)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .ignoresSafeArea(edges: .all)
     .background(backgroundColor)
   }
 }
