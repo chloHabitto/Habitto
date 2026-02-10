@@ -52,6 +52,7 @@ struct OnboardingFlowView: View {
       }
       .tabViewStyle(.page(indexDisplayMode: .never))
       .indexViewStyle(.page(backgroundDisplayMode: .never))
+      .ignoresSafeArea(edges: .all)
     }
     .preferredColorScheme(.dark)
   }
