@@ -25,6 +25,15 @@ struct OnboardingFeatureScreen: View {
       VStack(spacing: 0) {
         Spacer()
 
+        HStack(spacing: 8) {
+          ForEach(0 ..< totalPages, id: \.self) { index in
+            Circle()
+              .fill(index == pageIndex ? Color.white : Color.white.opacity(0.3))
+              .frame(width: 8, height: 8)
+          }
+        }
+        .padding(.bottom, 16)
+
         Text(title)
           .font(.appHeadlineSmallEmphasised)
           .foregroundColor(.white)
@@ -39,15 +48,6 @@ struct OnboardingFeatureScreen: View {
           .padding(.top, 8)
 
         Spacer()
-
-        HStack(spacing: 8) {
-          ForEach(0 ..< totalPages, id: \.self) { index in
-            Circle()
-              .fill(index == pageIndex ? Color.white : Color.white.opacity(0.3))
-              .frame(width: 8, height: 8)
-          }
-        }
-        .padding(.bottom, 16)
 
         OnboardingButton.primary(text: "Continue") {
           viewModel.goToNext()
