@@ -10,7 +10,7 @@ struct OnboardingFeatureScreen: View {
   let pageIndex: Int
   let totalPages: Int
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   var body: some View {
     VStack(spacing: 0) {

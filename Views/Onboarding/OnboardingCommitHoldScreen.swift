@@ -5,7 +5,7 @@ import SwiftUI
 struct OnboardingCommitHoldScreen: View {
   @ObservedObject var viewModel: OnboardingViewModel
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   private var displayName: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)

@@ -6,7 +6,7 @@ struct OnboardingCommitPromptScreen: View {
   @ObservedObject var viewModel: OnboardingViewModel
   @State private var textOpacity: Double = 0
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   var body: some View {
     VStack(spacing: 0) {

@@ -14,11 +14,11 @@ struct HoldToCommitButton: View {
   var body: some View {
     ZStack(alignment: .leading) {
       Capsule()
-        .fill(Color(hex: "AABDFF").opacity(0.3))
+        .fill(OnboardingButton.accentBlue.opacity(0.3))
         .frame(height: 56)
 
       Capsule()
-        .fill(Color(hex: "AABDFF"))
+        .fill(OnboardingButton.accentBlue)
         .frame(width: nil, height: 56)
         .frame(maxWidth: .infinity)
         .scaleEffect(x: holdProgress, y: 1, anchor: .leading)
@@ -29,7 +29,7 @@ struct HoldToCommitButton: View {
     .overlay {
       Text(holdProgress >= 1.0 ? "Committed! ✓" : "Hold to commit")
         .font(.appButtonText1)
-        .foregroundColor(Color(hex: "171D36"))
+        .foregroundColor(OnboardingButton.darkNavy)
     }
     .contentShape(Capsule())
     .simultaneousGesture(

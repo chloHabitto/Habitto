@@ -6,7 +6,7 @@ struct OnboardingCommitConfirmedScreen: View {
   @ObservedObject var viewModel: OnboardingViewModel
   @State private var visibleCheckCount: Int = 0
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   private var displayName: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)

@@ -5,7 +5,7 @@ import SwiftUI
 struct OnboardingFlowView: View {
   @StateObject private var viewModel = OnboardingViewModel()
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   var body: some View {
     ZStack {
