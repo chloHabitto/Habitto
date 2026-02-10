@@ -14,45 +14,51 @@ struct OnboardingFeatureScreen: View {
 
   var body: some View {
     ZStack {
-      OnboardingVideoPlayer(videoName: videoName, contentMode: .fill)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .clipped()
-        .ignoresSafeArea()
+      // Video layer — fills full screen (edge to edge, including safe areas)
+      ZStack {
+        OnboardingVideoPlayer(videoName: videoName, contentMode: .fill)
+          .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+          .clipped()
 
-      Color.black.opacity(0.4)
-        .ignoresSafeArea()
+        Color.black.opacity(0.4)
+      }
+      .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
+      .ignoresSafeArea(edges: .all)
 
-      VStack(spacing: 0) {
-        Spacer()
+      // Content layer: texts, step indicators, button
+      ZStack {
+        VStack(spacing: 0) {
+          Spacer()
 
-        HStack(spacing: 8) {
-          ForEach(0 ..< totalPages, id: \.self) { index in
-            Circle()
-              .fill(index == pageIndex ? Color.white : Color.white.opacity(0.3))
-              .frame(width: 8, height: 8)
+          Text(title)
+            .font(.appHeadlineSmallEmphasised)
+            .foregroundColor(.white)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+
+          Text(subtitle)
+            .font(.appBodyLarge)
+            .foregroundColor(.white.opacity(0.9))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+
+          Spacer()
+
+          HStack(spacing: 8) {
+            ForEach(0 ..< totalPages, id: \.self) { index in
+              Circle()
+                .fill(index == pageIndex ? Color.white : Color.white.opacity(0.3))
+                .frame(width: 8, height: 8)
+            }
           }
+          .padding(.bottom, 16)
+
+          OnboardingButton.primary(text: "Continue") {
+            viewModel.goToNext()
+          }
+          .padding(.bottom, 40)
         }
-        .padding(.bottom, 16)
-
-        Text(title)
-          .font(.appHeadlineSmallEmphasised)
-          .foregroundColor(.white)
-          .multilineTextAlignment(.center)
-          .padding(.horizontal, 24)
-
-        Text(subtitle)
-          .font(.appBodyLarge)
-          .foregroundColor(.white.opacity(0.9))
-          .multilineTextAlignment(.center)
-          .padding(.horizontal, 24)
-          .padding(.top, 8)
-
-        Spacer()
-
-        OnboardingButton.primary(text: "Continue") {
-          viewModel.goToNext()
-        }
-        .padding(.bottom, 40)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

@@ -22,6 +22,7 @@ struct OnboardingVideoPlayer: View {
           .aspectRatio(9 / 16, contentMode: contentMode)
       }
     }
+    .frame(maxWidth: contentMode == .fill ? .infinity : nil, maxHeight: contentMode == .fill ? .infinity : nil)
     .onAppear {
       guard let url = Bundle.main.url(forResource: videoName, withExtension: "mp4") else { return }
       let item = AVPlayerItem(url: url)
