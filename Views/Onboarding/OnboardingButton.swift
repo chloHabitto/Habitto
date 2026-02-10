@@ -10,7 +10,7 @@ enum OnboardingButton {
   // 171D36 → dark navy (for button text)
   static let darkNavy = Color(red: 23.0 / 255.0, green: 29.0 / 255.0, blue: 54.0 / 255.0)
   // 000835 → onboarding background
-  static let onboardingBackground = Color(red: 0 / 255.0, green: 8 / 255.0, blue: 53 / 255.0)
+  static let onboardingBackground = Color(red: 0.0 / 255.0, green: 8.0 / 255.0, blue: 53.0 / 255.0)
 
   /// Primary action: filled capsule, light blue background, dark text.
   static func primary(
@@ -26,10 +26,10 @@ enum OnboardingButton {
       }
     }) {
       Text(text)
-        .font(.appButtonText1)
+        .font(.appButtonText2)
         .foregroundColor(disabled ? darkNavy.opacity(0.5) : darkNavy)
         .frame(maxWidth: .infinity)
-        .frame(height: 56)
+        .frame(height: 48)
         .background(disabled ? accentBlue.opacity(0.5) : accentBlue)
         .clipShape(Capsule())
     }
@@ -42,7 +42,7 @@ enum OnboardingButton {
   static func secondary(text: String, action: @escaping () -> Void) -> some View {
     Button(action: action) {
       Text(text)
-        .font(.appBodyLarge)
+        .font(.appButtonText2)
         .foregroundColor(accentBlue)
     }
     .buttonStyle(PlainButtonStyle())
