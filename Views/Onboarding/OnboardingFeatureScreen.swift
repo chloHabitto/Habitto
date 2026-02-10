@@ -52,8 +52,6 @@ struct OnboardingFeatureScreen: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
 
-          Spacer(minLength: 0)
-
           Color.clear.frame(height: 40)
 
           OnboardingButton.primary(text: "Continue") {
