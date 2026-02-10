@@ -387,6 +387,9 @@ struct HabittoApp: App {
               }
             }
           }
+        } else if !hasCompletedOnboarding {
+          OnboardingFlowView()
+            .transition(.opacity)
         } else {
           ZStack {
             HomeView()
@@ -620,6 +623,7 @@ struct HabittoApp: App {
   @StateObject private var themeManager: ThemeManager
   @State private var xpManager: XPManager
   @State private var showSplash = true
+  @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
   
   // MARK: - Integrity Checks
   
