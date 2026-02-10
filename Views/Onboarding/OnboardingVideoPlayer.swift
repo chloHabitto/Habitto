@@ -7,8 +7,8 @@ import UIKit
 struct OnboardingVideoPlayer: View {
   let videoName: String
   var contentMode: ContentMode = .fit
-  @State private var player: AVPlayer?
-  @State private var loopObserver: NSObjectProtocol?
+  @State private var player: AVQueuePlayer?
+  @State private var looper: AVPlayerLooper?
 
   var body: some View {
     Group {
@@ -31,25 +31,17 @@ struct OnboardingVideoPlayer: View {
     .onAppear {
       guard let url = Bundle.main.url(forResource: videoName, withExtension: "mp4") else { return }
       let item = AVPlayerItem(url: url)
-      let newPlayer = AVPlayer(playerItem: item)
-      newPlayer.isMuted = true
-      player = newPlayer
-      newPlayer.play()
-
-      loopObserver = NotificationCenter.default.addObserver(
-        forName: .AVPlayerItemDidPlayToEndTime,
-        object: item,
-        queue: .main
-      ) { _ in
-        newPlayer.seek(to: .zero)
-        newPlayer.play()
-      }
+      let queuePlayer = AVQueuePlayer(playerItem: item)
+      queuePlayer.isMuted = true
+      let playerLooper = AVPlayerLooper(player: queuePlayer, templateItem: AVPlayerItem(url: url))
+      player = queuePlayer
+      looper = playerLooper
+      queuePlayer.play()
     }
     .onDisappear {
       player?.pause()
-      if let observer = loopObserver {
-        NotificationCenter.default.removeObserver(observer)
-      }
+      looper = nil
+      player = nil
     }
   }
 }
