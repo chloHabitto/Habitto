@@ -12,35 +12,50 @@ struct OnboardingWelcomeScreen: View {
 
   var body: some View {
     VStack(spacing: 0) {
+      Spacer(minLength: 0)
+
       Spacer()
+        .frame(height: 56)
 
       Text("Habitto")
-        .font(.appDisplayMediumEmphasised)
+        .font(.appDisplayLargeEmphasised)
         .foregroundColor(.white)
         .opacity(titleOpacity)
 
       Spacer()
         .frame(height: 24)
 
-      Image("welcome-image")
-        .resizable()
-        .aspectRatio(contentMode: .fit)
-        .opacity(imageOpacity)
+      ZStack(alignment: .topTrailing) {
+        Image("welcome-image")
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .opacity(imageOpacity)
+
+        Image("Ellipse 3947")
+          .frame(width: 252, height: 252)
+          .background(Color(red: 0.13, green: 0.25, blue: 0.59).opacity(0.56))
+          .blur(radius: 50.88363)
+          .offset(x: 80, y: -60)
+      }
 
       Spacer()
-
+        .frame(height: 16)
+    }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
+    .background(backgroundColor)
+    .safeAreaInset(edge: .bottom) {
       VStack(spacing: 16) {
         Button(action: {
           UIImpactFeedbackGenerator(style: .light).impactOccurred()
           viewModel.goToNext()
         }) {
           Text("Get Started")
-            .font(.appButtonText1)
-            .foregroundColor(Color("pastelBlue900"))
+            .font(.appButtonText2)
+            .foregroundColor(Color(hex: "171D36"))
             .padding(.horizontal, 28)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(Color("pastelBlue500"))
+            .background(Color(hex: "AABDFF"))
             .clipShape(RoundedRectangle(cornerRadius: 28))
         }
         .buttonStyle(PlainButtonStyle())
@@ -52,8 +67,8 @@ struct OnboardingWelcomeScreen: View {
           // Placeholder: "I already have an account"
         }) {
           Text("I already have an account")
-            .font(.appBodyMedium)
-            .foregroundColor(.white.opacity(0.6))
+            .font(.appButtonText2)
+            .foregroundColor(Color(hex: "AABDFF"))
         }
         .padding(.top, 4)
         .opacity(buttonOpacity)
@@ -61,8 +76,6 @@ struct OnboardingWelcomeScreen: View {
       }
       .padding(.bottom, 40)
     }
-    .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .background(backgroundColor)
     .onAppear {
       withAnimation(.easeOut(duration: 0.5)) {
         imageOpacity = 1
