@@ -44,6 +44,8 @@ enum OnboardingButton {
       Text(text)
         .font(.appButtonText2)
         .foregroundColor(accentBlue)
+        .frame(maxWidth: .infinity)
+        .frame(height: 48)
     }
     .buttonStyle(PlainButtonStyle())
   }
