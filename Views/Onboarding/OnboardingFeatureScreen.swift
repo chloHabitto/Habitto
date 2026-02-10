@@ -52,12 +52,13 @@ struct OnboardingFeatureScreen: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
 
-          Spacer()
+          Spacer(minLength: 0)
+
+          Color.clear.frame(height: 40)
 
           OnboardingButton.primary(text: "Continue") {
             viewModel.goToNext()
           }
-          .padding(.top, 40)
           .padding(.bottom, 40)
         }
         .padding(.top, geometry.safeAreaInsets.top)
