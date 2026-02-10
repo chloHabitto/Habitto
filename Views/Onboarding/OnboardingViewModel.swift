@@ -1,0 +1,32 @@
+import SwiftUI
+
+// MARK: - OnboardingViewModel
+
+@MainActor
+class OnboardingViewModel: ObservableObject {
+  @Published var currentScreen: Int = 0 // 0–10 for screens 1–11
+  @Published var userName: String = ""
+  @Published var hasCommitted: Bool = false
+  @Published var holdProgress: CGFloat = 0.0
+
+  let commitmentItems: [String] = [
+    "I will start small and be patient with myself.",
+    "I will celebrate progress, not just perfection.",
+    "I will keep going, even after hard days.",
+    "I believe I can change.",
+  ]
+
+  func completeOnboarding() {
+    let trimmed = userName.trimmingCharacters(in: .whitespaces)
+    if !trimmed.isEmpty {
+      UserDefaults.standard.set(trimmed, forKey: "GuestName")
+    }
+    UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+  }
+
+  func goToNext() {
+    withAnimation(.easeInOut(duration: 0.3)) {
+      currentScreen += 1
+    }
+  }
+}
