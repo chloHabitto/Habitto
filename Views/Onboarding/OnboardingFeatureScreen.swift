@@ -7,8 +7,6 @@ struct OnboardingFeatureScreen: View {
   let videoName: String
   let title: String
   let subtitle: String
-  let pageIndex: Int
-  let totalPages: Int
 
   private let backgroundColor = OnboardingButton.onboardingBackground
 
@@ -25,19 +23,10 @@ struct OnboardingFeatureScreen: View {
       .frame(minWidth: 0, maxWidth: .infinity, minHeight: 0, maxHeight: .infinity)
       .ignoresSafeArea(edges: .all)
 
-      // Content layer: texts, step indicators, button (respects safe area)
+      // Content layer: texts only (step indicator and button are fixed in OnboardingFlowView)
       GeometryReader { geometry in
         VStack(spacing: 0) {
           Spacer()
-
-          HStack(spacing: 8) {
-            ForEach(0 ..< totalPages, id: \.self) { index in
-              Circle()
-                .fill(index == pageIndex ? Color.white : Color.white.opacity(0.3))
-                .frame(width: 8, height: 8)
-            }
-          }
-          .padding(.bottom, 16)
 
           Text(title)
             .font(.appHeadlineSmallEmphasised)
@@ -52,12 +41,8 @@ struct OnboardingFeatureScreen: View {
             .padding(.horizontal, 24)
             .padding(.top, 8)
 
-          Color.clear.frame(height: 40)
-
-          OnboardingButton.primary(text: "Continue") {
-            viewModel.goToNext()
-          }
-          .padding(.bottom, 64)
+          Spacer()
+            .frame(minHeight: 160)
         }
         .padding(.top, geometry.safeAreaInsets.top)
         .padding(.bottom, geometry.safeAreaInsets.bottom)
