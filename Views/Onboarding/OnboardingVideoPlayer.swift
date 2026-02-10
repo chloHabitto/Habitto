@@ -5,6 +5,7 @@ import SwiftUI
 
 struct OnboardingVideoPlayer: View {
   let videoName: String
+  var contentMode: ContentMode = .fit
   @State private var player: AVPlayer?
   @State private var loopObserver: NSObjectProtocol?
 
@@ -13,12 +14,12 @@ struct OnboardingVideoPlayer: View {
       if let player = player {
         VideoPlayer(player: player)
           .disabled(true)
-          .aspectRatio(contentMode: .fit)
-          .clipShape(RoundedRectangle(cornerRadius: 20))
+          .aspectRatio(contentMode: contentMode)
+          .clipShape(RoundedRectangle(cornerRadius: contentMode == .fill ? 0 : 20))
       } else {
-        RoundedRectangle(cornerRadius: 20)
+        RoundedRectangle(cornerRadius: contentMode == .fill ? 0 : 20)
           .fill(Color.white.opacity(0.1))
-          .aspectRatio(9 / 16, contentMode: .fit)
+          .aspectRatio(9 / 16, contentMode: contentMode)
       }
     }
     .onAppear {
