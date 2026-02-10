@@ -7,6 +7,18 @@ struct OnboardingFlowView: View {
 
   private let backgroundColor = OnboardingButton.onboardingBackground
 
+  private var currentFeatureTitle: String {
+    viewModel.currentScreen == 1
+      ? "Build habits. Break bad ones."
+      : "Progress counts, not perfection"
+  }
+
+  private var currentFeatureSubtitle: String {
+    viewModel.currentScreen == 1
+      ? "You don't need a perfect plan. Just one small habit is enough to begin."
+      : "Track habits your way, celebrate small wins, and keep going — even on hard days."
+  }
+
   var body: some View {
     ZStack {
       backgroundColor
@@ -61,7 +73,7 @@ struct OnboardingFlowView: View {
           Spacer()
             .allowsHitTesting(false)
 
-          // Step indicator — positioned above where text appears
+          // Step indicator dots
           HStack(spacing: 8) {
             ForEach(0 ..< 2, id: \.self) { index in
               Circle()
@@ -71,16 +83,40 @@ struct OnboardingFlowView: View {
           }
           .allowsHitTesting(false)
 
-          // Transparent gap — text from OnboardingFeatureScreen shows through here
-          Color.clear.frame(height: 140)
+          Color.clear.frame(height: 16)
             .allowsHitTesting(false)
 
-          // Continue button at the bottom
+          // Title — cross-fades on screen change
+          Text(currentFeatureTitle)
+            .font(.appHeadlineSmallEmphasised)
+            .foregroundColor(.appText04)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+            .id(viewModel.currentScreen)
+            .transition(.opacity)
+            .allowsHitTesting(false)
+
+          // Subtitle — cross-fades on screen change
+          Text(currentFeatureSubtitle)
+            .font(.appBodyLarge)
+            .foregroundColor(.appText05)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+            .padding(.top, 8)
+            .id("subtitle-\(viewModel.currentScreen)")
+            .transition(.opacity)
+            .allowsHitTesting(false)
+
+          Color.clear.frame(height: 40)
+            .allowsHitTesting(false)
+
+          // Continue button
           OnboardingButton.primary(text: "Continue") {
             viewModel.goToNext()
           }
           .padding(.bottom, 64)
         }
+        .animation(.easeInOut(duration: 0.3), value: viewModel.currentScreen)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea(edges: .all)
       }
