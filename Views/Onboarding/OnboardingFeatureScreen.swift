@@ -47,17 +47,9 @@ struct OnboardingFeatureScreen: View {
       }
       .padding(.bottom, 16)
 
-      HabittoButton(
-        size: .large,
-        style: .fillPrimary,
-        content: .text("Continue"),
-        state: .default,
-        action: {
-          UIImpactFeedbackGenerator(style: .light).impactOccurred()
-          viewModel.goToNext()
-        }
-      )
-      .padding(.horizontal, 20)
+      OnboardingButton.primary(text: "Continue") {
+        viewModel.goToNext()
+      }
       .padding(.bottom, 40)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)

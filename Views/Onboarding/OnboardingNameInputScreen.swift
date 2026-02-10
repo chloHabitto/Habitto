@@ -56,17 +56,12 @@ struct OnboardingNameInputScreen: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(backgroundColor)
     .safeAreaInset(edge: .bottom) {
-      HabittoButton(
-        size: .large,
-        style: .fillPrimary,
-        content: .text("Continue"),
-        state: viewModel.userName.trimmingCharacters(in: .whitespaces).isEmpty ? .disabled : .default,
-        action: {
-          UIImpactFeedbackGenerator(style: .light).impactOccurred()
-          viewModel.goToNext()
-        }
-      )
-      .padding(.horizontal, 20)
+      OnboardingButton.primary(
+        text: "Continue",
+        disabled: viewModel.userName.trimmingCharacters(in: .whitespaces).isEmpty
+      ) {
+        viewModel.goToNext()
+      }
       .padding(.bottom, 24)
       .accessibilityLabel("Continue")
     }

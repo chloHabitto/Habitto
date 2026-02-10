@@ -47,17 +47,9 @@ struct OnboardingFinalScreen: View {
 
       Spacer()
 
-      HabittoButton(
-        size: .large,
-        style: .fillPrimary,
-        content: .text("Let's get started!"),
-        state: .default,
-        action: {
-          UIImpactFeedbackGenerator(style: .light).impactOccurred()
-          viewModel.completeOnboarding()
-        }
-      )
-      .padding(.horizontal, 20)
+      OnboardingButton.primary(text: "Let's get started!") {
+        viewModel.completeOnboarding()
+      }
       .padding(.bottom, 40)
       .opacity(contentOpacity)
       .accessibilityLabel("Let's get started")
