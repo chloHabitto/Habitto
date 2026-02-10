@@ -72,7 +72,7 @@ struct OnboardingFlowView: View {
           .allowsHitTesting(false)
 
           // Transparent gap — text from OnboardingFeatureScreen shows through here
-          Color.clear.frame(height: 110)
+          Color.clear.frame(height: 140)
             .allowsHitTesting(false)
 
           // Continue button at the bottom
