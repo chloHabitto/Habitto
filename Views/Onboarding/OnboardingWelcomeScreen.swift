@@ -44,7 +44,7 @@ struct OnboardingWelcomeScreen: View {
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(backgroundColor)
     .safeAreaInset(edge: .bottom) {
-      VStack(spacing: 16) {
+      VStack(spacing: 8) {
         Button(action: {
           UIImpactFeedbackGenerator(style: .light).impactOccurred()
           viewModel.goToNext()
@@ -54,9 +54,9 @@ struct OnboardingWelcomeScreen: View {
             .foregroundColor(Color(.sRGB, red: 23.0 / 255.0, green: 29.0 / 255.0, blue: 54.0 / 255.0, opacity: 1))
             .padding(.horizontal, 28)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: 48)
             .background(Color(.sRGB, red: 170.0 / 255.0, green: 189.0 / 255.0, blue: 255.0 / 255.0, opacity: 1))
-            .clipShape(RoundedRectangle(cornerRadius: 28))
+            .clipShape(RoundedRectangle(cornerRadius: 24))
         }
         .buttonStyle(PlainButtonStyle())
         .padding(.horizontal, 20)
@@ -69,8 +69,10 @@ struct OnboardingWelcomeScreen: View {
           Text("I already have an account")
             .font(.appButtonText2)
             .foregroundColor(Color(hex: "AABDFF"))
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
         }
-        .padding(.top, 4)
+        .buttonStyle(PlainButtonStyle())
         .opacity(buttonOpacity)
         .accessibilityLabel("I already have an account")
       }
