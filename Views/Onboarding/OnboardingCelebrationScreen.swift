@@ -8,7 +8,7 @@ struct OnboardingCelebrationScreen: View {
   @State private var mascotScale: CGFloat = 0.8
   @State private var listOpacity: Double = 0
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   private var displayName: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)

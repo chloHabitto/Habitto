@@ -5,6 +5,13 @@ import SwiftUI
 /// Buttons styled for onboarding screens on the dark #000835 background.
 /// Use these instead of HabittoButton so primary actions stand out (AABDFF on dark).
 enum OnboardingButton {
+  // AABDFF → light periwinkle blue (for button background + secondary text)
+  static let accentBlue = Color(red: 170.0 / 255.0, green: 189.0 / 255.0, blue: 255.0 / 255.0)
+  // 171D36 → dark navy (for button text)
+  static let darkNavy = Color(red: 23.0 / 255.0, green: 29.0 / 255.0, blue: 54.0 / 255.0)
+  // 000835 → onboarding background
+  static let onboardingBackground = Color(red: 0 / 255.0, green: 8 / 255.0, blue: 53 / 255.0)
+
   /// Primary action: filled capsule, light blue background, dark text.
   static func primary(
     text: String,
@@ -20,10 +27,10 @@ enum OnboardingButton {
     }) {
       Text(text)
         .font(.appButtonText1)
-        .foregroundColor(disabled ? Color(hex: "171D36").opacity(0.5) : Color(hex: "171D36"))
+        .foregroundColor(disabled ? darkNavy.opacity(0.5) : darkNavy)
         .frame(maxWidth: .infinity)
         .frame(height: 56)
-        .background(disabled ? Color(hex: "AABDFF").opacity(0.5) : Color(hex: "AABDFF"))
+        .background(disabled ? accentBlue.opacity(0.5) : accentBlue)
         .clipShape(Capsule())
     }
     .buttonStyle(PlainButtonStyle())
@@ -36,7 +43,7 @@ enum OnboardingButton {
     Button(action: action) {
       Text(text)
         .font(.appBodyLarge)
-        .foregroundColor(Color(hex: "AABDFF"))
+        .foregroundColor(accentBlue)
     }
     .buttonStyle(PlainButtonStyle())
   }

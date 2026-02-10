@@ -6,7 +6,7 @@ struct OnboardingNameInputScreen: View {
   @ObservedObject var viewModel: OnboardingViewModel
   @FocusState private var isNameFocused: Bool
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   var body: some View {
     ScrollView {

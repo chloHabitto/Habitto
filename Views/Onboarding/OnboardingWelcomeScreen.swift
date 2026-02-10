@@ -8,7 +8,7 @@ struct OnboardingWelcomeScreen: View {
   @State private var titleOpacity: Double = 0
   @State private var buttonOpacity: Double = 0
 
-  private let backgroundColor = Color(hex: "000835")
+  private let backgroundColor = OnboardingButton.onboardingBackground
 
   var body: some View {
     VStack(spacing: 0) {
