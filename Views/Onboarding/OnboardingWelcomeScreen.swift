@@ -51,11 +51,11 @@ struct OnboardingWelcomeScreen: View {
         }) {
           Text("Get Started")
             .font(.appButtonText2)
-            .foregroundColor(Color(hex: "171D36"))
+            .foregroundColor(Color(.sRGB, red: 23.0 / 255.0, green: 29.0 / 255.0, blue: 54.0 / 255.0, opacity: 1))
             .padding(.horizontal, 28)
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(Color(hex: "AABDFF"))
+            .background(Color(.sRGB, red: 170.0 / 255.0, green: 189.0 / 255.0, blue: 255.0 / 255.0, opacity: 1))
             .clipShape(RoundedRectangle(cornerRadius: 28))
         }
         .buttonStyle(PlainButtonStyle())
