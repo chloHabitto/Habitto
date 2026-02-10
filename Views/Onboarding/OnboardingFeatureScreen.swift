@@ -41,13 +41,13 @@ struct OnboardingFeatureScreen: View {
 
           Text(title)
             .font(.appHeadlineSmallEmphasised)
-            .foregroundColor(.white)
+            .foregroundColor(.appText04)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 24)
 
           Text(subtitle)
             .font(.appBodyLarge)
-            .foregroundColor(.white.opacity(0.9))
+            .foregroundColor(.appText05)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 24)
             .padding(.top, 8)
