@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 class OnboardingViewModel: ObservableObject {
-  @Published var currentScreen: Int = 0 // 0–8 for screens 1–9 (hold includes certificate animation → final)
+  @Published var currentScreen: Int = 0 // 0–7: welcome → feature → name → greeting → intro → commit prompt → hold (certificate is final)
   @Published var userName: String = ""
   @Published var hasCommitted: Bool = false
   @Published var holdProgress: CGFloat = 0.0
@@ -28,6 +28,7 @@ class OnboardingViewModel: ObservableObject {
 
   func goToNext() {
     guard !isTransitioning else { return }
+    guard currentScreen < 7 else { return }
     isTransitioning = true
     withAnimation(.easeInOut(duration: 0.3)) {
       currentScreen += 1

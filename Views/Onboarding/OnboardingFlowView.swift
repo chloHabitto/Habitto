@@ -53,10 +53,8 @@ struct OnboardingFlowView: View {
           OnboardingCommitPromptScreen(viewModel: viewModel)
         case 7:
           OnboardingCommitHoldScreen(viewModel: viewModel)
-        case 8:
-          OnboardingFinalScreen(viewModel: viewModel)
         default:
-          OnboardingFinalScreen(viewModel: viewModel)
+          OnboardingCommitHoldScreen(viewModel: viewModel)
         }
       }
       .offset(x: dragOffset)
