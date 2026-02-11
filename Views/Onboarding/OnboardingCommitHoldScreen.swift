@@ -34,7 +34,7 @@ struct OnboardingCommitHoldScreen: View {
 
   private var displayName: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)
-    return trimmed.isEmpty ? "Your" : "\(trimmed)'s"
+    return trimmed.isEmpty ? "Your" : "\(trimmed)\u{2019}s"
   }
 
   /// Actual safe area insets from UIKit (parent OnboardingFlowView strips safe area with .ignoresSafeArea(edges: .all)).
@@ -55,18 +55,24 @@ struct OnboardingCommitHoldScreen: View {
         ScrollView(showsIndicators: false) {
           VStack(spacing: 0) {
             // Use UIKit safe area top inset (parent strips safe area with .ignoresSafeArea(edges: .all))
-            Spacer().frame(height: safeAreaInsets.top + 16)
+            Spacer().frame(height: safeAreaInsets.top + 40)
 
-            HStack(spacing: 8) {
-              Image("Sticker-Exciting")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 40, height: 40)
+            // Mascot + speech bubble, left-aligned
+            HStack(alignment: .center, spacing: 12) {
+              MascotPlaceholderView(size: 150)
               Text("Exciting!")
-                .font(.appBodyMedium)
-                .foregroundColor(.white.opacity(0.9))
+                .font(.appTitleLarge)
+                .foregroundColor(.white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                  RoundedRectangle(cornerRadius: 18)
+                    .fill(Color(red: 0.35, green: 0.38, blue: 0.45))
+                )
             }
-            .padding(.bottom, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
 
             Text("\(displayName) Commitment")
               .font(.appHeadlineSmallEmphasised)
@@ -74,26 +80,25 @@ struct OnboardingCommitHoldScreen: View {
               .frame(maxWidth: .infinity)
               .padding(.bottom, 24)
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 16) {
               ForEach(viewModel.commitmentItems, id: \.self) { item in
                 HStack(alignment: .top, spacing: 8) {
-                  Text("•")
-                    .font(.appBodyMedium)
+                  Text("\u{2022}")
+                    .font(.appBodyLarge)
                     .foregroundColor(.white)
                   Text(item)
-                    .font(.appBodyMedium)
+                    .font(.appBodyLarge)
                     .foregroundColor(.white)
                 }
               }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 32)
             .frame(maxWidth: .infinity, alignment: .leading)
           }
         }
         .frame(maxWidth: .infinity)
 
         Spacer()
-          .frame(minHeight: 16, maxHeight: 40)
 
         HoldToCommitButton {
           viewModel.hasCommitted = true
