@@ -682,3 +682,7 @@
 
 "create.periodSection.notSelected" = "미선택";
 "create.periodSection.today" = "오늘";
+
+/* Onboarding - Name screen */
+"onboarding.name.helper" = "이름은 나중에 설정에서 변경할 수 있어요.";
+"onboarding.name.error" = "계속하려면 이름을 입력해 주세요.";

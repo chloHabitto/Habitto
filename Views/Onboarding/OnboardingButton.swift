@@ -13,28 +13,29 @@ enum OnboardingButton {
   static let onboardingBackground = Color(red: 0.0 / 255.0, green: 8.0 / 255.0, blue: 53.0 / 255.0)
 
   /// Primary action: filled capsule, light blue background, dark text.
+  /// When `inactive: true`, button keeps same colors but uses 50% opacity and remains tappable (caller handles tap, e.g. to show error).
   static func primary(
     text: String,
-    disabled: Bool = false,
+    inactive: Bool = false,
     action: @escaping () -> Void)
     -> some View
   {
     Button(action: {
-      if !disabled {
+      if !inactive {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        action()
       }
+      action()
     }) {
       Text(text)
         .font(.appButtonText2)
-        .foregroundColor(disabled ? darkNavy.opacity(0.5) : darkNavy)
+        .foregroundColor(darkNavy)
         .frame(maxWidth: .infinity)
         .frame(height: 48)
-        .background(disabled ? accentBlue.opacity(0.5) : accentBlue)
+        .background(accentBlue)
         .clipShape(Capsule())
+        .opacity(inactive ? 0.5 : 1)
     }
     .buttonStyle(PlainButtonStyle())
-    .disabled(disabled)
     .padding(.horizontal, 20)
   }
 
