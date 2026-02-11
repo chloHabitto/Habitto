@@ -26,9 +26,9 @@ struct OnboardingWelcomeScreen: View {
         .frame(height: 24)
 
       ZStack(alignment: .topTrailing) {
-        Image("Ellipse 3947")
+        Circle()
+          .fill(Color(red: 0.13, green: 0.25, blue: 0.59).opacity(0.56))
           .frame(width: 252, height: 252)
-          .background(Color(red: 0.13, green: 0.25, blue: 0.59).opacity(0.56))
           .blur(radius: 50.88363)
           .offset(x: 80, y: -60)
 
