@@ -4,6 +4,7 @@ import SwiftUI
 
 struct OnboardingFlowView: View {
   @StateObject private var viewModel = OnboardingViewModel()
+  @State private var dragOffset: CGFloat = 0
 
   private let backgroundColor = OnboardingButton.onboardingBackground
 
@@ -58,6 +59,24 @@ struct OnboardingFlowView: View {
           OnboardingFinalScreen(viewModel: viewModel)
         }
       }
+      .offset(x: dragOffset)
+      .gesture(
+        DragGesture(minimumDistance: 30, coordinateSpace: .local)
+          .onChanged { value in
+            dragOffset = value.translation.width * 0.3
+          }
+          .onEnded { value in
+            let threshold: CGFloat = 50
+            withAnimation(.easeOut(duration: 0.2)) {
+              dragOffset = 0
+            }
+            if value.translation.width < -threshold {
+              viewModel.goToNext()
+            } else if value.translation.width > threshold {
+              viewModel.goToPrevious()
+            }
+          }
+      )
       .transition(.opacity)
       .animation(.easeInOut(duration: 0.3), value: viewModel.currentScreen)
       .ignoresSafeArea(edges: .all)
