@@ -114,6 +114,7 @@ struct OnboardingFlowView: View {
           OnboardingButton.primary(text: "Continue") {
             viewModel.goToNext()
           }
+          .padding(.horizontal, 20)
           .padding(.bottom, 64)
         }
         .animation(.easeInOut(duration: 0.3), value: viewModel.currentScreen)

@@ -55,6 +55,7 @@ struct OnboardingWelcomeScreen: View {
         }
         .accessibilityLabel("I already have an account")
       }
+      .padding(.horizontal, 20)
       .padding(.bottom, 40)
       .background(backgroundColor)
     }

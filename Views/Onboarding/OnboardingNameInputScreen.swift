@@ -14,6 +14,7 @@ struct OnboardingNameInputScreen: View {
   @State private var helperVisible = false
   @State private var buttonVisible = false
   @State private var fieldShakeOffset: CGFloat = 0
+  @State private var skipVisible = false
 
   private let backgroundColor = OnboardingButton.onboardingBackground
   private let accentBlue = Color(hex: "AABDFF")
@@ -23,23 +24,42 @@ struct OnboardingNameInputScreen: View {
   }
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 0) {
+    VStack(spacing: 0) {
+      HStack {
+        Spacer()
+        Button(action: {
+          viewModel.goToNext()
+        }) {
+          Text("skip")
+            .font(.appTitleMedium)
+            .foregroundColor(Color(hex: "ADAFB5"))
+            .frame(width: 64, height: 42)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(PlainButtonStyle())
+        .opacity(skipVisible ? 1 : 0)
+      }
+      .padding(.top, 8)
+      .padding(.trailing, 8)
+
       ScrollView {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(spacing: 0) {
           Spacer()
             .frame(height: 48)
 
           Text("What should we call you?")
             .font(.appHeadlineSmallEmphasised)
             .foregroundColor(.white)
+            .multilineTextAlignment(.center)
             .opacity(titleVisible ? 1 : 0)
             .offset(y: titleVisible ? 0 : 20)
 
           Text("We'll use your name to make this feel more personal and encouraging.")
             .font(.appBodyLarge)
             .foregroundColor(.white.opacity(0.7))
+            .multilineTextAlignment(.center)
             .padding(.top, 8)
-            .padding(.trailing, 24)
+            .padding(.horizontal, 24)
             .opacity(subtitleVisible ? 1 : 0)
             .offset(y: subtitleVisible ? 0 : 15)
 
@@ -66,10 +86,11 @@ struct OnboardingNameInputScreen: View {
             .frame(minHeight: 32)
         }
       }
+      .padding(.horizontal, 24)
       .scrollDismissesKeyboard(.interactively)
       continueButton
+        .padding(.horizontal, 24)
     }
-    .padding(.horizontal, 24)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .background(backgroundColor)
     .animation(.easeOut(duration: 0.25), value: keyboardHeight)
@@ -103,6 +124,7 @@ struct OnboardingNameInputScreen: View {
     TextField("Name", text: $viewModel.userName)
       .font(.appBodyLarge)
       .foregroundColor(.white)
+      .multilineTextAlignment(.center)
       .focused($isNameFocused)
       .padding(.vertical, 16)
       .background(
@@ -129,12 +151,14 @@ struct OnboardingNameInputScreen: View {
     Text(String(localized: "onboarding.name.helper"))
       .font(.appBodySmall)
       .foregroundColor(.white.opacity(0.5))
+      .multilineTextAlignment(.center)
   }
 
   private var errorText: some View {
     Text(String(localized: "onboarding.name.error"))
       .font(.appBodySmall)
       .foregroundColor(Color(hex: "FF6B6B"))
+      .multilineTextAlignment(.center)
       .padding(.top, 8)
   }
 
@@ -147,8 +171,8 @@ struct OnboardingNameInputScreen: View {
           .opacity(sparkleOpacity(for: index))
       }
     }
+    .frame(maxWidth: .infinity)
     .padding(.top, 12)
-    .padding(.leading, 4)
   }
 
   private func sparkleOpacity(for index: Int) -> Double {
@@ -173,13 +197,16 @@ struct OnboardingNameInputScreen: View {
         viewModel.goToNext()
       }
     }
-    .padding(.bottom, 16 + keyboardHeight)
+    .padding(.bottom, 20 + keyboardHeight)
     .opacity(buttonVisible ? 1 : 0)
     .scaleEffect(buttonVisible ? 1 : 0.95)
     .accessibilityLabel("Continue")
   }
 
   private func runEntranceAnimations() {
+    withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
+      skipVisible = true
+    }
     withAnimation(.easeOut(duration: 0.5)) {
       titleVisible = true
     }

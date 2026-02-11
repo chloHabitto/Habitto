@@ -24,6 +24,7 @@ struct OnboardingCommitPromptScreen: View {
       OnboardingButton.primary(text: "Yes, I am ready!") {
         viewModel.goToNext()
       }
+      .padding(.horizontal, 20)
       .padding(.bottom, 40)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
