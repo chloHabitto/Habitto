@@ -4,7 +4,7 @@ import SwiftUI
 
 @MainActor
 class OnboardingViewModel: ObservableObject {
-  @Published var currentScreen: Int = 0 // 0–10 for screens 1–11
+  @Published var currentScreen: Int = 0 // 0–9 for screens 1–10 (hold → celebration → final)
   @Published var userName: String = ""
   @Published var hasCommitted: Bool = false
   @Published var holdProgress: CGFloat = 0.0
