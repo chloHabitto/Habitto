@@ -37,6 +37,13 @@ struct OnboardingCommitHoldScreen: View {
     return trimmed.isEmpty ? "Your" : "\(trimmed)'s"
   }
 
+  /// Actual safe area insets from UIKit (parent OnboardingFlowView strips safe area with .ignoresSafeArea(edges: .all)).
+  private var safeAreaInsets: UIEdgeInsets {
+    UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .first?.keyWindow?.safeAreaInsets ?? UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0)
+  }
+
   var body: some View {
     ZStack {
       // Layer 1: Background
@@ -47,7 +54,8 @@ struct OnboardingCommitHoldScreen: View {
       VStack(spacing: 0) {
         ScrollView(showsIndicators: false) {
           VStack(spacing: 0) {
-            Spacer().frame(height: 20)
+            // Use UIKit safe area top inset (parent strips safe area with .ignoresSafeArea(edges: .all))
+            Spacer().frame(height: safeAreaInsets.top + 16)
 
             HStack(spacing: 8) {
               Image("Sticker-Exciting")
@@ -96,10 +104,10 @@ struct OnboardingCommitHoldScreen: View {
             Color.clear.preference(key: ButtonFramePreferenceKey.self, value: g.frame(in: .global))
           }
         )
-        .padding(.bottom, 16)
+        .padding(.bottom, safeAreaInsets.bottom + 16)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
-      .safeAreaPadding(.top)
+      // No .safeAreaPadding(.top) — parent strips safe area, it has no effect
       .opacity(isExpanding ? 0 : 1)
       .allowsHitTesting(!isExpanding)
       .onPreferenceChange(ButtonFramePreferenceKey.self) { buttonFrame = $0 }
@@ -193,11 +201,10 @@ struct OnboardingCommitHoldScreen: View {
             viewModel.completeOnboarding()
           }
           .padding(.horizontal, 20)
-          .padding(.bottom, 40)
+          .padding(.bottom, safeAreaInsets.bottom + 16)
           .accessibilityLabel("Let's get started")
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
-        .ignoresSafeArea(edges: .bottom)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
