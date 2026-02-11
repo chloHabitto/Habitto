@@ -1,7 +1,6 @@
 import SwiftUI
 
 struct OnboardingConfettiOverlay: View {
-  @Binding var isActive: Bool
   @State private var particles: [OnboardingConfettiParticle] = []
   @State private var startTime: Date?
 
@@ -49,11 +48,9 @@ struct OnboardingConfettiOverlay: View {
       }
     }
     .allowsHitTesting(false)
-    .onChange(of: isActive) { _, newValue in
-      if newValue {
-        generateParticles()
-        startTime = Date()
-      }
+    .onAppear {
+      generateParticles()
+      startTime = Date()
     }
   }
 

@@ -16,7 +16,7 @@ struct OnboardingCommitHoldScreen: View {
 
   @State private var isExpanding = false
   @State private var buttonFrame: CGRect = .zero
-  @State private var circleExpanded: [Bool] = [false, false, false]
+  @State private var circleScales: [CGFloat] = [1, 1, 1]
   @State private var showConfetti = false
 
   // Certificate + Medal animation states
@@ -157,7 +157,7 @@ struct OnboardingCommitHoldScreen: View {
 
           if showContinueButton {
             OnboardingButton.primary(text: "Let's get started!") {
-              viewModel.goToNext()
+              viewModel.completeOnboarding()
             }
             .padding(.horizontal, 20)
             .padding(.top, 24)
@@ -177,11 +177,14 @@ struct OnboardingCommitHoldScreen: View {
       // Layer 4: Expanding circle ripple layers
       if isExpanding {
         GeometryReader { geo in
-          let centerX = buttonFrame.isEmpty ? geo.size.width / 2 : (buttonFrame.midX - geo.frame(in: .global).minX)
-          let centerY = buttonFrame.isEmpty ? geo.size.height / 2 : (buttonFrame.midY - geo.frame(in: .global).minY)
-          let maxSize = max(UIScreen.main.bounds.width, UIScreen.main.bounds.height) * 3
+          let centerX = buttonFrame.isEmpty
+            ? geo.size.width / 2
+            : (buttonFrame.midX - geo.frame(in: .global).minX)
+          let centerY = buttonFrame.isEmpty
+            ? geo.size.height / 2
+            : (buttonFrame.midY - geo.frame(in: .global).minY)
 
-          let rings: [(opacity: Double, initialSize: CGFloat)] = [
+          let rings: [(opacity: Double, baseSize: CGFloat)] = [
             (0.12, 180),
             (0.35, 150),
             (1.0, 120),
@@ -191,10 +194,8 @@ struct OnboardingCommitHoldScreen: View {
             ForEach(0..<3, id: \.self) { i in
               Circle()
                 .fill(expandFillColor.opacity(rings[i].opacity))
-                .frame(
-                  width: circleExpanded[i] ? maxSize : rings[i].initialSize,
-                  height: circleExpanded[i] ? maxSize : rings[i].initialSize
-                )
+                .frame(width: rings[i].baseSize, height: rings[i].baseSize)
+                .scaleEffect(circleScales[i])
                 .position(x: centerX, y: centerY)
             }
           }
@@ -206,7 +207,7 @@ struct OnboardingCommitHoldScreen: View {
       }
 
       if showConfetti {
-        OnboardingConfettiOverlay(isActive: $showConfetti)
+        OnboardingConfettiOverlay()
           .ignoresSafeArea()
           .allowsHitTesting(false)
       }
@@ -219,11 +220,18 @@ struct OnboardingCommitHoldScreen: View {
     isExpanding = true
     showCertificate = true
 
+    let screenDiagonal = sqrt(
+      pow(UIScreen.main.bounds.width, 2) + pow(UIScreen.main.bounds.height, 2)
+    )
+    let baseSizes: [CGFloat] = [180, 150, 120]
+
     for i in 0..<3 {
+      let targetScale = (screenDiagonal * 1.5) / baseSizes[i]
       let delay = Double(i) * 0.2
+      let index = i
       DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
         withAnimation(.timingCurve(0.25, 0.1, 0.25, 1, duration: 2.4)) {
-          circleExpanded[i] = true
+          circleScales[index] = targetScale
         }
       }
     }
