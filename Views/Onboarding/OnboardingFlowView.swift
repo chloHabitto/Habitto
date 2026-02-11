@@ -59,6 +59,7 @@ struct OnboardingFlowView: View {
           .tag(10)
       }
       .tabViewStyle(.page(indexDisplayMode: .never))
+      .scrollDisabled(true)
       .indexViewStyle(.page(backgroundDisplayMode: .never))
       .ignoresSafeArea(edges: .all)
 

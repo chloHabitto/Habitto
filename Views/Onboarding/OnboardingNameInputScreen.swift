@@ -109,8 +109,15 @@ struct OnboardingNameInputScreen: View {
     }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
       guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+      let bottomSafeArea = UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .first?
+        .windows
+        .first?
+        .safeAreaInsets
+        .bottom ?? 0
       withAnimation(.easeOut(duration: 0.25)) {
-        keyboardHeight = frame.height
+        keyboardHeight = max(0, frame.height - bottomSafeArea)
       }
     }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
