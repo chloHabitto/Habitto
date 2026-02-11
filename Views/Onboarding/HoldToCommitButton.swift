@@ -1,62 +1,52 @@
 import SwiftUI
 
-// MARK: - HoldToCommitButton
-
 struct HoldToCommitButton: View {
   let onComplete: () -> Void
   @State private var isHolding = false
   @State private var holdProgress: CGFloat = 0
   @State private var holdTimer: Timer?
-  @State private var holdStartTime: Date?
 
-  private let holdDuration: CGFloat = 2.0
-
+  private let holdDuration: CGFloat = 1.2
+  private let buttonSize: CGFloat = 120
   private let buttonBorderColor = Color(red: 0.62, green: 0.73, blue: 0.95)
-  private let buttonBackgroundColor = Color(red: 0.6, green: 0.72, blue: 0.96)
+  private let buttonBackgroundColor = Color(red: 0.60, green: 0.72, blue: 0.96)
 
   var body: some View {
-    VStack(alignment: .center, spacing: 0) {
-      // Oval container with fingerprint — scale and opacity respond to hold progress
-      VStack(alignment: .center, spacing: 0) {
+    VStack(spacing: 12) {
+      ZStack {
+        Circle()
+          .fill(buttonBackgroundColor.opacity(0.3 + holdProgress * 0.7))
+          .frame(width: buttonSize, height: buttonSize)
+
+        Circle()
+          .stroke(buttonBorderColor.opacity(0.3), lineWidth: 4)
+          .frame(width: buttonSize, height: buttonSize)
+
+        Circle()
+          .trim(from: 0, to: holdProgress)
+          .stroke(buttonBorderColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+          .frame(width: buttonSize, height: buttonSize)
+          .rotationEffect(.degrees(-90))
+
         Image("Finger-print")
           .resizable()
           .aspectRatio(contentMode: .fit)
-          .frame(width: 54, height: 54)
-          .foregroundColor(.white.opacity(0.1 + holdProgress * 0.5))
+          .frame(width: 48, height: 48)
+          .foregroundColor(.white.opacity(0.8))
       }
-      .padding(.horizontal, 18.5)
-      .padding(.vertical, 30)
-      .frame(width: 91, height: 114, alignment: .center)
-      .background(buttonBackgroundColor.opacity(0.1 + holdProgress * 0.15))
-      .cornerRadius(57)
-      .overlay(
-        // Base border (full oval)
-        RoundedRectangle(cornerRadius: 57)
-          .inset(by: 2.5)
-          .stroke(buttonBorderColor.opacity(0.4), lineWidth: 5)
-      )
-      .overlay(
-        // Progress border (fills clockwise as user holds)
-        RoundedRectangle(cornerRadius: 57)
-          .inset(by: 2.5)
-          .trim(from: 0, to: holdProgress)
-          .stroke(buttonBorderColor, lineWidth: 5)
-          .rotationEffect(.degrees(-90)) // start from top
-      )
-      .scaleEffect(1.0 + holdProgress * 0.1)
-      .contentShape(RoundedRectangle(cornerRadius: 57))
+      .scaleEffect(isHolding ? 0.95 : 1.0)
+      .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHolding)
+      .contentShape(Circle())
 
-      Text("Hold to commit")
-        .font(.appHeadlineSmallEmphasised)
-        .foregroundColor(.white)
-        .padding(.top, 16)
+      Text(holdProgress >= 1.0 ? "Committed" : "Hold to commit")
+        .font(.appBodyMedium)
+        .foregroundColor(.white.opacity(0.7))
     }
     .simultaneousGesture(
       DragGesture(minimumDistance: 0)
         .onChanged { _ in
           if !isHolding {
             isHolding = true
-            holdStartTime = Date()
             startHoldTimer()
           }
         }
@@ -72,7 +62,7 @@ struct HoldToCommitButton: View {
         }
     )
     .accessibilityLabel(holdProgress >= 1.0 ? "Committed" : "Hold to commit")
-    .accessibilityHint("Press and hold for 2 seconds to commit")
+    .accessibilityHint("Press and hold for \(String(format: "%.1f", holdDuration)) seconds to commit")
   }
 
   private func startHoldTimer() {

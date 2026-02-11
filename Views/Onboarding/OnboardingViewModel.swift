@@ -23,6 +23,7 @@ class OnboardingViewModel: ObservableObject {
       UserDefaults.standard.set(trimmed, forKey: "GuestName")
     }
     UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+    NotificationCenter.default.post(name: NSNotification.Name("OnboardingCompleted"), object: nil)
   }
 
   func goToNext() {

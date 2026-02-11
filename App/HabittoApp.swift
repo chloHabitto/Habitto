@@ -424,6 +424,7 @@ struct HabittoApp: App {
                 }
               }
           }
+          .transition(.opacity)
           .onAppear {
             // App startup logging
             
@@ -607,6 +608,7 @@ struct HabittoApp: App {
           }
         }
       }
+      .animation(.easeInOut(duration: 0.4), value: hasCompletedOnboarding)
     }
   }
 

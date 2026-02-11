@@ -14,13 +14,10 @@ private struct ButtonFramePreferenceKey: PreferenceKey {
 struct OnboardingCommitHoldScreen: View {
   @ObservedObject var viewModel: OnboardingViewModel
 
-  // Existing expand states
   @State private var isExpanding = false
   @State private var buttonFrame: CGRect = .zero
-  @State private var expandLayer1Scale: CGFloat = 1
-  @State private var expandLayer2Scale: CGFloat = 1
-  @State private var expandLayer3Scale: CGFloat = 1
-  @State private var expandLayer4Scale: CGFloat = 1
+  @State private var circleExpanded: [Bool] = [false, false, false]
+  @State private var showConfetti = false
 
   // Certificate + Medal animation states
   @State private var showCertificate = false
@@ -34,7 +31,6 @@ struct OnboardingCommitHoldScreen: View {
 
   private let backgroundColor = OnboardingButton.onboardingBackground
   private let expandFillColor = Color(red: 0.69, green: 0.80, blue: 0.98) // #B0CCF9
-  private let buttonOvalSize = CGSize(width: 91, height: 114)
   private let certificateCardSize = CGSize(width: 320, height: 420)
 
   private var displayName: String {
@@ -48,12 +44,11 @@ struct OnboardingCommitHoldScreen: View {
       backgroundColor
         .ignoresSafeArea()
 
-      // Layer 2: Main content (commitment text + hold button) — fade out when expanding
+      // Layer 2: Main content + hold button
       VStack(spacing: 0) {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
           VStack(spacing: 0) {
-            Spacer()
-              .frame(height: 24)
+            Spacer().frame(height: 60)
 
             HStack(spacing: 8) {
               Image("Sticker-Exciting")
@@ -64,7 +59,7 @@ struct OnboardingCommitHoldScreen: View {
                 .font(.appBodyMedium)
                 .foregroundColor(.white.opacity(0.9))
             }
-            .padding(.bottom, 16)
+            .padding(.bottom, 20)
 
             Text("\(displayName) Commitment")
               .font(.appHeadlineSmallEmphasised)
@@ -86,12 +81,11 @@ struct OnboardingCommitHoldScreen: View {
             }
             .padding(.horizontal, 24)
             .frame(maxWidth: .infinity, alignment: .leading)
-
-            Spacer()
-              .frame(minHeight: 40)
           }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity)
+
+        Spacer()
 
         HoldToCommitButton {
           viewModel.hasCommitted = true
@@ -102,7 +96,7 @@ struct OnboardingCommitHoldScreen: View {
             Color.clear.preference(key: ButtonFramePreferenceKey.self, value: g.frame(in: .global))
           }
         )
-        .padding(.bottom, 24)
+        .padding(.bottom, 50)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .opacity(isExpanding ? 0 : 1)
@@ -180,17 +174,29 @@ struct OnboardingCommitHoldScreen: View {
         .ignoresSafeArea()
       }
 
-      // Layer 4: Expanding oval fill layers (ON TOP of certificate)
+      // Layer 4: Expanding circle ripple layers
       if isExpanding {
         GeometryReader { geo in
           let centerX = buttonFrame.isEmpty ? geo.size.width / 2 : (buttonFrame.midX - geo.frame(in: .global).minX)
           let centerY = buttonFrame.isEmpty ? geo.size.height / 2 : (buttonFrame.midY - geo.frame(in: .global).minY)
+          let maxSize = max(UIScreen.main.bounds.width, UIScreen.main.bounds.height) * 3
+
+          let rings: [(opacity: Double, initialSize: CGFloat)] = [
+            (0.12, 180),
+            (0.35, 150),
+            (1.0, 120),
+          ]
 
           ZStack {
-            expandingLayer(scale: expandLayer1Scale, opacity: 0.2, centerX: centerX, centerY: centerY)
-            expandingLayer(scale: expandLayer2Scale, opacity: 0.4, centerX: centerX, centerY: centerY)
-            expandingLayer(scale: expandLayer3Scale, opacity: 0.7, centerX: centerX, centerY: centerY)
-            expandingLayer(scale: expandLayer4Scale, opacity: 1.0, centerX: centerX, centerY: centerY)
+            ForEach(0..<3, id: \.self) { i in
+              Circle()
+                .fill(expandFillColor.opacity(rings[i].opacity))
+                .frame(
+                  width: circleExpanded[i] ? maxSize : rings[i].initialSize,
+                  height: circleExpanded[i] ? maxSize : rings[i].initialSize
+                )
+                .position(x: centerX, y: centerY)
+            }
           }
           .frame(maxWidth: .infinity, maxHeight: .infinity)
           .opacity(ovalOpacity)
@@ -198,48 +204,37 @@ struct OnboardingCommitHoldScreen: View {
         .ignoresSafeArea()
         .allowsHitTesting(false)
       }
+
+      if showConfetti {
+        OnboardingConfettiOverlay(isActive: $showConfetti)
+          .ignoresSafeArea()
+          .allowsHitTesting(false)
+      }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .highPriorityGesture(DragGesture()) // blocks TabView swipe (forward and backward)
-  }
-
-  private func expandingLayer(scale: CGFloat, opacity: Double, centerX: CGFloat, centerY: CGFloat) -> some View {
-    RoundedRectangle(cornerRadius: 57)
-      .fill(expandFillColor.opacity(opacity))
-      .frame(width: buttonOvalSize.width, height: buttonOvalSize.height)
-      .scaleEffect(scale)
-      .position(x: centerX, y: centerY)
   }
 
   private func startExpandAnimation() {
     isExpanding = true
     showCertificate = true
 
-    let scaleToFill: CGFloat = 15
-
-    // Phase 1 — Oval expands to fill screen (0.0s – 0.8s)
-    withAnimation(.easeInOut(duration: 0.6)) {
-      expandLayer1Scale = scaleToFill
-    }
-    withAnimation(.easeInOut(duration: 0.6).delay(0.05)) {
-      expandLayer2Scale = scaleToFill
-    }
-    withAnimation(.easeInOut(duration: 0.6).delay(0.1)) {
-      expandLayer3Scale = scaleToFill
-    }
-    withAnimation(.easeInOut(duration: 0.6).delay(0.15)) {
-      expandLayer4Scale = scaleToFill
+    for i in 0..<3 {
+      let delay = Double(i) * 0.2
+      DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+        withAnimation(.timingCurve(0.25, 0.1, 0.25, 1, duration: 2.4)) {
+          circleExpanded[i] = true
+        }
+      }
     }
 
-    // Phase 2 — Oval fades out, revealing certificate behind it (0.8s)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
       withAnimation(.easeInOut(duration: 0.5)) {
         ovalOpacity = 0
       }
     }
 
-    // Phase 3 — Medal + text appear on the oversized certificate (1.5s)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
       showMedal = true
       withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
         medalScale = 1.0
@@ -256,16 +251,17 @@ struct OnboardingCommitHoldScreen: View {
       }
     }
 
-    // Phase 4 — Certificate shrinks to card size (2.5s)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 4.6) {
       withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
         certificateTargetScale = 0.85
       }
+      showConfetti = true
+      let generator = UIImpactFeedbackGenerator(style: .heavy)
+      generator.impactOccurred()
     }
 
-    // Phase 5 — "Let's get started!" button appears below the card (3.5s)
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-      withAnimation(.easeOut(duration: 0.4)) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 5.6) {
+      withAnimation(.easeOut(duration: 0.5)) {
         showContinueButton = true
       }
     }
