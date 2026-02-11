@@ -32,6 +32,7 @@ struct OnboardingGreetingScreen: View {
       OnboardingButton.primary(text: "Continue") {
         viewModel.goToNext()
       }
+      .padding(.horizontal, 20)
       .padding(.bottom, 40)
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)

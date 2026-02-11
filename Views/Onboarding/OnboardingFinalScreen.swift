@@ -50,6 +50,7 @@ struct OnboardingFinalScreen: View {
       OnboardingButton.primary(text: "Let's get started!") {
         viewModel.completeOnboarding()
       }
+      .padding(.horizontal, 20)
       .padding(.bottom, 40)
       .opacity(contentOpacity)
       .accessibilityLabel("Let's get started")

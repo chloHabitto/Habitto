@@ -36,7 +36,6 @@ enum OnboardingButton {
         .opacity(inactive ? 0.5 : 1)
     }
     .buttonStyle(PlainButtonStyle())
-    .padding(.horizontal, 20)
   }
 
   /// Secondary / text link: transparent, light blue text.
