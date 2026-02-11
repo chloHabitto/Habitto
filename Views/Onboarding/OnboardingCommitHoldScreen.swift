@@ -51,7 +51,7 @@ struct OnboardingCommitHoldScreen: View {
       VStack(spacing: 0) {
         ScrollView(showsIndicators: false) {
           VStack(spacing: 0) {
-            Spacer().frame(height: 60)
+            Spacer().frame(height: 100)
 
             HStack(spacing: 8) {
               Image("Sticker-Exciting")
@@ -89,6 +89,7 @@ struct OnboardingCommitHoldScreen: View {
         .frame(maxWidth: .infinity)
 
         Spacer()
+          .frame(maxHeight: 60)
 
         HoldToCommitButton {
           viewModel.hasCommitted = true
@@ -99,7 +100,7 @@ struct OnboardingCommitHoldScreen: View {
             Color.clear.preference(key: ButtonFramePreferenceKey.self, value: g.frame(in: .global))
           }
         )
-        .padding(.bottom, 50)
+        .padding(.bottom, 24)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .opacity(isExpanding ? 0 : 1)
@@ -178,7 +179,7 @@ struct OnboardingCommitHoldScreen: View {
 
             Text("\(displayName) Commitment")
               .font(.appHeadlineSmallEmphasised)
-              .foregroundColor(.white)
+              .foregroundColor(Color(red: 0.10, green: 0.15, blue: 0.30))
               .multilineTextAlignment(.center)
               .opacity(titleOpacity)
               .padding(.horizontal, 24)
@@ -189,10 +190,10 @@ struct OnboardingCommitHoldScreen: View {
                 HStack(alignment: .top, spacing: 8) {
                   Text("•")
                     .font(.appBodyMedium)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
                   Text(item)
                     .font(.appBodyMedium)
-                    .foregroundColor(.white)
+                    .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
                 }
                 .opacity(index < visibleItemCount ? 1 : 0)
               }
@@ -309,7 +310,7 @@ struct OnboardingCommitHoldScreen: View {
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 6.8) {
       certificateTargetScale = 0.85
       showCertificate = true
       withAnimation(.easeInOut(duration: 0.4)) {
@@ -320,7 +321,7 @@ struct OnboardingCommitHoldScreen: View {
       generator.impactOccurred()
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 7.8) {
       withAnimation(.easeOut(duration: 0.5)) {
         showContinueButton = true
       }
