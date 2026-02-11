@@ -78,10 +78,6 @@ struct OnboardingNameInputScreen: View {
               .transition(.opacity.combined(with: .move(edge: .top)))
           }
 
-          if !viewModel.userName.isEmpty {
-            sparkleView
-          }
-
           Spacer()
             .frame(minHeight: 32)
         }
@@ -114,14 +110,7 @@ struct OnboardingNameInputScreen: View {
     }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
       guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-      let bottomSafeArea = UIApplication.shared.connectedScenes
-        .compactMap { $0 as? UIWindowScene }
-        .first?
-        .windows
-        .first?
-        .safeAreaInsets
-        .bottom ?? 0
-      let newHeight = max(0, frame.height - bottomSafeArea)
+      let newHeight = frame.height
       if abs(newHeight - keyboardHeight) > 5 {
         withAnimation(.easeOut(duration: 0.25)) {
           keyboardHeight = newHeight
@@ -177,23 +166,6 @@ struct OnboardingNameInputScreen: View {
       .padding(.top, 8)
   }
 
-  private var sparkleView: some View {
-    HStack(spacing: 6) {
-      ForEach(0 ..< 3, id: \.self) { index in
-        Circle()
-          .fill(Color.white.opacity(0.6))
-          .frame(width: 4, height: 4)
-          .opacity(sparkleOpacity(for: index))
-      }
-    }
-    .frame(maxWidth: .infinity)
-    .padding(.top, 12)
-  }
-
-  private func sparkleOpacity(for index: Int) -> Double {
-    0.4 + Double(index) * 0.15
-  }
-
   private var continueButton: some View {
     OnboardingButton.primary(
       text: "Continue",
@@ -212,7 +184,7 @@ struct OnboardingNameInputScreen: View {
         viewModel.goToNext()
       }
     }
-    .padding(.bottom, 20 + keyboardHeight)
+    .padding(.bottom, keyboardHeight > 0 ? (20 + keyboardHeight) : 40)
     .opacity(buttonVisible ? 1 : 0)
     .scaleEffect(buttonVisible ? 1 : 0.95)
     .accessibilityLabel("Continue")
