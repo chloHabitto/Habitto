@@ -16,7 +16,9 @@ struct OnboardingCommitHoldScreen: View {
 
   @State private var isExpanding = false
   @State private var buttonFrame: CGRect = .zero
-  @State private var circleScales: [CGFloat] = [1, 1, 1]
+  @State private var circle1Scale: CGFloat = 1.0
+  @State private var circle2Scale: CGFloat = 1.0
+  @State private var circle3Scale: CGFloat = 1.0
   @State private var showConfetti = false
 
   // Certificate + Medal animation states
@@ -176,34 +178,32 @@ struct OnboardingCommitHoldScreen: View {
 
       // Layer 4: Expanding circle ripple layers
       if isExpanding {
-        GeometryReader { geo in
-          let centerX = buttonFrame.isEmpty
-            ? geo.size.width / 2
-            : (buttonFrame.midX - geo.frame(in: .global).minX)
-          let centerY = buttonFrame.isEmpty
-            ? geo.size.height / 2
-            : (buttonFrame.midY - geo.frame(in: .global).minY)
-
-          let rings: [(opacity: Double, baseSize: CGFloat)] = [
-            (0.12, 180),
-            (0.35, 150),
-            (1.0, 120),
-          ]
-
-          ZStack {
-            ForEach(0..<3, id: \.self) { i in
+        Color.clear
+          .ignoresSafeArea()
+          .overlay(
+            ZStack {
               Circle()
-                .fill(expandFillColor.opacity(rings[i].opacity))
-                .frame(width: rings[i].baseSize, height: rings[i].baseSize)
-                .scaleEffect(circleScales[i])
-                .position(x: centerX, y: centerY)
+                .fill(expandFillColor.opacity(0.12))
+                .frame(width: 180, height: 180)
+                .scaleEffect(circle1Scale)
+
+              Circle()
+                .fill(expandFillColor.opacity(0.35))
+                .frame(width: 150, height: 150)
+                .scaleEffect(circle2Scale)
+
+              Circle()
+                .fill(expandFillColor)
+                .frame(width: 120, height: 120)
+                .scaleEffect(circle3Scale)
             }
-          }
-          .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .position(
+              x: buttonFrame.isEmpty ? UIScreen.main.bounds.width / 2 : buttonFrame.midX,
+              y: buttonFrame.isEmpty ? UIScreen.main.bounds.height * 0.75 : buttonFrame.midY
+            )
+          )
           .opacity(ovalOpacity)
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
+          .allowsHitTesting(false)
       }
 
       if showConfetti {
@@ -218,25 +218,31 @@ struct OnboardingCommitHoldScreen: View {
 
   private func startExpandAnimation() {
     isExpanding = true
-    showCertificate = true
 
     let screenDiagonal = sqrt(
-      pow(UIScreen.main.bounds.width, 2) + pow(UIScreen.main.bounds.height, 2)
+      pow(UIScreen.main.bounds.width, 2) +
+      pow(UIScreen.main.bounds.height, 2)
     )
-    let baseSizes: [CGFloat] = [180, 150, 120]
+    let target1 = (screenDiagonal * 1.5) / 180
+    let target2 = (screenDiagonal * 1.5) / 150
+    let target3 = (screenDiagonal * 1.5) / 120
 
-    for i in 0..<3 {
-      let targetScale = (screenDiagonal * 1.5) / baseSizes[i]
-      let delay = Double(i) * 0.2
-      let index = i
-      DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-        withAnimation(.timingCurve(0.25, 0.1, 0.25, 1, duration: 2.4)) {
-          circleScales[index] = targetScale
-        }
+    withAnimation(.timingCurve(0.25, 0.1, 0.25, 1.0, duration: 2.4)) {
+      circle1Scale = target1
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+      withAnimation(.timingCurve(0.25, 0.1, 0.25, 1.0, duration: 2.4)) {
+        self.circle2Scale = target2
+      }
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+      withAnimation(.timingCurve(0.25, 0.1, 0.25, 1.0, duration: 2.4)) {
+        self.circle3Scale = target3
       }
     }
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
+      showCertificate = true
       withAnimation(.easeInOut(duration: 0.5)) {
         ovalOpacity = 0
       }
