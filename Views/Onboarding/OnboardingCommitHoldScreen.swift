@@ -20,6 +20,7 @@ struct OnboardingCommitHoldScreen: View {
   @State private var circle2Scale: CGFloat = 1.0
   @State private var circle3Scale: CGFloat = 1.0
   @State private var showConfetti = false
+  @State private var showFullScreenText = false
 
   // Certificate + Medal animation states
   @State private var showCertificate = false
@@ -105,7 +106,7 @@ struct OnboardingCommitHoldScreen: View {
       .allowsHitTesting(!isExpanding)
       .onPreferenceChange(ButtonFramePreferenceKey.self) { buttonFrame = $0 }
 
-      // Layer 3 + 5 combined: Certificate card with overlaid Medal + text (BEHIND oval)
+      // Layer 3: Certificate card (shown at Phase 4 at final scale)
       if showCertificate {
         VStack(spacing: 0) {
           Spacer()
@@ -117,63 +118,92 @@ struct OnboardingCommitHoldScreen: View {
               .frame(width: certificateCardSize.width, height: certificateCardSize.height)
               .clipped()
 
-            if showMedal {
-              VStack(spacing: 0) {
-                Image("Medal")
-                  .resizable()
-                  .aspectRatio(contentMode: .fit)
-                  .frame(width: 80, height: 80)
-                  .scaleEffect(medalScale)
-                  .padding(.top, 24)
-                  .padding(.bottom, 12)
+            VStack(spacing: 0) {
+              Image("Medal")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 80, height: 80)
+                .padding(.top, 24)
+                .padding(.bottom, 12)
 
-                Text("\(displayName) Commitment")
-                  .font(.appHeadlineSmallEmphasised)
-                  .foregroundColor(.white)
-                  .multilineTextAlignment(.center)
-                  .opacity(titleOpacity)
-                  .padding(.horizontal, 16)
-                  .padding(.bottom, 12)
+              Text("\(displayName) Commitment")
+                .font(.appHeadlineSmallEmphasised)
+                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
 
-                VStack(alignment: .leading, spacing: 6) {
-                  ForEach(Array(viewModel.commitmentItems.enumerated()), id: \.offset) { index, item in
-                    HStack(alignment: .top, spacing: 6) {
-                      Text("•")
-                        .font(.appBodySmall)
-                        .foregroundColor(.white)
-                      Text(item)
-                        .font(.appBodySmall)
-                        .foregroundColor(.white)
-                    }
-                    .opacity(index < visibleItemCount ? 1 : 0)
+              VStack(alignment: .leading, spacing: 6) {
+                ForEach(Array(viewModel.commitmentItems.enumerated()), id: \.offset) { index, item in
+                  HStack(alignment: .top, spacing: 6) {
+                    Text("•")
+                      .font(.appBodySmall)
+                      .foregroundColor(Color(red: 0.20, green: 0.25, blue: 0.40))
+                    Text(item)
+                      .font(.appBodySmall)
+                      .foregroundColor(Color(red: 0.20, green: 0.25, blue: 0.40))
                   }
                 }
-                .padding(.horizontal, 20)
-                .frame(maxWidth: .infinity, alignment: .leading)
               }
+              .padding(.leading, 24)
+              .padding(.trailing, 20)
+              .frame(maxWidth: .infinity, alignment: .leading)
             }
           }
           .frame(width: certificateCardSize.width, height: certificateCardSize.height)
           .cornerRadius(16)
           .scaleEffect(certificateTargetScale)
 
-          if showContinueButton {
-            OnboardingButton.primary(text: "Let's get started!") {
-              viewModel.completeOnboarding()
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 24)
-            .padding(.bottom, 40)
-            .accessibilityLabel("Let's get started")
-          } else {
-            Spacer()
-              .frame(height: 64)
-          }
-
           Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
+      }
+
+      // Layer 3.5: Full-screen commitment text overlay (readable, not scaled)
+      if showFullScreenText {
+        ZStack {
+          expandFillColor
+            .ignoresSafeArea()
+
+          VStack(spacing: 0) {
+            Spacer()
+
+            Image("Medal")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(width: 80, height: 80)
+              .scaleEffect(medalScale)
+              .padding(.bottom, 16)
+
+            Text("\(displayName) Commitment")
+              .font(.appHeadlineSmallEmphasised)
+              .foregroundColor(.white)
+              .multilineTextAlignment(.center)
+              .opacity(titleOpacity)
+              .padding(.horizontal, 24)
+              .padding(.bottom, 20)
+
+            VStack(alignment: .leading, spacing: 10) {
+              ForEach(Array(viewModel.commitmentItems.enumerated()), id: \.offset) { index, item in
+                HStack(alignment: .top, spacing: 8) {
+                  Text("•")
+                    .font(.appBodyMedium)
+                    .foregroundColor(.white)
+                  Text(item)
+                    .font(.appBodyMedium)
+                    .foregroundColor(.white)
+                }
+                .opacity(index < visibleItemCount ? 1 : 0)
+              }
+            }
+            .padding(.horizontal, 32)
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Spacer()
+          }
+        }
+        .transition(.opacity)
       }
 
       // Layer 4: Expanding circle ripple layers
@@ -211,6 +241,20 @@ struct OnboardingCommitHoldScreen: View {
           .ignoresSafeArea()
           .allowsHitTesting(false)
       }
+
+      if showContinueButton {
+        VStack {
+          Spacer()
+          OnboardingButton.primary(text: "Let's get started!") {
+            viewModel.completeOnboarding()
+          }
+          .padding(.horizontal, 20)
+          .padding(.bottom, 40)
+          .accessibilityLabel("Let's get started")
+        }
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .ignoresSafeArea(edges: .bottom)
+      }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
     .highPriorityGesture(DragGesture()) // blocks TabView swipe (forward and backward)
@@ -227,28 +271,28 @@ struct OnboardingCommitHoldScreen: View {
     let target2 = (screenDiagonal * 1.5) / 150
     let target3 = (screenDiagonal * 1.5) / 120
 
-    withAnimation(.timingCurve(0.25, 0.1, 0.25, 1.0, duration: 2.4)) {
+    withAnimation(.easeOut(duration: 1.6)) {
       circle1Scale = target1
     }
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-      withAnimation(.timingCurve(0.25, 0.1, 0.25, 1.0, duration: 2.4)) {
+      withAnimation(.easeOut(duration: 1.6)) {
         self.circle2Scale = target2
       }
     }
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-      withAnimation(.timingCurve(0.25, 0.1, 0.25, 1.0, duration: 2.4)) {
+      withAnimation(.easeOut(duration: 1.6)) {
         self.circle3Scale = target3
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
-      showCertificate = true
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
       withAnimation(.easeInOut(duration: 0.5)) {
         ovalOpacity = 0
       }
+      showFullScreenText = true
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.7) {
       showMedal = true
       withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
         medalScale = 1.0
@@ -265,16 +309,18 @@ struct OnboardingCommitHoldScreen: View {
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 4.6) {
-      withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
-        certificateTargetScale = 0.85
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.8) {
+      certificateTargetScale = 0.85
+      showCertificate = true
+      withAnimation(.easeInOut(duration: 0.4)) {
+        showFullScreenText = false
       }
       showConfetti = true
       let generator = UIImpactFeedbackGenerator(style: .heavy)
       generator.impactOccurred()
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 5.6) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 4.8) {
       withAnimation(.easeOut(duration: 0.5)) {
         showContinueButton = true
       }
