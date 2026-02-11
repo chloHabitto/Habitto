@@ -33,10 +33,11 @@ struct LottieSplashView: View {
       }
     }
     .onAppear {
-      // Fallback: Auto-complete after 3 seconds if animation doesn't finish
-      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+      // Fallback: Auto-complete after animation duration if completion callback doesn't fire
+      // SplashAnimation is ~224 frames @ 60fps ≈ 3.7s; use 4.5s to allow natural completion
+      DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
         if !shouldDismiss {
-          print("⚠️ LottieSplashView: Animation timeout, completing")
+          print("ℹ️ LottieSplashView: Animation timeout, completing")
           shouldDismiss = true
           onAnimationComplete?()
         }
@@ -82,10 +83,10 @@ struct LottieSplashView2: View {
       }
     }
     .onAppear {
-      // Fallback timeout
-      DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+      // Fallback timeout (match SplashAnimation duration ~3.7s)
+      DispatchQueue.main.asyncAfter(deadline: .now() + 4.5) {
         if isVisible {
-          print("⚠️ LottieSplashView: Animation timeout")
+          print("ℹ️ LottieSplashView: Animation timeout")
           withAnimation(.easeOut(duration: 0.3)) {
             isVisible = false
           }
