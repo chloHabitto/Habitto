@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of the Habitto project's folder structure, explaining the purpose and organization of each directory and key files.
 
-**Last Updated**: January 2025  
+**Last Updated**: February 2025  
 **Project**: Habitto iOS Habit Tracking App  
 **Platform**: iOS 15.0+  
 **Language**: Swift / SwiftUI
@@ -146,20 +146,12 @@ Core/Data/
 ├── Cache/                        # Caching system (1 file)
 ├── CacheManager.swift            # Cache management
 ├── CalendarGridViews.swift       # Calendar grid UI components
-├── CloudKit/                     # CloudKit integration (8 files)
-│   ├── CloudKitModels.swift
-│   ├── CloudKitSyncManager.swift
-│   ├── CloudKitSchema.swift
-│   ├── CloudKitConflictResolver.swift
-│   └── CloudKitIntegrationService.swift
 ├── CloudKitManager.swift         # CloudKit manager
-├── CoreDataManager.swift         # Core Data management
 ├── Factory/                      # Factory pattern implementations (1 file)
 │   └── StorageFactory.swift
 ├── Firestore/                    # Firestore integration (1 file)
 ├── GDPRDataDeletionManager.swift # GDPR data deletion
 ├── HabitRepository.swift         # Main habit repository (primary)
-├── HabitRepositoryNew.swift      # Repository facade
 ├── Migration/                    # Data migration system (14 files)
 │   ├── DataMigrationManager.swift
 │   ├── MigrationService.swift
@@ -244,11 +236,10 @@ Core/Managers/
 
 ### Core/Migration/
 
-**Purpose**: Legacy migration code and sample data generation.
+**Purpose**: Sample data generation and migration utilities.
 
 ```
 Core/Migration/
-├── Archive/                      # Archived migration code (5 files)
 └── SampleDataGenerator.swift     # Test data generation
 ```
 
@@ -282,12 +273,6 @@ Core/Security/
 ```
 Core/Services/
 ├── AccountDeletionService.swift  # User account deletion
-├── Archive/                      # Archived services (5 files)
-│   ├── HabitService.swift
-│   ├── ProgressService.swift
-│   ├── ServiceContainer.swift
-│   ├── StreakService.swift
-│   └── XPService.swift
 ├── BackupNotificationService.swift # Backup notifications
 ├── BackupScheduler.swift         # Backup scheduling
 ├── BackupSettingsManager.swift   # Backup settings
@@ -526,16 +511,8 @@ Docs/
 │   ├── FEATURE_FLAGS_README.md
 │   ├── VIEWANIMATOR_INTEGRATION.md
 │   └── ANIMATIONS_ADDED.md
-├── Guides/                       # Development guides (2 files)
-│   ├── FIREBASE_SETUP_GUIDE.md
-│   └── PROJECT_STRUCTURE.md
-├── Implementation/               # Implementation docs (2 files)
-│   ├── DATA_ARCHITECTURE_MIGRATION_COMPLETE.md
-│   └── EVENT_SOURCING_IMPLEMENTATION_PLAN.md
-└── Testing/                      # Testing documentation (3 files)
-    ├── CONSOLE_LOG_ANALYSIS.md
-    ├── LOG_CAPTURE_INSTRUCTIONS.md
-    └── VERIFICATION_AND_NEXT_STEPS.md
+└── Guides/                      # Development guides (1 file)
+    └── FIREBASE_SETUP_GUIDE.md
 ```
 
 ---
@@ -548,13 +525,8 @@ Docs/
 Scripts/
 ├── analyze_logs.sh               # Log analysis script
 ├── capture_logs.sh               # Log capture script
-├── python/                       # Python scripts (2 files)
-│   ├── create_color_sets.py
-│   └── create_dark_mode_colors.py
-├── shell/                        # Shell scripts (7 files)
-│   └── [Various utility scripts]
-└── V3_Migration/                 # Migration scripts
-    └── [Migration-related scripts]
+├── python/                       # Python scripts (if any)
+└── shell/                        # Shell utility scripts
 ```
 
 ---
@@ -578,13 +550,8 @@ website/
 [Root Directory]
 ├── README.md                     # Main project README
 ├── APP_OVERVIEW.md               # Comprehensive app overview
-├── ARCHITECTURE_ANSWERS.md       # Architecture Q&A
 ├── CHANGELOG.md                  # Version changelog
 ├── FOLDER_STRUCTURE.md           # This file
-├── FINAL_VERIFICATION_CHECKLIST.md # Verification checklist
-├── DEPLOYMENT_CHECKLIST.md       # Deployment checklist
-├── TESTING_GUIDE.md              # Testing instructions
-├── FIREBASE_SECURITY_RULES.md    # Firebase rules documentation
 ├── firebase.json                 # Firebase configuration
 ├── firestore.rules               # Firestore security rules
 ├── firestore.indexes.json        # Firestore indexes
@@ -598,44 +565,6 @@ website/
 ├── LaunchScreen.storyboard       # Launch screen
 └── [Other configuration files]
 ```
-
----
-
-## 🗂️ Archive/
-
-**Purpose**: Contains archived or deprecated code that is kept for reference.
-
-```
-archive/
-└── [Archived files]
-```
-
----
-
-## 📝 Documentation/
-
-**Purpose**: Additional documentation files (separate from Docs/).
-
-```
-Documentation/
-└── TestsReadyToAdd/              # Test documentation (1 file)
-```
-
----
-
-## 🏷️ Additional Root Markdown Files
-
-Various markdown documentation files in the root:
-
-- `DATA_ARCHITECTURE_ANALYSIS.md` - Data architecture analysis
-- `DATA_PROTECTION_README.md` - Data protection documentation
-- `DATA_SAFETY_GUIDE.md` - Data safety guidelines
-- `FIREBASE_GUEST_MODE_FIX.md` - Firebase guest mode fixes
-- `iOS_BACKUP_AND_SYNC_GUIDE.md` - iOS backup and sync guide
-- `MIGRATION_SYSTEM_SUMMARY.md` - Migration system overview
-- `SCHEMA_CHANGE_GUIDELINES.md` - Schema change guidelines
-- `SYNC_VERIFICATION_CHECKLIST.md` - Sync verification checklist
-- `TESTING_PAID_VERSION.md` - Paid version testing guide
 
 ---
 
