@@ -236,19 +236,25 @@ Core/Managers/
 
 ### Core/Migration/
 
-**Purpose**: Sample data generation and migration utilities.
+**Purpose**: Legacy migration code and sample data generation.
 
 ```
 Core/Migration/
+├── Archive/                      # Archived migration code (5 files)
 └── SampleDataGenerator.swift     # Test data generation
 ```
 
 ### Core/Models/
 
-**Purpose**: Data models and domain entities (30 files).
+**Purpose**: Data models and domain entities (30+ files).
 
 ```
 Core/Models/
+├── Archive/New/                 # Archived models still referenced by GuestToAuthMigration, HabitTrackingBridge, tests
+│   ├── GlobalStreakModel.swift
+│   ├── HabitModel.swift
+│   ├── DailyProgressModel.swift
+│   └── [other archived models]
 └── [30 Swift model files]
     └── Habit.swift               # Core Habit model
 ```
@@ -273,6 +279,12 @@ Core/Security/
 ```
 Core/Services/
 ├── AccountDeletionService.swift  # User account deletion
+├── Archive/                      # Archived services (5 files) — still referenced by HabitTrackingBridge, GoldenTestRunner
+│   ├── HabitService.swift
+│   ├── ProgressService.swift
+│   ├── ServiceContainer.swift
+│   ├── StreakService.swift
+│   └── XPService.swift
 ├── BackupNotificationService.swift # Backup notifications
 ├── BackupScheduler.swift         # Backup scheduling
 ├── BackupSettingsManager.swift   # Backup settings
