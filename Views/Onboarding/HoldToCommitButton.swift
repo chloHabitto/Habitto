@@ -5,6 +5,7 @@ struct HoldToCommitButton: View {
   @State private var isHolding = false
   @State private var holdProgress: CGFloat = 0
   @State private var holdTimer: Timer?
+  @State private var lastHapticThreshold: CGFloat = 0
 
   private let holdDuration: CGFloat = 1.2
   private let buttonSize: CGFloat = 120
@@ -54,6 +55,7 @@ struct HoldToCommitButton: View {
           isHolding = false
           holdTimer?.invalidate()
           holdTimer = nil
+          lastHapticThreshold = 0
           if holdProgress < 1.0 {
             withAnimation(.easeOut(duration: 0.3)) {
               holdProgress = 0
@@ -80,9 +82,18 @@ struct HoldToCommitButton: View {
         withAnimation(.linear(duration: 0.02)) {
           holdProgress = progress
         }
+
+        let currentThreshold = (progress * 10).rounded(.down) / 10
+        if currentThreshold > lastHapticThreshold && progress < 1.0 {
+          lastHapticThreshold = currentThreshold
+          let impact = UIImpactFeedbackGenerator(style: .light)
+          impact.impactOccurred(intensity: CGFloat(0.4) + progress * CGFloat(0.6))
+        }
+
         if progress >= 1.0 {
           t.invalidate()
           holdTimer = nil
+          lastHapticThreshold = 0
           let generator = UINotificationFeedbackGenerator()
           generator.notificationOccurred(.success)
           onComplete()
