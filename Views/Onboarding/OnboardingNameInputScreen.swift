@@ -96,8 +96,13 @@ struct OnboardingNameInputScreen: View {
     .animation(.easeOut(duration: 0.25), value: keyboardHeight)
     .onAppear {
       runEntranceAnimations()
-      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
         isNameFocused = true
+      }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        if !isNameFocused {
+          isNameFocused = true
+        }
       }
     }
     .onChange(of: viewModel.userName) { _, newValue in
@@ -116,8 +121,11 @@ struct OnboardingNameInputScreen: View {
         .first?
         .safeAreaInsets
         .bottom ?? 0
-      withAnimation(.easeOut(duration: 0.25)) {
-        keyboardHeight = max(0, frame.height - bottomSafeArea)
+      let newHeight = max(0, frame.height - bottomSafeArea)
+      if abs(newHeight - keyboardHeight) > 5 {
+        withAnimation(.easeOut(duration: 0.25)) {
+          keyboardHeight = newHeight
+        }
       }
     }
     .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in

@@ -24,41 +24,42 @@ struct OnboardingFlowView: View {
       backgroundColor
         .ignoresSafeArea()
 
-      TabView(selection: $viewModel.currentScreen) {
-        OnboardingWelcomeScreen(viewModel: viewModel)
-          .tag(0)
-        OnboardingFeatureScreen(
-          viewModel: viewModel,
-          videoName: "Onboarding-Home",
-          title: "Build habits. Break bad ones.",
-          subtitle: "You don't need a perfect plan. Just one small habit is enough to begin."
-        )
-        .tag(1)
-        OnboardingFeatureScreen(
-          viewModel: viewModel,
-          videoName: "Onboarding-Progress",
-          title: "Progress counts, not perfection",
-          subtitle: "Track habits your way, celebrate small wins, and keep going — even on hard days."
-        )
-        .tag(2)
-        OnboardingNameInputScreen(viewModel: viewModel)
-          .tag(3)
-        OnboardingGreetingScreen(viewModel: viewModel)
-          .tag(4)
-        OnboardingIntroScreen(viewModel: viewModel)
-          .tag(5)
-        OnboardingCommitPromptScreen(viewModel: viewModel)
-          .tag(6)
-        OnboardingCommitHoldScreen(viewModel: viewModel)
-          .tag(7)
-        OnboardingCelebrationScreen(viewModel: viewModel)
-          .tag(8)
-        OnboardingFinalScreen(viewModel: viewModel)
-          .tag(9)
+      Group {
+        switch viewModel.currentScreen {
+        case 0:
+          OnboardingWelcomeScreen(viewModel: viewModel)
+        case 1:
+          OnboardingFeatureScreen(
+            viewModel: viewModel,
+            videoName: "Onboarding-Home",
+            title: "Build habits. Break bad ones.",
+            subtitle: "You don't need a perfect plan. Just one small habit is enough to begin."
+          )
+        case 2:
+          OnboardingFeatureScreen(
+            viewModel: viewModel,
+            videoName: "Onboarding-Progress",
+            title: "Progress counts, not perfection",
+            subtitle: "Track habits your way, celebrate small wins, and keep going — even on hard days."
+          )
+        case 3:
+          OnboardingNameInputScreen(viewModel: viewModel)
+        case 4:
+          OnboardingGreetingScreen(viewModel: viewModel)
+        case 5:
+          OnboardingIntroScreen(viewModel: viewModel)
+        case 6:
+          OnboardingCommitPromptScreen(viewModel: viewModel)
+        case 7:
+          OnboardingCommitHoldScreen(viewModel: viewModel)
+        case 8:
+          OnboardingFinalScreen(viewModel: viewModel)
+        default:
+          OnboardingFinalScreen(viewModel: viewModel)
+        }
       }
-      .tabViewStyle(.page(indexDisplayMode: .never))
-      .scrollDisabled(true)
-      .indexViewStyle(.page(backgroundDisplayMode: .never))
+      .transition(.opacity)
+      .animation(.easeInOut(duration: 0.3), value: viewModel.currentScreen)
       .ignoresSafeArea(edges: .all)
 
       // Step indicator: HStack(spacing: 8) with 2 circles (width/height 8).
