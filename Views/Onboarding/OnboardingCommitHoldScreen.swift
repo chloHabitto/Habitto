@@ -57,22 +57,11 @@ struct OnboardingCommitHoldScreen: View {
             // Use UIKit safe area top inset (parent strips safe area with .ignoresSafeArea(edges: .all))
             Spacer().frame(height: safeAreaInsets.top + 40)
 
-            // Mascot + speech bubble, left-aligned
-            HStack(alignment: .center, spacing: 12) {
-              MascotPlaceholderView(size: 150)
-              Text("Exciting!")
-                .font(.appTitleLarge)
-                .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(
-                  RoundedRectangle(cornerRadius: 18)
-                    .fill(Color(red: 0.35, green: 0.38, blue: 0.45))
-                )
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            Image("Exciting_placeholder")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(height: 160)
+              .padding(.bottom, 24)
 
             Text("\(displayName) Commitment")
               .font(.appHeadlineSmallEmphasised)
@@ -109,7 +98,7 @@ struct OnboardingCommitHoldScreen: View {
             Color.clear.preference(key: ButtonFramePreferenceKey.self, value: g.frame(in: .global))
           }
         )
-        .padding(.bottom, safeAreaInsets.bottom + 16)
+        .padding(.bottom, safeAreaInsets.bottom + 48)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       // No .safeAreaPadding(.top) — parent strips safe area, it has no effect

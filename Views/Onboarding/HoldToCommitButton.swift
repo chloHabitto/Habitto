@@ -8,7 +8,7 @@ struct HoldToCommitButton: View {
   @State private var lastHapticThreshold: CGFloat = 0
 
   private let holdDuration: CGFloat = 1.2
-  private let buttonSize: CGFloat = 140
+  private let buttonSize: CGFloat = 114
   private let buttonBorderColor = Color(red: 0.62, green: 0.73, blue: 0.95)
   private let buttonBackgroundColor = Color(red: 0.60, green: 0.72, blue: 0.96)
 
@@ -20,27 +20,27 @@ struct HoldToCommitButton: View {
           .frame(width: buttonSize, height: buttonSize)
 
         Circle()
-          .stroke(buttonBorderColor.opacity(0.3), lineWidth: 4)
+          .stroke(buttonBorderColor.opacity(0.3), lineWidth: 5)
           .frame(width: buttonSize, height: buttonSize)
 
         Circle()
           .trim(from: 0, to: holdProgress)
-          .stroke(buttonBorderColor, style: StrokeStyle(lineWidth: 4, lineCap: .round))
+          .stroke(buttonBorderColor, style: StrokeStyle(lineWidth: 5, lineCap: .round))
           .frame(width: buttonSize, height: buttonSize)
           .rotationEffect(.degrees(-90))
 
         Image("Finger-print")
           .resizable()
           .aspectRatio(contentMode: .fit)
-          .frame(width: 56, height: 56)
-          .foregroundColor(.white.opacity(0.8))
+          .frame(width: 54, height: 54)
+          .foregroundColor(.white.opacity(0.1))
       }
       .scaleEffect(isHolding ? 0.95 : 1.0)
       .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHolding)
       .contentShape(Circle())
 
       Text(holdProgress >= 1.0 ? "Committed" : "Hold to commit")
-        .font(.appTitleMedium)
+        .font(.appHeadlineSmallEmphasised)
         .foregroundColor(.white)
     }
     .simultaneousGesture(
