@@ -22,19 +22,15 @@ struct OnboardingCommitHoldScreen: View {
   @State private var showConfetti = false
   @State private var showFullScreenText = false
 
-  // Certificate + Medal animation states
-  @State private var showCertificate = false
   @State private var ovalOpacity: Double = 1.0
   @State private var showMedal = false
   @State private var medalScale: CGFloat = 0
   @State private var titleOpacity: Double = 0
   @State private var visibleItemCount: Int = 0
-  @State private var certificateTargetScale: CGFloat = 3.0
   @State private var showContinueButton = false
 
   private let backgroundColor = OnboardingButton.onboardingBackground
   private let expandFillColor = Color(red: 0.69, green: 0.80, blue: 0.98) // #B0CCF9
-  private let certificateCardSize = CGSize(width: 320, height: 420)
 
   private var displayName: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)
@@ -51,7 +47,7 @@ struct OnboardingCommitHoldScreen: View {
       VStack(spacing: 0) {
         ScrollView(showsIndicators: false) {
           VStack(spacing: 0) {
-            Spacer().frame(height: 100)
+            Spacer().frame(height: 20)
 
             HStack(spacing: 8) {
               Image("Sticker-Exciting")
@@ -89,7 +85,7 @@ struct OnboardingCommitHoldScreen: View {
         .frame(maxWidth: .infinity)
 
         Spacer()
-          .frame(maxHeight: 60)
+          .frame(minHeight: 16, maxHeight: 40)
 
         HoldToCommitButton {
           viewModel.hasCommitted = true
@@ -100,68 +96,15 @@ struct OnboardingCommitHoldScreen: View {
             Color.clear.preference(key: ButtonFramePreferenceKey.self, value: g.frame(in: .global))
           }
         )
-        .padding(.bottom, 24)
+        .padding(.bottom, 16)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity)
+      .safeAreaPadding(.top)
       .opacity(isExpanding ? 0 : 1)
       .allowsHitTesting(!isExpanding)
       .onPreferenceChange(ButtonFramePreferenceKey.self) { buttonFrame = $0 }
 
-      // Layer 3: Certificate card (shown at Phase 4 at final scale)
-      if showCertificate {
-        VStack(spacing: 0) {
-          Spacer()
-
-          ZStack(alignment: .top) {
-            Image("Certificate")
-              .resizable()
-              .scaledToFill()
-              .frame(width: certificateCardSize.width, height: certificateCardSize.height)
-              .clipped()
-
-            VStack(spacing: 0) {
-              Image("Medal")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 80, height: 80)
-                .padding(.top, 24)
-                .padding(.bottom, 12)
-
-              Text("\(displayName) Commitment")
-                .font(.appHeadlineSmallEmphasised)
-                .foregroundColor(Color(red: 0.15, green: 0.20, blue: 0.35))
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
-                .padding(.bottom, 12)
-
-              VStack(alignment: .leading, spacing: 6) {
-                ForEach(Array(viewModel.commitmentItems.enumerated()), id: \.offset) { index, item in
-                  HStack(alignment: .top, spacing: 6) {
-                    Text("•")
-                      .font(.appBodySmall)
-                      .foregroundColor(Color(red: 0.20, green: 0.25, blue: 0.40))
-                    Text(item)
-                      .font(.appBodySmall)
-                      .foregroundColor(Color(red: 0.20, green: 0.25, blue: 0.40))
-                  }
-                }
-              }
-              .padding(.leading, 24)
-              .padding(.trailing, 20)
-              .frame(maxWidth: .infinity, alignment: .leading)
-            }
-          }
-          .frame(width: certificateCardSize.width, height: certificateCardSize.height)
-          .cornerRadius(16)
-          .scaleEffect(certificateTargetScale)
-
-          Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
-      }
-
-      // Layer 3.5: Full-screen commitment text overlay (readable, not scaled)
+      // Layer 3.5: Full-screen commitment screen (final screen after circles)
       if showFullScreenText {
         ZStack {
           expandFillColor
@@ -287,41 +230,42 @@ struct OnboardingCommitHoldScreen: View {
     }
 
     DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+      showFullScreenText = true
       withAnimation(.easeInOut(duration: 0.5)) {
         ovalOpacity = 0
       }
-      showFullScreenText = true
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.7) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
       showMedal = true
-      withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+      withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
         medalScale = 1.0
       }
-      withAnimation(.easeOut(duration: 0.4)) {
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+      withAnimation(.easeInOut(duration: 0.6)) {
         titleOpacity = 1.0
       }
+    }
+
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
       for index in viewModel.commitmentItems.indices {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3 + Double(index) * 0.15) {
-          withAnimation(.easeOut(duration: 0.3)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.4) {
+          withAnimation(.easeInOut(duration: 0.5)) {
             visibleItemCount = index + 1
           }
         }
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 6.8) {
-      certificateTargetScale = 0.85
-      showCertificate = true
-      withAnimation(.easeInOut(duration: 0.4)) {
-        showFullScreenText = false
-      }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
       showConfetti = true
       let generator = UIImpactFeedbackGenerator(style: .heavy)
       generator.impactOccurred()
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 7.8) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 7.5) {
       withAnimation(.easeOut(duration: 0.5)) {
         showContinueButton = true
       }
