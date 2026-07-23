@@ -802,7 +802,7 @@ struct SubscriptionView: View {
   
   /// Open Privacy Policy in Safari
   private func openPrivacyPolicy() {
-    let privacyURL = "https://habitto.nl/privacy"
+    let privacyURL = "https://habitto.win/privacy"
     
     guard let url = URL(string: privacyURL) else {
       print("❌ SubscriptionView: Failed to create Privacy Policy URL")
