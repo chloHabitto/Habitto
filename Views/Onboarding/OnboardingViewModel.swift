@@ -4,7 +4,9 @@ import SwiftUI
 
 @MainActor
 class OnboardingViewModel: ObservableObject {
-  @Published var currentScreen: Int = 0 // 0–7: welcome → feature → name → greeting → intro → commit prompt → hold (certificate is final)
+  // 0–7: welcome → features → name → [greeting/intro hidden] → commit prompt → hold
+  // Screens 4 (greeting) and 5 (intro) are skipped for now; re-enable later.
+  @Published var currentScreen: Int = 0
   @Published var userName: String = ""
   @Published var hasCommitted: Bool = false
   @Published var holdProgress: CGFloat = 0.0
@@ -31,7 +33,12 @@ class OnboardingViewModel: ObservableObject {
     guard currentScreen < 7 else { return }
     isTransitioning = true
     withAnimation(.easeInOut(duration: 0.3)) {
-      currentScreen += 1
+      // Skip greeting (4) and intro (5): name (3) → commit prompt (6)
+      if currentScreen == 3 {
+        currentScreen = 6
+      } else {
+        currentScreen += 1
+      }
     }
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
       self.isTransitioning = false
@@ -43,7 +50,12 @@ class OnboardingViewModel: ObservableObject {
     guard currentScreen > 0 else { return }
     isTransitioning = true
     withAnimation(.easeInOut(duration: 0.3)) {
-      currentScreen -= 1
+      // Skip intro (5) and greeting (4): commit prompt (6) → name (3)
+      if currentScreen == 6 {
+        currentScreen = 3
+      } else {
+        currentScreen -= 1
+      }
     }
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
       self.isTransitioning = false
