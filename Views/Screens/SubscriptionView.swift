@@ -625,14 +625,14 @@ struct SubscriptionView: View {
             .font(.appBodyMedium)
             .foregroundColor(.text01)
         } else {
-          featureIcon(isAvailable: feature.isFreeAvailable, isPremium: false)
+          featureIcon(isAvailable: feature.isFreeAvailable)
         }
       }
       .frame(width: 80, alignment: .center)
       .background(Color.clear)
       
       // Premium column - transparent background so gradient shows through
-      featureIcon(isAvailable: feature.isPremiumAvailable, isPremium: true)
+      featureIcon(isAvailable: feature.isPremiumAvailable)
         .frame(width: 100, alignment: .center)
         .background(Color.clear)
     }
@@ -651,17 +651,11 @@ struct SubscriptionView: View {
   }
   
   @ViewBuilder
-  private func featureIcon(isAvailable: Bool, isPremium: Bool) -> some View {
+  private func featureIcon(isAvailable: Bool) -> some View {
     if isAvailable {
-      if isPremium {
-        Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 24, weight: .semibold))
-          .foregroundColor(Color("pastelBlue400"))
-      } else {
-        Image(systemName: "checkmark.circle.fill")
-          .font(.system(size: 16, weight: .semibold))
-          .foregroundColor(Color(hex: "FF7838")) // Orange for free
-      }
+      Image(systemName: "checkmark.circle.fill")
+        .font(.system(size: 24, weight: .semibold))
+        .foregroundColor(Color("pastelBlue400"))
     } else {
       Image(systemName: "xmark.circle.fill")
         .font(.system(size: 20, weight: .semibold))
@@ -1007,7 +1001,7 @@ struct SubscriptionView: View {
     ),
     SubscriptionFeature(
       title: "Progress Insights",
-      isFreeAvailable: false,
+      isFreeAvailable: true,
       isPremiumAvailable: true
     ),
     SubscriptionFeature(
