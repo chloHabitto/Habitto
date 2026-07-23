@@ -19,6 +19,13 @@ struct OnboardingNameInputScreen: View {
   private let backgroundColor = OnboardingButton.onboardingBackground
   private let accentBlue = Color(hex: "AABDFF")
 
+  /// Actual safe area insets from UIKit (parent OnboardingFlowView strips safe area with .ignoresSafeArea(edges: .all)).
+  private var safeAreaInsets: UIEdgeInsets {
+    UIApplication.shared.connectedScenes
+      .compactMap { $0 as? UIWindowScene }
+      .first?.keyWindow?.safeAreaInsets ?? UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0)
+  }
+
   private var isNameEmpty: Bool {
     viewModel.userName.trimmingCharacters(in: .whitespaces).isEmpty
   }
@@ -39,7 +46,7 @@ struct OnboardingNameInputScreen: View {
         .buttonStyle(PlainButtonStyle())
         .opacity(skipVisible ? 1 : 0)
       }
-      .padding(.top, 8)
+      .padding(.top, safeAreaInsets.top + 8)
       .padding(.trailing, 8)
 
       ScrollView {
