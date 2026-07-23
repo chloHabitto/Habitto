@@ -1001,7 +1001,7 @@ struct SubscriptionView: View {
   private let subscriptionFeatures: [SubscriptionFeature] = [
     SubscriptionFeature(
       title: "Unlimited Habits",
-      freeText: "5 max",
+      freeText: "3 max",
       isFreeAvailable: true,
       isPremiumAvailable: true
     ),

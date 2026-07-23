@@ -31,7 +31,7 @@ class SubscriptionManager: ObservableObject {
   #endif
   
   /// Maximum number of habits for free users
-  static let freeUserHabitLimit = 5
+  static let freeUserHabitLimit = 3
   
   /// Product IDs for subscriptions
   enum ProductID {
