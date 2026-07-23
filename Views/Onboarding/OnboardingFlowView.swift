@@ -45,10 +45,7 @@ struct OnboardingFlowView: View {
           )
         case 3:
           OnboardingNameInputScreen(viewModel: viewModel)
-        case 4:
-          OnboardingGreetingScreen(viewModel: viewModel)
-        case 5:
-          OnboardingIntroScreen(viewModel: viewModel)
+        // case 4 / 5: greeting + intro — hidden for now; re-enable with ViewModel navigation
         case 6:
           OnboardingCommitPromptScreen(viewModel: viewModel)
         case 7:
