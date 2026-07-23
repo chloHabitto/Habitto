@@ -105,7 +105,6 @@ enum ActiveSheet: Identifiable {
   case weekPicker
   case monthPicker
   case yearPicker
-  case paywall
   case difficultyExplanation
   
   var id: Int { hashValue }
@@ -164,9 +163,6 @@ private struct ScrollOffsetTracker: View {
 struct ProgressTabView: View {
   @EnvironmentObject var themeManager: ThemeManager
   
-  // MARK: - Subscription
-  
-  @ObservedObject private var subscriptionManager = SubscriptionManager.shared
   @ObservedObject private var localizationManager = LocalizationManager.shared
 
   // MARK: - State
@@ -649,115 +645,40 @@ struct ProgressTabView: View {
     .frame(maxWidth: .infinity)  // Ensure content doesn't exceed screen width
   }
   
-  // MARK: - Paywall Overlay
-  
-  @ViewBuilder
-  private var paywallOverlay: some View {
-    GeometryReader { geometry in
-      // Calculate the safe area top inset (status bar, notch, Dynamic Island)
-      let safeAreaTop = geometry.safeAreaInsets.top
-      
-      // Calculate the safe area bottom inset
-      let safeAreaBottom = geometry.safeAreaInsets.bottom
-      
-      // Tab bar height
-      let tabBarHeight: CGFloat = 80
-      
-      // Header height: habit selector (~50pt) + tabs (~44pt) + padding (~16pt) = ~110pt
-      let headerHeight: CGFloat = 110
-      
-      // Date section height: top padding (20pt) + date button row (~50pt) = ~70pt
-      let dateSectionHeight: CGFloat = 70
-      
-      // Total passthrough zone from actual screen top
-      let passthroughHeight = safeAreaTop + headerHeight + dateSectionHeight
-      
-      // Calculate gradient height to stop before tab bar
-      let gradientHeight = geometry.size.height - passthroughHeight - tabBarHeight - safeAreaBottom
-      
-      VStack(spacing: 0) {
-        // Touch passthrough zone - covers safe area + header + date button
-        Color.clear
-          .frame(height: passthroughHeight)
-          .allowsHitTesting(false)
-        
-        // Gradient overlay for remaining content
-        ZStack(alignment: .bottom) {
-          LinearGradient(
-            gradient: Gradient(stops: [
-              .init(color: .surface.opacity(0.0), location: 0.0),
-              .init(color: .surface.opacity(0.3), location: 0.3),
-              .init(color: .surface.opacity(0.6), location: 0.6),
-              .init(color: .surface.opacity(1.0), location: 1.0)
-            ]),
-            startPoint: .top,
-            endPoint: .bottom
-          )
-          .allowsHitTesting(true)
-          
-          // CTA Button - positioned at bottom of gradient using ZStack alignment
-          HabittoButton.largeFillPrimary(text: "progress.action.seeMoreProgress".localized) {
-            activeSheet = .paywall
-          }
-          .overlay(
-            // Shimmer effect overlay
-            ShimmerEffect()
-              .clipShape(RoundedRectangle(cornerRadius: 28)) // Match button corner radius
-          )
-          .padding(.horizontal, 20)
-          .padding(.bottom, 20)
-        }
-        .frame(height: gradientHeight)
-        
-        // Spacer to fill remaining tab bar area
-        Spacer()
-      }
-    }
-    .ignoresSafeArea(.all)
-  }
-
   var body: some View {
-    ZStack {
-      WhiteSheetContainer(
-        headerContent: {
-          AnyView(headerContent)
-        },
-        headerBackground: .surface01,
-        contentBackground: .surface01,
-        scrollResponsive: shouldEnableScrollResponsive,  // ✅ Conditional based on completion state
-        scrollOffset: displayHeaderHeight) {
-          ScrollView(.vertical, showsIndicators: true) {
-            mainContentView
-              .padding(.top, 21)
-              .padding(.bottom, 20)
-              .background(
-                GeometryReader { geometry in
-                  // Only track scroll offset if scroll-responsive is enabled
-                  if shouldEnableScrollResponsive {
-                    ScrollOffsetTracker(
-                      minY: geometry.frame(in: .global).minY,
-                      scrollOffset: $scrollOffset,
-                      displayHeaderHeight: $displayHeaderHeight,
-                      initialScrollOffset: Binding(
-                        get: { initialScrollOffset },
-                        set: { initialScrollOffset = $0 }
-                      ),
-                      fullHeaderHeight: fullHeaderHeight
-                    )
-                  } else {
-                    Color.clear  // No tracking when disabled
-                  }
+    WhiteSheetContainer(
+      headerContent: {
+        AnyView(headerContent)
+      },
+      headerBackground: .surface01,
+      contentBackground: .surface01,
+      scrollResponsive: shouldEnableScrollResponsive,  // ✅ Conditional based on completion state
+      scrollOffset: displayHeaderHeight) {
+        ScrollView(.vertical, showsIndicators: true) {
+          mainContentView
+            .padding(.top, 21)
+            .padding(.bottom, 20)
+            .background(
+              GeometryReader { geometry in
+                // Only track scroll offset if scroll-responsive is enabled
+                if shouldEnableScrollResponsive {
+                  ScrollOffsetTracker(
+                    minY: geometry.frame(in: .global).minY,
+                    scrollOffset: $scrollOffset,
+                    displayHeaderHeight: $displayHeaderHeight,
+                    initialScrollOffset: Binding(
+                      get: { initialScrollOffset },
+                      set: { initialScrollOffset = $0 }
+                    ),
+                    fullHeaderHeight: fullHeaderHeight
+                  )
+                } else {
+                  Color.clear  // No tracking when disabled
                 }
-              )
-          }
-          .scrollDisabled(!subscriptionManager.isPremium) // Disable scrolling for free users
+              }
+            )
         }
-      
-      // Paywall overlay for free users
-      if !subscriptionManager.isPremium {
-        paywallOverlay
       }
-    }
     .sheet(item: $activeSheet) { sheet in
       switch sheet {
       case .habitSelector:
@@ -809,9 +730,6 @@ struct ProgressTabView: View {
         .presentationDetents([.height(400)])
         .presentationDragIndicator(.hidden)
         .presentationCornerRadius(32)
-        
-      case .paywall:
-        SubscriptionView()
         
       case .difficultyExplanation:
         difficultyExplanationSheet

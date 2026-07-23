@@ -216,58 +216,54 @@ struct OnboardingCommitHoldScreen: View {
     let target2 = (screenDiagonal * 1.5) / 150
     let target3 = (screenDiagonal * 1.5) / 120
 
-    withAnimation(.easeOut(duration: 1.6)) {
+    withAnimation(.easeOut(duration: 1.0)) {
       circle1Scale = target1
     }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-      withAnimation(.easeOut(duration: 1.6)) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+      withAnimation(.easeOut(duration: 1.0)) {
         self.circle2Scale = target2
       }
     }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-      withAnimation(.easeOut(duration: 1.6)) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.24) {
+      withAnimation(.easeOut(duration: 1.0)) {
         self.circle3Scale = target3
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.1) {
       showFullScreenText = true
-      withAnimation(.easeInOut(duration: 0.5)) {
+      withAnimation(.easeInOut(duration: 0.3)) {
         ovalOpacity = 0
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.3) {
       showMedal = true
-      withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
+      withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
         medalScale = 1.0
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-      withAnimation(.easeInOut(duration: 0.6)) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.55) {
+      withAnimation(.easeInOut(duration: 0.35)) {
         titleOpacity = 1.0
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-      for index in viewModel.commitmentItems.indices {
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(index) * 0.4) {
-          withAnimation(.easeInOut(duration: 0.5)) {
-            visibleItemCount = index + 1
-          }
-        }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+      withAnimation(.easeInOut(duration: 0.55)) {
+        visibleItemCount = viewModel.commitmentItems.count
       }
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 6.5) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2.9) {
       showConfetti = true
       let generator = UIImpactFeedbackGenerator(style: .heavy)
       generator.impactOccurred()
     }
 
-    DispatchQueue.main.asyncAfter(deadline: .now() + 7.5) {
-      withAnimation(.easeOut(duration: 0.5)) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 3.4) {
+      withAnimation(.easeOut(duration: 0.35)) {
         showContinueButton = true
       }
     }
