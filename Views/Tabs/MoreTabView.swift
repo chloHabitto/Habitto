@@ -408,7 +408,7 @@ struct MoreTabView: View {
       }
       #endif
       
-      // Instagram link (Website hidden for now)
+      // Instagram & Website Links
       VStack(spacing: 0) {
         Spacer()
 
@@ -422,19 +422,18 @@ struct MoreTabView: View {
               .underline()
           }
 
-          // Website link hidden for now
-          // Text("·")
-          //   .font(.system(size: 14, weight: .medium))
-          //   .foregroundColor(.appText06)
-          //
-          // Button(action: {
-          //   openWebsite()
-          // }) {
-          //   Text("Website")
-          //     .font(.system(size: 14, weight: .medium))
-          //     .foregroundColor(.appText06)
-          //     .underline()
-          // }
+          Text("·")
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.appText06)
+
+          Button(action: {
+            openWebsite()
+          }) {
+            Text("Website")
+              .font(.system(size: 14, weight: .medium))
+              .foregroundColor(.appText06)
+              .underline()
+          }
         }
         .padding(.bottom, 20)
       }
@@ -893,24 +892,23 @@ struct MoreTabView: View {
     }
   }
 
-  // Website link hidden for now — keep helper ready to restore
-  // /// Open Habitto website in Safari
-  // private func openWebsite() {
-  //   let websiteURL = "https://habitto.nl/"
-  //
-  //   guard let url = URL(string: websiteURL) else {
-  //     print("❌ MoreTabView: Failed to create website URL")
-  //     return
-  //   }
-  //
-  //   UIApplication.shared.open(url) { success in
-  //     if success {
-  //       print("✅ MoreTabView: Opened website")
-  //     } else {
-  //       print("❌ MoreTabView: Failed to open website URL")
-  //     }
-  //   }
-  // }
+  /// Open Habitto website in Safari
+  private func openWebsite() {
+    let websiteURL = "https://habitto.win/"
+
+    guard let url = URL(string: websiteURL) else {
+      print("❌ MoreTabView: Failed to create website URL")
+      return
+    }
+
+    UIApplication.shared.open(url) { success in
+      if success {
+        print("✅ MoreTabView: Opened website")
+      } else {
+        print("❌ MoreTabView: Failed to open website URL")
+      }
+    }
+  }
   
   /// Get the native language name for the current language setting
   private func getNativeLanguageName() -> String {
