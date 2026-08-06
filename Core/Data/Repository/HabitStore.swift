@@ -167,7 +167,9 @@ final actor HabitStore {
 
     // ✅ FIX: Auto-clear end dates that are in the past to prevent validation warnings
     // BUT preserve recent end dates (within last 7 days) as they may be intentionally set
-    // to mark habits as inactive
+    // to mark habits as inactive (HabitDetailView sets endDate to yesterday on "Make Inactive").
+    // Do NOT clear recent endDates based on activity after the end date — progress logged
+    // today is expected when deactivating, and clearing endDate was undoing Make Inactive.
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
     let sevenDaysAgo = calendar.date(byAdding: .day, value: -7, to: today) ?? Date.distantPast
@@ -198,36 +200,17 @@ final actor HabitStore {
         syncStatus: habit.syncStatus)
     }
 
-    func latestActivityDate(for habit: Habit) -> Date? {
-      var dateKeys = Set<String>()
-      dateKeys.formUnion(habit.completionHistory.keys)
-      dateKeys.formUnion(habit.completionStatus.filter { $0.value }.map(\.key))
-      dateKeys.formUnion(habit.completionTimestamps.keys)
-      dateKeys.formUnion(habit.difficultyHistory.keys)
-      guard let latestKey = dateKeys.max(),
-            let date = DateUtils.date(from: latestKey) else {
-        return nil
-      }
-      return date
-    }
-
     let sanitizedHabits = cappedHabits.map { habit -> Habit in
       guard let endDate = habit.endDate, endDate < Date() else {
         return habit
       }
-      
-      let startOfEndDate = calendar.startOfDay(for: endDate)
-      
+
       if endDate < sevenDaysAgo {
+        logger.info("🔧 Auto-clearing old end date for habit '\(habit.name)' (was: \(endDate), more than 7 days ago)")
         return clearEndDate(habit)
       }
-      
-      if let latestActivityDate = latestActivityDate(for: habit),
-         latestActivityDate > startOfEndDate {
-        return clearEndDate(habit)
-      }
-      
-      // Preserve recent end dates (within last 7 days) - these are intentionally set
+
+      // Preserve recent end dates (within last 7 days) - intentionally set for inactive habits
       return habit
     }
 
