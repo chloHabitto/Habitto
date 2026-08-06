@@ -18,7 +18,7 @@ struct SyncErrorToast: TopPopup, View {
         .foregroundColor(.appText01Inverse)
       
       VStack(alignment: .leading, spacing: 4) {
-        Text("Sync Error")
+        Text("shared.toast.syncError".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.appText01Inverse)
         
@@ -34,7 +34,7 @@ struct SyncErrorToast: TopPopup, View {
         Button(action: {
           onRetry()
         }) {
-          Text("Retry")
+          Text("shared.toast.retry".localized)
             .font(.system(size: 12, weight: .semibold))
             .foregroundColor(.appText01Inverse)
             .padding(.horizontal, 12)

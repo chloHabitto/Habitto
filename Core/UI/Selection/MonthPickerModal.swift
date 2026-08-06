@@ -20,20 +20,20 @@ struct MonthPickerModal: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Button("Cancel") {
+        Button("common.cancel".localized) {
           isPresented = false
         }
         .foregroundColor(.text02)
 
         Spacer()
 
-        Text("Select Month")
+        Text("shared.picker.selectMonth".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
 
-        Button("Done") {
+        Button("common.done".localized) {
           selectedMonth = tempSelectedMonth
           isPresented = false
         }
@@ -56,7 +56,7 @@ struct MonthPickerModal: View {
           HStack {
             Image(systemName: "arrow.clockwise")
               .font(.appBodyMedium)
-            Text("Reset to current month")
+            Text("shared.picker.resetToCurrentMonth".localized)
               .font(.appBodyMedium)
           }
           .foregroundColor(.text02)
@@ -74,7 +74,7 @@ struct MonthPickerModal: View {
         isPresented = false
       }) {
         VStack(spacing: 8) {
-          Text("Selected Month")
+          Text("shared.picker.selectedMonth".localized)
             .font(.appBodyMedium)
             .foregroundColor(.appOnPrimary)
 

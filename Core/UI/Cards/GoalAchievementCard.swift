@@ -28,7 +28,7 @@ struct GoalAchievementCard: View {
               .lineLimit(1)
               .truncationMode(.tail)
 
-            Text("Goal: \(Int(habitGoal.goal.amount)) \(habitGoal.goal.unit)")
+            Text(String(format: "shared.goalAchievement.goalFormat".localized, Int(habitGoal.goal.amount), habitGoal.goal.unit))
               .font(.appBodyExtraSmall)
               .foregroundColor(.text05)
               .lineLimit(1)
@@ -70,7 +70,7 @@ struct GoalAchievementCard: View {
               .lineLimit(1)
               .truncationMode(.tail)
 
-            Text("Current")
+            Text("shared.goalAchievement.current".localized)
               .font(.appBodyExtraSmall)
               .foregroundColor(.text05)
           }
@@ -89,7 +89,7 @@ struct GoalAchievementCard: View {
               .lineLimit(1)
               .truncationMode(.tail)
 
-            Text("Target")
+            Text("shared.goalAchievement.target".localized)
               .font(.appBodyExtraSmall)
               .foregroundColor(.text05)
           }
