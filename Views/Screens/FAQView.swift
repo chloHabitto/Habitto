@@ -214,7 +214,7 @@ struct FAQView: View {
 
   private func openContactUs() {
     // Open email app with the same configuration as Send Feedback screen
-    let recipientEmail = "chloe@habitto.nl"
+    let recipientEmail = "chloe.dev.main@gmail.com"
     let emailSubject = "App Feedback"
     let emailBody = "Hello, I'd like to share some feedback:\n\n"
     

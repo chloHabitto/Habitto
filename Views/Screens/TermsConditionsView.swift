@@ -89,7 +89,7 @@ struct TermsConditionsView: View {
       content: "These Terms remain in effect until terminated:\n\n• You may terminate by deleting the App and ceasing use\n• We may terminate or suspend access immediately for Terms violations\n• Upon termination, your right to use the App ceases\n• We may delete or retain your data as permitted by law\n• Surviving provisions remain in effect\n\nTermination does not affect any rights or obligations that arose before termination."),
     TermsSection(
       title: "9. Governing Law & Disputes",
-      content: "These Terms are governed by the laws of the Netherlands. Any disputes shall be resolved in the courts of the Netherlands.\n\nBefore pursuing legal action, we encourage you to contact us at chloe@habitto.nl to resolve issues amicably.\n\nIf any provision of these Terms is found to be unenforceable, the remaining provisions remain in full force and effect.")
+      content: "These Terms are governed by the laws of the Netherlands. Any disputes shall be resolved in the courts of the Netherlands.\n\nBefore pursuing legal action, we encourage you to contact us at chloe.dev.main@gmail.com to resolve issues amicably.\n\nIf any provision of these Terms is found to be unenforceable, the remaining provisions remain in full force and effect.")
   ]
 
   /// Privacy Policy data
@@ -108,7 +108,7 @@ struct TermsConditionsView: View {
       content: "We use third-party services to provide app functionality:\n\n**Firebase Services (Google):**\n• Authentication and user management\n• Cloud database for habit data\n• Analytics and crash reporting\n• Push notifications\n\n**Data Processing:**\n• All third-party services comply with GDPR\n• Data processing agreements in place\n• Limited to necessary app functionality\n• No additional data sharing beyond required services"),
     TermsSection(
       title: "5. Your Rights & Choices",
-      content: "Under GDPR and other privacy laws, you have the right to:\n\n**Data Access:**\n• View all personal data we hold about you\n• Request a copy of your data in portable format\n• Understand how your data is processed\n\n**Data Control:**\n• Correct inaccurate or incomplete data\n• Request deletion of your personal data\n• Withdraw consent for data processing\n• Restrict processing of your data\n\n**Contact Us:**\n• Email: chloe@habitto.nl\n• Response time: Within 30 days\n• No fees for reasonable requests"),
+      content: "Under GDPR and other privacy laws, you have the right to:\n\n**Data Access:**\n• View all personal data we hold about you\n• Request a copy of your data in portable format\n• Understand how your data is processed\n\n**Data Control:**\n• Correct inaccurate or incomplete data\n• Request deletion of your personal data\n• Withdraw consent for data processing\n• Restrict processing of your data\n\n**Contact Us:**\n• Email: chloe.dev.main@gmail.com\n• Response time: Within 30 days\n• No fees for reasonable requests"),
     TermsSection(
       title: "6. Data Sharing & Disclosure",
       content: "We may share your information in these limited circumstances:\n\n**With Your Consent:**\n• When you explicitly agree to sharing\n• For specific features or integrations\n• With clear explanation of what's shared\n\n**Legal Requirements:**\n• To comply with applicable laws\n• In response to legal requests\n• To protect our rights and safety\n• To prevent fraud or abuse\n\n**Service Providers:**\n• Only for essential app functionality\n• Under strict data protection agreements\n• Limited to necessary data only"),
@@ -123,7 +123,7 @@ struct TermsConditionsView: View {
       content: "We may update this Privacy Policy from time to time:\n\n**Notification Process:**\n• Users notified of significant changes\n• Updates posted in the app\n• Email notification for major changes\n• 30-day advance notice when possible\n\n**Continued Use:**\n• Using the app after changes = acceptance\n• Review policy regularly for updates\n• Contact us with any questions\n• Previous versions available upon request"),
     TermsSection(
       title: "10. Contact Information",
-      content: "For privacy-related questions or requests:\n\n**Primary Contact:**\n• Email: chloe@habitto.nl\n• Response time: Within 30 days\n• Language: English and Dutch\n\n**Data Protection Officer:**\n• Available for complex privacy matters\n• GDPR compliance questions\n• Data processing concerns\n\n**Complaints:**\n• We aim to resolve issues promptly\n• Contact us first for fastest resolution\n• Right to lodge complaint with supervisory authority")
+      content: "For privacy-related questions or requests:\n\n**Primary Contact:**\n• Email: chloe.dev.main@gmail.com\n• Response time: Within 30 days\n• Language: English and Dutch\n\n**Data Protection Officer:**\n• Available for complex privacy matters\n• GDPR compliance questions\n• Data processing concerns\n\n**Complaints:**\n• We aim to resolve issues promptly\n• Contact us first for fastest resolution\n• Right to lodge complaint with supervisory authority")
   ]
 
   // MARK: - Custom Tab Bar (matches Habitto design without background)
@@ -258,7 +258,7 @@ struct TermsConditionsView: View {
         .font(.appBodySmall)
         .foregroundColor(.text04)
 
-      Text("For questions about these terms, contact us at chloe@habitto.nl")
+      Text("For questions about these terms, contact us at chloe.dev.main@gmail.com")
         .font(.appBodySmall)
         .foregroundColor(.text04)
         .multilineTextAlignment(.center)
@@ -275,7 +275,7 @@ struct TermsConditionsView: View {
         .font(.appBodySmall)
         .foregroundColor(.text04)
 
-      Text("For privacy questions, contact us at chloe@habitto.nl")
+      Text("For privacy questions, contact us at chloe.dev.main@gmail.com")
         .font(.appBodySmall)
         .foregroundColor(.text04)
         .multilineTextAlignment(.center)
