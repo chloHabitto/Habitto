@@ -17,11 +17,11 @@ struct ExportDataView: View {
 
     var displayName: String {
       switch self {
-      case .habits: "Habits & Progress"
-      case .progress: "Completion History"
-      case .profile: "User Profile"
-      case .settings: "App Settings"
-      case .analytics: "Analytics Data"
+      case .habits: "more.exportData.type.habits.name".localized
+      case .progress: "more.exportData.type.progress.name".localized
+      case .profile: "more.exportData.type.profile.name".localized
+      case .settings: "more.exportData.type.settings.name".localized
+      case .analytics: "more.exportData.type.analytics.name".localized
       }
     }
 
@@ -37,21 +37,21 @@ struct ExportDataView: View {
 
     var estimatedSize: String {
       switch self {
-      case .habits: "Dynamic"
-      case .progress: "Dynamic"
-      case .profile: "1-5 KB"
-      case .settings: "1-2 KB"
-      case .analytics: "Dynamic"
+      case .habits: "more.exportData.type.habits.size".localized
+      case .progress: "more.exportData.type.progress.size".localized
+      case .profile: "more.exportData.type.profile.size".localized
+      case .settings: "more.exportData.type.settings.size".localized
+      case .analytics: "more.exportData.type.analytics.size".localized
       }
     }
 
     var description: String {
       switch self {
-      case .habits: "Your habits, goals, and current progress"
-      case .progress: "Historical completion records and streaks"
-      case .profile: "Your name, email, and account information"
-      case .settings: "App preferences and configuration"
-      case .analytics: "Usage statistics and performance data"
+      case .habits: "more.exportData.type.habits.description".localized
+      case .progress: "more.exportData.type.progress.description".localized
+      case .profile: "more.exportData.type.profile.description".localized
+      case .settings: "more.exportData.type.settings.description".localized
+      case .analytics: "more.exportData.type.analytics.description".localized
       }
     }
   }
@@ -66,19 +66,19 @@ struct ExportDataView: View {
 
     var displayName: String {
       switch self {
-      case .last30Days: "Last 30 days"
-      case .last6Months: "Last 6 months"
-      case .lastYear: "Last year"
-      case .allTime: "All time"
+      case .last30Days: "more.exportData.range.last30Days".localized
+      case .last6Months: "more.exportData.range.last6Months".localized
+      case .lastYear: "more.exportData.range.lastYear".localized
+      case .allTime: "more.exportData.range.allTime".localized
       }
     }
 
     var description: String {
       switch self {
-      case .last30Days: "Export data from the past month"
-      case .last6Months: "Export data from the past 6 months"
-      case .lastYear: "Export data from the past year"
-      case .allTime: "Export all your data"
+      case .last30Days: "more.exportData.range.last30Days.description".localized
+      case .last6Months: "more.exportData.range.last6Months.description".localized
+      case .lastYear: "more.exportData.range.lastYear.description".localized
+      case .allTime: "more.exportData.range.allTime.description".localized
       }
     }
   }
@@ -92,17 +92,17 @@ struct ExportDataView: View {
 
     var displayName: String {
       switch self {
-      case .json: "JSON"
-      case .csv: "CSV"
-      case .pdf: "PDF Report"
+      case .json: "more.exportData.format.json".localized
+      case .csv: "more.exportData.format.csv".localized
+      case .pdf: "more.exportData.format.pdf".localized
       }
     }
 
     var description: String {
       switch self {
-      case .json: "Machine-readable format (recommended)"
-      case .csv: "Spreadsheet format"
-      case .pdf: "Human-readable report"
+      case .json: "more.exportData.format.json.description".localized
+      case .csv: "more.exportData.format.csv.description".localized
+      case .pdf: "more.exportData.format.pdf.description".localized
       }
     }
 
@@ -122,7 +122,7 @@ struct ExportDataView: View {
         ScrollView {
           VStack(spacing: 24) {
             // Description text
-            Text("Download your personal data in your preferred format")
+            Text("more.exportData.subtitle".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text05)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -133,7 +133,7 @@ struct ExportDataView: View {
             VStack(spacing: 16) {
               // Data Types - Multi-select dropdown
               VStack(alignment: .leading, spacing: 8) {
-                Text("Data Types")
+                Text("more.exportData.dataTypes".localized)
                   .font(.system(size: 16, weight: .medium))
                   .foregroundColor(.text01)
 
@@ -142,8 +142,8 @@ struct ExportDataView: View {
                 }) {
                   HStack {
                     Text(selectedDataTypes.isEmpty
-                      ? "Select data types..."
-                      : "\(selectedDataTypes.count) selected")
+                      ? "more.exportData.selectDataTypes".localized
+                      : String(format: "more.exportData.countSelected".localized, selectedDataTypes.count))
                       .font(.system(size: 16, weight: .regular))
                       .foregroundColor(selectedDataTypes.isEmpty ? .text03 : .text01)
 
@@ -165,7 +165,7 @@ struct ExportDataView: View {
 
               // Date Range - Single select dropdown
               VStack(alignment: .leading, spacing: 8) {
-                Text("Date Range")
+                Text("more.exportData.dateRange".localized)
                   .font(.system(size: 16, weight: .medium))
                   .foregroundColor(.text01)
 
@@ -195,7 +195,7 @@ struct ExportDataView: View {
 
               // Export Format - Single select dropdown
               VStack(alignment: .leading, spacing: 8) {
-                Text("Export Format")
+                Text("more.exportData.exportFormat".localized)
                   .font(.system(size: 16, weight: .medium))
                   .foregroundColor(.text01)
 
@@ -236,16 +236,20 @@ struct ExportDataView: View {
                     .foregroundColor(.navy200)
 
                   VStack(alignment: .leading, spacing: 4) {
-                    Text("Export Summary")
+                    Text("more.exportData.exportSummary".localized)
                       .font(.system(size: 16, weight: .medium))
                       .foregroundColor(.text01)
 
                     Text(
-                      "\(selectedDataTypes.count) data types • \(selectedDateRange.displayName) • \(selectedFormat.displayName)")
+                      String(
+                        format: "more.exportData.summaryLine".localized,
+                        selectedDataTypes.count,
+                        selectedDateRange.displayName,
+                        selectedFormat.displayName))
                       .font(.system(size: 14, weight: .regular))
                       .foregroundColor(.text03)
 
-                    Text("Estimated size: \(estimatedTotalSize)")
+                    Text(String(format: "more.exportData.estimatedSize".localized, estimatedTotalSize))
                       .font(.system(size: 14, weight: .medium))
                       .foregroundColor(.navy200)
                   }
@@ -272,7 +276,7 @@ struct ExportDataView: View {
                   .font(.system(size: 14))
                   .foregroundColor(.navy200)
 
-                Text("File will be saved to Documents/Habitto Exports/")
+                Text("more.exportData.saveLocation".localized)
                   .font(.system(size: 12, weight: .regular))
                   .foregroundColor(.text03)
 
@@ -284,7 +288,7 @@ struct ExportDataView: View {
                   .font(.system(size: 14))
                   .foregroundColor(.navy200)
 
-                Text("Share sheet will appear when export completes")
+                Text("more.exportData.shareSheetInfo".localized)
                   .font(.system(size: 12, weight: .regular))
                   .foregroundColor(.text03)
 
@@ -301,7 +305,7 @@ struct ExportDataView: View {
         // Bottom-fixed Export button
         VStack(spacing: 0) {
           HabittoButton.largeFillPrimary(
-            text: isExporting ? "Exporting..." : "Export Data",
+            text: isExporting ? "more.exportData.exporting".localized : "more.exportData.exportButton".localized,
             state: (!isExporting && !selectedDataTypes.isEmpty) ? .default : .disabled,
             action: {
               Task {
@@ -312,7 +316,7 @@ struct ExportDataView: View {
         }
       }
       .background(Color("appSurface01Variant02"))
-      .navigationTitle("Export Data")
+      .navigationTitle("more.exportData.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -365,8 +369,8 @@ struct ExportDataView: View {
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(32)
     }
-    .alert("Export Error", isPresented: .constant(exportError != nil)) {
-      Button("OK") {
+    .alert("more.exportData.exportError".localized, isPresented: .constant(exportError != nil)) {
+      Button("common.ok".localized) {
         exportError = nil
       }
     } message: {
@@ -376,7 +380,7 @@ struct ExportDataView: View {
     }
     .overlay(alignment: .bottom) {
       if showExportSuccessToast {
-        SuccessToastView(message: "Data exported successfully") {
+        SuccessToastView(message: "more.exportData.successToast".localized) {
           withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
             showExportSuccessToast = false
           }
@@ -412,9 +416,9 @@ struct ExportDataView: View {
     let estimatedSize = calculateEstimatedExportSize()
 
     if estimatedSize >= 1024 {
-      return String(format: "%.1f MB", estimatedSize / 1024)
+      return String(format: "more.exportData.sizeMB".localized, estimatedSize / 1024)
     } else {
-      return String(format: "%.0f KB", estimatedSize)
+      return String(format: "more.exportData.sizeKB".localized, estimatedSize)
     }
   }
 
@@ -561,9 +565,9 @@ struct ExportDataView: View {
     if let exportError = error as? ExportError {
       exportError.localizedDescription
     } else if let backupError = error as? BackupError {
-      "Export failed: \(backupError.localizedDescription)"
+      String(format: "more.exportData.exportFailed".localized, backupError.localizedDescription)
     } else {
-      "Export failed: \(error.localizedDescription)"
+      String(format: "more.exportData.exportFailed".localized, error.localizedDescription)
     }
   }
 
@@ -932,7 +936,7 @@ struct ExportPreviewView: View {
         ScrollView {
           VStack(spacing: 24) {
             // Description text
-            Text("Review what will be included in your export")
+            Text("more.exportData.preview.subtitle".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text05)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -957,7 +961,7 @@ struct ExportPreviewView: View {
         .background(Color("appSurface01Variant02"))
       }
       .background(Color("appSurface01Variant02"))
-      .navigationTitle("Export Preview")
+      .navigationTitle("more.exportData.preview.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -984,7 +988,7 @@ struct ExportPreviewView: View {
     VStack(spacing: 0) {
       // Section Header
       HStack {
-        Text("Export Overview")
+        Text("more.exportData.preview.overview".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.text01)
         Spacer()
@@ -1003,10 +1007,10 @@ struct ExportPreviewView: View {
           .foregroundColor(.appIconColor)
         
         VStack(alignment: .leading, spacing: 4) {
-          Text("Export Format & Size")
+          Text("more.exportData.preview.formatAndSize".localized)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.text01)
-          Text("\(selectedFormat.displayName) format • \(estimatedSize)")
+          Text(String(format: "more.exportData.preview.formatSizeLine".localized, selectedFormat.displayName, estimatedSize))
             .font(.system(size: 14, weight: .regular))
             .foregroundColor(.text04)
         }
@@ -1026,7 +1030,7 @@ struct ExportPreviewView: View {
     VStack(spacing: 0) {
       // Section Header
       HStack {
-        Text("Included Data Types")
+        Text("more.exportData.preview.includedDataTypes".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.text01)
         Spacer()
@@ -1088,7 +1092,7 @@ struct ExportPreviewView: View {
     VStack(spacing: 0) {
       // Section Header
       HStack {
-        Text("Export Settings")
+        Text("more.exportData.preview.exportSettings".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.text01)
         Spacer()
@@ -1105,7 +1109,7 @@ struct ExportPreviewView: View {
           .frame(width: 24, height: 24)
         
         VStack(alignment: .leading, spacing: 4) {
-          Text("Date Range")
+          Text("more.exportData.dateRange".localized)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.text01)
           Text(selectedDateRange.description)
@@ -1134,7 +1138,7 @@ struct ExportPreviewView: View {
           .foregroundColor(.appIconColor)
         
         VStack(alignment: .leading, spacing: 4) {
-          Text("Export Format")
+          Text("more.exportData.exportFormat".localized)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.text01)
           Text(selectedFormat.description)
@@ -1161,7 +1165,7 @@ struct ExportPreviewView: View {
     VStack(spacing: 0) {
       // Section Header
       HStack {
-        Text("Sample Data Structure")
+        Text("more.exportData.preview.sampleDataStructure".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.text01)
         Spacer()
@@ -1283,7 +1287,7 @@ struct DataTypePickerView: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Text("Data Types")
+        Text("more.exportData.dataTypes".localized)
           .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
 
@@ -1352,7 +1356,7 @@ struct DateRangePickerView: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Text("Date Range")
+        Text("more.exportData.dateRange".localized)
           .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
 
@@ -1418,7 +1422,7 @@ struct ExportFormatPickerView: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Text("Export Format")
+        Text("more.exportData.exportFormat".localized)
           .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
 
@@ -1535,23 +1539,23 @@ enum ExportError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .noDataTypesSelected:
-      "Please select at least one data type to export"
+      "more.exportData.error.noDataTypesSelected".localized
     case .invalidFormat:
-      "Invalid export format selected"
+      "more.exportData.error.invalidFormat".localized
     case .invalidDateRange:
-      "Invalid date range selected"
+      "more.exportData.error.invalidDateRange".localized
     case .emptyExportData:
-      "No data available for export with current settings"
+      "more.exportData.error.emptyExportData".localized
     case .exportTooLarge:
-      "Export data is too large (maximum 100MB)"
+      "more.exportData.error.exportTooLarge".localized
     case .fileNotCreated:
-      "Failed to create export file"
+      "more.exportData.error.fileNotCreated".localized
     case .invalidFileSize:
-      "Export file has invalid size"
+      "more.exportData.error.invalidFileSize".localized
     case .dataFilteringFailed:
-      "Failed to filter data for export"
+      "more.exportData.error.dataFilteringFailed".localized
     case .formatGenerationFailed:
-      "Failed to generate data in selected format"
+      "more.exportData.error.formatGenerationFailed".localized
     }
   }
 }

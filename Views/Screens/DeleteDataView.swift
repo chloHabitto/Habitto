@@ -19,7 +19,7 @@ struct DeleteDataView: View {
         ScrollView {
           VStack(spacing: 24) {
             // Description text
-            Text("Remove your data from this device")
+            Text("more.deleteData.subtitle".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text05)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -33,7 +33,7 @@ struct DeleteDataView: View {
                   .font(.system(size: 20))
                   .foregroundColor(.orange)
 
-                Text("Important Notice")
+                Text("more.deleteData.importantNotice".localized)
                   .font(.system(size: 16, weight: .semibold))
                   .foregroundColor(.text01)
 
@@ -41,7 +41,7 @@ struct DeleteDataView: View {
               }
 
               Text(
-                "This action cannot be undone. All selected data will be permanently deleted from this device.")
+                "more.deleteData.warningMessage".localized)
                 .font(.system(size: 14, weight: .regular))
                 .foregroundColor(.text02)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,14 +61,14 @@ struct DeleteDataView: View {
 
         // Fixed Bottom Section - Delete Button
         VStack(spacing: 16) {
-          Text("Permanently remove all your data from this device")
+          Text("more.deleteData.bottomHint".localized)
             .font(.system(size: 14, weight: .regular))
             .foregroundColor(.text03)
             .multilineTextAlignment(.center)
             .padding(.horizontal, 20)
 
           HabittoButton.largeFillDestructive(
-            text: "Delete All Data",
+            text: "more.deleteData.deleteAllData".localized,
             state: isDeleting ? .loading : .default)
           {
             Task {
@@ -81,7 +81,7 @@ struct DeleteDataView: View {
         .background(Color("appSurface01Variant02"))
       }
       .background(Color("appSurface01Variant02"))
-      .navigationTitle("Delete Data")
+      .navigationTitle("more.deleteData.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -103,10 +103,10 @@ struct DeleteDataView: View {
       }
     }
     .alert(getConfirmationTitle(), isPresented: $showingConfirmation) {
-      Button("Cancel", role: .cancel) {
+      Button("common.cancel".localized, role: .cancel) {
         selectedOption = nil
       }
-      Button("Delete", role: .destructive) {
+      Button("common.delete".localized, role: .destructive) {
         Task {
           await performDeletion()
         }
@@ -114,41 +114,41 @@ struct DeleteDataView: View {
     } message: {
       Text(getConfirmationMessage())
     }
-    .alert("Cloud Data Detected", isPresented: $showingSignedOutDialog) {
-      Button("Cancel", role: .cancel) { }
-      Button("Sign In to Delete Everything") {
+    .alert("more.deleteData.cloudDataDetected".localized, isPresented: $showingSignedOutDialog) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("more.deleteData.signInToDeleteEverything".localized) {
         // Navigate to sign in - for now, just show a message
         // In a real app, you'd navigate to the sign-in screen
         showingSignInMessage = true
       }
-      Button("Delete Local Data Only", role: .destructive) {
+      Button("more.deleteData.deleteLocalDataOnly".localized, role: .destructive) {
         selectedOption = .deleteLocalOnly
         showingLocalOnlyConfirmation = true
       }
     } message: {
-      Text("You have data backed up in the cloud from a previous sign-in. To delete ALL your data including cloud backup, please sign in first.")
+      Text("more.deleteData.cloudDataMessage".localized)
     }
-    .alert("Sign In Required", isPresented: $showingSignInMessage) {
-      Button("OK") {
+    .alert("more.deleteData.signInRequired".localized, isPresented: $showingSignInMessage) {
+      Button("common.ok".localized) {
         showingSignInMessage = false
       }
     } message: {
-      Text("Please sign in from the Profile screen to delete cloud data.")
+      Text("more.deleteData.signInRequiredMessage".localized)
     }
-    .alert("Delete Local Data Only", isPresented: $showingLocalOnlyConfirmation) {
-      Button("Cancel", role: .cancel) {
+    .alert("more.deleteData.deleteLocalDataOnly".localized, isPresented: $showingLocalOnlyConfirmation) {
+      Button("common.cancel".localized, role: .cancel) {
         selectedOption = nil
       }
-      Button("Delete", role: .destructive) {
+      Button("common.delete".localized, role: .destructive) {
         Task {
           await performDeletion()
         }
       }
     } message: {
-      Text("This will delete all local data. If you sign in later, your cloud data will return.")
+      Text("more.deleteData.localOnlyConfirmMessage".localized)
     }
-    .alert("Deletion Error", isPresented: .constant(deleteError != nil)) {
-      Button("OK") {
+    .alert("more.deleteData.deletionError".localized, isPresented: .constant(deleteError != nil)) {
+      Button("common.ok".localized) {
         deleteError = nil
       }
     } message: {
@@ -192,11 +192,11 @@ struct DeleteDataView: View {
   }
 
   private func getConfirmationTitle() -> String {
-    "Delete All Data"
+    "more.deleteData.deleteAllData".localized
   }
 
   private func getConfirmationMessage() -> String {
-    "This will permanently delete all your data from this device and cloud. This action cannot be undone."
+    "more.deleteData.confirmMessage".localized
   }
 
   private func performDeletion() async {
@@ -344,7 +344,7 @@ struct DeleteDataView: View {
     if let deleteError = error as? DeleteError {
       deleteError.localizedDescription
     } else {
-      "Deletion failed: \(error.localizedDescription)"
+      String(format: "more.deleteData.deletionFailed".localized, error.localizedDescription)
     }
   }
 }
@@ -364,11 +364,11 @@ struct DeleteCompleteView: View {
           .foregroundColor(.green)
 
         VStack(spacing: 12) {
-          Text("Data Deleted")
+          Text("more.deleteData.dataDeleted".localized)
             .font(.system(size: 24, weight: .bold))
             .foregroundColor(.text01)
 
-          Text("Your data has been permanently removed from this device.")
+          Text("more.deleteData.dataDeletedMessage".localized)
             .font(.system(size: 16, weight: .regular))
             .foregroundColor(.text03)
             .multilineTextAlignment(.center)
@@ -378,7 +378,7 @@ struct DeleteCompleteView: View {
         Spacer()
 
         HabittoButton.largeFillPrimary(
-          text: "Done")
+          text: "common.done".localized)
         {
           onDismiss()
         }
@@ -401,9 +401,9 @@ enum DeleteError: Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case .noOptionSelected:
-      "No deletion option was selected"
+      "more.deleteData.error.noOptionSelected".localized
     case .allDataDeletionFailed:
-      "Failed to delete all data. Please try again."
+      "more.deleteData.error.allDataDeletionFailed".localized
     }
   }
 }
