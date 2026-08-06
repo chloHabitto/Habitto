@@ -12,12 +12,14 @@ class OnboardingViewModel: ObservableObject {
   @Published var holdProgress: CGFloat = 0.0
   @Published var isTransitioning = false
 
-  let commitmentItems: [String] = [
-    "I will start small and be patient with myself.",
-    "I will celebrate progress, not just perfection.",
-    "I will keep going, even after hard days.",
-    "I believe I can change.",
-  ]
+  var commitmentItems: [String] {
+    [
+      "onboarding.commitment.item1".localized,
+      "onboarding.commitment.item2".localized,
+      "onboarding.commitment.item3".localized,
+      "onboarding.commitment.item4".localized,
+    ]
+  }
 
   func completeOnboarding() {
     let trimmed = userName.trimmingCharacters(in: .whitespaces)

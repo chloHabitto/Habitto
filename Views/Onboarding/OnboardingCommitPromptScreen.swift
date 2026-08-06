@@ -12,7 +12,7 @@ struct OnboardingCommitPromptScreen: View {
     VStack(spacing: 0) {
       Spacer()
 
-      Text("Ready to make a commitment to yourself?")
+      Text("onboarding.commitPrompt.title".localized)
         .font(.appHeadlineSmallEmphasised)
         .foregroundColor(.white)
         .multilineTextAlignment(.center)
@@ -21,7 +21,7 @@ struct OnboardingCommitPromptScreen: View {
 
       Spacer()
 
-      OnboardingButton.primary(text: "Yes, I am ready!") {
+      OnboardingButton.primary(text: "onboarding.commitPrompt.cta.ready".localized) {
         viewModel.goToNext()
       }
       .padding(.horizontal, 20)

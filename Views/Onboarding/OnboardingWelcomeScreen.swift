@@ -17,7 +17,7 @@ struct OnboardingWelcomeScreen: View {
       Spacer()
         .frame(height: 88)
 
-      Text("Habitto")
+      Text("onboarding.welcome.brand".localized)
         .font(.appDisplayLargeEmphasised)
         .foregroundColor(.white)
         .opacity(titleOpacity)
@@ -45,15 +45,15 @@ struct OnboardingWelcomeScreen: View {
     .background(backgroundColor)
     .safeAreaInset(edge: .bottom) {
       VStack(spacing: 8) {
-        OnboardingButton.primary(text: "Get Started") {
+        OnboardingButton.primary(text: "onboarding.welcome.cta.getStarted".localized) {
           viewModel.goToNext()
         }
-        .accessibilityLabel("Get Started")
+        .accessibilityLabel("onboarding.welcome.cta.getStarted".localized)
 
-        OnboardingButton.secondary(text: "I already have an account") {
+        OnboardingButton.secondary(text: "onboarding.welcome.cta.existingAccount".localized) {
           // Placeholder: "I already have an account"
         }
-        .accessibilityLabel("I already have an account")
+        .accessibilityLabel("onboarding.welcome.cta.existingAccount".localized)
       }
       .padding(.horizontal, 20)
       .padding(.bottom, 40)

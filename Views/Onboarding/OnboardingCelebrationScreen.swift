@@ -13,9 +13,12 @@ struct OnboardingCelebrationScreen: View {
   private let backgroundColor = OnboardingButton.onboardingBackground
   private let certificateCardSize = CGSize(width: 280, height: 360)
 
-  private var displayName: String {
+  private var commitmentTitle: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)
-    return trimmed.isEmpty ? "Your" : "\(trimmed)'s"
+    if trimmed.isEmpty {
+      return "onboarding.commit.title.fallback".localized
+    }
+    return String(format: "onboarding.celebration.title.named".localized, trimmed)
   }
 
   var body: some View {
@@ -40,7 +43,7 @@ struct OnboardingCelebrationScreen: View {
             .padding(.top, 24)
             .padding(.bottom, 12)
 
-          Text("\(displayName) Commitment")
+          Text(commitmentTitle)
             .font(.appHeadlineSmallEmphasised)
             .foregroundColor(.white)
             .multilineTextAlignment(.center)

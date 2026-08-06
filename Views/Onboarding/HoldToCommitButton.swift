@@ -39,7 +39,9 @@ struct HoldToCommitButton: View {
       .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isHolding)
       .contentShape(Circle())
 
-      Text(holdProgress >= 1.0 ? "Committed" : "Hold to commit")
+      Text(holdProgress >= 1.0
+        ? "onboarding.commit.hold.done".localized
+        : "onboarding.commit.hold.label".localized)
         .font(.appHeadlineSmallEmphasised)
         .foregroundColor(.white)
     }
@@ -63,8 +65,12 @@ struct HoldToCommitButton: View {
           }
         }
     )
-    .accessibilityLabel(holdProgress >= 1.0 ? "Committed" : "Hold to commit")
-    .accessibilityHint("Press and hold for \(String(format: "%.1f", holdDuration)) seconds to commit")
+    .accessibilityLabel(
+      holdProgress >= 1.0
+        ? "onboarding.commit.hold.done".localized
+        : "onboarding.commit.hold.label".localized)
+    .accessibilityHint(
+      String(format: "onboarding.commit.hold.a11yHint".localized, Double(holdDuration)))
   }
 
   private func startHoldTimer() {

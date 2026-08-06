@@ -15,7 +15,7 @@ struct OnboardingIntroScreen: View {
       MascotPlaceholderView(size: 100)
         .padding(.bottom, 24)
 
-      Text("I'm here to help you build habits that actually stick — no pressure, no guilt.")
+      Text("onboarding.intro.body".localized)
         .font(.appBodyExtraLarge)
         .foregroundColor(.white)
         .multilineTextAlignment(.center)
@@ -24,7 +24,7 @@ struct OnboardingIntroScreen: View {
 
       Spacer()
 
-      OnboardingButton.primary(text: "Continue") {
+      OnboardingButton.primary(text: "onboarding.intro.cta.continue".localized) {
         viewModel.goToNext()
       }
       .padding(.horizontal, 20)

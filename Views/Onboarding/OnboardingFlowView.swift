@@ -10,14 +10,14 @@ struct OnboardingFlowView: View {
 
   private var currentFeatureTitle: String {
     viewModel.currentScreen == 1
-      ? "Build habits. Break bad ones."
-      : "Progress counts, not perfection"
+      ? "onboarding.feature.home.title".localized
+      : "onboarding.feature.progress.title".localized
   }
 
   private var currentFeatureSubtitle: String {
     viewModel.currentScreen == 1
-      ? "You don't need a perfect plan. Just one small habit is enough to begin."
-      : "Track habits your way, celebrate small wins, and keep going — even on hard days."
+      ? "onboarding.feature.home.subtitle".localized
+      : "onboarding.feature.progress.subtitle".localized
   }
 
   var body: some View {
@@ -33,15 +33,15 @@ struct OnboardingFlowView: View {
           OnboardingFeatureScreen(
             viewModel: viewModel,
             videoName: "Onboarding-Home",
-            title: "Build habits. Break bad ones.",
-            subtitle: "You don't need a perfect plan. Just one small habit is enough to begin."
+            title: "onboarding.feature.home.title".localized,
+            subtitle: "onboarding.feature.home.subtitle".localized
           )
         case 2:
           OnboardingFeatureScreen(
             viewModel: viewModel,
             videoName: "Onboarding-Progress",
-            title: "Progress counts, not perfection",
-            subtitle: "Track habits your way, celebrate small wins, and keep going — even on hard days."
+            title: "onboarding.feature.progress.title".localized,
+            subtitle: "onboarding.feature.progress.subtitle".localized
           )
         case 3:
           OnboardingNameInputScreen(viewModel: viewModel)
@@ -125,7 +125,7 @@ struct OnboardingFlowView: View {
             .allowsHitTesting(false)
 
           // Continue button
-          OnboardingButton.primary(text: "Continue") {
+          OnboardingButton.primary(text: "onboarding.feature.cta.continue".localized) {
             viewModel.goToNext()
           }
           .padding(.horizontal, 20)
