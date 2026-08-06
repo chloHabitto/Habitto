@@ -101,8 +101,8 @@ struct SubscriptionView: View {
       .sheet(isPresented: $showingTermsConditions) {
         TermsConditionsView(initialTab: selectedLegalTab)
       }
-      .alert("Restore Purchase", isPresented: $showingRestoreAlert) {
-        Button("OK", role: .cancel) {
+      .alert("more.subscription.restorePurchase".localized, isPresented: $showingRestoreAlert) {
+        Button("common.ok".localized, role: .cancel) {
           restoreMessage = nil
         }
       } message: {
@@ -110,8 +110,8 @@ struct SubscriptionView: View {
           Text(message)
         }
       }
-      .alert("Purchase", isPresented: $showingPurchaseAlert) {
-        Button("OK", role: .cancel) {
+      .alert("more.subscription.purchase".localized, isPresented: $showingPurchaseAlert) {
+        Button("common.ok".localized, role: .cancel) {
           purchaseMessage = nil
         }
       } message: {
@@ -197,12 +197,15 @@ struct SubscriptionView: View {
     }
   }
   
-  private let reviews: [Review] = [
-    Review(id: "1", text: "This app transformed my daily routine. Premium features are worth it!"),
-    Review(id: "2", text: "Best habit tracker I've used. The insights are incredible."),
-    Review(id: "3", text: "Love vacation mode! Perfect for breaks without losing my streak."),
-    Review(id: "4", text: "Unlimited habits is a game changer. Highly recommend premium!")
-  ]
+  @MainActor
+  private var reviews: [Review] {
+    [
+      Review(id: "1", text: "more.subscription.review1".localized),
+      Review(id: "2", text: "more.subscription.review2".localized),
+      Review(id: "3", text: "more.subscription.review3".localized),
+      Review(id: "4", text: "more.subscription.review4".localized)
+    ]
+  }
   
   // Create infinite loop by duplicating first and last items
   private var infiniteReviews: [Review] {
@@ -211,14 +214,14 @@ struct SubscriptionView: View {
   
   private var headerText: some View {
     VStack(spacing: 0) {
-      Text("Unlock your full Habitto ")
+      Text("more.subscription.headerUnlock".localized)
         .font(.appBodyLargeEmphasised)
         .foregroundColor(.text04)
       
-      (Text("experience with ")
+      (Text("more.subscription.headerExperienceWith".localized)
          .font(.appBodyLargeEmphasised)
          .foregroundColor(.text04) +
-       Text("Premium")
+       Text("common.premium".localized)
          .font(.appTitleLargeEmphasised)
          .fontWeight(.bold)
          .foregroundColor(.primary))
@@ -334,7 +337,7 @@ struct SubscriptionView: View {
         VStack(spacing: 16) {
           ProgressView()
             .scaleEffect(1.2)
-          Text("Loading prices...")
+          Text("more.subscription.loadingPrices".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
         }
@@ -346,7 +349,7 @@ struct SubscriptionView: View {
           Image(systemName: "exclamationmark.triangle")
             .font(.system(size: 32))
             .foregroundColor(.text03)
-          Text("Failed to load prices")
+          Text("more.subscription.failedToLoadPrices".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
           Text(error)
@@ -358,7 +361,7 @@ struct SubscriptionView: View {
               await loadProducts()
             }
           }) {
-            Text("Retry")
+            Text("shared.toast.retry".localized)
               .font(.appBodyMedium)
               .foregroundColor(.primary)
               .padding(.horizontal, 24)
@@ -375,10 +378,10 @@ struct SubscriptionView: View {
         subscriptionOptionCard(
           option: .lifetime,
           emoji: "",
-          title: "Lifetime Access",
-          length: "Lifetime",
+          title: "more.subscription.lifetimeAccess".localized,
+          length: "more.subscription.lifetime".localized,
           price: priceString(for: .lifetime),
-          badge: "Popular",
+          badge: "more.subscription.popular".localized,
           showBadge: true,
           showCrossedPrice: false
         )
@@ -387,11 +390,11 @@ struct SubscriptionView: View {
         subscriptionOptionCard(
           option: .annual,
           emoji: "",
-          title: "Annual",
-          length: "1 year",
+          title: "more.subscription.annual".localized,
+          length: "more.subscription.lengthYear".localized,
           price: priceString(for: .annual),
           originalPrice: nil,
-          badge: savingsPercentage() != nil ? "\(savingsPercentage()!)% off" : nil,
+          badge: savingsPercentage() != nil ? String(format: "more.subscription.percentOff".localized, savingsPercentage()!) : nil,
           showBadge: false, // ✅ Hidden: 50% off badge
           showCrossedPrice: false
         )
@@ -400,8 +403,8 @@ struct SubscriptionView: View {
         subscriptionOptionCard(
           option: .monthly,
           emoji: "",
-          title: "Monthly",
-          length: "1 month",
+          title: "more.subscription.monthly".localized,
+          length: "more.subscription.lengthMonth".localized,
           price: priceString(for: .monthly),
           badge: nil,
           showBadge: false,
@@ -454,7 +457,7 @@ struct SubscriptionView: View {
             }
             
             if isCurrentPlan {
-              Text("Current Plan")
+              Text("more.subscription.currentPlan".localized)
                 .font(SwiftUI.Font.system(size: 10, weight: .semibold))
                 .foregroundColor(.onPrimary)
                 .padding(.horizontal, 8)
@@ -570,20 +573,20 @@ struct SubscriptionView: View {
       VStack(spacing: 0) {
         // Table header
         HStack(spacing: 0) {
-          Text("Benefits")
+          Text("more.subscription.benefits".localized)
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text04)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 16)
             .background(Color.clear)
           
-          Text("Free")
+          Text("common.free".localized)
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text04)
             .frame(width: 80, alignment: .center)
             .background(Color.clear)
           
-          Text("Premium")
+          Text("common.premium".localized)
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text04)
             .frame(width: 100, alignment: .center)
@@ -666,7 +669,7 @@ struct SubscriptionView: View {
   
   private var ctaButton: some View {
     HabittoButton.largeFillPrimary(
-      text: isPurchasing ? "Processing..." : "Let's go!",
+      text: isPurchasing ? "more.subscription.processing".localized : "more.subscription.letsGo".localized,
       state: isPurchasing ? .loading : .default
     ) {
       Task {
@@ -688,7 +691,7 @@ struct SubscriptionView: View {
     HabittoButton(
       size: .medium,
       style: .outline,
-      content: .text(isRestoring ? "Restoring..." : "Restore Purchases"),
+      content: .text(isRestoring ? "more.subscription.restoring".localized : "more.subscription.restorePurchases".localized),
       state: isRestoring ? .loading : .default
     ) {
       Task {
@@ -706,7 +709,7 @@ struct SubscriptionView: View {
         openAppleStandardEULA()
       }) {
         HStack {
-          Text("Terms of Use")
+          Text("more.termsOfUse".localized)
             .font(.appBodySmall)
             .foregroundColor(.primary)
           
@@ -727,7 +730,7 @@ struct SubscriptionView: View {
         openPrivacyPolicy()
       }) {
         HStack {
-          Text("Privacy Policy")
+          Text("more.privacyPolicy".localized)
             .font(.appBodySmall)
             .foregroundColor(.primary)
           
@@ -751,7 +754,7 @@ struct SubscriptionView: View {
       Button(action: {
         openAppleStandardEULA()
       }) {
-        Text("Terms of Use")
+        Text("more.termsOfUse".localized)
           .font(.appBodySmall)
           .foregroundColor(Color("appText04"))
           .underline()
@@ -765,7 +768,7 @@ struct SubscriptionView: View {
       Button(action: {
         openPrivacyPolicy()
       }) {
-        Text("Privacy Policy")
+        Text("more.privacyPolicy".localized)
           .font(.appBodySmall)
           .foregroundColor(Color("appText04"))
           .underline()
@@ -776,19 +779,19 @@ struct SubscriptionView: View {
   
   private var subscriptionTerms: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("- Payment will be charged to your Apple ID account at confirmation of purchase")
+      Text("more.subscription.legalCharge".localized)
         .font(.appBodySmall)
         .foregroundColor(Color("appText05"))
       
-      Text("- Subscription automatically renews unless canceled at least 24 hours before the end of the current period")
+      Text("more.subscription.legalRenew".localized)
         .font(.appBodySmall)
         .foregroundColor(Color("appText05"))
       
-      Text("- Your account will be charged for renewal within 24 hours prior to the end of the current period")
+      Text("more.subscription.legalRenewCharge".localized)
         .font(.appBodySmall)
         .foregroundColor(Color("appText05"))
       
-      Text("- You can manage and cancel your subscriptions by going to your App Store account settings after purchase")
+      Text("more.subscription.legalManage".localized)
         .font(.appBodySmall)
         .foregroundColor(Color("appText05"))
     }
@@ -881,7 +884,7 @@ struct SubscriptionView: View {
       self.isLoadingProducts = false
       
       if loadedProducts.isEmpty {
-        self.productLoadError = "No products available. Please check your internet connection."
+        self.productLoadError = "more.subscription.noProducts".localized
       }
     }
   }
@@ -919,9 +922,9 @@ struct SubscriptionView: View {
     case .lifetime:
       return product.displayPrice
     case .annual:
-      return "\(product.displayPrice)/year"
+      return String(format: "more.subscription.pricePerYear".localized, product.displayPrice)
     case .monthly:
-      return "\(product.displayPrice)/month"
+      return String(format: "more.subscription.pricePerMonth".localized, product.displayPrice)
     }
   }
   
@@ -992,29 +995,32 @@ struct SubscriptionView: View {
     }
   }
   
-  private let subscriptionFeatures: [SubscriptionFeature] = [
-    SubscriptionFeature(
-      title: "Unlimited Habits",
-      freeText: "3 max",
-      isFreeAvailable: true,
-      isPremiumAvailable: true
-    ),
-    SubscriptionFeature(
-      title: "Progress Insights",
-      isFreeAvailable: true,
-      isPremiumAvailable: true
-    ),
-    SubscriptionFeature(
-      title: "Vacation Mode",
-      isFreeAvailable: false,
-      isPremiumAvailable: true
-    ),
-    SubscriptionFeature(
-      title: "All Future Features",
-      isFreeAvailable: false,
-      isPremiumAvailable: true
-    )
-  ]
+  @MainActor
+  private var subscriptionFeatures: [SubscriptionFeature] {
+    [
+      SubscriptionFeature(
+        title: "more.subscription.featureUnlimitedHabits".localized,
+        freeText: "more.subscription.featureUnlimitedHabitsFree".localized,
+        isFreeAvailable: true,
+        isPremiumAvailable: true
+      ),
+      SubscriptionFeature(
+        title: "more.subscription.featureProgressInsights".localized,
+        isFreeAvailable: true,
+        isPremiumAvailable: true
+      ),
+      SubscriptionFeature(
+        title: "more.subscription.featureVacationMode".localized,
+        isFreeAvailable: false,
+        isPremiumAvailable: true
+      ),
+      SubscriptionFeature(
+        title: "more.subscription.featureAllFuture".localized,
+        isFreeAvailable: false,
+        isPremiumAvailable: true
+      )
+    ]
+  }
 }
 
 // MARK: - SubscriptionOption
