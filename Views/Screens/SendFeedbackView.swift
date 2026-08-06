@@ -83,7 +83,7 @@ struct SendFeedbackView: View {
 
   @Environment(\.dismiss) private var dismiss
 
-  private let recipientEmail = "chloe@habitto.nl"
+  private let recipientEmail = "chloe.dev.main@gmail.com"
   private let emailSubject = "App Feedback"
   private let emailBody = "Hello, I'd like to share some feedback:\n\n"
 
