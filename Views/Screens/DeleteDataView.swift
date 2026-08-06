@@ -398,12 +398,13 @@ enum DeleteError: Error, LocalizedError {
 
   // MARK: Internal
 
+  /// Uses String Catalog lookup (nonisolated) — LocalizedError may be read off the main actor.
   var errorDescription: String? {
     switch self {
     case .noOptionSelected:
-      "more.deleteData.error.noOptionSelected".localized
+      String(localized: "more.deleteData.error.noOptionSelected")
     case .allDataDeletionFailed:
-      "more.deleteData.error.allDataDeletionFailed".localized
+      String(localized: "more.deleteData.error.allDataDeletionFailed")
     }
   }
 }

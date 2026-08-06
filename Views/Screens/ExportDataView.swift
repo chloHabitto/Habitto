@@ -15,6 +15,8 @@ struct ExportDataView: View {
 
     // MARK: Internal
 
+    /// Display strings are resolved on the main actor (`.localized` → LocalizationManager).
+    @MainActor
     var displayName: String {
       switch self {
       case .habits: "more.exportData.type.habits.name".localized
@@ -35,6 +37,7 @@ struct ExportDataView: View {
       }
     }
 
+    @MainActor
     var estimatedSize: String {
       switch self {
       case .habits: "more.exportData.type.habits.size".localized
@@ -45,6 +48,7 @@ struct ExportDataView: View {
       }
     }
 
+    @MainActor
     var description: String {
       switch self {
       case .habits: "more.exportData.type.habits.description".localized
@@ -64,6 +68,7 @@ struct ExportDataView: View {
 
     // MARK: Internal
 
+    @MainActor
     var displayName: String {
       switch self {
       case .last30Days: "more.exportData.range.last30Days".localized
@@ -73,6 +78,7 @@ struct ExportDataView: View {
       }
     }
 
+    @MainActor
     var description: String {
       switch self {
       case .last30Days: "more.exportData.range.last30Days.description".localized
@@ -90,6 +96,7 @@ struct ExportDataView: View {
 
     // MARK: Internal
 
+    @MainActor
     var displayName: String {
       switch self {
       case .json: "more.exportData.format.json".localized
@@ -98,6 +105,7 @@ struct ExportDataView: View {
       }
     }
 
+    @MainActor
     var description: String {
       switch self {
       case .json: "more.exportData.format.json.description".localized
@@ -1536,26 +1544,27 @@ enum ExportError: Error, LocalizedError {
 
   // MARK: Internal
 
+  /// Uses String Catalog lookup (nonisolated) — LocalizedError may be read off the main actor.
   var errorDescription: String? {
     switch self {
     case .noDataTypesSelected:
-      "more.exportData.error.noDataTypesSelected".localized
+      String(localized: "more.exportData.error.noDataTypesSelected")
     case .invalidFormat:
-      "more.exportData.error.invalidFormat".localized
+      String(localized: "more.exportData.error.invalidFormat")
     case .invalidDateRange:
-      "more.exportData.error.invalidDateRange".localized
+      String(localized: "more.exportData.error.invalidDateRange")
     case .emptyExportData:
-      "more.exportData.error.emptyExportData".localized
+      String(localized: "more.exportData.error.emptyExportData")
     case .exportTooLarge:
-      "more.exportData.error.exportTooLarge".localized
+      String(localized: "more.exportData.error.exportTooLarge")
     case .fileNotCreated:
-      "more.exportData.error.fileNotCreated".localized
+      String(localized: "more.exportData.error.fileNotCreated")
     case .invalidFileSize:
-      "more.exportData.error.invalidFileSize".localized
+      String(localized: "more.exportData.error.invalidFileSize")
     case .dataFilteringFailed:
-      "more.exportData.error.dataFilteringFailed".localized
+      String(localized: "more.exportData.error.dataFilteringFailed")
     case .formatGenerationFailed:
-      "more.exportData.error.formatGenerationFailed".localized
+      String(localized: "more.exportData.error.formatGenerationFailed")
     }
   }
 }
