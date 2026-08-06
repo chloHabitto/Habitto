@@ -22,10 +22,19 @@ final class LocalizationManager: ObservableObject {
   // MARK: - Initialization
   
   private init() {
+    // Ensure process-level English override is applied even if this singleton
+    // is touched before HabittoApp.init (e.g. from AppDelegate).
+    FeatureFlags.applyLocalizationLanguageOverrideIfNeeded()
+
     if FeatureFlags.inAppLanguageSwitchEnabled {
       // In-app override: load language from I18nPreferencesManager
       currentLanguage = I18nPreferencesManager.shared.preferences.languageTag
       loadBundle(for: currentLanguage)
+    } else if !FeatureFlags.koreanLocalizationEnabled {
+      // Temporary: serve English for all users while Korean translations are paused.
+      // Flip FeatureFlags.koreanLocalizationEnabled to true to resume system-language Korean.
+      currentLanguage = "en"
+      loadBundle(for: "en")
     } else {
       // Follow iPhone system language (no .lproj override)
       currentLanguage = Self.systemLanguageCode
@@ -40,7 +49,7 @@ final class LocalizationManager: ObservableObject {
       object: nil
     )
     
-    print("🌍 LocalizationManager: Initialized with language \(currentLanguage) (inAppSwitch=\(FeatureFlags.inAppLanguageSwitchEnabled))")
+    print("🌍 LocalizationManager: Initialized with language \(currentLanguage) (inAppSwitch=\(FeatureFlags.inAppLanguageSwitchEnabled), koreanEnabled=\(FeatureFlags.koreanLocalizationEnabled))")
   }
   
   deinit {
@@ -51,11 +60,14 @@ final class LocalizationManager: ObservableObject {
   
   /// Get localized string for key
   func localizedString(_ key: String) -> String {
-    // System-language mode: let iOS pick the matching .lproj via Bundle.main
-    guard FeatureFlags.inAppLanguageSwitchEnabled, let bundle = bundle else {
-      return NSLocalizedString(key, comment: "")
+    // In-app language switch, or forced-English while Korean is paused: use explicit bundle
+    if (FeatureFlags.inAppLanguageSwitchEnabled || !FeatureFlags.koreanLocalizationEnabled),
+       let bundle
+    {
+      return bundle.localizedString(forKey: key, value: nil, table: nil)
     }
-    return bundle.localizedString(forKey: key, value: nil, table: nil)
+    // System-language mode: let iOS pick the matching localization via Bundle.main
+    return NSLocalizedString(key, comment: "")
   }
   
   /// Update the current language

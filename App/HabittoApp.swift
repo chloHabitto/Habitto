@@ -25,6 +25,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
   private static var hasCompletedLaunch = false
   
   override init() {
+    // Earliest process hook: force English before any string lookup if Korean is paused.
+    FeatureFlags.applyLocalizationLanguageOverrideIfNeeded()
     super.init()
     guard !Self.hasLoggedInit else { return }
     Self.hasLoggedInit = true
@@ -307,6 +309,10 @@ struct HabittoApp: App {
   // MARK: Internal
   
   init() {
+    // Must run before any LocalizationManager / string lookup so Bundle.main
+    // and String(localized:) also serve English while Korean is paused.
+    FeatureFlags.applyLocalizationLanguageOverrideIfNeeded()
+
     _notificationManager = StateObject(wrappedValue: NotificationManager.shared)
     _habitRepository = StateObject(wrappedValue: HabitRepository.shared)
     _migrationService = StateObject(wrappedValue: MigrationService.shared)
