@@ -17,37 +17,37 @@ struct SecureHabitDetailsView: View {
     NavigationView {
       Form {
         // Basic Information Section
-        Section("Basic Information") {
+        Section("habits.secureDetail.section.basicInfo".localized) {
           HStack {
-            Text("Name")
+            Text("habits.secureDetail.label.name".localized)
             Spacer()
             Text(habit.name)
               .foregroundColor(.secondary)
           }
 
           HStack {
-            Text("Description")
+            Text("habits.secureDetail.label.description".localized)
             Spacer()
             Text(habit.description)
               .foregroundColor(.secondary)
           }
 
           HStack {
-            Text("Type")
+            Text("habits.secureDetail.label.type".localized)
             Spacer()
-            Text(habit.habitType.rawValue)
+            Text(habitTypeDisplayName(habit.habitType))
               .foregroundColor(.secondary)
           }
         }
 
         // Encrypted Fields Section
-        Section("Personal Notes") {
+        Section("habits.secureDetail.section.personalNotes".localized) {
           VStack(alignment: .leading, spacing: 8) {
             HStack {
-              Text("Notes")
+              Text("habits.secureDetail.label.notes".localized)
                 .font(.headline)
               Spacer()
-              Button("Encryption Info") {
+              Button("habits.secureDetail.button.encryptionInfo".localized) {
                 showingEncryptionInfo = true
               }
               .font(.caption)
@@ -55,7 +55,7 @@ struct SecureHabitDetailsView: View {
             }
 
             if isLoading {
-              ProgressView("Loading encrypted data...")
+              ProgressView("habits.secureDetail.progress.loadingEncrypted".localized)
                 .frame(maxWidth: .infinity, alignment: .center)
             } else {
               TextEditor(text: $notes)
@@ -74,11 +74,11 @@ struct SecureHabitDetailsView: View {
           }
 
           VStack(alignment: .leading, spacing: 8) {
-            Text("Personal Goals")
+            Text("habits.secureDetail.label.personalGoals".localized)
               .font(.headline)
 
             if isLoading {
-              ProgressView("Loading encrypted data...")
+              ProgressView("habits.secureDetail.progress.loadingEncrypted".localized)
                 .frame(maxWidth: .infinity, alignment: .center)
             } else {
               TextEditor(text: $personalGoals)
@@ -91,11 +91,11 @@ struct SecureHabitDetailsView: View {
           }
 
           VStack(alignment: .leading, spacing: 8) {
-            Text("Motivation")
+            Text("habits.secureDetail.label.motivation".localized)
               .font(.headline)
 
             if isLoading {
-              ProgressView("Loading encrypted data...")
+              ProgressView("habits.secureDetail.progress.loadingEncrypted".localized)
                 .frame(maxWidth: .infinity, alignment: .center)
             } else {
               TextEditor(text: $motivation)
@@ -109,65 +109,67 @@ struct SecureHabitDetailsView: View {
         }
 
         // Statistics Section
-        Section("Statistics") {
+        Section("habits.secureDetail.section.statistics".localized) {
           HStack {
-            Text("Current Streak")
+            Text("habits.secureDetail.label.currentStreak".localized)
             Spacer()
             Text(LocalizationManager.shared.localizedStreakDays(habit.streak))
               .foregroundColor(.secondary)
           }
 
           HStack {
-            Text("Baseline")
+            Text("habits.secureDetail.label.baseline".localized)
             Spacer()
             Text("\(habit.baseline)")
               .foregroundColor(.secondary)
           }
 
           HStack {
-            Text("Target")
+            Text("habits.secureDetail.label.target".localized)
             Spacer()
             Text("\(habit.target)")
               .foregroundColor(.secondary)
           }
 
           HStack {
-            Text("Completion Rate")
+            Text("habits.secureDetail.label.completionRate".localized)
             Spacer()
-            Text("\(calculateCompletionRate())%")
+            Text(String(
+              format: "habits.secureDetail.format.completionRatePercent".localized,
+              calculateCompletionRate()))
               .foregroundColor(.secondary)
           }
         }
 
         // Security Information Section
-        Section("Security") {
+        Section("habits.secureDetail.section.security".localized) {
           HStack {
             Image(systemName: "lock.fill")
               .foregroundColor(.green)
-            Text("Sensitive fields are encrypted")
+            Text("habits.secureDetail.security.fieldsEncrypted".localized)
               .font(.caption)
           }
 
           HStack {
             Image(systemName: "key.fill")
               .foregroundColor(.blue)
-            Text("Encryption key stored in Keychain")
+            Text("habits.secureDetail.security.keychain".localized)
               .font(.caption)
           }
 
           HStack {
             Image(systemName: "faceid")
               .foregroundColor(.purple)
-            Text("Biometric authentication required")
+            Text("habits.secureDetail.security.biometric".localized)
               .font(.caption)
           }
         }
       }
-      .navigationTitle("Habit Details")
+      .navigationTitle("habits.secureDetail.navTitle".localized)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Save") {
+          Button("common.save".localized) {
             saveChanges()
           }
           .disabled(isLoading)
@@ -176,11 +178,10 @@ struct SecureHabitDetailsView: View {
       .onAppear {
         loadEncryptedData()
       }
-      .alert("Encryption Information", isPresented: $showingEncryptionInfo) {
-        Button("OK") { }
+      .alert("habits.secureDetail.alert.encryptionInfoTitle".localized, isPresented: $showingEncryptionInfo) {
+        Button("common.ok".localized) { }
       } message: {
-        Text(
-          "Your personal notes, goals, and motivation are encrypted using AES-256-GCM encryption. The encryption key is stored securely in the iOS Keychain and requires biometric authentication (Face ID or Touch ID) to access.")
+        Text("habits.secureDetail.alert.encryptionInfoMessage".localized)
       }
     }
   }
@@ -216,7 +217,9 @@ struct SecureHabitDetailsView: View {
         }
       } catch {
         await MainActor.run {
-          errorMessage = "Failed to load encrypted data: \(error.localizedDescription)"
+          errorMessage = String(
+            format: "habits.secureDetail.error.loadFailed".localized,
+            error.localizedDescription)
           isLoading = false
         }
       }
@@ -242,7 +245,9 @@ struct SecureHabitDetailsView: View {
         }
       } catch {
         await MainActor.run {
-          errorMessage = "Failed to save changes: \(error.localizedDescription)"
+          errorMessage = String(
+            format: "habits.secureDetail.error.saveFailed".localized,
+            error.localizedDescription)
           isLoading = false
         }
       }
@@ -256,6 +261,15 @@ struct SecureHabitDetailsView: View {
 
     let completedDays = habit.completionHistory.count
     return (completedDays * 100) / totalDays
+  }
+
+  private func habitTypeDisplayName(_ type: HabitType) -> String {
+    switch type {
+    case .formation:
+      return "habits.type.habitBuilding".localized
+    case .breaking:
+      return "habits.type.habitBreaking".localized
+    }
   }
 }
 
@@ -272,7 +286,9 @@ struct EncryptionStatusView: View {
         .font(.system(size: 48))
         .foregroundColor(isEncryptionAvailable ? .green : .orange)
 
-      Text(isEncryptionAvailable ? "Encryption Available" : "Encryption Unavailable")
+      Text(isEncryptionAvailable
+        ? "habits.secureDetail.encryptionStatus.available".localized
+        : "habits.secureDetail.encryptionStatus.unavailable".localized)
         .font(.title2)
         .fontWeight(.bold)
 
@@ -284,7 +300,7 @@ struct EncryptionStatusView: View {
       }
 
       if !isEncryptionAvailable {
-        Button("Check Again") {
+        Button("habits.secureDetail.encryptionStatus.checkAgain".localized) {
           checkEncryptionStatus()
         }
         .buttonStyle(.bordered)

@@ -14,7 +14,7 @@ struct AccountDeletionConfirmationView: View {
         ScrollView {
           VStack(spacing: 24) {
             // Description text
-            Text("This action cannot be undone")
+            Text("more.accountDeletion.banner".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text05)
               .frame(maxWidth: .infinity, alignment: .leading)
@@ -27,13 +27,12 @@ struct AccountDeletionConfirmationView: View {
                 .font(.system(size: 50))
                 .foregroundColor(.red)
 
-              Text("Permanent Account Deletion")
+              Text("more.accountDeletion.headline".localized)
                 .font(.title2)
                 .fontWeight(.bold)
                 .multilineTextAlignment(.center)
 
-              Text(
-                "Deleting your account will permanently remove all your data, habits, and progress. This action cannot be undone.")
+              Text("more.accountDeletion.bodyWarning".localized)
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -45,7 +44,7 @@ struct AccountDeletionConfirmationView: View {
             // Data Preview
             if let preview = deletionService.getDeletionPreview() {
               VStack(spacing: 16) {
-                Text("Data to be Deleted")
+                Text("more.accountDeletion.previewTitle".localized)
                   .font(.headline)
                   .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -53,7 +52,7 @@ struct AccountDeletionConfirmationView: View {
                   HStack {
                     Image(systemName: "list.bullet")
                       .foregroundColor(.blue)
-                    Text("Habits Created")
+                    Text("more.accountDeletion.habitsCreated".localized)
                     Spacer()
                     Text("\(preview.habitCount)")
                       .fontWeight(.semibold)
@@ -62,7 +61,7 @@ struct AccountDeletionConfirmationView: View {
                   HStack {
                     Image(systemName: "clock.arrow.circlepath")
                       .foregroundColor(.green)
-                    Text("Backups Available")
+                    Text("more.accountDeletion.backupsAvailable".localized)
                     Spacer()
                     Text("\(preview.backupCount)")
                       .fontWeight(.semibold)
@@ -71,7 +70,7 @@ struct AccountDeletionConfirmationView: View {
                   HStack {
                     Image(systemName: "envelope")
                       .foregroundColor(.orange)
-                    Text("Account Email")
+                    Text("more.accountDeletion.accountEmail".localized)
                     Spacer()
                     Text(preview.userEmail)
                       .fontWeight(.semibold)
@@ -89,13 +88,12 @@ struct AccountDeletionConfirmationView: View {
               HStack {
                 Image(systemName: "info.circle.fill")
                   .foregroundColor(.blue)
-                Text("Re-registration")
+                Text("more.accountDeletion.reregTitle".localized)
                   .font(.headline)
                 Spacer()
               }
 
-              Text(
-                "After deletion, you can create a new account with the same email address if you choose to. However, all your previous data will be permanently lost.")
+              Text("more.accountDeletion.reregBody".localized)
                 .font(.body)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -127,7 +125,7 @@ struct AccountDeletionConfirmationView: View {
             HabittoButton(
               size: .large,
               style: .fillDestructive,
-              content: .text("Delete My Account"),
+              content: .text("more.accountDeletion.deleteMyAccount".localized),
               action: {
                 showingFinalConfirmation = true
               })
@@ -137,7 +135,7 @@ struct AccountDeletionConfirmationView: View {
         .padding(.bottom, 20)
       }
       .background(Color.surface2)
-      .navigationTitle("Delete Account")
+      .navigationTitle("more.account.deleteAccount".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -153,35 +151,33 @@ struct AccountDeletionConfirmationView: View {
         }
       }
     }
-    .alert("Final Confirmation", isPresented: $showingFinalConfirmation) {
-      Button("Cancel", role: .cancel) { }
-      Button("Delete Account", role: .destructive) {
+    .alert("more.accountDeletion.finalConfirmationTitle".localized, isPresented: $showingFinalConfirmation) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("more.account.deleteAccount".localized, role: .destructive) {
         Task {
           await performAccountDeletion()
         }
       }
     } message: {
-      Text(
-        "Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.")
+      Text("more.accountDeletion.finalConfirmationMessage".localized)
     }
-    .alert("Deletion Error", isPresented: $showingErrorAlert) {
-      Button("OK") {
+    .alert("more.accountDeletion.deletionErrorTitle".localized, isPresented: $showingErrorAlert) {
+      Button("common.ok".localized) {
         deletionService.deletionError = nil
         showingErrorAlert = false
       }
     } message: {
-      Text(deletionService.deletionError ?? "An unknown error occurred")
+      Text(deletionService.deletionError ?? "more.accountDeletion.unknownError".localized)
     }
     .onChange(of: deletionService.deletionError) { _, newValue in
       showingErrorAlert = newValue != nil
     }
-    .alert("Account Deleted Successfully", isPresented: $deletionSuccessful) {
-      Button("OK") {
+    .alert("more.accountDeletion.successTitle".localized, isPresented: $deletionSuccessful) {
+      Button("common.ok".localized) {
         dismiss()
       }
     } message: {
-      Text(
-        "Your account has been signed out and all local data has been cleared. You can now create a new account if desired.")
+      Text("more.accountDeletion.successMessage".localized)
     }
   }
 
@@ -211,7 +207,7 @@ struct AccountDeletionConfirmationView: View {
     let isAuthFresh = await deletionService.checkAuthenticationFreshness()
     if !isAuthFresh {
       DispatchQueue.main.async {
-        deletionService.deletionError = "Your authentication session has expired. Please sign out and sign in again, then try deleting your account."
+        deletionService.deletionError = "more.accountDeletion.authExpired".localized
         isDeleting = false
       }
       return
@@ -237,11 +233,10 @@ struct AccountDeletionConfirmationView: View {
       print("❌ Error localized description: \(error.localizedDescription)")
 
       // Set a more detailed error message for debugging
-      let detailedError = """
-      Account deletion failed: \(error.localizedDescription)
-
-      Error details: \(String(describing: error))
-      """
+      let detailedError = String(
+        format: "more.accountDeletion.failedDetail".localized,
+        error.localizedDescription,
+        String(describing: error))
 
       DispatchQueue.main.async {
         deletionService.deletionError = detailedError

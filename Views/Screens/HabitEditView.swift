@@ -40,9 +40,9 @@ struct HabitEditView: View {
   @State private var showingTargetFrequencySheet = false
 
   /// Cached unit display strings to avoid recomputation and re-render forcing
-  @State private var goalUnitDisplay: String = "time"
-  @State private var baselineUnitDisplay: String = "time"
-  @State private var targetUnitDisplay: String = "time"
+  @State private var goalUnitDisplay: String = "habits.edit.unit.time".localized
+  @State private var baselineUnitDisplay: String = "habits.edit.unit.time".localized
+  @State private var targetUnitDisplay: String = "habits.edit.unit.time".localized
 
   // Sheet states
   @State private var showingEmojiPicker = false
@@ -101,7 +101,7 @@ struct HabitEditView: View {
   /// Unit pluralization helpers
   private func computePluralizedUnit(for numberText: String, unit: String) -> String {
     let number = Int(numberText) ?? 1
-    if number == 0 { return "time" }
+    if number == 0 { return "habits.edit.unit.time".localized }
     return pluralizedUnit(number, unit: unit)
   }
 
@@ -132,9 +132,9 @@ struct HabitEditView: View {
     let targetValue = Int(form.targetNumber) ?? 0
     if form.selectedHabitType == .breaking && baselineValue <= targetValue {
       let suggested = max(targetValue + 5, targetValue + 1)
-      return "Goal must be less than Current. Suggested Current: \(suggested)"
+      return String(format: "habits.edit.error.goalLessThanCurrent".localized, suggested)
     }
-    return "Please enter a number greater than or equal to 0"
+    return "habits.edit.error.numberGteZero".localized
   }
 
   /// Overall form validation
@@ -182,10 +182,10 @@ struct HabitEditView: View {
     VStack(spacing: 12) {
       // Name field - container with surface background and stroke (matching CreateHabitStep1View)
       VStack(alignment: .leading, spacing: 12) {
-        FormInputComponents.FormSectionHeader(title: "Name")
+        FormInputComponents.FormSectionHeader(title: "habits.edit.section.name".localized)
         
         CustomTextField(
-          placeholder: "Habit name",
+          placeholder: "habits.edit.placeholder.habitName".localized,
           text: $form.habitName,
           isFocused: $isNameFieldFocused)
       }
@@ -201,10 +201,10 @@ struct HabitEditView: View {
 
       // Description field - container with surface background and stroke (matching CreateHabitStep1View)
       VStack(alignment: .leading, spacing: 12) {
-        FormInputComponents.FormSectionHeader(title: "Description")
+        FormInputComponents.FormSectionHeader(title: "habits.edit.section.description".localized)
         
         CustomTextField(
-          placeholder: "Description (Optional)",
+          placeholder: "habits.edit.placeholder.descriptionOptional".localized,
           text: $form.habitDescription,
           isFocused: $isDescriptionFieldFocused)
       }
@@ -220,7 +220,7 @@ struct HabitEditView: View {
 
       // Colour selection (matching CreateHabitStep1View)
       HStack(spacing: 12) {
-        Text("Colour")
+        Text("habits.edit.label.colour".localized)
           .font(.appTitleMedium)
           .foregroundColor(.text02)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -253,7 +253,7 @@ struct HabitEditView: View {
 
       // Icon selection (matching CreateHabitStep1View)
       HStack(spacing: 12) {
-        Text("Icon")
+        Text("habits.edit.label.icon".localized)
           .font(.appTitleMedium)
           .foregroundColor(.text01)
           .frame(maxWidth: .infinity, alignment: .leading)
@@ -313,13 +313,13 @@ struct HabitEditView: View {
     // Goal - NEW UNIFIED APPROACH (matching CreateHabitStep2View spacing)
     if form.selectedHabitType == .formation {
       UnifiedInputElement(
-        title: "Goal",
-        description: "What do you want to achieve?",
+        title: "habits.edit.section.goal".localized,
+        description: "habits.edit.goal.descriptionFormation".localized,
         numberText: $form.goalNumber,
         unitText: goalUnitDisplay,
         frequencyText: form.goalFrequency,
         isValid: isGoalValid,
-        errorMessage: "Please enter a number greater than 0",
+        errorMessage: "habits.edit.error.numberGtZero".localized,
         onUnitTap: { showingGoalUnitSheet = true },
         onFrequencyTap: { showingGoalFrequencySheet = true },
         isFocused: $isGoalNumberFocused)
@@ -329,13 +329,13 @@ struct HabitEditView: View {
       VStack(spacing: 12) {
         // Baseline - NEW UNIFIED APPROACH
         UnifiedInputElement(
-          title: "Current",
-          description: "How much do you currently do?",
+          title: "habits.edit.section.current".localized,
+          description: "habits.edit.baseline.description".localized,
           numberText: $form.baselineNumber,
           unitText: baselineUnitDisplay,
           frequencyText: form.baselineFrequency,
           isValid: isBaselineValid,
-          errorMessage: "Please enter a number greater than 0",
+          errorMessage: "habits.edit.error.numberGtZero".localized,
           onUnitTap: { showingBaselineUnitSheet = true },
           onFrequencyTap: { showingBaselineFrequencySheet = true },
           isFocused: $isBaselineFieldFocused)
@@ -343,8 +343,8 @@ struct HabitEditView: View {
 
         // Target - NEW UNIFIED APPROACH
         UnifiedInputElement(
-          title: "Goal",
-          description: "How much do you want to reduce to?",
+          title: "habits.edit.section.goal".localized,
+          description: "habits.edit.target.description".localized,
           numberText: $form.targetNumber,
           unitText: targetUnitDisplay,
           frequencyText: form.targetFrequency,
@@ -406,12 +406,12 @@ struct HabitEditView: View {
               value: VacationManager.shared.isActive)
 
           VStack(spacing: 12) {
-            Text("Vacation Mode Active")
+            Text("create.vacation.title".localized)
               .font(.appTitleMediumEmphasised)
               .foregroundColor(.text01)
 
             Text(
-              "Habit editing is paused during vacation mode. You can edit habits when vacation mode ends.")
+              "habits.edit.vacation.message".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text02)
               .multilineTextAlignment(.center)
@@ -428,7 +428,7 @@ struct HabitEditView: View {
             HStack(spacing: 8) {
               Image(systemName: "xmark.circle.fill")
                 .font(.system(size: 16, weight: .medium))
-              Text("Close")
+              Text("habits.edit.button.close".localized)
                 .font(.appBodyMediumEmphasised)
             }
             .foregroundColor(.white)
@@ -472,7 +472,7 @@ struct HabitEditView: View {
           .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
               Spacer()
-              Button("Done") {
+              Button("common.done".localized) {
                 resignAllFocus()
               }
               .font(.appBodyMedium)
@@ -484,13 +484,13 @@ struct HabitEditView: View {
             }
             
             ToolbarItem(placement: .navigationBarTrailing) {
-              Button("Close") {
+              Button("habits.edit.button.close".localized) {
                 dismiss()
               }
               .foregroundColor(.primary)
             }
           }
-        .navigationTitle("Edit habit")
+        .navigationTitle("habits.edit.navigationTitle".localized)
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
           // Initialize cached unit display values
@@ -542,9 +542,9 @@ struct HabitEditView: View {
               form.reminders = updatedReminders
               let activeReminders = updatedReminders.filter { $0.isActive }
               if !activeReminders.isEmpty {
-                form.selectedReminder = "\(activeReminders.count) reminder\(activeReminders.count == 1 ? "" : "s")"
+                form.selectedReminder = String(localized: "habits.edit.reminder.count \(activeReminders.count)")
               } else {
-                form.selectedReminder = "No reminder"
+                form.selectedReminder = "create.reminder.noReminder".localized
               }
               showingReminderSheet = false
             })
@@ -670,20 +670,20 @@ struct HabitEditView: View {
 
   private var habitTypeSection: some View {
     VStack(alignment: .leading, spacing: 12) {
-      Text("Habit Type")
+      Text("habits.edit.section.habitType".localized)
         .font(.appTitleMedium)
         .foregroundColor(.text02)
 
       HStack(spacing: 12) {
         // Habit Building button
         FormInputComponents.HabitTypeButton(
-          title: "Habit Building",
+          title: "habits.type.habitBuilding".localized,
           isSelected: form.selectedHabitType == .formation,
           action: { form.selectedHabitType = .formation })
 
         // Habit Breaking button
         FormInputComponents.HabitTypeButton(
-          title: "Habit Breaking",
+          title: "habits.type.habitBreaking".localized,
           isSelected: form.selectedHabitType == .breaking,
           action: { form.selectedHabitType = .breaking })
       }
@@ -705,7 +705,7 @@ struct HabitEditView: View {
 
   private var saveButton: some View {
     HabittoButton.largeFillPrimary(
-      text: "Save",
+      text: "common.save".localized,
       action: saveHabit)
       .disabled(!hasChanges)
       .padding(.horizontal, 16)
@@ -751,7 +751,7 @@ struct HabitEditView: View {
   /// Helper function to handle pluralization for units
   private func pluralizedUnit(_ count: Int, unit: String) -> String {
     if unit == "time" || unit == "times" {
-      return count == 1 ? "time" : "times"
+      return count == 1 ? "habits.edit.unit.time".localized : "habits.edit.unit.times".localized
     }
     return unit
   }
@@ -888,15 +888,15 @@ struct HabitEditView: View {
   // MARK: - Helper Functions
 
   private func getIconDisplayName(_ icon: String) -> String {
-    icon == "None" ? "None" : ""
+    icon == "None" ? "create.iconPicker.none".localized : ""
   }
 
   private func getColorDisplayName(_ color: Color) -> String {
     // Use the same color definitions as ColorBottomSheet for consistency
     let colors: [(color: Color, name: String)] = [
-      (Color("pastelYellow"), "Yellow"),
-      (Color("pastelBlue"), "Blue"),
-      (Color("pastelPurple"), "Purple")
+      (Color("pastelYellow"), "create.color.yellow".localized),
+      (Color("pastelBlue"), "create.color.blue".localized),
+      (Color("pastelPurple"), "create.color.purple".localized)
     ]
 
     // Find the matching color and return its name
@@ -906,7 +906,7 @@ struct HabitEditView: View {
       }
     }
 
-    return "Blue" // Default fallback to pastelBlue
+    return "create.color.blue".localized // Default fallback to pastelBlue
   }
 }
 

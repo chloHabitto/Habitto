@@ -15067,6 +15067,1844 @@
         }
       },
       "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "habits.detail.alert.deleteHabitTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Habit"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Delete Habit"
+          }
+        }
+      },
+      "comment": "DESTRUCTIVE"
+    },
+    "habits.detail.alert.deleteHabitMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete \"%@\"? This action cannot be undone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Are you sure you want to delete \"%@\"? This action cannot be undone."
+          }
+        }
+      },
+      "comment": "DESTRUCTIVE FORMAT: habit name"
+    },
+    "habits.detail.alert.makeInactiveTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make Habit Inactive"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Make Habit Inactive"
+          }
+        }
+      }
+    },
+    "habits.detail.alert.makeInactiveConfirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make Inactive"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Make Inactive"
+          }
+        }
+      }
+    },
+    "habits.detail.alert.makeInactiveMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This habit will be inactive and doesn't appear in the home screen from today."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This habit will be inactive and doesn't appear in the home screen from today."
+          }
+        }
+      }
+    },
+    "habits.detail.alert.deleteReminderTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Reminder"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Delete Reminder"
+          }
+        }
+      },
+      "comment": "DESTRUCTIVE"
+    },
+    "habits.detail.alert.deleteReminderMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete this reminder?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Are you sure you want to delete this reminder?"
+          }
+        }
+      },
+      "comment": "DESTRUCTIVE"
+    },
+    "habits.detail.toast.difficultySaved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Difficulty saved"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Difficulty saved"
+          }
+        }
+      }
+    },
+    "habits.detail.tab.details": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Details"
+          }
+        }
+      }
+    },
+    "habits.detail.tab.progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Progress"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.seeMore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See More Progress"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "See More Progress"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.thisWeek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Week"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This Week"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.current": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Current"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.longest": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longest"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Longest"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "day"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "day"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "days"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "days"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.thisMonth": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This Month"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.daysCompleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d of %d days completed"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d of %d days completed"
+          }
+        }
+      },
+      "comment": "FORMAT: completed, total"
+    },
+    "habits.detail.progress.monthlyHistory": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly History"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Monthly History"
+          }
+        }
+      }
+    },
+    "habits.detail.difficulty.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Difficulty"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Difficulty"
+          }
+        }
+      }
+    },
+    "habits.detail.difficulty.notRated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not rated"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Not rated"
+          }
+        }
+      }
+    },
+    "habits.detail.difficulty.tapToChange": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to change"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tap to change"
+          }
+        }
+      }
+    },
+    "habits.detail.difficulty.tapToRate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap to rate"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Tap to rate"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Goal"
+          }
+        }
+      }
+    },
+    "habits.detail.reminders.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Reminders"
+          }
+        }
+      }
+    },
+    "habits.detail.reminders.off": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders off"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Reminders off"
+          }
+        }
+      }
+    },
+    "habits.detail.reminders.enable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Enable"
+          }
+        }
+      }
+    },
+    "habits.detail.reminders.empty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reminders set"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No reminders set"
+          }
+        }
+      }
+    },
+    "habits.detail.progress.forDate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress for %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Progress for %@"
+          }
+        }
+      },
+      "comment": "FORMAT: formatted date"
+    },
+    "habits.detail.active.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Active"
+          }
+        }
+      }
+    },
+    "habits.detail.active.descriptionActive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This habit is currently active and appears in your daily list"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This habit is currently active and appears in your daily list"
+          }
+        }
+      }
+    },
+    "habits.detail.active.descriptionInactive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This habit is inactive and won't appear in your daily list"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This habit is inactive and won't appear in your daily list"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.unit.times": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "times"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "times"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.format.on": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ on %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ on %@"
+          }
+        }
+      },
+      "comment": "FORMAT: amount, frequency"
+    },
+    "habits.detail.goal.format.plain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ %@"
+          }
+        }
+      },
+      "comment": "FORMAT: amount, frequency"
+    },
+    "habits.detail.goal.freq.onceAWeek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "once a week"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "once a week"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.freq.twiceAWeek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "twice a week"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "twice a week"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.freq.everyday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "everyday"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "everyday"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.freq.daysAWeek": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d days a week"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d days a week"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "habits.detail.goal.freq.onceAMonth": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "once a month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "once a month"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.freq.twiceAMonth": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "twice a month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "twice a month"
+          }
+        }
+      }
+    },
+    "habits.detail.goal.freq.daysAMonth": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d days a month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d days a month"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "habits.detail.goal.freq.everyOne": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "every %@"
+          }
+        }
+      },
+      "comment": "FORMAT: weekday"
+    },
+    "habits.detail.goal.freq.everyTwo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every %@ & %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "every %@ & %@"
+          }
+        }
+      },
+      "comment": "FORMAT: two weekdays"
+    },
+    "habits.detail.goal.freq.everyMany": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "every %@ & %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "every %@ & %@"
+          }
+        }
+      },
+      "comment": "FORMAT: comma-list, last weekday"
+    },
+    "habits.edit.error.goalLessThanCurrent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal must be less than Current. Suggested Current: %d"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Goal must be less than Current. Suggested Current: %d"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "habits.edit.error.numberGteZero": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter a number greater than or equal to 0"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Please enter a number greater than or equal to 0"
+          }
+        }
+      }
+    },
+    "habits.edit.section.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "habits.edit.placeholder.habitName": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit name"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habit name"
+          }
+        }
+      }
+    },
+    "habits.edit.section.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Description"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Description"
+          }
+        }
+      }
+    },
+    "habits.edit.placeholder.descriptionOptional": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Description (Optional)"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Description (Optional)"
+          }
+        }
+      }
+    },
+    "habits.edit.label.colour": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colour"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Colour"
+          }
+        }
+      }
+    },
+    "habits.edit.label.icon": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Icon"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Icon"
+          }
+        }
+      }
+    },
+    "habits.edit.section.goal": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Goal"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Goal"
+          }
+        }
+      }
+    },
+    "habits.edit.goal.descriptionFormation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What do you want to achieve?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "What do you want to achieve?"
+          }
+        }
+      }
+    },
+    "habits.edit.error.numberGtZero": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please enter a number greater than 0"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Please enter a number greater than 0"
+          }
+        }
+      }
+    },
+    "habits.edit.section.current": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Current"
+          }
+        }
+      }
+    },
+    "habits.edit.baseline.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much do you currently do?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "How much do you currently do?"
+          }
+        }
+      }
+    },
+    "habits.edit.target.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How much do you want to reduce to?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "How much do you want to reduce to?"
+          }
+        }
+      }
+    },
+    "habits.edit.vacation.message": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit editing is paused during vacation mode. You can edit habits when vacation mode ends."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habit editing is paused during vacation mode. You can edit habits when vacation mode ends."
+          }
+        }
+      }
+    },
+    "habits.edit.button.close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Close"
+          }
+        }
+      }
+    },
+    "habits.edit.navigationTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit habit"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Edit habit"
+          }
+        }
+      }
+    },
+    "habits.edit.reminder.count": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld reminder"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld reminders"
+                }
+              }
+            }
+          }
+        },
+        "ko": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%lld reminders"
+                }
+              }
+            }
+          }
+        }
+      },
+      "comment": "Pluralized reminder count"
+    },
+    "habits.edit.section.habitType": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit Type"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habit Type"
+          }
+        }
+      }
+    },
+    "habits.edit.unit.time": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "time"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "time"
+          }
+        }
+      }
+    },
+    "habits.edit.unit.times": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "times"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "times"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.section.basicInfo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Basic Information"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Basic Information"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Description"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Description"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.type": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Type"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.section.personalNotes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal Notes"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Personal Notes"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.notes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Notes"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.button.encryptionInfo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encryption Info"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Encryption Info"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.progress.loadingEncrypted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading encrypted data..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Loading encrypted data..."
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.personalGoals": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal Goals"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Personal Goals"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.motivation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motivation"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Motivation"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.section.statistics": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Statistics"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Statistics"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.currentStreak": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Streak"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Current Streak"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.baseline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baseline"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Baseline"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.target": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Target"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.label.completionRate": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completion Rate"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Completion Rate"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.format.completionRatePercent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d%%"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d%%"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "habits.secureDetail.section.security": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Security"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Security"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.security.fieldsEncrypted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sensitive fields are encrypted"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sensitive fields are encrypted"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.security.keychain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encryption key stored in Keychain"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Encryption key stored in Keychain"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.security.biometric": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Biometric authentication required"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Biometric authentication required"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.navTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit Details"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habit Details"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.alert.encryptionInfoTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encryption Information"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Encryption Information"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.alert.encryptionInfoMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your personal notes, goals, and motivation are encrypted using AES-256-GCM encryption. The encryption key is stored securely in the iOS Keychain and requires biometric authentication (Face ID or Touch ID) to access."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your personal notes, goals, and motivation are encrypted using AES-256-GCM encryption. The encryption key is stored securely in the iOS Keychain and requires biometric authentication (Face ID or Touch ID) to access."
+          }
+        }
+      }
+    },
+    "habits.secureDetail.error.loadFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to load encrypted data: %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Failed to load encrypted data: %@"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "habits.secureDetail.error.saveFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to save changes: %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Failed to save changes: %@"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "habits.secureDetail.encryptionStatus.available": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encryption Available"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Encryption Available"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.encryptionStatus.unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encryption Unavailable"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Encryption Unavailable"
+          }
+        }
+      }
+    },
+    "habits.secureDetail.encryptionStatus.checkAgain": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check Again"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Check Again"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.banner": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action cannot be undone"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This action cannot be undone"
+          }
+        }
+      },
+      "comment": "DATA-LOSS / LEGAL"
+    },
+    "more.accountDeletion.headline": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanent Account Deletion"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permanent Account Deletion"
+          }
+        }
+      },
+      "comment": "DATA-LOSS / LEGAL"
+    },
+    "more.accountDeletion.bodyWarning": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting your account will permanently remove all your data, habits, and progress. This action cannot be undone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deleting your account will permanently remove all your data, habits, and progress. This action cannot be undone."
+          }
+        }
+      },
+      "comment": "DATA-LOSS / LEGAL"
+    },
+    "more.accountDeletion.previewTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data to be Deleted"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Data to be Deleted"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.accountDeletion.habitsCreated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habits Created"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habits Created"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.backupsAvailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups Available"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backups Available"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.accountEmail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account Email"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Account Email"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.reregTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Re-registration"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Re-registration"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.reregBody": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After deletion, you can create a new account with the same email address if you choose to. However, all your previous data will be permanently lost."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "After deletion, you can create a new account with the same email address if you choose to. However, all your previous data will be permanently lost."
+          }
+        }
+      },
+      "comment": "DATA-LOSS / LEGAL"
+    },
+    "more.accountDeletion.deleteMyAccount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete My Account"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Delete My Account"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.accountDeletion.finalConfirmationTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Final Confirmation"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Final Confirmation"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.accountDeletion.finalConfirmationMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Are you absolutely sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
+          }
+        }
+      },
+      "comment": "DATA-LOSS / LEGAL"
+    },
+    "more.accountDeletion.deletionErrorTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion Error"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deletion Error"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.unknownError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unknown error occurred"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "An unknown error occurred"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.successTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account Deleted Successfully"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Account Deleted Successfully"
+          }
+        }
+      }
+    },
+    "more.accountDeletion.successMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account has been signed out and all local data has been cleared. You can now create a new account if desired."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your account has been signed out and all local data has been cleared. You can now create a new account if desired."
+          }
+        }
+      }
+    },
+    "more.accountDeletion.authExpired": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your authentication session has expired. Please sign out and sign in again, then try deleting your account."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your authentication session has expired. Please sign out and sign in again, then try deleting your account."
+          }
+        }
+      },
+      "comment": "DATA-LOSS context"
+    },
+    "more.accountDeletion.failedDetail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account deletion failed: %@\n\nError details: %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Account deletion failed: %@\n\nError details: %@"
+          }
+        }
+      },
+      "comment": "FORMAT"
     }
   },
   "version": "1.0"

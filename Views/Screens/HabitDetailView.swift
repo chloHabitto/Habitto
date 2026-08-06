@@ -78,7 +78,7 @@ struct HabitDetailView: View {
               showingEditView = true
             }) {
               Label {
-                Text("Edit")
+                Text("common.edit".localized)
               } icon: {
                 Image("Icon-Pen_Filled")
                   .renderingMode(.template)
@@ -90,7 +90,7 @@ struct HabitDetailView: View {
               showingDeleteConfirmation = true
             }) {
               Label {
-                Text("Delete")
+                Text("common.delete".localized)
               } icon: {
                 Image("Icon-TrashBin3_Filled")
                   .renderingMode(.template)
@@ -207,20 +207,20 @@ struct HabitDetailView: View {
       .presentationDragIndicator(.hidden)
       .presentationCornerRadius(40)
     }
-    .alert("Delete Habit", isPresented: $showingDeleteConfirmation) {
-      Button("Cancel", role: .cancel) { }
-      Button("Delete", role: .destructive) {
+    .alert("habits.detail.alert.deleteHabitTitle".localized, isPresented: $showingDeleteConfirmation) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("common.delete".localized, role: .destructive) {
         onDeleteHabit?(habit)
         dismiss()
       }
     } message: {
-      Text("Are you sure you want to delete \"\(habit.name)\"? This action cannot be undone.")
+      Text(String(format: "habits.detail.alert.deleteHabitMessage".localized, habit.name))
     }
-    .alert("Make Habit Inactive", isPresented: $showingInactiveConfirmation) {
-      Button("Cancel", role: .cancel) {
+    .alert("habits.detail.alert.makeInactiveTitle".localized, isPresented: $showingInactiveConfirmation) {
+      Button("common.cancel".localized, role: .cancel) {
         // No action needed - toggle already reverted
       }
-      Button("Make Inactive", role: .destructive) {
+      Button("habits.detail.alert.makeInactiveConfirm".localized, role: .destructive) {
         // Prevent onChange from triggering during the entire process
         isProcessingToggle = true
 
@@ -260,20 +260,20 @@ struct HabitDetailView: View {
       }
     } message: {
       Text(
-        "This habit will be inactive and doesn't appear in the home screen from today.")
+        "habits.detail.alert.makeInactiveMessage".localized)
     }
-    .alert("Delete Reminder", isPresented: $showingReminderDeleteConfirmation) {
-      Button("Cancel", role: .cancel) {
+    .alert("habits.detail.alert.deleteReminderTitle".localized, isPresented: $showingReminderDeleteConfirmation) {
+      Button("common.cancel".localized, role: .cancel) {
         reminderToDelete = nil
       }
-      Button("Delete", role: .destructive) {
+      Button("common.delete".localized, role: .destructive) {
         if let reminder = reminderToDelete {
           deleteReminder(reminder)
           reminderToDelete = nil
         }
       }
     } message: {
-      Text("Are you sure you want to delete this reminder?")
+      Text("habits.detail.alert.deleteReminderMessage".localized)
     }
     .sheet(isPresented: $showingCompletionSheet) {
       HabitCompletionBottomSheet(
@@ -314,7 +314,7 @@ struct HabitDetailView: View {
         HStack(spacing: 8) {
           Image(systemName: "checkmark.circle.fill")
             .foregroundColor(.green)
-          Text("Difficulty saved")
+          Text("habits.detail.toast.difficultySaved".localized)
             .font(.appBodyMediumEmphasised)
             .foregroundColor(.text01)
         }
@@ -400,8 +400,8 @@ struct HabitDetailView: View {
   
   private var tabSegmentedControl: some View {
     HStack(spacing: 8) {
-      tabButton(title: "Details", tab: .details)
-      tabButton(title: "Progress", tab: .progress)
+      tabButton(title: "habits.detail.tab.details".localized, tab: .details)
+      tabButton(title: "habits.detail.tab.progress".localized, tab: .progress)
       Spacer()
     }
   }
@@ -491,7 +491,7 @@ struct HabitDetailView: View {
     }) {
       HStack {
         // Left: "See More Progress" label
-        Text("See More Progress")
+        Text("habits.detail.progress.seeMore".localized)
           .font(.appLabelLargeEmphasised)
           .foregroundColor(Color("grey700"))
         
@@ -531,7 +531,7 @@ struct HabitDetailView: View {
     let weekStart = calendar.dateInterval(of: .weekOfYear, for: today)?.start ?? today
     
     return VStack(alignment: .leading, spacing: 12) {
-      Text("This Week")
+      Text("habits.detail.progress.thisWeek".localized)
         .font(.appBodyMediumEmphasised)
         .foregroundColor(.text01)
       
@@ -610,7 +610,7 @@ struct HabitDetailView: View {
         HStack(spacing: 6) {
           Text("🔥")
             .font(.system(size: 20))
-          Text("Current")
+          Text("habits.detail.progress.current".localized)
             .font(.appBodySmall)
             .foregroundColor(.text05)
         }
@@ -619,7 +619,7 @@ struct HabitDetailView: View {
           .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
         
-        Text(habit.computedStreak() == 1 ? "day" : "days")
+        Text(habit.computedStreak() == 1 ? "habits.detail.progress.day".localized : "habits.detail.progress.days".localized)
           .font(.appBodySmall)
           .foregroundColor(.text05)
       }
@@ -633,7 +633,7 @@ struct HabitDetailView: View {
         HStack(spacing: 6) {
           Text("🏆")
             .font(.system(size: 20))
-          Text("Longest")
+          Text("habits.detail.progress.longest".localized)
             .font(.appBodySmall)
             .foregroundColor(.text05)
         }
@@ -642,7 +642,7 @@ struct HabitDetailView: View {
           .font(.appTitleLargeEmphasised)
           .foregroundColor(.text01)
         
-        Text(StreakDataCalculator.calculateBestStreakFromHistory(for: habit) == 1 ? "day" : "days")
+        Text(StreakDataCalculator.calculateBestStreakFromHistory(for: habit) == 1 ? "habits.detail.progress.day".localized : "habits.detail.progress.days".localized)
           .font(.appBodySmall)
           .foregroundColor(.text05)
       }
@@ -666,7 +666,7 @@ struct HabitDetailView: View {
     
     return VStack(alignment: .leading, spacing: 12) {
       HStack {
-        Text("This Month")
+        Text("habits.detail.progress.thisMonth".localized)
           .font(.appTitleSmallEmphasised)
           .foregroundColor(.text01)
         
@@ -677,7 +677,7 @@ struct HabitDetailView: View {
           .foregroundColor(.text03)
       }
       
-      Text("\(completed) of \(total) days completed")
+      Text(String(format: "habits.detail.progress.daysCompleted".localized, completed, total))
         .font(.appBodySmall)
         .foregroundColor(.text05)
       
@@ -706,7 +706,7 @@ struct HabitDetailView: View {
     let months = last3Months()
     
     return VStack(alignment: .leading, spacing: 12) {
-      Text("Monthly History")
+      Text("habits.detail.progress.monthlyHistory".localized)
         .font(.appTitleSmallEmphasised)
         .foregroundColor(.text01)
       
@@ -918,7 +918,7 @@ struct HabitDetailView: View {
     if isCompleted && !isHabitSkipped {
       VStack(alignment: .leading, spacing: 12) {
         HStack {
-          Text("Difficulty")
+          Text("habits.detail.difficulty.title".localized)
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text01)
           Spacer()
@@ -938,12 +938,12 @@ struct HabitDetailView: View {
                   .font(.appBodyMediumEmphasised)
                   .foregroundColor(.text01)
               } else {
-                Text("Not rated")
+                Text("habits.detail.difficulty.notRated".localized)
                   .font(.appBodyMediumEmphasised)
                   .foregroundColor(.text03)
               }
 
-              Text(existingDifficulty != nil ? "Tap to change" : "Tap to rate")
+              Text(existingDifficulty != nil ? "habits.detail.difficulty.tapToChange".localized : "habits.detail.difficulty.tapToRate".localized)
                 .font(.appBodySmall)
                 .foregroundColor(.text05)
             }
@@ -1029,7 +1029,7 @@ struct HabitDetailView: View {
             .font(.system(size: 16))
             .foregroundColor(.text05)
 
-          Text("Goal")
+          Text("habits.detail.goal.title".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text05)
         }
@@ -1058,7 +1058,7 @@ struct HabitDetailView: View {
           .frame(width: 16, height: 16)
           .foregroundColor(.text05)
 
-        Text("Reminders")
+        Text("habits.detail.reminders.title".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text05)
 
@@ -1083,7 +1083,7 @@ struct HabitDetailView: View {
             Text("⚠️")
               .font(.system(size: 14))
             
-            Text("Reminders off")
+            Text("habits.detail.reminders.off".localized)
               .font(.appBodySmall)
               .foregroundColor(.text01)
             
@@ -1091,7 +1091,7 @@ struct HabitDetailView: View {
               .font(.appBodySmall)
               .foregroundColor(.text04)
             
-            Text("Enable")
+            Text("habits.detail.reminders.enable".localized)
               .font(.appBodySmall)
               .foregroundColor(.primary)
             
@@ -1113,7 +1113,7 @@ struct HabitDetailView: View {
         }
       } else {
         // Empty state
-        Text("No reminders set")
+        Text("habits.detail.reminders.empty".localized)
           .font(.appBodySmall)
           .foregroundColor(.text04)
           .frame(maxWidth: .infinity)
@@ -1133,7 +1133,7 @@ struct HabitDetailView: View {
     VStack(spacing: 16) {
       // Progress header
       HStack {
-        Text("Progress for \(formattedSelectedDate)")
+        Text(String(format: "habits.detail.progress.forDate".localized, formattedSelectedDate))
           .font(.appBodyMedium)
           .foregroundColor(.text05)
 
@@ -1289,13 +1289,13 @@ struct HabitDetailView: View {
           }
         })) {
           VStack(alignment: .leading, spacing: 4) {
-            Text("Active")
+            Text("habits.detail.active.title".localized)
               .font(.appBodyLarge)
               .foregroundColor(.text01)
 
             Text(isActive
-              ? "This habit is currently active and appears in your daily list"
-              : "This habit is inactive and won't appear in your daily list")
+              ? "habits.detail.active.descriptionActive".localized
+              : "habits.detail.active.descriptionInactive".localized)
               .font(.appBodySmall)
               .foregroundColor(.text05)
               .fixedSize(horizontal: false, vertical: true)
@@ -1456,7 +1456,7 @@ struct HabitDetailView: View {
       return unit
     }
     
-    return "times" // Default fallback
+    return "habits.detail.goal.unit.times".localized // Default fallback
   }
 
   private func extractGoalNumber(from goalString: String) -> Int {
@@ -1614,9 +1614,9 @@ struct HabitDetailView: View {
         
         // Check if we need "on" or not
         if needsOnPreposition(formattedFrequency) {
-          return "\(beforeOn) on \(formattedFrequency)"
+          return String(format: "habits.detail.goal.format.on".localized, beforeOn, formattedFrequency)
         } else {
-          return "\(beforeOn) \(formattedFrequency)"
+          return String(format: "habits.detail.goal.format.plain".localized, beforeOn, formattedFrequency)
         }
       }
     } else if goal.contains(" per ") {
@@ -1632,9 +1632,9 @@ struct HabitDetailView: View {
         
         // Check if we need "on" or not
         if needsOnPreposition(formattedFrequency) {
-          return "\(beforePer) on \(formattedFrequency)"
+          return String(format: "habits.detail.goal.format.on".localized, beforePer, formattedFrequency)
         } else {
-          return "\(beforePer) \(formattedFrequency)"
+          return String(format: "habits.detail.goal.format.plain".localized, beforePer, formattedFrequency)
         }
       }
     }
@@ -1657,10 +1657,10 @@ struct HabitDetailView: View {
         if let numberRange = Range(range, in: frequency),
            let number = Int(frequency[numberRange]) {
           switch number {
-          case 1: return "once a week"
-          case 2: return "twice a week"
-          case 7: return "everyday"
-          default: return "\(number) days a week"
+          case 1: return "habits.detail.goal.freq.onceAWeek".localized
+          case 2: return "habits.detail.goal.freq.twiceAWeek".localized
+          case 7: return "habits.detail.goal.freq.everyday".localized
+          default: return String(format: "habits.detail.goal.freq.daysAWeek".localized, number)
           }
         }
       }
@@ -1674,9 +1674,9 @@ struct HabitDetailView: View {
         if let numberRange = Range(range, in: frequency),
            let number = Int(frequency[numberRange]) {
           switch number {
-          case 1: return "once a month"
-          case 2: return "twice a month"
-          default: return "\(number) days a month"
+          case 1: return "habits.detail.goal.freq.onceAMonth".localized
+          case 2: return "habits.detail.goal.freq.twiceAMonth".localized
+          default: return String(format: "habits.detail.goal.freq.daysAMonth".localized, number)
           }
         }
       }
@@ -1722,14 +1722,14 @@ struct HabitDetailView: View {
       if days.isEmpty {
         return frequencyText.lowercased()
       } else if days.count == 1 {
-        return "every \(days[0])"
+        return String(format: "habits.detail.goal.freq.everyOne".localized, days[0])
       } else if days.count == 2 {
-        return "every \(days[0]) & \(days[1])"
+        return String(format: "habits.detail.goal.freq.everyTwo".localized, days[0], days[1])
       } else {
         // Join all but last with commas, then add " & " before last
         let allButLast = days.dropLast().joined(separator: ", ")
         let last = days.last!
-        return "every \(allButLast) & \(last)"
+        return String(format: "habits.detail.goal.freq.everyMany".localized, allButLast, last)
       }
     }
     
