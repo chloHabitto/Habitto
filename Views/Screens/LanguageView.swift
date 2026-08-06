@@ -216,6 +216,8 @@ struct LanguageView: View {
 
   /// Save language and post notification for parent to show toast
   private func saveLanguage() {
+    guard FeatureFlags.inAppLanguageSwitchEnabled else { return }
+
     let selectedCode = selectedLanguageCode
     
     // Save to I18nPreferencesManager
