@@ -76,11 +76,11 @@ struct ProfileView: View {
             VStack(spacing: 16) {
               // Name Field
               VStack(alignment: .leading, spacing: 8) {
-                Text("Name")
+                Text("more.profile.name".localized)
                   .font(.appBodyMedium)
                   .foregroundColor(.text01)
 
-                TextField("Enter name", text: $firstName)
+                TextField("more.profile.enterName".localized, text: $firstName)
                   .font(.appBodyLarge)
                   .foregroundColor(.text01)
                   .padding(.horizontal, 16)
@@ -109,7 +109,7 @@ struct ProfileView: View {
               HabittoButton(
                 size: .large,
                 style: .fillPrimary,
-                content: .text("Save"),
+                content: .text("common.save".localized),
                 hugging: false)
               {
                 saveChanges()
@@ -121,7 +121,7 @@ struct ProfileView: View {
           }
         }
       }
-      .navigationTitle("Profile")
+      .navigationTitle("more.profile.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .onAppear {
@@ -180,16 +180,16 @@ struct ProfileView: View {
             .font(.system(size: 60))
             .foregroundColor(.text03)
 
-          Text("Camera Not Available")
+          Text("more.profile.cameraUnavailableTitle".localized)
             .font(.appTitleMedium)
             .foregroundColor(.text01)
 
-          Text("Camera is not available or permission is required.")
+          Text("more.profile.cameraUnavailableMessage".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
             .multilineTextAlignment(.center)
 
-          Button("OK") {
+          Button("common.ok".localized) {
             showingCamera = false
           }
           .font(.appLabelLarge)
@@ -208,17 +208,17 @@ struct ProfileView: View {
         avatarManager.selectCustomPhoto(image)
       }
     }
-    .alert("Welcome!", isPresented: $showingMigrationAlert) {
-      Button("Start Fresh") {
+    .alert("more.profile.welcomeTitle".localized, isPresented: $showingMigrationAlert) {
+      Button("more.profile.startFresh".localized) {
         avatarManager.clearGuestData()
         hasGuestData = false
       }
-      Button("Keep My Data") {
+      Button("more.profile.keepMyData".localized) {
         avatarManager.migrateGuestDataToUserAccount()
         hasGuestData = false
       }
     } message: {
-      Text("We found some data from your guest session. Would you like to keep it or start fresh?")
+      Text("more.profile.guestDataMessage".localized)
     }
   }
 
@@ -448,13 +448,13 @@ struct PhotoOptionsBottomSheet: View {
       VStack(spacing: 0) {
         // Header
         HStack {
-          Text("Change Profile Photo")
+          Text("more.profile.changePhoto".localized)
             .font(.appTitleMedium)
             .foregroundColor(.text01)
 
           Spacer()
 
-          Button("Cancel") {
+          Button("common.cancel".localized) {
             onClose()
           }
           .font(.appBodyMedium)
@@ -479,7 +479,7 @@ struct PhotoOptionsBottomSheet: View {
                 .foregroundColor(.primary)
                 .frame(width: 44)
 
-              Text("Avatar")
+              Text("more.profile.avatar".localized)
                 .font(.appBodyLarge)
                 .foregroundColor(.text01)
 
@@ -510,7 +510,7 @@ struct PhotoOptionsBottomSheet: View {
                 .foregroundColor(.primary)
                 .frame(width: 44)
 
-              Text("Take a Photo")
+              Text("more.profile.takePhoto".localized)
                 .font(.appBodyLarge)
                 .foregroundColor(.text01)
 
@@ -541,7 +541,7 @@ struct PhotoOptionsBottomSheet: View {
                 .foregroundColor(.text01)
                 .frame(width: 44)
 
-              Text("Choose from Library")
+              Text("more.profile.chooseFromLibrary".localized)
                 .font(.appBodyLarge)
                 .foregroundColor(.text01)
 

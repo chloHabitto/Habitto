@@ -50,13 +50,13 @@ struct AccountView: View {
                 .foregroundColor(.text04)
               
               // Title
-              Text("Sign in to sync across devices")
+              Text("more.account.signInTitle".localized)
                 .font(.appTitleLarge)
                 .foregroundColor(.text01)
                 .multilineTextAlignment(.center)
               
               // Description
-              Text("Sign in with Apple to enable cross-device sync and keep your habits safe in the cloud.")
+              Text("more.account.signInMessage".localized)
                 .font(.appBodyMedium)
                 .foregroundColor(.text03)
                 .multilineTextAlignment(.center)
@@ -73,7 +73,7 @@ struct AccountView: View {
         }
       }
       .background(Color("appSurface01Variant02"))
-      .navigationTitle("Account")
+      .navigationTitle("more.account".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -121,16 +121,16 @@ struct AccountView: View {
             .font(.system(size: 60))
             .foregroundColor(.text03)
 
-          Text("Camera Not Available")
+          Text("more.account.cameraUnavailableTitle".localized)
             .font(.appTitleMedium)
             .foregroundColor(.text01)
 
-          Text("Camera is not available or permission is required.")
+          Text("more.account.cameraUnavailableMessage".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text02)
             .multilineTextAlignment(.center)
 
-          Button("OK") {
+          Button("common.ok".localized) {
             showingCamera = false
           }
           .font(.appLabelLarge)
@@ -159,43 +159,43 @@ struct AccountView: View {
           saveName()
         })
     }
-    .alert("Sign Out", isPresented: $showingSignOutAlert) {
-      Button("Cancel", role: .cancel) { }
-      Button("Sign Out", role: .destructive) {
+    .alert("more.account.signOut".localized, isPresented: $showingSignOutAlert) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("more.account.signOut".localized, role: .destructive) {
         authManager.signOut()
         dismiss()
       }
     } message: {
-      Text("Are you sure you want to sign out?")
+      Text("more.account.signOutConfirm".localized)
     }
-    .alert("Delete Account", isPresented: $showingDeleteAccountAlert) {
-      Button("Cancel", role: .cancel) { }
-      Button("Delete Account", role: .destructive) {
+    .alert("more.account.deleteAccount".localized, isPresented: $showingDeleteAccountAlert) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("more.account.deleteAccount".localized, role: .destructive) {
         Task {
           await performAccountDeletion()
         }
       }
     } message: {
-      Text("Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.")
+      Text("more.account.deleteAccountConfirm".localized)
     }
-    .alert("Deletion Error", isPresented: $showingDeletionError) {
-      Button("OK") {
+    .alert("more.account.deletionError".localized, isPresented: $showingDeletionError) {
+      Button("common.ok".localized) {
         deletionError = nil
         showingDeletionError = false
       }
     } message: {
-      Text(deletionError ?? "An unknown error occurred")
+      Text(deletionError ?? "more.account.unknownError".localized)
     }
-    .alert("Account Deleted", isPresented: $showingDeletionSuccess) {
-      Button("OK") {
+    .alert("more.account.accountDeleted".localized, isPresented: $showingDeletionSuccess) {
+      Button("common.ok".localized) {
         dismiss()
       }
     } message: {
-      Text("Your account has been deleted successfully. You have been signed out.")
+      Text("more.account.accountDeletedMessage".localized)
     }
-    .alert("Repair Data", isPresented: $showingRepairAlert) {
-      Button("Cancel", role: .cancel) { }
-      Button("Repair", role: .destructive) {
+    .alert("more.account.repairData".localized, isPresented: $showingRepairAlert) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("more.account.repair".localized, role: .destructive) {
         Task {
           await performDataRepair()
         }
@@ -203,8 +203,8 @@ struct AccountView: View {
     } message: {
       Text(repairMessage)
     }
-    .alert("Repair Complete", isPresented: $showingRepairSuccess) {
-      Button("OK") {
+    .alert("more.account.repairComplete".localized, isPresented: $showingRepairSuccess) {
+      Button("common.ok".localized) {
         // Reload habits to show migrated data
         Task {
           await HabitRepository.shared.loadHabits(force: true)
@@ -213,12 +213,12 @@ struct AccountView: View {
     } message: {
       Text(repairSuccessMessage)
     }
-    .alert("Repair Error", isPresented: $showingRepairError) {
-      Button("OK") {
+    .alert("more.account.repairError".localized, isPresented: $showingRepairError) {
+      Button("common.ok".localized) {
         repairError = nil
       }
     } message: {
-      Text(repairError ?? "An unknown error occurred")
+      Text(repairError ?? "more.account.unknownError".localized)
     }
     .overlay(alignment: .bottom) {
       if showNameUpdatedToast {
@@ -381,11 +381,11 @@ struct AccountView: View {
         
         // Title and Value in VStack
         VStack(alignment: .leading, spacing: 4) {
-          Text("User ID")
+          Text("more.account.userId".localized)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.text01)
           
-          Text(userID.isEmpty ? "Loading..." : userID)
+          Text(userID.isEmpty ? "more.account.loading".localized : userID)
             .font(.system(size: 14, weight: .regular))
             .foregroundColor(.text04)
             .lineLimit(1)
@@ -397,7 +397,7 @@ struct AccountView: View {
         Button(action: {
           copyUserID()
         }) {
-          Text(copiedUserID ? "Copied" : "Copy")
+          Text(copiedUserID ? "more.account.copied".localized : "more.account.copy".localized)
             .font(.system(size: 14, weight: .medium))
             .foregroundColor(.primary)
         }
@@ -422,7 +422,7 @@ struct AccountView: View {
           
           // Title and Value in VStack
           VStack(alignment: .leading, spacing: 4) {
-            Text("Birthday")
+            Text("more.account.birthday".localized)
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
             
@@ -476,8 +476,8 @@ struct AccountView: View {
     }
     .sheet(isPresented: $showingGenderView) {
       // Placeholder for gender view
-      Text("Gender View")
-        .navigationTitle("Gender")
+      Text("more.account.genderViewPlaceholder".localized)
+        .navigationTitle("more.account.gender".localized)
     }
   }
   
@@ -487,7 +487,7 @@ struct AccountView: View {
     VStack(spacing: 0) {
       // Section Header
       HStack {
-        Text("Login Information")
+        Text("more.account.loginInformation".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.text01)
         Spacer()
@@ -506,7 +506,7 @@ struct AccountView: View {
         
         // Title and Value in VStack
         VStack(alignment: .leading, spacing: 4) {
-          Text("My social account")
+          Text("more.account.mySocialAccount".localized)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.text01)
           
@@ -522,7 +522,7 @@ struct AccountView: View {
         Button(action: {
           copyEmail()
         }) {
-          Text(copiedEmail ? "Copied" : "Copy")
+          Text(copiedEmail ? "more.account.copied".localized : "more.account.copy".localized)
             .font(.system(size: 14, weight: .medium))
             .foregroundColor(.primary)
         }
@@ -543,7 +543,7 @@ struct AccountView: View {
       Button(action: {
         showingSignOutAlert = true
       }) {
-        Text("Sign out")
+        Text("more.account.signOutRow".localized)
           .font(.system(size: 16, weight: .medium))
           .foregroundColor(.primary)
       }
@@ -670,12 +670,12 @@ struct AccountView: View {
           .foregroundColor(.orange)
         
         VStack(alignment: .leading, spacing: 4) {
-          Text("Repair Data")
+          Text("more.account.repairData".localized)
             .font(.appBodyLarge)
             .fontWeight(.semibold)
             .foregroundColor(.text01)
           
-          Text("Recover habits from previous sessions")
+          Text("more.account.repairSubtitle".localized)
             .font(.appBodySmall)
             .foregroundColor(.text03)
         }
@@ -691,7 +691,7 @@ struct AccountView: View {
               await checkForOrphanedData()
             }
           }) {
-            Text("Scan")
+            Text("more.account.scan".localized)
               .font(.appBodyMedium)
               .foregroundColor(.orange)
           }
@@ -906,20 +906,20 @@ struct BirthdayBottomSheet: View {
   
   var body: some View {
     BaseBottomSheet(
-      title: "Birthday",
+      title: "more.account.birthday".localized,
       description: "",
       onClose: onClose,
       useSimpleCloseButton: true,
       confirmButton: {
         updateSelectedDate()
       },
-      confirmButtonTitle: "Done")
+      confirmButtonTitle: "common.done".localized)
     {
       VStack(spacing: 0) {
         // Date Picker with three columns
         HStack(spacing: 0) {
           // Month Picker
-          Picker("Month", selection: $selectedMonth) {
+          Picker("more.account.month".localized, selection: $selectedMonth) {
             ForEach(1...12, id: \.self) { month in
               Text(months[month - 1])
                 .tag(month)
@@ -929,7 +929,7 @@ struct BirthdayBottomSheet: View {
           .frame(maxWidth: .infinity)
           
           // Day Picker
-          Picker("Day", selection: $selectedDay) {
+          Picker("more.account.day".localized, selection: $selectedDay) {
             ForEach(1...daysInMonth, id: \.self) { day in
               Text("\(day)")
                 .tag(day)
@@ -951,7 +951,7 @@ struct BirthdayBottomSheet: View {
           }
           
           // Year Picker
-          Picker("Year", selection: $selectedYear) {
+          Picker("more.account.year".localized, selection: $selectedYear) {
             ForEach((minYear...maxYear).reversed(), id: \.self) { year in
               Text(String(year))
                 .tag(year)
@@ -1012,19 +1012,19 @@ struct NameEditBottomSheet: View {
   
   var body: some View {
     BaseBottomSheet(
-      title: "Name",
+      title: "more.account.name".localized,
       description: "",
       onClose: onClose,
       useSimpleCloseButton: true,
       confirmButton: {
         onSave()
       },
-      confirmButtonTitle: "Done",
+      confirmButtonTitle: "common.done".localized,
       isConfirmButtonDisabled: !hasChanges)
     {
       VStack(spacing: 16) {
         VStack(alignment: .leading, spacing: 8) {
-          TextField("Enter name", text: $name)
+          TextField("more.account.enterName".localized, text: $name)
             .font(.appBodyLarge)
             .foregroundColor(.text01)
             .accentColor(.text01)

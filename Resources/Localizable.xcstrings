@@ -97,6 +97,23 @@
         }
       }
     },
+    "common.ok": {
+      "comment": "universal",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "OK"
+          }
+        }
+      }
+    },
     "common.on": {
       "localizations": {
         "en": {
@@ -4685,6 +4702,538 @@
         }
       }
     },
+    "more.account.accountDeleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Account Deleted"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Account Deleted"
+          }
+        }
+      }
+    },
+    "more.account.accountDeletedMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your account has been deleted successfully. You have been signed out."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your account has been deleted successfully. You have been signed out."
+          }
+        }
+      }
+    },
+    "more.account.birthday": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Birthday"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Birthday"
+          }
+        }
+      }
+    },
+    "more.account.cameraUnavailableMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera is not available or permission is required."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Camera is not available or permission is required."
+          }
+        }
+      }
+    },
+    "more.account.cameraUnavailableTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera Not Available"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Camera Not Available"
+          }
+        }
+      }
+    },
+    "more.account.copied": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Copied"
+          }
+        }
+      }
+    },
+    "more.account.copy": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Copy"
+          }
+        }
+      }
+    },
+    "more.account.day": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Day"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Day"
+          }
+        }
+      }
+    },
+    "more.account.deleteAccount": {
+      "comment": "destructive; careful tone",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Account"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Delete Account"
+          }
+        }
+      }
+    },
+    "more.account.deleteAccountConfirm": {
+      "comment": "LEGAL/compliance-sensitive",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost."
+          }
+        }
+      }
+    },
+    "more.account.deletionError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion Error"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deletion Error"
+          }
+        }
+      }
+    },
+    "more.account.enterName": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter name"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Enter name"
+          }
+        }
+      }
+    },
+    "more.account.gender": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gender"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gender"
+          }
+        }
+      }
+    },
+    "more.account.genderViewPlaceholder": {
+      "comment": "placeholder UI",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gender View"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Gender View"
+          }
+        }
+      }
+    },
+    "more.account.loading": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Loading..."
+          }
+        }
+      }
+    },
+    "more.account.loginInformation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Login Information"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Login Information"
+          }
+        }
+      }
+    },
+    "more.account.month": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Month"
+          }
+        }
+      }
+    },
+    "more.account.mySocialAccount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My social account"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "My social account"
+          }
+        }
+      }
+    },
+    "more.account.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "more.account.repair": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair"
+          }
+        }
+      }
+    },
+    "more.account.repairComplete": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair Complete"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair Complete"
+          }
+        }
+      }
+    },
+    "more.account.repairData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair Data"
+          }
+        }
+      }
+    },
+    "more.account.repairError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair Error"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair Error"
+          }
+        }
+      }
+    },
+    "more.account.repairSubtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recover habits from previous sessions"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Recover habits from previous sessions"
+          }
+        }
+      }
+    },
+    "more.account.scan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scan"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Scan"
+          }
+        }
+      }
+    },
+    "more.account.signInMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with Apple to enable cross-device sync and keep your habits safe in the cloud."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sign in with Apple to enable cross-device sync and keep your habits safe in the cloud."
+          }
+        }
+      }
+    },
+    "more.account.signInTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to sync across devices"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sign in to sync across devices"
+          }
+        }
+      }
+    },
+    "more.account.signOut": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign Out"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sign Out"
+          }
+        }
+      }
+    },
+    "more.account.signOutConfirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to sign out?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Are you sure you want to sign out?"
+          }
+        }
+      }
+    },
+    "more.account.signOutRow": {
+      "comment": "row label lowercase",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign out"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sign out"
+          }
+        }
+      }
+    },
+    "more.account.unknownError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unknown error occurred"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "An unknown error occurred"
+          }
+        }
+      }
+    },
+    "more.account.userId": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "User ID"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "User ID"
+          }
+        }
+      }
+    },
+    "more.account.year": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Year"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Year"
+          }
+        }
+      }
+    },
     "more.appearance": {
       "localizations": {
         "en": {
@@ -4750,6 +5299,267 @@
         }
       }
     },
+    "more.notifications.completionReminder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completion reminder"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Completion reminder"
+          }
+        }
+      }
+    },
+    "more.notifications.completionReminderSubtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We'll remind you of any habits you haven't completed today."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We'll remind you of any habits you haven't completed today."
+          }
+        }
+      }
+    },
+    "more.notifications.completionReminderTimeA11y": {
+      "comment": "accessibility",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completion reminder time"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Completion reminder time"
+          }
+        }
+      }
+    },
+    "more.notifications.completionReminderToggleA11y": {
+      "comment": "accessibility",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completion reminder toggle"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Completion reminder toggle"
+          }
+        }
+      }
+    },
+    "more.notifications.habitReminders": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit reminders"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habit reminders"
+          }
+        }
+      }
+    },
+    "more.notifications.habitRemindersSubtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get notified for individual habit reminders you've set."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Get notified for individual habit reminders you've set."
+          }
+        }
+      }
+    },
+    "more.notifications.habitRemindersToggleA11y": {
+      "comment": "accessibility",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit reminders toggle"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habit reminders toggle"
+          }
+        }
+      }
+    },
+    "more.notifications.planReminder": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan reminder"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plan reminder"
+          }
+        }
+      }
+    },
+    "more.notifications.planReminderSubtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We'll let you know how many habits you have today."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We'll let you know how many habits you have today."
+          }
+        }
+      }
+    },
+    "more.notifications.planReminderTimeA11y": {
+      "comment": "accessibility",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan reminder time"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plan reminder time"
+          }
+        }
+      }
+    },
+    "more.notifications.planReminderToggleA11y": {
+      "comment": "accessibility",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plan reminder toggle"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Plan reminder toggle"
+          }
+        }
+      }
+    },
+    "more.notifications.reminderTime": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder time"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Reminder time"
+          }
+        }
+      }
+    },
+    "more.notifications.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Notifications"
+          }
+        }
+      }
+    },
+    "more.notifications.turnOff": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn Off"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Turn Off"
+          }
+        }
+      }
+    },
+    "more.notifications.turnOffHabitRemindersMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminders set for individual habits won't notify you. You can turn this back on anytime in Settings."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Reminders set for individual habits won't notify you. You can turn this back on anytime in Settings."
+          }
+        }
+      }
+    },
+    "more.notifications.turnOffHabitRemindersTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn Off Habit Reminders?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Turn Off Habit Reminders?"
+          }
+        }
+      }
+    },
     "more.privacyPolicy": {
       "localizations": {
         "en": {
@@ -4762,6 +5572,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "개인정보 처리방침"
+          }
+        }
+      }
+    },
+    "more.profile.avatar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avatar"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Avatar"
+          }
+        }
+      }
+    },
+    "more.profile.cameraUnavailableMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera is not available or permission is required."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Camera is not available or permission is required."
+          }
+        }
+      }
+    },
+    "more.profile.cameraUnavailableTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Camera Not Available"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Camera Not Available"
+          }
+        }
+      }
+    },
+    "more.profile.changePhoto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Profile Photo"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Change Profile Photo"
+          }
+        }
+      }
+    },
+    "more.profile.chooseFromLibrary": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose from Library"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Choose from Library"
+          }
+        }
+      }
+    },
+    "more.profile.enterName": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter name"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Enter name"
           }
         }
       }
@@ -4783,6 +5689,102 @@
         }
       }
     },
+    "more.profile.guestDataMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We found some data from your guest session. Would you like to keep it or start fresh?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We found some data from your guest session. Would you like to keep it or start fresh?"
+          }
+        }
+      }
+    },
+    "more.profile.keepMyData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep My Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keep My Data"
+          }
+        }
+      }
+    },
+    "more.profile.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "more.profile.startFresh": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Fresh"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Start Fresh"
+          }
+        }
+      }
+    },
+    "more.profile.takePhoto": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Take a Photo"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Take a Photo"
+          }
+        }
+      }
+    },
+    "more.profile.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Profile"
+          }
+        }
+      }
+    },
     "more.profile.viewProfile": {
       "localizations": {
         "en": {
@@ -4795,6 +5797,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "프로필 보기"
+          }
+        }
+      }
+    },
+    "more.profile.welcomeTitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Welcome!"
           }
         }
       }
@@ -4877,6 +5895,599 @@
           "stringUnit": {
             "state": "translated",
             "value": "설정"
+          }
+        }
+      }
+    },
+    "more.subscription.annual": {
+      "comment": "plan display label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annual"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Annual"
+          }
+        }
+      }
+    },
+    "more.subscription.benefits": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Benefits"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Benefits"
+          }
+        }
+      }
+    },
+    "more.subscription.currentPlan": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Plan"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Current Plan"
+          }
+        }
+      }
+    },
+    "more.subscription.failedToLoadPrices": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to load prices"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Failed to load prices"
+          }
+        }
+      }
+    },
+    "more.subscription.featureAllFuture": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All Future Features"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "All Future Features"
+          }
+        }
+      }
+    },
+    "more.subscription.featureProgressInsights": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Progress Insights"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Progress Insights"
+          }
+        }
+      }
+    },
+    "more.subscription.featureUnlimitedHabits": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited Habits"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Unlimited Habits"
+          }
+        }
+      }
+    },
+    "more.subscription.featureUnlimitedHabitsFree": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 max"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "3 max"
+          }
+        }
+      }
+    },
+    "more.subscription.featureVacationMode": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vacation Mode"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Vacation Mode"
+          }
+        }
+      }
+    },
+    "more.subscription.headerExperienceWith": {
+      "comment": "note trailing space",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "experience with "
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "experience with "
+          }
+        }
+      }
+    },
+    "more.subscription.headerUnlock": {
+      "comment": "note trailing space",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock your full Habitto "
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Unlock your full Habitto "
+          }
+        }
+      }
+    },
+    "more.subscription.legalCharge": {
+      "comment": "LEGAL",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Payment will be charged to your Apple ID account at confirmation of purchase"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "- Payment will be charged to your Apple ID account at confirmation of purchase"
+          }
+        }
+      }
+    },
+    "more.subscription.legalManage": {
+      "comment": "LEGAL",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- You can manage and cancel your subscriptions by going to your App Store account settings after purchase"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "- You can manage and cancel your subscriptions by going to your App Store account settings after purchase"
+          }
+        }
+      }
+    },
+    "more.subscription.legalRenew": {
+      "comment": "LEGAL",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Subscription automatically renews unless canceled at least 24 hours before the end of the current period"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "- Subscription automatically renews unless canceled at least 24 hours before the end of the current period"
+          }
+        }
+      }
+    },
+    "more.subscription.legalRenewCharge": {
+      "comment": "LEGAL",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "- Your account will be charged for renewal within 24 hours prior to the end of the current period"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "- Your account will be charged for renewal within 24 hours prior to the end of the current period"
+          }
+        }
+      }
+    },
+    "more.subscription.lengthMonth": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "1 month"
+          }
+        }
+      }
+    },
+    "more.subscription.lengthYear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 year"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "1 year"
+          }
+        }
+      }
+    },
+    "more.subscription.letsGo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Let's go!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Let's go!"
+          }
+        }
+      }
+    },
+    "more.subscription.lifetime": {
+      "comment": "plan length label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lifetime"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lifetime"
+          }
+        }
+      }
+    },
+    "more.subscription.lifetimeAccess": {
+      "comment": "plan display label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lifetime Access"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Lifetime Access"
+          }
+        }
+      }
+    },
+    "more.subscription.loadingPrices": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading prices..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Loading prices..."
+          }
+        }
+      }
+    },
+    "more.subscription.monthly": {
+      "comment": "plan display label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Monthly"
+          }
+        }
+      }
+    },
+    "more.subscription.noProducts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No products available. Please check your internet connection."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No products available. Please check your internet connection."
+          }
+        }
+      }
+    },
+    "more.subscription.percentOff": {
+      "comment": "FORMAT",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d%% off"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d%% off"
+          }
+        }
+      }
+    },
+    "more.subscription.popular": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Popular"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Popular"
+          }
+        }
+      }
+    },
+    "more.subscription.pricePerMonth": {
+      "comment": "FORMAT; StoreKit displayPrice + suffix",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@/month"
+          }
+        }
+      }
+    },
+    "more.subscription.pricePerYear": {
+      "comment": "FORMAT; StoreKit displayPrice + suffix",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/year"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@/year"
+          }
+        }
+      }
+    },
+    "more.subscription.processing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processing..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Processing..."
+          }
+        }
+      }
+    },
+    "more.subscription.purchase": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Purchase"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Purchase"
+          }
+        }
+      }
+    },
+    "more.subscription.restorePurchase": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Purchase"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Restore Purchase"
+          }
+        }
+      }
+    },
+    "more.subscription.restorePurchases": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Purchases"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Restore Purchases"
+          }
+        }
+      }
+    },
+    "more.subscription.restoring": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restoring..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Restoring..."
+          }
+        }
+      }
+    },
+    "more.subscription.review1": {
+      "comment": "marketing",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This app transformed my daily routine. Premium features are worth it!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This app transformed my daily routine. Premium features are worth it!"
+          }
+        }
+      }
+    },
+    "more.subscription.review2": {
+      "comment": "marketing",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best habit tracker I've used. The insights are incredible."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Best habit tracker I've used. The insights are incredible."
+          }
+        }
+      }
+    },
+    "more.subscription.review3": {
+      "comment": "marketing",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Love vacation mode! Perfect for breaks without losing my streak."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Love vacation mode! Perfect for breaks without losing my streak."
+          }
+        }
+      }
+    },
+    "more.subscription.review4": {
+      "comment": "marketing",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlimited habits is a game changer. Highly recommend premium!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Unlimited habits is a game changer. Highly recommend premium!"
           }
         }
       }

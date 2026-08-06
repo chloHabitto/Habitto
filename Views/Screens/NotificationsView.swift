@@ -31,7 +31,7 @@ struct NotificationsView: View {
         }
       }
       .background(Color("appSurface01Variant02"))
-      .navigationTitle("Notifications")
+      .navigationTitle("more.notifications.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -50,17 +50,17 @@ struct NotificationsView: View {
     .onAppear {
       loadReminderSettings()
     }
-    .alert("Turn Off Habit Reminders?", isPresented: $showHabitReminderConfirmation) {
-      Button("Cancel", role: .cancel) {
+    .alert("more.notifications.turnOffHabitRemindersTitle".localized, isPresented: $showHabitReminderConfirmation) {
+      Button("common.cancel".localized, role: .cancel) {
         // Keep toggle ON - do nothing
       }
-      Button("Turn Off", role: .destructive) {
+      Button("more.notifications.turnOff".localized, role: .destructive) {
         // Confirm turning OFF
         habitReminderEnabled = pendingHabitReminderState
       }
     } message: {
       Text(
-        "Reminders set for individual habits won't notify you. You can turn this back on anytime in Settings.")
+        "more.notifications.turnOffHabitRemindersMessage".localized)
     }
   }
 
@@ -163,11 +163,11 @@ struct NotificationsView: View {
   private var planReminderToggleRow: some View {
     HStack(spacing: 0) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Plan reminder")
+        Text("more.notifications.planReminder".localized)
           .font(.appTitleMedium)
           .foregroundColor(.text01)
 
-        Text("We'll let you know how many habits you have today.")
+        Text("more.notifications.planReminderSubtitle".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text04)
           .fixedSize(horizontal: false, vertical: true)
@@ -182,7 +182,7 @@ struct NotificationsView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 16)
-    .accessibilityLabel("Plan reminder toggle")
+    .accessibilityLabel("more.notifications.planReminderToggleA11y".localized)
     .accessibilityHint("Enables or disables daily plan reminders")
   }
 
@@ -191,11 +191,11 @@ struct NotificationsView: View {
   private var habitReminderToggleRow: some View {
     HStack(spacing: 0) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Habit reminders")
+        Text("more.notifications.habitReminders".localized)
           .font(.appTitleMedium)
           .foregroundColor(.text01)
 
-        Text("Get notified for individual habit reminders you've set.")
+        Text("more.notifications.habitRemindersSubtitle".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text04)
           .fixedSize(horizontal: false, vertical: true)
@@ -230,7 +230,7 @@ struct NotificationsView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 16)
-    .accessibilityLabel("Habit reminders toggle")
+    .accessibilityLabel("more.notifications.habitRemindersToggleA11y".localized)
     .accessibilityHint("Enables or disables individual habit reminders")
   }
 
@@ -238,7 +238,7 @@ struct NotificationsView: View {
 
   private var planReminderTimeRow: some View {
     HStack(spacing: 16) {
-      Text("Reminder time")
+      Text("more.notifications.reminderTime".localized)
         .font(.appTitleMedium)
         .foregroundColor(.text01)
 
@@ -253,7 +253,7 @@ struct NotificationsView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 16)
-    .accessibilityLabel("Plan reminder time")
+    .accessibilityLabel("more.notifications.planReminderTimeA11y".localized)
     .accessibilityHint("Set the time for daily plan reminders")
   }
 
@@ -262,11 +262,11 @@ struct NotificationsView: View {
   private var completionReminderToggleRow: some View {
     HStack(spacing: 0) {
       VStack(alignment: .leading, spacing: 4) {
-        Text("Completion reminder")
+        Text("more.notifications.completionReminder".localized)
           .font(.appTitleMedium)
           .foregroundColor(.text01)
 
-        Text("We'll remind you of any habits you haven't completed today.")
+        Text("more.notifications.completionReminderSubtitle".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text04)
           .fixedSize(horizontal: false, vertical: true)
@@ -281,7 +281,7 @@ struct NotificationsView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 16)
-    .accessibilityLabel("Completion reminder toggle")
+    .accessibilityLabel("more.notifications.completionReminderToggleA11y".localized)
     .accessibilityHint("Enables or disables daily completion reminders")
   }
 
@@ -289,7 +289,7 @@ struct NotificationsView: View {
 
   private var completionReminderTimeRow: some View {
     HStack(spacing: 16) {
-      Text("Reminder time")
+      Text("more.notifications.reminderTime".localized)
         .font(.appTitleMedium)
         .foregroundColor(.text01)
 
@@ -304,7 +304,7 @@ struct NotificationsView: View {
     }
     .padding(.horizontal, 20)
     .padding(.vertical, 16)
-    .accessibilityLabel("Completion reminder time")
+    .accessibilityLabel("more.notifications.completionReminderTimeA11y".localized)
     .accessibilityHint("Set the time for daily completion reminders")
   }
 
@@ -313,7 +313,7 @@ struct NotificationsView: View {
   private var saveButton: some View {
     HStack {
       HabittoButton.largeFillPrimary(
-        text: "Save",
+        text: "common.save".localized,
         state: hasChanges ? .default : .disabled,
         action: saveChanges)
     }
