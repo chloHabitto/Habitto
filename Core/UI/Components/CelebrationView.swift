@@ -66,12 +66,12 @@ struct CelebrationView: View {
         // Celebration message
         if showMessage {
           VStack(spacing: 16) {
-            Text("Amazing!")
+            Text("shared.celebration.amazing".localized)
               .font(.appTitleLargeEmphasised)
               .foregroundColor(.white)
               .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 1)
 
-            Text(isPartialCompletion ? "Progress over perfection 🌱" : "All habits completed for today")
+            Text(isPartialCompletion ? "shared.celebration.progressOverPerfection".localized : "shared.celebration.allHabitsCompleted".localized)
               .font(.appBodyLarge)
               .foregroundColor(.white)
               .multilineTextAlignment(.center)

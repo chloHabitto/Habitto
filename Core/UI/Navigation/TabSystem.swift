@@ -184,20 +184,22 @@ extension TabItem {
     ]
   }
 
+  @MainActor
   static func createPeriodTabs() -> [TabItem] {
     [
-      TabItem(title: "Today", data: TimePeriod.today),
-      TabItem(title: "Week", data: TimePeriod.week),
-      TabItem(title: "Year", data: TimePeriod.year),
-      TabItem(title: "All", data: TimePeriod.all)
+      TabItem(title: "shared.period.today".localized, data: TimePeriod.today),
+      TabItem(title: "shared.period.week".localized, data: TimePeriod.week),
+      TabItem(title: "shared.period.year".localized, data: TimePeriod.year),
+      TabItem(title: "shared.period.all".localized, data: TimePeriod.all)
     ]
   }
 
+  @MainActor
   static func createHomeStatsTabs(totalCount: Int, undoneCount: Int, doneCount: Int) -> [TabItem] {
     [
-      TabItem(title: "Total", value: "\(totalCount)"),
-      TabItem(title: "Undone", value: "\(undoneCount)"),
-      TabItem(title: "Done", value: "\(doneCount)")
+      TabItem(title: "home.tabs.total".localized, value: "\(totalCount)"),
+      TabItem(title: "home.tabs.undone".localized, value: "\(undoneCount)"),
+      TabItem(title: "home.tabs.done".localized, value: "\(doneCount)")
     ]
   }
 }

@@ -23,11 +23,11 @@ struct HabitSelectorView: View {
       }
       .scrollIndicators(.hidden)
       .background(Color.surface.ignoresSafeArea())
-      .navigationTitle("Select Habit")
+      .navigationTitle("progress.filter.selectHabit".localized)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
+          Button("common.done".localized) {
             dismiss()
           }
           .font(.appBodyMediumEmphasised)
@@ -49,11 +49,11 @@ struct HabitSelectorView: View {
         allHabitsIcon
 
         VStack(alignment: .leading, spacing: 6) {
-          Text("All Habits")
+          Text("shared.habitSelector.allHabits".localized)
             .font(.appTitleSmallEmphasised)
             .foregroundColor(.text01)
 
-          Text("Overall progress and insights")
+          Text("shared.habitSelector.overallProgress".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text03)
         }
@@ -146,7 +146,7 @@ struct HabitSelectorView: View {
 
   private var individualHabitsHeader: some View {
     HStack {
-      Text("Individual Habits")
+      Text("shared.habitSelector.individualHabits".localized)
         .font(.appTitleMediumEmphasised)
         .foregroundColor(.text01)
 
@@ -287,11 +287,11 @@ struct HabitSelectorView: View {
       }
 
       VStack(spacing: 8) {
-        Text("No habits yet")
+        Text("habits.empty.noHabits".localized)
           .font(.appTitleSmallEmphasised)
           .foregroundColor(.text01)
 
-        Text("Create your first habit to see individual progress")
+        Text("shared.habitSelector.createFirst".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text03)
           .multilineTextAlignment(.center)

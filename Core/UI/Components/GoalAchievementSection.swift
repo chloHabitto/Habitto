@@ -16,7 +16,7 @@ struct GoalAchievementSection: View {
     VStack(spacing: 16) {
       // Section header
       HStack {
-        Text("Goal Achievement")
+        Text("shared.goalAchievement.title".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.onPrimaryContainer)
         Spacer()
@@ -29,25 +29,25 @@ struct GoalAchievementSection: View {
         SimpleGoalAchievementCard(
           icon: "target",
           iconColor: Color.purple,
-          title: "Monthly Goals Met",
-          mainText: "\(monthlyGoalsMet) of \(monthlyTotalGoals) targets",
-          subtitle: "\(Int(monthlyGoalsMetPercentage * 100))% achievement rate",
+          title: "shared.goalAchievement.monthlyGoalsMet".localized,
+          mainText: String(format: "shared.goalAchievement.targetsFormat".localized, monthlyGoalsMet, monthlyTotalGoals),
+          subtitle: String(format: "shared.goalAchievement.achievementRateFormat".localized, Int(monthlyGoalsMetPercentage * 100)),
           accentColor: Color.purple)
 
         // Average Daily Progress
         SimpleGoalAchievementCard(
           icon: "chart.line.uptrend.xyaxis",
           iconColor: Color.blue,
-          title: "Average Daily Progress",
-          mainText: "\(Int(averageDailyProgress * 100))% completion",
-          subtitle: "Typical daily performance",
+          title: "shared.goalAchievement.averageDailyProgress".localized,
+          mainText: String(format: "shared.goalAchievement.completionFormat".localized, Int(averageDailyProgress * 100)),
+          subtitle: "shared.goalAchievement.typicalDaily".localized,
           accentColor: Color.blue)
 
         // Week-over-Week Comparison
         SimpleGoalAchievementCard(
           icon: weekOverWeekTrendIcon,
           iconColor: weekOverWeekTrendColor,
-          title: "Week-over-Week",
+          title: "shared.goalAchievement.weekOverWeek".localized,
           mainText: weekOverWeekTrendText,
           subtitle: weekOverWeekTrendDescription,
           accentColor: weekOverWeekTrendColor)

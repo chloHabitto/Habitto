@@ -20,20 +20,20 @@ struct YearPickerModal: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Button("Cancel") {
+        Button("common.cancel".localized) {
           isPresented = false
         }
         .foregroundColor(.text02)
 
         Spacer()
 
-        Text("Select Year")
+        Text("shared.picker.selectYear".localized)
           .font(Font.appTitleMediumEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
 
-        Button("Done") {
+        Button("common.done".localized) {
           selectedYear = tempSelectedYear
           isPresented = false
         }
@@ -57,7 +57,7 @@ struct YearPickerModal: View {
           HStack {
             Image(systemName: "arrow.clockwise")
               .font(Font.appBodyMedium)
-            Text("Reset to current year")
+            Text("shared.picker.resetToCurrentYear".localized)
               .font(Font.appBodyMedium)
           }
           .foregroundColor(.text02)
@@ -75,7 +75,7 @@ struct YearPickerModal: View {
         isPresented = false
       }) {
         VStack(spacing: 8) {
-          Text("Selected Year")
+          Text("shared.picker.selectedYear".localized)
             .font(.appBodyMedium)
             .foregroundColor(.appOnPrimary)
 

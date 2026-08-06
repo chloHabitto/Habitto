@@ -21,7 +21,7 @@ struct UndoToastView: View {
   var body: some View {
     HStack(spacing: 0) {
       // Deleted message with its own padding
-      Text("\"\(habitName)\" deleted")
+      Text(String(format: "shared.toast.habitDeleted".localized, habitName))
         .font(.appBodyLarge)
         .foregroundColor(.appText01Inverse)
         .lineLimit(1)
@@ -34,7 +34,7 @@ struct UndoToastView: View {
       Button(action: {
         onUndo()
       }) {
-        Text("Undo")
+        Text("shared.toast.undo".localized)
           .font(.appBodyLargeEmphasised)
           .foregroundColor(.appInverseOnPrimary)
           .padding(.horizontal, 10)

@@ -19,27 +19,27 @@ struct DiskSpaceAlertView: View {
         .foregroundColor(.red)
 
       // Title
-      Text("Storage Space Low")
+      Text("shared.diskSpace.title".localized)
         .font(.title2)
         .fontWeight(.bold)
 
       // Message
       VStack(spacing: 12) {
-        Text("Your device doesn't have enough storage space to save your data safely.")
+        Text("shared.diskSpace.message".localized)
           .multilineTextAlignment(.center)
           .foregroundColor(.secondary)
 
         // Space details
         VStack(spacing: 8) {
           HStack {
-            Text("Required:")
+            Text("shared.diskSpace.required".localized)
             Spacer()
             Text(formatBytes(requiredSpace))
               .fontWeight(.medium)
           }
 
           HStack {
-            Text("Available:")
+            Text("shared.diskSpace.available".localized)
             Spacer()
             Text(formatBytes(availableSpace))
               .fontWeight(.medium)
@@ -51,7 +51,7 @@ struct DiskSpaceAlertView: View {
         .background(Color.gray.opacity(0.1))
         .cornerRadius(8)
 
-        Text("Please free up some space and try again.")
+        Text("shared.diskSpace.freeUpSpace".localized)
           .font(.caption)
           .foregroundColor(.secondary)
       }
@@ -59,7 +59,7 @@ struct DiskSpaceAlertView: View {
       // Action buttons
       VStack(spacing: 12) {
         Button(action: onRetry) {
-          Text("Try Again")
+          Text("shared.diskSpace.tryAgain".localized)
             .fontWeight(.medium)
             .frame(maxWidth: .infinity)
             .padding()
@@ -69,7 +69,7 @@ struct DiskSpaceAlertView: View {
         }
 
         Button(action: onDismiss) {
-          Text("Cancel")
+          Text("common.cancel".localized)
             .fontWeight(.medium)
             .frame(maxWidth: .infinity)
             .padding()

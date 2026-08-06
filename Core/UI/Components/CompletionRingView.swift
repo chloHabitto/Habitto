@@ -35,7 +35,7 @@ struct CompletionRingView: View {
                   .font(.system(size: 32, weight: .bold))
                   .foregroundColor(.text04)
                 
-                Text("Skipped")
+                Text("home.habit.skipped".localized)
                   .font(.appBodySmall)
                   .foregroundColor(.text04)
               }
@@ -43,7 +43,7 @@ struct CompletionRingView: View {
             .contentShape(Circle())
             
             // View Skip button
-            Text("View Skip")
+            Text("shared.completionRing.viewSkip".localized)
               .font(.appBodySmall)
               .foregroundColor(.primary)
           }
@@ -94,13 +94,13 @@ struct CompletionRingView: View {
             
             // Label below ring
             if isCompleted {
-              Text("Completed ✓")
+              Text("shared.completionRing.completed".localized)
                 .font(.appBodySmall)
                 .foregroundColor(.text04)
             } else {
               // In-progress state - show "Tap to log • Skip"
               HStack(spacing: 4) {
-                Text("Tap to log")
+                Text("shared.completionRing.tapToLog".localized)
                   .font(.appBodySmall)
                   .foregroundColor(.text04)
                 
@@ -110,7 +110,7 @@ struct CompletionRingView: View {
                     .foregroundColor(.text05)
                   
                   Button(action: onSkip) {
-                    Text("Skip")
+                    Text("home.habit.skip".localized)
                       .font(.appBodySmall)
                       .foregroundColor(.text04)
                   }
