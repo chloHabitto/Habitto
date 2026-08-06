@@ -11,14 +11,14 @@ struct OnboardingGreetingScreen: View {
 
   private var displayName: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)
-    return trimmed.isEmpty ? "there" : trimmed
+    return trimmed.isEmpty ? "onboarding.greeting.fallbackName".localized : trimmed
   }
 
   var body: some View {
     VStack(spacing: 0) {
       Spacer()
 
-      Text("Hi \(displayName)!!")
+      Text(String(format: "onboarding.greeting.title".localized, displayName))
         .font(.appHeadlineMediumEmphasised)
         .foregroundColor(.white)
         .padding(.bottom, 24)
@@ -29,7 +29,7 @@ struct OnboardingGreetingScreen: View {
 
       Spacer()
 
-      OnboardingButton.primary(text: "Continue") {
+      OnboardingButton.primary(text: "onboarding.greeting.cta.continue".localized) {
         viewModel.goToNext()
       }
       .padding(.horizontal, 20)

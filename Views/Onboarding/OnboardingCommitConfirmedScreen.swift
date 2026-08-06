@@ -8,9 +8,12 @@ struct OnboardingCommitConfirmedScreen: View {
 
   private let backgroundColor = OnboardingButton.onboardingBackground
 
-  private var displayName: String {
+  private var commitmentTitle: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)
-    return trimmed.isEmpty ? "Your" : "\(trimmed)'s"
+    if trimmed.isEmpty {
+      return "onboarding.commit.title.fallback".localized
+    }
+    return String(format: "onboarding.commitConfirmed.title.named".localized, trimmed)
   }
 
   var body: some View {
@@ -23,13 +26,13 @@ struct OnboardingCommitConfirmedScreen: View {
           .resizable()
           .aspectRatio(contentMode: .fit)
           .frame(width: 48, height: 48)
-        Text("Exciting!")
+        Text("onboarding.commitConfirmed.headline".localized)
           .font(.appTitleLarge)
           .foregroundColor(.white)
       }
       .padding(.bottom, 20)
 
-      Text("\(displayName) Commitment")
+      Text(commitmentTitle)
         .font(.appHeadlineSmallEmphasised)
         .foregroundColor(.white)
         .padding(.bottom, 24)

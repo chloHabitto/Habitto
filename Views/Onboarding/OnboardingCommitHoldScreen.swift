@@ -32,9 +32,12 @@ struct OnboardingCommitHoldScreen: View {
   private let backgroundColor = OnboardingButton.onboardingBackground
   private let expandFillColor = Color(red: 0.69, green: 0.80, blue: 0.98) // #B0CCF9
 
-  private var displayName: String {
+  private var commitmentTitle: String {
     let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)
-    return trimmed.isEmpty ? "Your" : "\(trimmed)\u{2019}s"
+    if trimmed.isEmpty {
+      return "onboarding.commit.title.fallback".localized
+    }
+    return String(format: "onboarding.commitHold.title.named".localized, trimmed)
   }
 
   /// Actual safe area insets from UIKit (parent OnboardingFlowView strips safe area with .ignoresSafeArea(edges: .all)).
@@ -63,7 +66,7 @@ struct OnboardingCommitHoldScreen: View {
               .frame(height: 160)
               .padding(.bottom, 24)
 
-            Text("\(displayName) Commitment")
+            Text(commitmentTitle)
               .font(.appHeadlineSmallEmphasised)
               .foregroundColor(.white)
               .frame(maxWidth: .infinity)
@@ -122,7 +125,7 @@ struct OnboardingCommitHoldScreen: View {
               .scaleEffect(medalScale)
               .padding(.bottom, 16)
 
-            Text("\(displayName) Commitment")
+            Text(commitmentTitle)
               .font(.appHeadlineSmallEmphasised)
               .foregroundColor(Color(red: 0.10, green: 0.15, blue: 0.30))
               .multilineTextAlignment(.center)
@@ -191,12 +194,12 @@ struct OnboardingCommitHoldScreen: View {
       if showContinueButton {
         VStack {
           Spacer()
-          OnboardingButton.primary(text: "Let's get started!") {
+          OnboardingButton.primary(text: "onboarding.commit.cta.getStarted".localized) {
             viewModel.completeOnboarding()
           }
           .padding(.horizontal, 20)
           .padding(.bottom, safeAreaInsets.bottom + 16)
-          .accessibilityLabel("Let's get started")
+          .accessibilityLabel("onboarding.commit.cta.getStarted.a11y".localized)
         }
         .transition(.move(edge: .bottom).combined(with: .opacity))
       }

@@ -12521,6 +12521,500 @@
         }
       }
     },
+    "onboarding.celebration.title.named" : {
+      "comment" : "FORMAT: name + ASCII apostrophe possessive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s Commitment"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@'s Commitment"
+          }
+        }
+      }
+    },
+    "onboarding.commit.cta.getStarted" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's get started!"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Let's get started!"
+          }
+        }
+      }
+    },
+    "onboarding.commit.cta.getStarted.a11y" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Let's get started"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Let's get started"
+          }
+        }
+      }
+    },
+    "onboarding.commit.hold.a11yHint" : {
+      "comment" : "FORMAT: hold duration",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Press and hold for %.1f seconds to commit"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Press and hold for %.1f seconds to commit"
+          }
+        }
+      }
+    },
+    "onboarding.commit.hold.done" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Committed"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Committed"
+          }
+        }
+      }
+    },
+    "onboarding.commit.hold.label" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hold to commit"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hold to commit"
+          }
+        }
+      }
+    },
+    "onboarding.commit.title.fallback" : {
+      "comment" : "FORMAT possessive fallback",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Commitment"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Your Commitment"
+          }
+        }
+      }
+    },
+    "onboarding.commitConfirmed.headline" : {
+      "comment" : "MARKETING",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exciting!"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Exciting!"
+          }
+        }
+      }
+    },
+    "onboarding.commitConfirmed.title.named" : {
+      "comment" : "FORMAT: name + ASCII apostrophe possessive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s Commitment"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@'s Commitment"
+          }
+        }
+      }
+    },
+    "onboarding.commitHold.title.named" : {
+      "comment" : "FORMAT: name + curly apostrophe possessive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@’s Commitment"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@’s Commitment"
+          }
+        }
+      }
+    },
+    "onboarding.commitment.item1" : {
+      "comment" : "MARKETING / pledge — translator judgment",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I will start small and be patient with myself."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I will start small and be patient with myself."
+          }
+        }
+      }
+    },
+    "onboarding.commitment.item2" : {
+      "comment" : "MARKETING / pledge — translator judgment",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I will celebrate progress, not just perfection."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I will celebrate progress, not just perfection."
+          }
+        }
+      }
+    },
+    "onboarding.commitment.item3" : {
+      "comment" : "MARKETING / pledge — translator judgment",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I will keep going, even after hard days."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I will keep going, even after hard days."
+          }
+        }
+      }
+    },
+    "onboarding.commitment.item4" : {
+      "comment" : "MARKETING / pledge — translator judgment",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I believe I can change."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I believe I can change."
+          }
+        }
+      }
+    },
+    "onboarding.commitPrompt.cta.ready" : {
+      "comment" : "MARKETING / persuasive CTA",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes, I am ready!"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Yes, I am ready!"
+          }
+        }
+      }
+    },
+    "onboarding.commitPrompt.title" : {
+      "comment" : "MARKETING / persuasive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ready to make a commitment to yourself?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ready to make a commitment to yourself?"
+          }
+        }
+      }
+    },
+    "onboarding.feature.cta.continue" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "onboarding.feature.home.subtitle" : {
+      "comment" : "MARKETING / persuasive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You don't need a perfect plan. Just one small habit is enough to begin."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "You don't need a perfect plan. Just one small habit is enough to begin."
+          }
+        }
+      }
+    },
+    "onboarding.feature.home.title" : {
+      "comment" : "MARKETING",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Build habits. Break bad ones."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Build habits. Break bad ones."
+          }
+        }
+      }
+    },
+    "onboarding.feature.progress.subtitle" : {
+      "comment" : "MARKETING / persuasive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Track habits your way, celebrate small wins, and keep going — even on hard days."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Track habits your way, celebrate small wins, and keep going — even on hard days."
+          }
+        }
+      }
+    },
+    "onboarding.feature.progress.title" : {
+      "comment" : "MARKETING",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Progress counts, not perfection"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Progress counts, not perfection"
+          }
+        }
+      }
+    },
+    "onboarding.greeting.cta.continue" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "onboarding.greeting.fallbackName" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "there"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "there"
+          }
+        }
+      }
+    },
+    "onboarding.greeting.title" : {
+      "comment" : "FORMAT: display name",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hi %@!!"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hi %@!!"
+          }
+        }
+      }
+    },
+    "onboarding.intro.body" : {
+      "comment" : "MARKETING / persuasive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I'm here to help you build habits that actually stick — no pressure, no guilt."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I'm here to help you build habits that actually stick — no pressure, no guilt."
+          }
+        }
+      }
+    },
+    "onboarding.intro.cta.continue" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "onboarding.name.cta.continue" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Continue"
+          }
+        }
+      }
+    },
+    "onboarding.name.cta.skip" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "skip"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "skip"
+          }
+        }
+      }
+    },
     "onboarding.name.error" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -12534,6 +13028,57 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "계속하려면 이름을 입력해 주세요."
+          }
+        }
+      }
+    },
+    "onboarding.name.field.a11yHint" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter your name"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enter your name"
+          }
+        }
+      }
+    },
+    "onboarding.name.field.a11yLabel" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Name"
+          }
+        }
+      }
+    },
+    "onboarding.name.field.placeholder" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Name"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Name"
           }
         }
       }
@@ -12552,6 +13097,93 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "이름은 나중에 설정에서 변경할 수 있어요."
+          }
+        }
+      }
+    },
+    "onboarding.name.subtitle" : {
+      "comment" : "MARKETING / persuasive",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll use your name to make this feel more personal and encouraging."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "We'll use your name to make this feel more personal and encouraging."
+          }
+        }
+      }
+    },
+    "onboarding.name.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What should we call you?"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "What should we call you?"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.brand" : {
+      "comment" : "Brand name — usually leave untranslated",
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Habitto"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Habitto"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.cta.existingAccount" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I already have an account"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I already have an account"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.cta.getStarted" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Get Started"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Get Started"
           }
         }
       }

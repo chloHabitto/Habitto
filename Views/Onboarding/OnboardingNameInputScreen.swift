@@ -37,7 +37,7 @@ struct OnboardingNameInputScreen: View {
         Button(action: {
           viewModel.goToNext()
         }) {
-          Text("skip")
+          Text("onboarding.name.cta.skip".localized)
             .font(.appTitleMedium)
             .foregroundColor(Color(hex: "ADAFB5"))
             .frame(width: 64, height: 42)
@@ -54,14 +54,14 @@ struct OnboardingNameInputScreen: View {
           Spacer()
             .frame(height: 48)
 
-          Text("What should we call you?")
+          Text("onboarding.name.title".localized)
             .font(.appHeadlineSmallEmphasised)
             .foregroundColor(.white)
             .multilineTextAlignment(.center)
             .opacity(titleVisible ? 1 : 0)
             .offset(y: titleVisible ? 0 : 20)
 
-          Text("We'll use your name to make this feel more personal and encouraging.")
+          Text("onboarding.name.subtitle".localized)
             .font(.appBodyLarge)
             .foregroundColor(.white.opacity(0.7))
             .multilineTextAlignment(.center)
@@ -132,7 +132,7 @@ struct OnboardingNameInputScreen: View {
   }
 
   private var nameFieldWithUnderline: some View {
-    TextField("Name", text: $viewModel.userName)
+    TextField("onboarding.name.field.placeholder".localized, text: $viewModel.userName)
       .font(.appBodyLarge)
       .foregroundColor(.white)
       .multilineTextAlignment(.center)
@@ -153,20 +153,20 @@ struct OnboardingNameInputScreen: View {
       )
       .autocorrectionDisabled()
       .textInputAutocapitalization(.words)
-      .accessibilityLabel("Name")
-      .accessibilityHint("Enter your name")
+      .accessibilityLabel("onboarding.name.field.a11yLabel".localized)
+      .accessibilityHint("onboarding.name.field.a11yHint".localized)
       .animation(.easeInOut(duration: 0.3), value: isNameFocused)
   }
 
   private var helperText: some View {
-    Text(String(localized: "onboarding.name.helper"))
+    Text("onboarding.name.helper".localized)
       .font(.appBodySmall)
       .foregroundColor(.white.opacity(0.5))
       .multilineTextAlignment(.center)
   }
 
   private var errorText: some View {
-    Text(String(localized: "onboarding.name.error"))
+    Text("onboarding.name.error".localized)
       .font(.appBodySmall)
       .foregroundColor(Color(hex: "FF6B6B"))
       .multilineTextAlignment(.center)
@@ -175,7 +175,7 @@ struct OnboardingNameInputScreen: View {
 
   private var continueButton: some View {
     OnboardingButton.primary(
-      text: "Continue",
+      text: "onboarding.name.cta.continue".localized,
       inactive: isNameEmpty
     ) {
       let trimmed = viewModel.userName.trimmingCharacters(in: .whitespaces)
@@ -194,7 +194,7 @@ struct OnboardingNameInputScreen: View {
     .padding(.bottom, keyboardHeight > 0 ? (20 + keyboardHeight) : 40)
     .opacity(buttonVisible ? 1 : 0)
     .scaleEffect(buttonVisible ? 1 : 0.95)
-    .accessibilityLabel("Continue")
+    .accessibilityLabel("onboarding.name.cta.continue".localized)
   }
 
   private func runEntranceAnimations() {
