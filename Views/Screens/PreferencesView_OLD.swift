@@ -27,19 +27,21 @@ struct PreferencesView: View {
 
           // App Preferences
           VStack(spacing: 0) {
-            AccountOptionRow(
-              icon: "Icon-Language_Filled",
-              title: "Language",
-              subtitle: "Choose your preferred language",
-              hasChevron: true,
-              iconColor: iconColor)
-            {
-              showingLanguage = true
+            if FeatureFlags.inAppLanguageSwitchEnabled {
+              AccountOptionRow(
+                icon: "Icon-Language_Filled",
+                title: "Language",
+                subtitle: "Choose your preferred language",
+                hasChevron: true,
+                iconColor: iconColor)
+              {
+                showingLanguage = true
+              }
+              
+              Divider()
+                .background(Color(.systemGray4))
+                .padding(.leading, 56)
             }
-            
-            Divider()
-              .background(Color(.systemGray4))
-              .padding(.leading, 56)
             
             AccountOptionRow(
               icon: "Icon-Theme_Filled",
@@ -109,7 +111,9 @@ struct PreferencesView: View {
     }
     .preferredColorScheme(themeManager.preferredColorScheme)
     .sheet(isPresented: $showingLanguage) {
-      LanguageView()
+      if FeatureFlags.inAppLanguageSwitchEnabled {
+        LanguageView()
+      }
     }
     .sheet(isPresented: $showingTheme) {
       ThemeView()

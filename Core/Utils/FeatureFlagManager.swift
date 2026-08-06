@@ -30,5 +30,10 @@ enum FeatureFlags {
     static var enableFirestoreSync: Bool { return false }
     static var themePersistence: Bool { return false }
     static var allowPastDates: Bool { return false }
+
+    /// In-app language picker + custom .lproj bundle override.
+    /// When `false`, strings follow the iPhone system language via Bundle.main.
+    /// Flip to `true` to restore LanguageView / LocalizationManager.setLanguage().
+    static var inAppLanguageSwitchEnabled: Bool { return false }
 }
 

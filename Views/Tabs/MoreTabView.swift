@@ -105,7 +105,9 @@ struct MoreTabView: View {
         SecurityView()
       }
       .sheet(isPresented: $showingLanguageView) {
-        LanguageView()
+        if FeatureFlags.inAppLanguageSwitchEnabled {
+          LanguageView()
+        }
       }
       .sheet(isPresented: $showingThemeView) {
         ThemeView()
@@ -276,62 +278,77 @@ struct MoreTabView: View {
 
   // MARK: - Settings Sections
 
+  /// General settings rows; language row is feature-flagged for easy restore.
+  private var generalSettingsItems: [SettingItem] {
+    var items: [SettingItem] = [
+      SettingItem(
+        icon: "Icon-crown_Filled",
+        title: "more.mySubscription".localized,
+        value: subscriptionManager.isPremium ? "common.premium".localized : "common.free".localized,
+        hasChevron: true,
+        action: {
+          showingSubscriptionView = true
+        }),
+      SettingItem(
+        icon: "Icon-Vacation_Filled",
+        title: "more.vacationMode".localized,
+        value: vacationManager.isActive ? "common.on".localized : "common.off".localized,
+        hasChevron: true,
+        action: {
+          showingVacationMode = true
+        })
+    ]
+
+    // In-app language picker — gated by FeatureFlags.inAppLanguageSwitchEnabled
+    // (flip flag to true to restore; LanguageView / LocalizationManager kept intact)
+    if FeatureFlags.inAppLanguageSwitchEnabled {
+      items.append(
+        SettingItem(
+          icon: "Icon-Language_Filled",
+          title: "more.language".localized,
+          value: getNativeLanguageName(),
+          hasChevron: true,
+          action: {
+            showingLanguageView = true
+          }))
+    }
+
+    items.append(contentsOf: [
+      SettingItem(
+        icon: "Icon-Theme_Filled",
+        title: "more.appearance".localized,
+        value: themeManager.colorSchemePreference.displayName,
+        hasChevron: true,
+        action: {
+          showingThemeView = true
+        }),
+      SettingItem(
+        icon: "Icon-Profile_Filled",
+        title: "more.account".localized,
+        value: nil,
+        hasChevron: true,
+        action: {
+          showingAccountView = true
+        }),
+      SettingItem(
+        icon: "Icon-Setting_Filled",
+        title: "more.settings".localized,
+        value: nil,
+        hasChevron: true,
+        action: {
+          showingSettingsView = true
+        })
+    ])
+
+    return items
+  }
+
   private var settingsSections: some View {
     VStack(spacing: 24) {
       // General Settings Group
       settingsGroup(
         title: "more.section.generalSettings".localized,
-        items: [
-          SettingItem(
-            icon: "Icon-crown_Filled",
-            title: "more.mySubscription".localized,
-            value: subscriptionManager.isPremium ? "common.premium".localized : "common.free".localized,
-            hasChevron: true,
-            action: {
-              showingSubscriptionView = true
-            }),
-          SettingItem(
-            icon: "Icon-Vacation_Filled",
-            title: "more.vacationMode".localized,
-            value: vacationManager.isActive ? "common.on".localized : "common.off".localized,
-            hasChevron: true,
-            action: {
-              showingVacationMode = true
-            }),
-          // TODO: Language setting - hidden for now, will continue on it later
-          // SettingItem(
-          //   icon: "Icon-Language_Filled",
-          //   title: "more.language".localized,
-          //   value: getNativeLanguageName(),
-          //   hasChevron: true,
-          //   action: {
-          //     showingLanguageView = true
-          //   }),
-          SettingItem(
-            icon: "Icon-Theme_Filled",
-            title: "more.appearance".localized,
-            value: themeManager.colorSchemePreference.displayName,
-            hasChevron: true,
-            action: {
-              showingThemeView = true
-            }),
-          SettingItem(
-            icon: "Icon-Profile_Filled",
-            title: "more.account".localized,
-            value: nil,
-            hasChevron: true,
-            action: {
-              showingAccountView = true
-            }),
-          SettingItem(
-            icon: "Icon-Setting_Filled",
-            title: "more.settings".localized,
-            value: nil,
-            hasChevron: true,
-            action: {
-              showingSettingsView = true
-            })
-        ])
+        items: generalSettingsItems)
 
       // Support/Legal Group
       settingsGroup(

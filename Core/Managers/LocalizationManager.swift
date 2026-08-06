@@ -22,11 +22,17 @@ final class LocalizationManager: ObservableObject {
   // MARK: - Initialization
   
   private init() {
-    // Load language from I18nPreferencesManager
-    currentLanguage = I18nPreferencesManager.shared.preferences.languageTag
-    loadBundle(for: currentLanguage)
+    if FeatureFlags.inAppLanguageSwitchEnabled {
+      // In-app override: load language from I18nPreferencesManager
+      currentLanguage = I18nPreferencesManager.shared.preferences.languageTag
+      loadBundle(for: currentLanguage)
+    } else {
+      // Follow iPhone system language (no .lproj override)
+      currentLanguage = Self.systemLanguageCode
+      bundle = nil
+    }
     
-    // Observe language changes
+    // Observe language changes (only applied when in-app switch is enabled)
     NotificationCenter.default.addObserver(
       self,
       selector: #selector(languageDidChange),
@@ -34,7 +40,7 @@ final class LocalizationManager: ObservableObject {
       object: nil
     )
     
-    print("🌍 LocalizationManager: Initialized with language \(currentLanguage)")
+    print("🌍 LocalizationManager: Initialized with language \(currentLanguage) (inAppSwitch=\(FeatureFlags.inAppLanguageSwitchEnabled))")
   }
   
   deinit {
@@ -45,7 +51,8 @@ final class LocalizationManager: ObservableObject {
   
   /// Get localized string for key
   func localizedString(_ key: String) -> String {
-    guard let bundle = bundle else {
+    // System-language mode: let iOS pick the matching .lproj via Bundle.main
+    guard FeatureFlags.inAppLanguageSwitchEnabled, let bundle = bundle else {
       return NSLocalizedString(key, comment: "")
     }
     return bundle.localizedString(forKey: key, value: nil, table: nil)
@@ -53,6 +60,10 @@ final class LocalizationManager: ObservableObject {
   
   /// Update the current language
   func setLanguage(_ languageCode: String) {
+    guard FeatureFlags.inAppLanguageSwitchEnabled else {
+      print("🌍 LocalizationManager: setLanguage(\(languageCode)) ignored — inAppLanguageSwitchEnabled=false")
+      return
+    }
     currentLanguage = languageCode
     loadBundle(for: languageCode)
     objectWillChange.send()
@@ -60,6 +71,10 @@ final class LocalizationManager: ObservableObject {
   }
   
   // MARK: - Private Methods
+  
+  private static var systemLanguageCode: String {
+    Locale.current.language.languageCode?.identifier ?? "en"
+  }
   
   private func loadBundle(for languageCode: String) {
     if let path = Bundle.main.path(forResource: languageCode, ofType: "lproj"),
@@ -74,6 +89,7 @@ final class LocalizationManager: ObservableObject {
   }
   
   @objc private func languageDidChange(_ notification: Notification) {
+    guard FeatureFlags.inAppLanguageSwitchEnabled else { return }
     let newLanguage = I18nPreferencesManager.shared.preferences.languageTag
     if newLanguage != currentLanguage {
       setLanguage(newLanguage)
