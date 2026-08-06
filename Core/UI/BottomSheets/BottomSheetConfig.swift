@@ -53,113 +53,117 @@ struct BottomSheetConfig {
 // MARK: - Predefined Configurations
 
 extension BottomSheetConfig {
+  /// Schedule preset sheet. `value` strings stay English identifiers (persisted / compared in scheduling logic).
+  @MainActor
   static func scheduleConfig(selectedSchedule: String) -> BottomSheetConfig {
     let options = [
       BottomSheetOption(
         id: "everyday",
-        title: "Everyday",
-        subtitle: "Repeat every day",
+        title: "shared.schedule.everyday".localized,
+        subtitle: "shared.schedule.everydaySubtitle".localized,
         value: "Everyday",
         isSelected: selectedSchedule == "Everyday"),
       BottomSheetOption(
         id: "weekdays",
-        title: "Weekdays",
-        subtitle: "Monday to Friday",
+        title: "shared.schedule.weekdays".localized,
+        subtitle: "shared.schedule.weekdaysSubtitle".localized,
         value: "Weekdays",
         isSelected: selectedSchedule == "Weekdays"),
       BottomSheetOption(
         id: "weekends",
-        title: "Weekends",
-        subtitle: "Saturday and Sunday",
+        title: "shared.schedule.weekends".localized,
+        subtitle: "shared.schedule.weekendsSubtitle".localized,
         value: "Weekends",
         isSelected: selectedSchedule == "Weekends"),
       BottomSheetOption(
         id: "monday",
-        title: "Monday",
-        subtitle: "Every Monday",
+        title: "home.weekday.monday".localized,
+        subtitle: "shared.schedule.everyMonday".localized,
         value: "Monday",
         isSelected: selectedSchedule == "Monday"),
       BottomSheetOption(
         id: "tuesday",
-        title: "Tuesday",
-        subtitle: "Every Tuesday",
+        title: "home.weekday.tuesday".localized,
+        subtitle: "shared.schedule.everyTuesday".localized,
         value: "Tuesday",
         isSelected: selectedSchedule == "Tuesday"),
       BottomSheetOption(
         id: "wednesday",
-        title: "Wednesday",
-        subtitle: "Every Wednesday",
+        title: "home.weekday.wednesday".localized,
+        subtitle: "shared.schedule.everyWednesday".localized,
         value: "Wednesday",
         isSelected: selectedSchedule == "Wednesday"),
       BottomSheetOption(
         id: "thursday",
-        title: "Thursday",
-        subtitle: "Every Thursday",
+        title: "home.weekday.thursday".localized,
+        subtitle: "shared.schedule.everyThursday".localized,
         value: "Thursday",
         isSelected: selectedSchedule == "Thursday"),
       BottomSheetOption(
         id: "friday",
-        title: "Friday",
-        subtitle: "Every Friday",
+        title: "home.weekday.friday".localized,
+        subtitle: "shared.schedule.everyFriday".localized,
         value: "Friday",
         isSelected: selectedSchedule == "Friday"),
       BottomSheetOption(
         id: "saturday",
-        title: "Saturday",
-        subtitle: "Every Saturday",
+        title: "home.weekday.saturday".localized,
+        subtitle: "shared.schedule.everySaturday".localized,
         value: "Saturday",
         isSelected: selectedSchedule == "Saturday"),
       BottomSheetOption(
         id: "sunday",
-        title: "Sunday",
-        subtitle: "Every Sunday",
+        title: "home.weekday.sunday".localized,
+        subtitle: "shared.schedule.everySunday".localized,
         value: "Sunday",
         isSelected: selectedSchedule == "Sunday")
     ]
 
     return BottomSheetConfig(
-      title: "Schedule",
-      description: "Set which day(s) you'd like to do this habit",
+      title: "create.schedule.title".localized,
+      description: "create.schedule.description".localized,
       options: options)
   }
 
+  /// Goal amount presets. `value` strings stay English identifiers for selection matching.
+  @MainActor
   static func goalConfig(selectedGoal: String) -> BottomSheetConfig {
     let options = [
       BottomSheetOption(
         id: "1time",
-        title: "1 time",
-        subtitle: "Once per session",
+        title: "shared.goal.oneTime".localized,
+        subtitle: "shared.goal.oneTimeSubtitle".localized,
         value: "1 time",
         isSelected: selectedGoal == "1 time"),
       BottomSheetOption(
         id: "2times",
-        title: "2 times",
-        subtitle: "Twice per session",
+        title: "shared.goal.twoTimes".localized,
+        subtitle: "shared.goal.twoTimesSubtitle".localized,
         value: "2 times",
         isSelected: selectedGoal == "2 times"),
       BottomSheetOption(
         id: "3times",
-        title: "3 times",
-        subtitle: "Three times per session",
+        title: "shared.goal.threeTimes".localized,
+        subtitle: "shared.goal.threeTimesSubtitle".localized,
         value: "3 times",
         isSelected: selectedGoal == "3 times"),
       BottomSheetOption(
         id: "5times",
-        title: "5 times",
-        subtitle: "Five times per session",
+        title: "shared.goal.fiveTimes".localized,
+        subtitle: "shared.goal.fiveTimesSubtitle".localized,
         value: "5 times",
         isSelected: selectedGoal == "5 times"),
       BottomSheetOption(
         id: "10times",
-        title: "10 times",
-        subtitle: "Ten times per session",
+        title: "shared.goal.tenTimes".localized,
+        subtitle: "shared.goal.tenTimesSubtitle".localized,
         value: "10 times",
         isSelected: selectedGoal == "10 times")
     ]
 
     return BottomSheetConfig(
-      title: "Goal",
-      description: "Set how many times you want to do this habit",
+      title: "shared.goal.title".localized,
+      description: "shared.goal.description".localized,
       options: options)
   }
 }

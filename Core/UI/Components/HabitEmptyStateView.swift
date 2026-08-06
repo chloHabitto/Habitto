@@ -81,8 +81,8 @@ extension HabitEmptyStateView {
 
     return HabitEmptyStateView(
       imageName: "Today-Habit-List-Empty-State@4x",
-      title: "No habits for \(formatter.string(from: date))",
-      subtitle: "Take a break or plan ahead!")
+      title: String(format: "shared.empty.noHabitsForDate".localized, formatter.string(from: date)),
+      subtitle: "shared.empty.takeABreak".localized)
   }
 
   /// Empty state for when no completed habits exist
@@ -97,24 +97,24 @@ extension HabitEmptyStateView {
   static func noProgressData() -> HabitEmptyStateView {
     HabitEmptyStateView(
       imageName: "Habit-List-Empty-State@4x",
-      title: "No progress data",
-      subtitle: "Complete some habits to see your progress")
+      title: "shared.empty.noProgressData".localized,
+      subtitle: "shared.empty.completeHabitsForProgress".localized)
   }
 
   /// Empty state for when no search results are found
   static func noSearchResults() -> HabitEmptyStateView {
     HabitEmptyStateView(
       imageName: "Habit-List-Empty-State@4x",
-      title: "No results found",
-      subtitle: "Try adjusting your search terms")
+      title: "shared.empty.noResults".localized,
+      subtitle: "shared.empty.tryAdjustingSearch".localized)
   }
 
   /// Empty state for coming soon features
   static func comingSoon() -> HabitEmptyStateView {
     HabitEmptyStateView(
       imageName: "comingSoon",
-      title: "Coming Soon",
-      subtitle: "We're working on this feature")
+      title: "shared.empty.comingSoon".localized,
+      subtitle: "shared.empty.workingOnFeature".localized)
   }
 }
 

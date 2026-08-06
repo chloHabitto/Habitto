@@ -27,20 +27,20 @@ struct WeekPickerModal: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Button("Cancel") {
+        Button("common.cancel".localized) {
           isPresented = false
         }
         .foregroundColor(.text02)
 
         Spacer()
 
-        Text("Select Week")
+        Text("shared.picker.selectWeek".localized)
           .font(Font.appTitleMediumEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
 
-        Button("Done") {
+        Button("common.done".localized) {
           selectedWeekStartDate = tempSelectedWeekStartDate
           isPresented = false
         }
@@ -65,7 +65,7 @@ struct WeekPickerModal: View {
           HStack {
             Image(systemName: "arrow.clockwise")
               .font(Font.appBodyMedium)
-            Text("Reset to current week")
+            Text("shared.picker.resetToCurrentWeek".localized)
               .font(Font.appBodyMedium)
           }
           .foregroundColor(.text02)
@@ -84,7 +84,7 @@ struct WeekPickerModal: View {
           isPresented = false
         }) {
           VStack(spacing: 8) {
-            Text("Selected Week")
+            Text("shared.picker.selectedWeek".localized)
               .font(Font.appBodyMedium)
               .foregroundColor(.surface)
 

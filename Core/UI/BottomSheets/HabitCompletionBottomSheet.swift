@@ -116,13 +116,13 @@ struct HabitCompletionBottomSheet: View {
       .padding(.top, 8)
 
       // Title
-      Text(isEditMode ? "Edit Difficulty" : "Good job!")
+      Text(isEditMode ? "shared.completion.editDifficulty".localized : "shared.completion.goodJob".localized)
         .font(Font.appHeadlineSmallEmphasised)
         .foregroundColor(.text01)
         .frame(maxWidth: .infinity, alignment: .center)
 
       // Difficulty question
-      Text(isEditMode ? "Change how difficult this felt" : "How difficult was this habit today?")
+      Text(isEditMode ? "shared.completion.changeDifficulty".localized : "shared.completion.howDifficult".localized)
         .font(Font.appBodyMediumEmphasised)
         .foregroundColor(.text05)
         .frame(maxWidth: .infinity, alignment: .center)
@@ -157,7 +157,7 @@ struct HabitCompletionBottomSheet: View {
                 Image(systemName: "flame.fill")
                   .font(.caption)
                   .foregroundColor(.orange)
-                Text("\(habit.computedStreak()) day streak")
+                Text(String(format: "progress.journey.dayStreak".localized, habit.computedStreak()))
                   .font(Font.appBodySmall)
                   .foregroundColor(.text03)
               }
@@ -169,7 +169,7 @@ struct HabitCompletionBottomSheet: View {
                 .foregroundColor(.text04)
             }
 
-            Text("Completed today!")
+            Text("shared.completion.completedToday".localized)
               .font(.appBodySmall)
               .foregroundColor(.green)
           }
@@ -287,13 +287,13 @@ struct HabitCompletionBottomSheet: View {
 
         // Difficulty labels
         HStack {
-          Text("Very Easy")
+          Text("shared.completion.veryEasy".localized)
             .font(.appBodySmallEmphasised)
             .foregroundColor(.text02)
 
           Spacer()
 
-          Text("Very Hard")
+          Text("shared.completion.veryHard".localized)
             .font(.appBodySmallEmphasised)
             .foregroundColor(.text02)
         }
@@ -317,7 +317,7 @@ struct HabitCompletionBottomSheet: View {
         isPresented = false
         onDismiss?()
       }) {
-        Text(isEditMode ? "Cancel" : "Skip")
+        Text(isEditMode ? "common.cancel".localized : "home.habit.skip".localized)
           .font(Font.appButtonText1)
           .foregroundColor(.text04)
           .frame(maxWidth: .infinity)
@@ -335,7 +335,7 @@ struct HabitCompletionBottomSheet: View {
         isPresented = false
         onDismiss?()
       }) {
-        Text(isEditMode ? "Save" : "Submit")
+        Text(isEditMode ? "common.save".localized : "shared.completion.submit".localized)
           .font(Font.appButtonText1)
           .foregroundColor(.onPrimary)
           .frame(maxWidth: .infinity)
