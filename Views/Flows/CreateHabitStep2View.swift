@@ -52,9 +52,7 @@ struct CreateHabitStep2View: View {
             reminders = updatedReminders
             let activeReminders = updatedReminders.filter { $0.isActive }
             if !activeReminders.isEmpty {
-              reminder = activeReminders.count == 1
-              ? String(format: "create.reminder.reminderCount".localized, activeReminders.count)
-              : String(format: "create.reminder.remindersCount".localized, activeReminders.count)
+              reminder = String(localized: "create.reminder.remindersCount \(activeReminders.count)")
             } else {
               reminder = "create.reminder.noReminder".localized
             }

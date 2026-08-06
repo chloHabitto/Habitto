@@ -237,7 +237,7 @@ private struct RecentlyDeletedRowWithData: View {
           // Deletion info
           HStack(spacing: 8) {
             if let deletedAt = habitData.deletedAt {
-              Text(String(format: "habits.recentlyDeleted.deletedDaysAgo".localized, daysAgo(from: deletedAt)))
+              Text(String(localized: "habits.recentlyDeleted.deletedDaysAgo \(daysAgo(from: deletedAt))"))
                 .font(.appCaptionMedium)
                 .foregroundColor(.secondary)
               
@@ -246,7 +246,7 @@ private struct RecentlyDeletedRowWithData: View {
                 .foregroundColor(.secondary)
               
               let daysLeft = daysLeftToRecover(from: deletedAt)
-              Text(String(format: "habits.recentlyDeleted.daysLeftToRecover".localized, daysLeft))
+              Text(String(localized: "habits.recentlyDeleted.daysLeftToRecover \(daysLeft)"))
                 .font(.appCaptionMedium)
                 .foregroundColor(daysLeft <= 7 ? .orange : .secondary)
             }
