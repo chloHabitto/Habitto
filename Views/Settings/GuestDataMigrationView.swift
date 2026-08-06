@@ -14,7 +14,7 @@ struct GuestDataMigrationView: View {
           VStack(spacing: 16) {
             ProgressView()
               .scaleEffect(1.5)
-            Text("Checking your data...")
+            Text("more.migration.checkingData".localized)
               .font(.appBodyMedium)
               .foregroundColor(.text03)
           }
@@ -38,25 +38,28 @@ struct GuestDataMigrationView: View {
       .padding(.bottom, 20)
     }
     .background(Color.surface2)
-    .navigationTitle("Data Migration")
+    .navigationTitle("more.migration.title".localized)
     .navigationBarTitleDisplayMode(.inline)
-    .alert("Migration Error", isPresented: $showingError) {
-      Button("OK") { }
+    .alert("more.migration.migrationError".localized, isPresented: $showingError) {
+      Button("common.ok".localized) { }
     } message: {
-      Text(migrationError ?? "An unknown error occurred")
+      Text(migrationError ?? "more.migration.unknownError".localized)
     }
-    .alert("Replace Account Data?", isPresented: $showingReplaceConfirmation) {
-      Button("Cancel", role: .cancel) { }
-      Button("Replace", role: .destructive) {
+    .alert("more.migration.replaceAccountData".localized, isPresented: $showingReplaceConfirmation) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("more.migration.replace".localized, role: .destructive) {
         Task {
           await migrateGuestData()
         }
       }
     } message: {
       if let cloudPreview = cloudDataPreview, let guestPreview = guestDataPreview {
-        Text("This will permanently delete \(cloudPreview.habitCount) habit\(cloudPreview.habitCount == 1 ? "" : "s") from your account and replace them with the \(guestPreview.habitCount) habit\(guestPreview.habitCount == 1 ? "" : "s") on this device.")
+        Text(String(
+          format: "more.migration.replaceConfirmFormat".localized,
+          String(localized: "more.migration.habitCount \(cloudPreview.habitCount)"),
+          String(localized: "more.migration.habitCount \(guestPreview.habitCount)")))
       } else {
-        Text("This will permanently delete your account data and replace it with the data on this device.")
+        Text("more.migration.replaceConfirmGeneric".localized)
       }
     }
     .task {
@@ -94,12 +97,12 @@ struct GuestDataMigrationView: View {
     VStack(spacing: 24) {
       // Header
       VStack(spacing: 16) {
-        Text("Welcome Back!")
+        Text("more.migration.welcomeBack".localized)
           .font(.appHeadlineMediumEmphasised)
           .foregroundColor(.text01)
           .multilineTextAlignment(.center)
 
-        Text("We found your data in two places")
+        Text("more.migration.foundDataTwoPlaces".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text03)
           .multilineTextAlignment(.center)
@@ -113,7 +116,7 @@ struct GuestDataMigrationView: View {
         if let cloudPreview = cloudDataPreview {
           dataPreviewCard(
             icon: "cloud.fill",
-            title: "Your Account",
+            title: "more.migration.yourAccount".localized,
             habitCount: cloudPreview.habitCount,
             level: cloudPreview.level,
             xp: cloudPreview.totalXP
@@ -124,7 +127,7 @@ struct GuestDataMigrationView: View {
         if let guestPreview = guestDataPreview {
           dataPreviewCard(
             icon: "iphone",
-            title: "This Device",
+            title: "more.migration.thisDevice".localized,
             habitCount: guestPreview.habitCount,
             level: nil,
             xp: nil,
@@ -135,7 +138,7 @@ struct GuestDataMigrationView: View {
       .padding(.horizontal, 20)
 
       // Question
-      Text("What would you like to do?")
+      Text("more.migration.whatWouldYouLike".localized)
         .font(.appBodyLarge)
         .foregroundColor(.text01)
         .padding(.top, 8)
@@ -146,7 +149,7 @@ struct GuestDataMigrationView: View {
         HabittoButton(
           size: .large,
           style: .fillPrimary,
-          content: .text("Keep Both"),
+          content: .text("more.migration.keepBoth".localized),
           state: migrationManager.isMigrating ? .disabled : .default,
           action: {
             Task {
@@ -159,7 +162,7 @@ struct GuestDataMigrationView: View {
         HabittoButton(
           size: .large,
           style: .fillNeutral,
-          content: .text("Keep Account Data Only"),
+          content: .text("more.migration.keepAccountDataOnly".localized),
           state: migrationManager.isMigrating ? .disabled : .default,
           action: {
             Task {
@@ -172,7 +175,7 @@ struct GuestDataMigrationView: View {
         HabittoButton(
           size: .large,
           style: .fillTertiary,
-          content: .text("Keep Local Data Only"),
+          content: .text("more.migration.keepLocalDataOnly".localized),
           state: migrationManager.isMigrating ? .disabled : .default,
           action: {
             showingReplaceConfirmation = true
@@ -209,7 +212,7 @@ struct GuestDataMigrationView: View {
           .font(.system(size: 64))
           .foregroundColor(.success)
 
-        Text("Welcome Back!")
+        Text("more.migration.welcomeBack".localized)
           .font(.appHeadlineMediumEmphasised)
           .foregroundColor(.text01)
           .multilineTextAlignment(.center)
@@ -220,11 +223,13 @@ struct GuestDataMigrationView: View {
               Image(systemName: "checkmark")
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundColor(.success)
-              Text("\(cloudPreview.habitCount) habit\(cloudPreview.habitCount == 1 ? "" : "s") restored from your account")
+              Text(String(
+                format: "more.migration.habitsRestored".localized,
+                String(localized: "more.migration.habitCount \(cloudPreview.habitCount)")))
                 .font(.appBodyMedium)
                 .foregroundColor(.text01)
             }
-            Text("Level \(cloudPreview.level), \(cloudPreview.totalXP) XP")
+            Text(String(format: "more.migration.levelXP".localized, cloudPreview.level, cloudPreview.totalXP))
               .font(.appBodyMedium)
               .foregroundColor(.text03)
           }
@@ -237,7 +242,7 @@ struct GuestDataMigrationView: View {
       HabittoButton(
         size: .large,
         style: .fillPrimary,
-        content: .text("Continue"),
+        content: .text("more.migration.continue".localized),
         state: .default,
         action: {
           Task {
@@ -257,7 +262,7 @@ struct GuestDataMigrationView: View {
           .font(.system(size: 64))
           .foregroundColor(.success)
 
-        Text("Welcome!")
+        Text("more.migration.welcome".localized)
           .font(.appHeadlineMediumEmphasised)
           .foregroundColor(.text01)
           .multilineTextAlignment(.center)
@@ -267,7 +272,9 @@ struct GuestDataMigrationView: View {
             Image(systemName: "checkmark")
               .font(.system(size: 16, weight: .semibold))
               .foregroundColor(.success)
-            Text("Your \(guestPreview.habitCount) habit\(guestPreview.habitCount == 1 ? "" : "s") will be saved to your new account")
+            Text(String(
+              format: "more.migration.habitsWillBeSaved".localized,
+              String(localized: "more.migration.habitCount \(guestPreview.habitCount)")))
               .font(.appBodyMedium)
               .foregroundColor(.text01)
           }
@@ -280,7 +287,7 @@ struct GuestDataMigrationView: View {
       HabittoButton(
         size: .large,
         style: .fillPrimary,
-        content: .text("Continue"),
+        content: .text("more.migration.continue".localized),
         state: migrationManager.isMigrating ? .disabled : .default,
         action: {
           Task {
@@ -315,12 +322,12 @@ struct GuestDataMigrationView: View {
       // This scenario should skip the migration screen entirely
       // But if we're here, just show a simple continue button
       VStack(spacing: 16) {
-        Text("Welcome!")
+        Text("more.migration.welcome".localized)
           .font(.appHeadlineMediumEmphasised)
           .foregroundColor(.text01)
           .multilineTextAlignment(.center)
 
-        Text("You're all set! Start creating habits.")
+        Text("more.migration.allSet".localized)
           .font(.appBodyMedium)
           .foregroundColor(.text03)
           .multilineTextAlignment(.center)
@@ -331,7 +338,7 @@ struct GuestDataMigrationView: View {
       HabittoButton(
         size: .large,
         style: .fillPrimary,
-        content: .text("Continue"),
+        content: .text("more.migration.continue".localized),
         state: .default,
         action: {
           Task {
@@ -375,7 +382,7 @@ struct GuestDataMigrationView: View {
           .foregroundColor(.text03)
           .frame(width: 20)
 
-        Text("\(habitCount) habit\(habitCount == 1 ? "" : "s")")
+        Text(String(localized: "more.migration.habitCount \(habitCount)"))
           .font(.appBodyMedium)
           .foregroundColor(.text01)
 
@@ -389,7 +396,7 @@ struct GuestDataMigrationView: View {
             .foregroundColor(.text03)
             .frame(width: 20)
 
-          Text("Level \(level), \(xp) XP")
+          Text(String(format: "more.migration.levelXP".localized, level, xp))
             .font(.appBodyMedium)
             .foregroundColor(.text01)
 
@@ -402,7 +409,7 @@ struct GuestDataMigrationView: View {
             .foregroundColor(.text03)
             .frame(width: 20)
 
-          Text("Created before signing in")
+          Text("more.migration.createdBeforeSigningIn".localized)
             .font(.appBodyMedium)
             .foregroundColor(.text01)
 

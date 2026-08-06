@@ -20,8 +20,19 @@ struct BackupRecoveryView: View {
   @State private var showBackupCreatedToast = false
   @State private var showBackupRestoredToast = false
 
+  /// Internal frequency keys — must match BackupFrequency.displayName / saveBackupSettings switch cases.
   let backupFrequencies = ["Daily", "Weekly", "Monthly", "Manual Only"]
   @State private var showingTestingView = false
+
+  private func backupFrequencyDisplayName(_ key: String) -> String {
+    switch key {
+    case "Daily": "more.backup.frequency.daily".localized
+    case "Weekly": "more.backup.frequency.weekly".localized
+    case "Monthly": "more.backup.frequency.monthly".localized
+    case "Manual Only": "more.backup.frequency.manualOnly".localized
+    default: key
+    }
+  }
   
   enum FirestoreSyncStatus {
     case checking
@@ -37,7 +48,7 @@ struct BackupRecoveryView: View {
           ScrollView {
             VStack(spacing: 24) {
               // Description text
-              Text("Your data automatically syncs to Firestore. Enable iCloud backup for additional protection.")
+              Text("more.backup.subtitle".localized)
                 .font(.appBodyMedium)
                 .foregroundColor(.text05)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -88,7 +99,7 @@ struct BackupRecoveryView: View {
                       .foregroundColor(.appOnPrimary)
                   }
 
-                  Text(isBackingUp ? "Creating iCloud Backup..." : "Create iCloud Backup")
+                  Text(isBackingUp ? "more.backup.creatingICloudBackup".localized : "more.backup.createICloudBackup".localized)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(.appOnPrimary)
                 }
@@ -105,7 +116,7 @@ struct BackupRecoveryView: View {
           }
         }
       }
-      .navigationTitle("Backup & Recovery")
+      .navigationTitle("more.backup.title".localized)
       .navigationBarTitleDisplayMode(.inline)
       .navigationBarBackButtonHidden(true)
       .toolbar {
@@ -136,7 +147,7 @@ struct BackupRecoveryView: View {
       .backupNotifications()
       .overlay(alignment: .bottom) {
         if showBackupCreatedToast {
-          SuccessToastView(message: "Backup created successfully") {
+          SuccessToastView(message: "more.backup.createdToast".localized) {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
               showBackupCreatedToast = false
             }
@@ -148,7 +159,7 @@ struct BackupRecoveryView: View {
       }
       .overlay(alignment: .bottom) {
         if showBackupRestoredToast {
-          SuccessToastView(message: "Backup restored successfully") {
+          SuccessToastView(message: "more.backup.restoredToast".localized) {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
               showBackupRestoredToast = false
             }
@@ -213,7 +224,7 @@ struct BackupRecoveryView: View {
     VStack(spacing: 0) {
       // Section Header
       HStack {
-        Text("iCloud Backup")
+        Text("more.backup.iCloudBackup".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.text01)
         Spacer()
@@ -230,10 +241,10 @@ struct BackupRecoveryView: View {
           .frame(width: 24, height: 24)
         
         VStack(alignment: .leading, spacing: 4) {
-          Text("iCloud Backup")
+          Text("more.backup.iCloudBackup".localized)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.text01)
-          Text("Create backup snapshots in iCloud Drive")
+          Text("more.backup.iCloudBackupDescription".localized)
             .font(.system(size: 14, weight: .regular))
             .foregroundColor(.text04)
         }
@@ -266,18 +277,18 @@ struct BackupRecoveryView: View {
             .foregroundColor(.appIconColor)
           
           VStack(alignment: .leading, spacing: 4) {
-            Text("Backup Frequency")
+            Text("more.backup.backupFrequency".localized)
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
-            Text("How often to create iCloud backup snapshots")
+            Text("more.backup.backupFrequencyDescription".localized)
               .font(.system(size: 14, weight: .regular))
               .foregroundColor(.text04)
           }
           .frame(maxWidth: .infinity, alignment: .leading)
           
-          Picker("Frequency", selection: $backupFrequency) {
+          Picker("more.backup.frequency".localized, selection: $backupFrequency) {
             ForEach(backupFrequencies, id: \.self) { frequency in
-              Text(frequency).tag(frequency)
+              Text(backupFrequencyDisplayName(frequency)).tag(frequency)
             }
           }
           .pickerStyle(MenuPickerStyle())
@@ -303,10 +314,10 @@ struct BackupRecoveryView: View {
             .frame(width: 24, height: 24)
           
           VStack(alignment: .leading, spacing: 4) {
-            Text("WiFi Only")
+            Text("more.backup.wifiOnly".localized)
               .font(.system(size: 16, weight: .medium))
               .foregroundColor(.text01)
-            Text("Only create iCloud backups when connected to WiFi")
+            Text("more.backup.wifiOnlyDescription".localized)
               .font(.system(size: 14, weight: .regular))
               .foregroundColor(.text04)
           }
@@ -336,7 +347,7 @@ struct BackupRecoveryView: View {
     VStack(spacing: 0) {
       // Section Header
       HStack {
-        Text("iCloud Backup History")
+        Text("more.backup.iCloudBackupHistory".localized)
           .font(.system(size: 14, weight: .semibold))
           .foregroundColor(.text01)
         Spacer()
@@ -353,16 +364,16 @@ struct BackupRecoveryView: View {
           .frame(width: 24, height: 24)
         
         VStack(alignment: .leading, spacing: 4) {
-          Text("Last iCloud Backup")
+          Text("more.backup.lastICloudBackup".localized)
             .font(.system(size: 16, weight: .medium))
             .foregroundColor(.text01)
-          Text(backupManager.lastBackupDate?.formatted() ?? "Never")
+          Text(backupManager.lastBackupDate?.formatted() ?? "more.backup.never".localized)
             .font(.system(size: 14, weight: .regular))
             .foregroundColor(.text04)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         
-        Button("View All") {
+        Button("more.backup.viewAll".localized) {
           showingBackupList = true
         }
         .font(.system(size: 14, weight: .medium))
@@ -386,7 +397,7 @@ struct BackupRecoveryView: View {
         HStack {
           ProgressView()
             .scaleEffect(0.8)
-          Text("Checking Firestore sync status...")
+          Text("more.backup.checkingSync".localized)
             .font(.system(size: 14, weight: .regular))
             .foregroundColor(.text03)
         }
@@ -401,10 +412,10 @@ struct BackupRecoveryView: View {
           Image(systemName: "checkmark.circle.fill")
             .foregroundColor(.green)
           VStack(alignment: .leading, spacing: 2) {
-            Text("Firestore Sync Active")
+            Text("more.backup.syncActive".localized)
               .font(.system(size: 14, weight: .semibold))
               .foregroundColor(.text01)
-            Text("Your data is automatically syncing to the cloud. iCloud backup is optional.")
+            Text("more.backup.syncActiveDescription".localized)
               .font(.system(size: 12, weight: .regular))
               .foregroundColor(.text03)
           }
@@ -421,10 +432,10 @@ struct BackupRecoveryView: View {
           Image(systemName: "exclamationmark.triangle.fill")
             .foregroundColor(.orange)
           VStack(alignment: .leading, spacing: 2) {
-            Text("Firestore Sync Not Active")
+            Text("more.backup.syncInactive".localized)
               .font(.system(size: 14, weight: .semibold))
               .foregroundColor(.text01)
-            Text("Please ensure you're signed in. Firestore sync must be active before enabling iCloud backup.")
+            Text("more.backup.syncInactiveDescription".localized)
               .font(.system(size: 12, weight: .regular))
               .foregroundColor(.text03)
           }
