@@ -5761,8 +5761,8 @@ struct WeeklySummaryStatsView: View {
   let consistencyRate: Int
 
   private func pluralizeDay(_ count: Int) -> String {
-    let dayKey = count == 0 || count == 1 ? "progress.stats.streakDay" : "progress.stats.streakDays"
-    return String(format: dayKey.localized, count)
+    // String Catalog plural variation (one/other); uses system language
+    String(localized: "progress.stats.streakDays \(count)")
   }
 
   var body: some View {

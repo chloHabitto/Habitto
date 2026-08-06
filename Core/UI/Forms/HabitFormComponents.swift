@@ -140,9 +140,7 @@ struct ReminderSection: View {
         Spacer()
         Text(reminders.isEmpty
           ? "create.button.add".localized
-          : reminders.filter { $0.isActive }.count == 1
-            ? String(format: "create.reminder.reminderCount".localized, reminders.filter { $0.isActive }.count)
-            : String(format: "create.reminder.remindersCount".localized, reminders.filter { $0.isActive }.count))
+          : String(localized: "create.reminder.remindersCount \(reminders.filter { $0.isActive }.count)"))
           .font(.appBodyLarge)
           .foregroundColor(.appText04)
         Image(systemName: "chevron.right")
