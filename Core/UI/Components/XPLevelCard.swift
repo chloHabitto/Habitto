@@ -20,7 +20,7 @@ struct XPLevelCard: View {
             .scaleEffect(levelUpAnimation ? 1.3 : 1.0)
             .animation(.spring(response: 0.6, dampingFraction: 0.6), value: levelUpAnimation)
 
-          Text("Level \(xpManager.userProgress.currentLevel)")
+          Text(String(format: "progress.daily.level".localized, xpManager.userProgress.currentLevel))
             .font(.appTitleMediumEmphasised)
             .foregroundColor(.text01)
             .scaleEffect(levelUpAnimation ? 1.1 : 1.0)
@@ -36,7 +36,7 @@ struct XPLevelCard: View {
         Spacer()
 
         // Total XP
-        Text("\(xpManager.totalXP) XP")  // ✅ Read from @Published property
+        Text(String(format: "shared.xp.totalFormat".localized, xpManager.totalXP))  // ✅ Read from @Published property
           .font(.appLabelMedium)
           .foregroundColor(.text02)
       }
@@ -53,13 +53,13 @@ struct XPLevelCard: View {
               Int(pow(Double(xpManager.userProgress.currentLevel), 2) *
                 300) // Updated to 300 for challenging progression
 
-            Text("\(currentLevelStartXP + xpManager.userProgress.xpForCurrentLevel) XP")
+            Text(String(format: "shared.xp.totalFormat".localized, currentLevelStartXP + xpManager.userProgress.xpForCurrentLevel))
               .font(.appLabelSmall)
               .foregroundColor(.text02)
 
             Spacer()
 
-            Text("\(nextLevelStartXP) XP")
+            Text(String(format: "shared.xp.totalFormat".localized, nextLevelStartXP))
               .font(.appLabelSmall)
               .foregroundColor(.text02)
           }
@@ -77,7 +77,7 @@ struct XPLevelCard: View {
               .font(.system(size: 12))
               .foregroundColor(.yellow)
 
-            Text("Almost level \(xpManager.userProgress.currentLevel + 1)!")
+            Text(String(format: "shared.xp.almostLevel".localized, xpManager.userProgress.currentLevel + 1))
               .font(.appLabelSmall)
               .foregroundColor(.yellow)
           }
@@ -103,7 +103,7 @@ struct XPLevelCard: View {
             Spacer()
             HStack {
               Spacer()
-              Text("+\(xpGainAmount) XP")
+              Text(String(format: "shared.xp.gainFormat".localized, xpGainAmount))
                 .font(.appTitleSmallEmphasised)
                 .foregroundColor(.green)
                 .padding(.horizontal, 12)

@@ -28,20 +28,20 @@ struct DatePickerModal: View {
     VStack(spacing: 0) {
       // Header
       HStack {
-        Button("Cancel") {
+        Button("common.cancel".localized) {
           dismissModal()
         }
         .foregroundColor(.text02)
 
         Spacer()
 
-        Text("Select Date")
+        Text("shared.picker.selectDate".localized)
           .font(.appTitleMediumEmphasised)
           .foregroundColor(.text01)
 
         Spacer()
 
-        Button("Done") {
+        Button("common.done".localized) {
           confirmSelection()
         }
         .foregroundColor(.primary)
@@ -122,7 +122,7 @@ struct DatePickerModal: View {
           HStack {
             Image(systemName: "arrow.clockwise")
               .font(.appBodyMedium)
-            Text("Reset to today")
+            Text("shared.picker.resetToToday".localized)
               .font(.appBodyMedium)
           }
           .foregroundColor(.text02)
@@ -139,7 +139,7 @@ struct DatePickerModal: View {
         confirmSelection()
       }) {
         VStack(spacing: 8) {
-          Text("Selected Date")
+          Text("shared.picker.selectedDate".localized)
             .font(.appBodyMedium)
             .foregroundColor(.surface)
 

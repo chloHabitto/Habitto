@@ -55,12 +55,12 @@ struct iCloudSyncBanner: View {
         .font(.title3)
       
       VStack(alignment: .leading, spacing: 2) {
-        Text("iCloud Backup Disabled")
+        Text("shared.icloud.backupDisabled".localized)
           .font(.subheadline)
           .fontWeight(.semibold)
         
         if style == .detailed {
-          Text("Your habits are saved locally only. Enable iCloud in Settings to backup your data.")
+          Text("shared.icloud.savedLocally".localized)
             .font(.caption)
             .foregroundColor(.secondary)
         }
@@ -74,7 +74,7 @@ struct iCloudSyncBanner: View {
             UIApplication.shared.open(url)
           }
         }) {
-          Text("Settings")
+          Text("more.settings".localized)
             .font(.caption)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
@@ -96,12 +96,12 @@ struct iCloudSyncBanner: View {
         .font(.title3)
       
       VStack(alignment: .leading, spacing: 2) {
-        Text("Guest Mode")
+        Text("shared.icloud.guestMode".localized)
           .font(.subheadline)
           .fontWeight(.semibold)
         
         if style == .detailed {
-          Text("Create an account to backup your habits to iCloud.")
+          Text("shared.icloud.createAccount".localized)
             .font(.caption)
             .foregroundColor(.secondary)
         }
@@ -122,11 +122,11 @@ struct iCloudSyncBanner: View {
         .font(.title3)
       
       VStack(alignment: .leading, spacing: 2) {
-        Text("iCloud Backup Active")
+        Text("shared.icloud.backupActive".localized)
           .font(.subheadline)
           .fontWeight(.semibold)
         
-        Text("Your habits are syncing to iCloud.")
+        Text("shared.icloud.syncing".localized)
           .font(.caption)
           .foregroundColor(.secondary)
       }
