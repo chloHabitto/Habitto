@@ -11694,6 +11694,3379 @@
           }
         }
       }
+    },
+    "more.exportData.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Data"
+          }
+        }
+      }
+    },
+    "more.exportData.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download your personal data in your preferred format"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Download your personal data in your preferred format"
+          }
+        }
+      }
+    },
+    "more.exportData.dataTypes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data Types"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Data Types"
+          }
+        }
+      }
+    },
+    "more.exportData.selectDataTypes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select data types..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Select data types..."
+          }
+        }
+      }
+    },
+    "more.exportData.countSelected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d selected"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d selected"
+          }
+        }
+      },
+      "comment": "FORMAT: selected data type count"
+    },
+    "more.exportData.dateRange": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date Range"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Date Range"
+          }
+        }
+      }
+    },
+    "more.exportData.exportFormat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Format"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Format"
+          }
+        }
+      }
+    },
+    "more.exportData.exportSummary": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Summary"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Summary"
+          }
+        }
+      }
+    },
+    "more.exportData.summaryLine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d data types • %@ • %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d data types • %@ • %@"
+          }
+        }
+      },
+      "comment": "FORMAT: count, date range display, format display"
+    },
+    "more.exportData.estimatedSize": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estimated size: %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Estimated size: %@"
+          }
+        }
+      },
+      "comment": "FORMAT: size string"
+    },
+    "more.exportData.saveLocation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File will be saved to Documents/Habitto Exports/"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "File will be saved to Documents/Habitto Exports/"
+          }
+        }
+      }
+    },
+    "more.exportData.shareSheetInfo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share sheet will appear when export completes"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Share sheet will appear when export completes"
+          }
+        }
+      }
+    },
+    "more.exportData.exporting": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Exporting..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Exporting..."
+          }
+        }
+      }
+    },
+    "more.exportData.exportButton": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Data"
+          }
+        }
+      }
+    },
+    "more.exportData.exportError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Error"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Error"
+          }
+        }
+      }
+    },
+    "more.exportData.successToast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data exported successfully"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Data exported successfully"
+          }
+        }
+      }
+    },
+    "more.exportData.sizeMB": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%.1f MB"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%.1f MB"
+          }
+        }
+      },
+      "comment": "FORMAT: megabyte size estimate"
+    },
+    "more.exportData.sizeKB": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%.0f KB"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%.0f KB"
+          }
+        }
+      },
+      "comment": "FORMAT: kilobyte size estimate"
+    },
+    "more.exportData.exportFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export failed: %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export failed: %@"
+          }
+        }
+      },
+      "comment": "FORMAT: error description"
+    },
+    "more.exportData.type.habits.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habits & Progress"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habits & Progress"
+          }
+        }
+      }
+    },
+    "more.exportData.type.habits.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your habits, goals, and current progress"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your habits, goals, and current progress"
+          }
+        }
+      }
+    },
+    "more.exportData.type.habits.size": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamic"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dynamic"
+          }
+        }
+      }
+    },
+    "more.exportData.type.progress.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completion History"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Completion History"
+          }
+        }
+      }
+    },
+    "more.exportData.type.progress.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Historical completion records and streaks"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Historical completion records and streaks"
+          }
+        }
+      }
+    },
+    "more.exportData.type.progress.size": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamic"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dynamic"
+          }
+        }
+      }
+    },
+    "more.exportData.type.profile.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "User Profile"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "User Profile"
+          }
+        }
+      }
+    },
+    "more.exportData.type.profile.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your name, email, and account information"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your name, email, and account information"
+          }
+        }
+      }
+    },
+    "more.exportData.type.profile.size": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1-5 KB"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "1-5 KB"
+          }
+        }
+      }
+    },
+    "more.exportData.type.settings.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Settings"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "App Settings"
+          }
+        }
+      }
+    },
+    "more.exportData.type.settings.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App preferences and configuration"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "App preferences and configuration"
+          }
+        }
+      }
+    },
+    "more.exportData.type.settings.size": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1-2 KB"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "1-2 KB"
+          }
+        }
+      }
+    },
+    "more.exportData.type.analytics.name": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analytics Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Analytics Data"
+          }
+        }
+      }
+    },
+    "more.exportData.type.analytics.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usage statistics and performance data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Usage statistics and performance data"
+          }
+        }
+      }
+    },
+    "more.exportData.type.analytics.size": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dynamic"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Dynamic"
+          }
+        }
+      }
+    },
+    "more.exportData.range.last30Days": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 30 days"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Last 30 days"
+          }
+        }
+      }
+    },
+    "more.exportData.range.last30Days.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export data from the past month"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export data from the past month"
+          }
+        }
+      }
+    },
+    "more.exportData.range.last6Months": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 6 months"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Last 6 months"
+          }
+        }
+      }
+    },
+    "more.exportData.range.last6Months.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export data from the past 6 months"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export data from the past 6 months"
+          }
+        }
+      }
+    },
+    "more.exportData.range.lastYear": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last year"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Last year"
+          }
+        }
+      }
+    },
+    "more.exportData.range.lastYear.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export data from the past year"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export data from the past year"
+          }
+        }
+      }
+    },
+    "more.exportData.range.allTime": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All time"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "All time"
+          }
+        }
+      }
+    },
+    "more.exportData.range.allTime.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export all your data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export all your data"
+          }
+        }
+      }
+    },
+    "more.exportData.format.json": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JSON"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "JSON"
+          }
+        }
+      }
+    },
+    "more.exportData.format.json.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Machine-readable format (recommended)"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Machine-readable format (recommended)"
+          }
+        }
+      }
+    },
+    "more.exportData.format.csv": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CSV"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "CSV"
+          }
+        }
+      }
+    },
+    "more.exportData.format.csv.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spreadsheet format"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Spreadsheet format"
+          }
+        }
+      }
+    },
+    "more.exportData.format.pdf": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PDF Report"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "PDF Report"
+          }
+        }
+      }
+    },
+    "more.exportData.format.pdf.description": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Human-readable report"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Human-readable report"
+          }
+        }
+      }
+    },
+    "more.exportData.preview.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Preview"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Preview"
+          }
+        }
+      }
+    },
+    "more.exportData.preview.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review what will be included in your export"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Review what will be included in your export"
+          }
+        }
+      }
+    },
+    "more.exportData.preview.overview": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Overview"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Overview"
+          }
+        }
+      }
+    },
+    "more.exportData.preview.formatAndSize": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Format & Size"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Format & Size"
+          }
+        }
+      }
+    },
+    "more.exportData.preview.formatSizeLine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ format • %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ format • %@"
+          }
+        }
+      },
+      "comment": "FORMAT: format name, estimated size"
+    },
+    "more.exportData.preview.includedDataTypes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Included Data Types"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Included Data Types"
+          }
+        }
+      }
+    },
+    "more.exportData.preview.exportSettings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Settings"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export Settings"
+          }
+        }
+      }
+    },
+    "more.exportData.preview.sampleDataStructure": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample Data Structure"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sample Data Structure"
+          }
+        }
+      }
+    },
+    "more.exportData.error.noDataTypesSelected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please select at least one data type to export"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Please select at least one data type to export"
+          }
+        }
+      }
+    },
+    "more.exportData.error.invalidFormat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid export format selected"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Invalid export format selected"
+          }
+        }
+      }
+    },
+    "more.exportData.error.invalidDateRange": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invalid date range selected"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Invalid date range selected"
+          }
+        }
+      }
+    },
+    "more.exportData.error.emptyExportData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No data available for export with current settings"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No data available for export with current settings"
+          }
+        }
+      }
+    },
+    "more.exportData.error.exportTooLarge": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export data is too large (maximum 100MB)"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export data is too large (maximum 100MB)"
+          }
+        }
+      }
+    },
+    "more.exportData.error.fileNotCreated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to create export file"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Failed to create export file"
+          }
+        }
+      }
+    },
+    "more.exportData.error.invalidFileSize": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export file has invalid size"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Export file has invalid size"
+          }
+        }
+      }
+    },
+    "more.exportData.error.dataFilteringFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to filter data for export"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Failed to filter data for export"
+          }
+        }
+      }
+    },
+    "more.exportData.error.formatGenerationFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to generate data in selected format"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Failed to generate data in selected format"
+          }
+        }
+      }
+    },
+    "more.deleteData.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Delete Data"
+          }
+        }
+      }
+    },
+    "more.deleteData.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove your data from this device"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Remove your data from this device"
+          }
+        }
+      }
+    },
+    "more.deleteData.importantNotice": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Important Notice"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Important Notice"
+          }
+        }
+      }
+    },
+    "more.deleteData.warningMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This action cannot be undone. All selected data will be permanently deleted from this device."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This action cannot be undone. All selected data will be permanently deleted from this device."
+          }
+        }
+      },
+      "comment": "DATA-LOSS warning"
+    },
+    "more.deleteData.bottomHint": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permanently remove all your data from this device"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Permanently remove all your data from this device"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.deleteData.deleteAllData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete All Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Delete All Data"
+          }
+        }
+      },
+      "comment": "DATA-LOSS destructive action"
+    },
+    "more.deleteData.confirmMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will permanently delete all your data from this device and cloud. This action cannot be undone."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This will permanently delete all your data from this device and cloud. This action cannot be undone."
+          }
+        }
+      },
+      "comment": "DATA-LOSS confirmation"
+    },
+    "more.deleteData.cloudDataDetected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud Data Detected"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Cloud Data Detected"
+          }
+        }
+      }
+    },
+    "more.deleteData.signInToDeleteEverything": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In to Delete Everything"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sign In to Delete Everything"
+          }
+        }
+      }
+    },
+    "more.deleteData.deleteLocalDataOnly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete Local Data Only"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Delete Local Data Only"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.deleteData.cloudDataMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have data backed up in the cloud from a previous sign-in. To delete ALL your data including cloud backup, please sign in first."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "You have data backed up in the cloud from a previous sign-in. To delete ALL your data including cloud backup, please sign in first."
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.deleteData.signInRequired": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign In Required"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Sign In Required"
+          }
+        }
+      }
+    },
+    "more.deleteData.signInRequiredMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please sign in from the Profile screen to delete cloud data."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Please sign in from the Profile screen to delete cloud data."
+          }
+        }
+      }
+    },
+    "more.deleteData.localOnlyConfirmMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will delete all local data. If you sign in later, your cloud data will return."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This will delete all local data. If you sign in later, your cloud data will return."
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.deleteData.deletionError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion Error"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deletion Error"
+          }
+        }
+      }
+    },
+    "more.deleteData.deletionFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletion failed: %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Deletion failed: %@"
+          }
+        }
+      },
+      "comment": "FORMAT: error description"
+    },
+    "more.deleteData.dataDeleted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data Deleted"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Data Deleted"
+          }
+        }
+      }
+    },
+    "more.deleteData.dataDeletedMessage": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data has been permanently removed from this device."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your data has been permanently removed from this device."
+          }
+        }
+      }
+    },
+    "more.deleteData.error.noOptionSelected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No deletion option was selected"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "No deletion option was selected"
+          }
+        }
+      }
+    },
+    "more.deleteData.error.allDataDeletionFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to delete all data. Please try again."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Failed to delete all data. Please try again."
+          }
+        }
+      }
+    },
+    "more.backup.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup & Recovery"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backup & Recovery"
+          }
+        }
+      }
+    },
+    "more.backup.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data automatically syncs to Firestore. Enable iCloud backup for additional protection."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your data automatically syncs to Firestore. Enable iCloud backup for additional protection."
+          }
+        }
+      }
+    },
+    "more.backup.creatingICloudBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating iCloud Backup..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Creating iCloud Backup..."
+          }
+        }
+      }
+    },
+    "more.backup.createICloudBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create iCloud Backup"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Create iCloud Backup"
+          }
+        }
+      }
+    },
+    "more.backup.createdToast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup created successfully"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backup created successfully"
+          }
+        }
+      }
+    },
+    "more.backup.restoredToast": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup restored successfully"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backup restored successfully"
+          }
+        }
+      }
+    },
+    "more.backup.iCloudBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Backup"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud Backup"
+          }
+        }
+      }
+    },
+    "more.backup.iCloudBackupDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create backup snapshots in iCloud Drive"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Create backup snapshots in iCloud Drive"
+          }
+        }
+      }
+    },
+    "more.backup.backupFrequency": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup Frequency"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backup Frequency"
+          }
+        }
+      }
+    },
+    "more.backup.backupFrequencyDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How often to create iCloud backup snapshots"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "How often to create iCloud backup snapshots"
+          }
+        }
+      }
+    },
+    "more.backup.frequency": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Frequency"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Frequency"
+          }
+        }
+      }
+    },
+    "more.backup.frequency.daily": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Daily"
+          }
+        }
+      }
+    },
+    "more.backup.frequency.weekly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Weekly"
+          }
+        }
+      }
+    },
+    "more.backup.frequency.monthly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Monthly"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Monthly"
+          }
+        }
+      }
+    },
+    "more.backup.frequency.manualOnly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manual Only"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Manual Only"
+          }
+        }
+      }
+    },
+    "more.backup.wifiOnly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "WiFi Only"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "WiFi Only"
+          }
+        }
+      }
+    },
+    "more.backup.wifiOnlyDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only create iCloud backups when connected to WiFi"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Only create iCloud backups when connected to WiFi"
+          }
+        }
+      }
+    },
+    "more.backup.iCloudBackupHistory": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud Backup History"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "iCloud Backup History"
+          }
+        }
+      }
+    },
+    "more.backup.lastICloudBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last iCloud Backup"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Last iCloud Backup"
+          }
+        }
+      }
+    },
+    "more.backup.never": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Never"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Never"
+          }
+        }
+      }
+    },
+    "more.backup.viewAll": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View All"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "View All"
+          }
+        }
+      }
+    },
+    "more.backup.checkingSync": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking Firestore sync status..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Checking Firestore sync status..."
+          }
+        }
+      }
+    },
+    "more.backup.syncActive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Firestore Sync Active"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Firestore Sync Active"
+          }
+        }
+      }
+    },
+    "more.backup.syncActiveDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data is automatically syncing to the cloud. iCloud backup is optional."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your data is automatically syncing to the cloud. iCloud backup is optional."
+          }
+        }
+      }
+    },
+    "more.backup.syncInactive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Firestore Sync Not Active"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Firestore Sync Not Active"
+          }
+        }
+      }
+    },
+    "more.backup.syncInactiveDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Please ensure you're signed in. Firestore sync must be active before enabling iCloud backup."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Please ensure you're signed in. Firestore sync must be active before enabling iCloud backup."
+          }
+        }
+      }
+    },
+    "more.backup.statusSection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup Status"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backup Status"
+          }
+        }
+      }
+    },
+    "more.backup.lastBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Backup"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Last Backup"
+          }
+        }
+      }
+    },
+    "more.backup.backupsCount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d backups"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%d backups"
+          }
+        }
+      },
+      "comment": "FORMAT: backup count"
+    },
+    "more.backup.actionsSection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup Actions"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backup Actions"
+          }
+        }
+      }
+    },
+    "more.backup.createBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create Backup"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Create Backup"
+          }
+        }
+      }
+    },
+    "more.backup.creatingBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creating backup..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Creating backup..."
+          }
+        }
+      }
+    },
+    "more.backup.availableBackupsSection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Available Backups"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Available Backups"
+          }
+        }
+      }
+    },
+    "more.backup.dataRepairSection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data Repair"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Data Repair"
+          }
+        }
+      }
+    },
+    "more.backup.repairData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair Data"
+          }
+        }
+      }
+    },
+    "more.backup.repairingData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repairing data..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repairing data..."
+          }
+        }
+      }
+    },
+    "more.backup.settingsSection": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup Settings"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Backup Settings"
+          }
+        }
+      }
+    },
+    "more.backup.automaticBackups": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatic Backups"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Automatic Backups"
+          }
+        }
+      }
+    },
+    "more.backup.every24Hours": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every 24 hours"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Every 24 hours"
+          }
+        }
+      }
+    },
+    "more.backup.keepBackups": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Backups"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keep Backups"
+          }
+        }
+      }
+    },
+    "more.backup.keep10Backups": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10 backups"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "10 backups"
+          }
+        }
+      }
+    },
+    "more.backup.restoreBackup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore Backup"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Restore Backup"
+          }
+        }
+      },
+      "comment": "DATA-LOSS restore overwrites current data"
+    },
+    "more.backup.restore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Restore"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.backup.restoreConfirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Are you sure you want to restore from backup created on %@? This will replace your current data."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Are you sure you want to restore from backup created on %@? This will replace your current data."
+          }
+        }
+      },
+      "comment": "DATA-LOSS FORMAT: backup date"
+    },
+    "more.backup.repairSummary": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair Summary"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair Summary"
+          }
+        }
+      }
+    },
+    "more.backup.issuesFound": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issues Found"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Issues Found"
+          }
+        }
+      }
+    },
+    "more.backup.issuesFixed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Issues Fixed"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Issues Fixed"
+          }
+        }
+      }
+    },
+    "more.backup.repairDetails": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair Details"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair Details"
+          }
+        }
+      }
+    },
+    "more.backup.foundCount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Found: %d"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Found: %d"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "more.backup.fixedCount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fixed: %d"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Fixed: %d"
+          }
+        }
+      },
+      "comment": "FORMAT"
+    },
+    "more.backup.repairResults": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Repair Results"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Repair Results"
+          }
+        }
+      }
+    },
+    "more.migration.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data Migration"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Data Migration"
+          }
+        }
+      }
+    },
+    "more.migration.checkingData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checking your data..."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Checking your data..."
+          }
+        }
+      }
+    },
+    "more.migration.migrationError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migration Error"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Migration Error"
+          }
+        }
+      }
+    },
+    "more.migration.unknownError": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An unknown error occurred"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "An unknown error occurred"
+          }
+        }
+      }
+    },
+    "more.migration.replaceAccountData": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace Account Data?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Replace Account Data?"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.migration.replace": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replace"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Replace"
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.migration.replaceConfirmFormat": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will permanently delete %@ from your account and replace them with the %@ on this device."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This will permanently delete %@ from your account and replace them with the %@ on this device."
+          }
+        }
+      },
+      "comment": "DATA-LOSS FORMAT: habit count phrases"
+    },
+    "more.migration.replaceConfirmGeneric": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This will permanently delete your account data and replace it with the data on this device."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This will permanently delete your account data and replace it with the data on this device."
+          }
+        }
+      },
+      "comment": "DATA-LOSS"
+    },
+    "more.migration.welcomeBack": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome Back!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Welcome Back!"
+          }
+        }
+      }
+    },
+    "more.migration.foundDataTwoPlaces": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We found your data in two places"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We found your data in two places"
+          }
+        }
+      }
+    },
+    "more.migration.yourAccount": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Account"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your Account"
+          }
+        }
+      }
+    },
+    "more.migration.thisDevice": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This Device"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "This Device"
+          }
+        }
+      }
+    },
+    "more.migration.whatWouldYouLike": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What would you like to do?"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "What would you like to do?"
+          }
+        }
+      }
+    },
+    "more.migration.keepBoth": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Both"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keep Both"
+          }
+        }
+      }
+    },
+    "more.migration.keepAccountDataOnly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Account Data Only"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keep Account Data Only"
+          }
+        }
+      }
+    },
+    "more.migration.keepLocalDataOnly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Local Data Only"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Keep Local Data Only"
+          }
+        }
+      },
+      "comment": "DATA-LOSS replaces cloud"
+    },
+    "more.migration.habitsRestored": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ restored from your account"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "%@ restored from your account"
+          }
+        }
+      },
+      "comment": "FORMAT: habit count phrase"
+    },
+    "more.migration.levelXP": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Level %d, %d XP"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Level %d, %d XP"
+          }
+        }
+      },
+      "comment": "FORMAT: level, xp"
+    },
+    "more.migration.continue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "more.migration.welcome": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Welcome!"
+          }
+        }
+      }
+    },
+    "more.migration.habitsWillBeSaved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your %@ will be saved to your new account"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your %@ will be saved to your new account"
+          }
+        }
+      },
+      "comment": "FORMAT: habit count phrase"
+    },
+    "more.migration.allSet": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're all set! Start creating habits."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "You're all set! Start creating habits."
+          }
+        }
+      }
+    },
+    "more.migration.createdBeforeSigningIn": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Created before signing in"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Created before signing in"
+          }
+        }
+      }
+    },
+    "more.migration.habitCount": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld habit"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld habits"
+                }
+              }
+            }
+          }
+        },
+        "ko": {
+          "variations": {
+            "plural": {
+              "other": {
+                "stringUnit": {
+                  "state": "needs_review",
+                  "value": "%lld habits"
+                }
+              }
+            }
+          }
+        }
+      },
+      "comment": "Pluralized habit count"
+    },
+    "more.terms.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms & Conditions"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terms & Conditions"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.subtitle": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms of Service and Privacy Policy"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terms of Service and Privacy Policy"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.termsOfService": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terms of Service"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Terms of Service"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.lastUpdated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Updated: August 2025"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Last Updated: August 2025"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.contact": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For questions about these terms, contact us at chloe.dev.main@gmail.com"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "For questions about these terms, contact us at chloe.dev.main@gmail.com"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.lastUpdated": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last Updated: December 2024"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Last Updated: December 2024"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.contact": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For privacy questions, contact us at chloe.dev.main@gmail.com"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "For privacy questions, contact us at chloe.dev.main@gmail.com"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section1Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Acceptance of Terms"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "1. Acceptance of Terms"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section1Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "By downloading, installing, or using the Habitto mobile application ('App'), you agree to be bound by these Terms and Conditions ('Terms'). If you do not agree to these Terms, do not use the App. These Terms apply to all users of the App, including without limitation users who are browsers, vendors, customers, merchants, and/or contributors of content.\n\nYou must be at least 13 years old to use the App. If you are under 18, you must have your parent or guardian's permission to use the App and agree to these Terms."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "By downloading, installing, or using the Habitto mobile application ('App'), you agree to be bound by these Terms and Conditions ('Terms'). If you do not agree to these Terms, do not use the App. These Terms apply to all users of the App, including without limitation users who are browsers, vendors, customers, merchants, and/or contributors of content.\n\nYou must be at least 13 years old to use the App. If you are under 18, you must have your parent or guardian's permission to use the App and agree to these Terms."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section2Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. App Description & Services"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "2. App Description & Services"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section2Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habitto is a habit tracking and personal development application designed to help users build positive habits, track their progress, and achieve personal goals. The App provides features including but not limited to:\n\n• Habit creation and management\n• Progress tracking and analytics\n• Streak counting and motivation\n• Goal setting and monitoring\n• Data visualization and insights\n\nWe reserve the right to modify, suspend, or discontinue any part of the App at any time without notice."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Habitto is a habit tracking and personal development application designed to help users build positive habits, track their progress, and achieve personal goals. The App provides features including but not limited to:\n\n• Habit creation and management\n• Progress tracking and analytics\n• Streak counting and motivation\n• Goal setting and monitoring\n• Data visualization and insights\n\nWe reserve the right to modify, suspend, or discontinue any part of the App at any time without notice."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section3Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. User Accounts & Data"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "3. User Accounts & Data"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section3Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree to:\n\n• Provide accurate and complete information\n• Keep your account secure\n• Notify us immediately of any unauthorized use\n• Accept responsibility for all activities under your account\n\nWe collect and process personal data in accordance with our Privacy Policy. By using the App, you consent to such processing and warrant that all data provided is accurate."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree to:\n\n• Provide accurate and complete information\n• Keep your account secure\n• Notify us immediately of any unauthorized use\n• Accept responsibility for all activities under your account\n\nWe collect and process personal data in accordance with our Privacy Policy. By using the App, you consent to such processing and warrant that all data provided is accurate."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section4Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. Acceptable Use"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "4. Acceptable Use"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section4Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You agree to use the App only for lawful purposes and in accordance with these Terms. You agree not to:\n\n• Use the App for any illegal or unauthorized purpose\n• Attempt to gain unauthorized access to the App or its systems\n• Interfere with or disrupt the App's functionality\n• Upload or transmit harmful, offensive, or inappropriate content\n• Violate any applicable laws or regulations\n• Use the App to harass, abuse, or harm others\n\nViolation of these terms may result in account termination and legal action."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "You agree to use the App only for lawful purposes and in accordance with these Terms. You agree not to:\n\n• Use the App for any illegal or unauthorized purpose\n• Attempt to gain unauthorized access to the App or its systems\n• Interfere with or disrupt the App's functionality\n• Upload or transmit harmful, offensive, or inappropriate content\n• Violate any applicable laws or regulations\n• Use the App to harass, abuse, or harm others\n\nViolation of these terms may result in account termination and legal action."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section5Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5. Health & Medical Disclaimers"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "5. Health & Medical Disclaimers"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section5Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "IMPORTANT: Habitto is designed for general wellness and habit tracking purposes only. The App is NOT intended to:\n\n• Provide medical advice, diagnosis, or treatment\n• Replace professional medical consultation\n• Guarantee specific health outcomes\n• Treat or prevent any medical conditions\n\n• Always consult with qualified healthcare professionals for medical concerns\n• Do not rely on the App for medical decisions\n• The App is not a substitute for professional medical care\n• Results may vary and are not guaranteed\n\nBy using the App, you acknowledge that you are responsible for your own health decisions and will consult healthcare professionals when appropriate."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "IMPORTANT: Habitto is designed for general wellness and habit tracking purposes only. The App is NOT intended to:\n\n• Provide medical advice, diagnosis, or treatment\n• Replace professional medical consultation\n• Guarantee specific health outcomes\n• Treat or prevent any medical conditions\n\n• Always consult with qualified healthcare professionals for medical concerns\n• Do not rely on the App for medical decisions\n• The App is not a substitute for professional medical care\n• Results may vary and are not guaranteed\n\nBy using the App, you acknowledge that you are responsible for your own health decisions and will consult healthcare professionals when appropriate."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section6Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6. Intellectual Property"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "6. Intellectual Property"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section6Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The App and its original content, features, and functionality are owned by Habitto and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.\n\nYou may not:\n• Copy, modify, or distribute the App\n• Reverse engineer or decompile the App\n• Remove or alter copyright notices\n• Use Habitto trademarks without permission\n\nUser-generated content remains your property, but you grant us a license to use it for App functionality and improvement."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "The App and its original content, features, and functionality are owned by Habitto and are protected by international copyright, trademark, patent, trade secret, and other intellectual property laws.\n\nYou may not:\n• Copy, modify, or distribute the App\n• Reverse engineer or decompile the App\n• Remove or alter copyright notices\n• Use Habitto trademarks without permission\n\nUser-generated content remains your property, but you grant us a license to use it for App functionality and improvement."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section7Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7. Limitation of Liability"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "7. Limitation of Liability"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section7Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, HABITTO SHALL NOT BE LIABLE FOR:\n\n• Indirect, incidental, or consequential damages\n• Loss of profits, data, or business opportunities\n• Damages resulting from App use or inability to use\n• Third-party actions or content\n• Service interruptions or data loss\n\nOur total liability shall not exceed the amount you paid for the App, if any.\n\nThis limitation applies to all claims, whether based on contract, tort, negligence, or other legal theories."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "TO THE MAXIMUM EXTENT PERMITTED BY LAW, HABITTO SHALL NOT BE LIABLE FOR:\n\n• Indirect, incidental, or consequential damages\n• Loss of profits, data, or business opportunities\n• Damages resulting from App use or inability to use\n• Third-party actions or content\n• Service interruptions or data loss\n\nOur total liability shall not exceed the amount you paid for the App, if any.\n\nThis limitation applies to all claims, whether based on contract, tort, negligence, or other legal theories."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section8Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8. Termination"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "8. Termination"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section8Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These Terms remain in effect until terminated:\n\n• You may terminate by deleting the App and ceasing use\n• We may terminate or suspend access immediately for Terms violations\n• Upon termination, your right to use the App ceases\n• We may delete or retain your data as permitted by law\n• Surviving provisions remain in effect\n\nTermination does not affect any rights or obligations that arose before termination."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "These Terms remain in effect until terminated:\n\n• You may terminate by deleting the App and ceasing use\n• We may terminate or suspend access immediately for Terms violations\n• Upon termination, your right to use the App ceases\n• We may delete or retain your data as permitted by law\n• Surviving provisions remain in effect\n\nTermination does not affect any rights or obligations that arose before termination."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.terms.section9Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "9. Governing Law & Disputes"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "9. Governing Law & Disputes"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.terms.section9Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These Terms are governed by the laws of the Netherlands. Any disputes shall be resolved in the courts of the Netherlands.\n\nBefore pursuing legal action, we encourage you to contact us at chloe.dev.main@gmail.com to resolve issues amicably.\n\nIf any provision of these Terms is found to be unenforceable, the remaining provisions remain in full force and effect."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "These Terms are governed by the laws of the Netherlands. Any disputes shall be resolved in the courts of the Netherlands.\n\nBefore pursuing legal action, we encourage you to contact us at chloe.dev.main@gmail.com to resolve issues amicably.\n\nIf any provision of these Terms is found to be unenforceable, the remaining provisions remain in full force and effect."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section1Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1. Information We Collect"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "1. Information We Collect"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section1Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We collect information you provide directly to us and information we obtain automatically when you use the App:\n\n**Information You Provide:**\n• Account information (email, name)\n• Habit data and goals\n• Progress tracking information\n• User preferences and settings\n\n**Information We Collect Automatically:**\n• App usage data and analytics\n• Device information (model, OS version)\n• Performance and crash data\n• Interaction patterns within the app"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We collect information you provide directly to us and information we obtain automatically when you use the App:\n\n**Information You Provide:**\n• Account information (email, name)\n• Habit data and goals\n• Progress tracking information\n• User preferences and settings\n\n**Information We Collect Automatically:**\n• App usage data and analytics\n• Device information (model, OS version)\n• Performance and crash data\n• Interaction patterns within the app"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section2Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2. How We Use Your Information"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "2. How We Use Your Information"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section2Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We use the information we collect to:\n\n• Provide, maintain, and improve the App\n• Personalize your experience and content\n• Track your progress and provide insights\n• Send you important updates and notifications\n• Analyze app usage to improve features\n• Ensure app security and prevent fraud\n• Comply with legal obligations\n\nWe do not sell, rent, or trade your personal information to third parties."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We use the information we collect to:\n\n• Provide, maintain, and improve the App\n• Personalize your experience and content\n• Track your progress and provide insights\n• Send you important updates and notifications\n• Analyze app usage to improve features\n• Ensure app security and prevent fraud\n• Comply with legal obligations\n\nWe do not sell, rent, or trade your personal information to third parties."
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section3Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3. Data Storage & Security"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "3. Data Storage & Security"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section3Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data is stored securely using industry-standard practices:\n\n**Data Storage:**\n• Primary storage: Firebase Cloud Firestore\n• Local backup: Your device storage\n• Encryption: Data encrypted in transit and at rest\n\n**Security Measures:**\n• Secure authentication via Firebase Auth\n• Regular security audits and updates\n• Access controls and monitoring\n• Data backup and recovery procedures\n\n**Data Retention:**\n• Account data: Retained while account is active\n• Deleted accounts: Data removed within 30 days\n• Analytics data: Aggregated and anonymized"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your data is stored securely using industry-standard practices:\n\n**Data Storage:**\n• Primary storage: Firebase Cloud Firestore\n• Local backup: Your device storage\n• Encryption: Data encrypted in transit and at rest\n\n**Security Measures:**\n• Secure authentication via Firebase Auth\n• Regular security audits and updates\n• Access controls and monitoring\n• Data backup and recovery procedures\n\n**Data Retention:**\n• Account data: Retained while account is active\n• Deleted accounts: Data removed within 30 days\n• Analytics data: Aggregated and anonymized"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section4Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4. Third-Party Services"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "4. Third-Party Services"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section4Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We use third-party services to provide app functionality:\n\n**Firebase Services (Google):**\n• Authentication and user management\n• Cloud database for habit data\n• Analytics and crash reporting\n• Push notifications\n\n**Data Processing:**\n• All third-party services comply with GDPR\n• Data processing agreements in place\n• Limited to necessary app functionality\n• No additional data sharing beyond required services"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We use third-party services to provide app functionality:\n\n**Firebase Services (Google):**\n• Authentication and user management\n• Cloud database for habit data\n• Analytics and crash reporting\n• Push notifications\n\n**Data Processing:**\n• All third-party services comply with GDPR\n• Data processing agreements in place\n• Limited to necessary app functionality\n• No additional data sharing beyond required services"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section5Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5. Your Rights & Choices"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "5. Your Rights & Choices"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section5Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Under GDPR and other privacy laws, you have the right to:\n\n**Data Access:**\n• View all personal data we hold about you\n• Request a copy of your data in portable format\n• Understand how your data is processed\n\n**Data Control:**\n• Correct inaccurate or incomplete data\n• Request deletion of your personal data\n• Withdraw consent for data processing\n• Restrict processing of your data\n\n**Contact Us:**\n• Email: chloe.dev.main@gmail.com\n• Response time: Within 30 days\n• No fees for reasonable requests"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Under GDPR and other privacy laws, you have the right to:\n\n**Data Access:**\n• View all personal data we hold about you\n• Request a copy of your data in portable format\n• Understand how your data is processed\n\n**Data Control:**\n• Correct inaccurate or incomplete data\n• Request deletion of your personal data\n• Withdraw consent for data processing\n• Restrict processing of your data\n\n**Contact Us:**\n• Email: chloe.dev.main@gmail.com\n• Response time: Within 30 days\n• No fees for reasonable requests"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section6Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "6. Data Sharing & Disclosure"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "6. Data Sharing & Disclosure"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section6Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We may share your information in these limited circumstances:\n\n**With Your Consent:**\n• When you explicitly agree to sharing\n• For specific features or integrations\n• With clear explanation of what's shared\n\n**Legal Requirements:**\n• To comply with applicable laws\n• In response to legal requests\n• To protect our rights and safety\n• To prevent fraud or abuse\n\n**Service Providers:**\n• Only for essential app functionality\n• Under strict data protection agreements\n• Limited to necessary data only"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We may share your information in these limited circumstances:\n\n**With Your Consent:**\n• When you explicitly agree to sharing\n• For specific features or integrations\n• With clear explanation of what's shared\n\n**Legal Requirements:**\n• To comply with applicable laws\n• In response to legal requests\n• To protect our rights and safety\n• To prevent fraud or abuse\n\n**Service Providers:**\n• Only for essential app functionality\n• Under strict data protection agreements\n• Limited to necessary data only"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section7Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7. International Data Transfers"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "7. International Data Transfers"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section7Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data may be processed in countries outside your residence:\n\n**Data Locations:**\n• Primary: European Union (GDPR compliant)\n• Backup: United States (Firebase services)\n• Transfers: Protected by appropriate safeguards\n\n**Protection Measures:**\n• Standard Contractual Clauses (SCCs)\n• Adequacy decisions where applicable\n• Regular compliance monitoring\n• User notification of any changes"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "Your data may be processed in countries outside your residence:\n\n**Data Locations:**\n• Primary: European Union (GDPR compliant)\n• Backup: United States (Firebase services)\n• Transfers: Protected by appropriate safeguards\n\n**Protection Measures:**\n• Standard Contractual Clauses (SCCs)\n• Adequacy decisions where applicable\n• Regular compliance monitoring\n• User notification of any changes"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section8Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "8. Children's Privacy"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "8. Children's Privacy"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section8Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We take children's privacy seriously:\n\n**Age Requirements:**\n• App is not intended for children under 13\n• We do not knowingly collect data from children under 13\n• Accounts must be created by users 13 or older\n\n**Parental Consent:**\n• Users 13-17 need parental permission\n• Parents can request data review or deletion\n• Contact us for parental control options"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We take children's privacy seriously:\n\n**Age Requirements:**\n• App is not intended for children under 13\n• We do not knowingly collect data from children under 13\n• Accounts must be created by users 13 or older\n\n**Parental Consent:**\n• Users 13-17 need parental permission\n• Parents can request data review or deletion\n• Contact us for parental control options"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section9Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "9. Updates to This Policy"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "9. Updates to This Policy"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section9Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We may update this Privacy Policy from time to time:\n\n**Notification Process:**\n• Users notified of significant changes\n• Updates posted in the app\n• Email notification for major changes\n• 30-day advance notice when possible\n\n**Continued Use:**\n• Using the app after changes = acceptance\n• Review policy regularly for updates\n• Contact us with any questions\n• Previous versions available upon request"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "We may update this Privacy Policy from time to time:\n\n**Notification Process:**\n• Users notified of significant changes\n• Updates posted in the app\n• Email notification for major changes\n• 30-day advance notice when possible\n\n**Continued Use:**\n• Using the app after changes = acceptance\n• Review policy regularly for updates\n• Contact us with any questions\n• Previous versions available upon request"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
+    },
+    "more.privacy.section10Title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "10. Contact Information"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "10. Contact Information"
+          }
+        }
+      },
+      "comment": "LEGAL"
+    },
+    "more.privacy.section10Content": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For privacy-related questions or requests:\n\n**Primary Contact:**\n• Email: chloe.dev.main@gmail.com\n• Response time: Within 30 days\n• Language: English and Dutch\n\n**Data Protection Officer:**\n• Available for complex privacy matters\n• GDPR compliance questions\n• Data processing concerns\n\n**Complaints:**\n• We aim to resolve issues promptly\n• Contact us first for fastest resolution\n• Right to lodge complaint with supervisory authority"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "needs_review",
+            "value": "For privacy-related questions or requests:\n\n**Primary Contact:**\n• Email: chloe.dev.main@gmail.com\n• Response time: Within 30 days\n• Language: English and Dutch\n\n**Data Protection Officer:**\n• Available for complex privacy matters\n• GDPR compliance questions\n• Data processing concerns\n\n**Complaints:**\n• We aim to resolve issues promptly\n• Contact us first for fastest resolution\n• Right to lodge complaint with supervisory authority"
+          }
+        }
+      },
+      "comment": "LEGAL — requires professional/legal translation review"
     }
   },
   "version": "1.0"

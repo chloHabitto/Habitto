@@ -9,7 +9,7 @@ struct BackupSettingsView: View {
     NavigationView {
       List {
         // Backup Status Section
-        Section("Backup Status") {
+        Section("more.backup.statusSection".localized) {
           HStack {
             Image(systemName: backupManager.lastBackupDate != nil
               ? "checkmark.circle.fill"
@@ -17,7 +17,7 @@ struct BackupSettingsView: View {
               .foregroundColor(backupManager.lastBackupDate != nil ? .green : .orange)
 
             VStack(alignment: .leading) {
-              Text("Last Backup")
+              Text("more.backup.lastBackup".localized)
                 .font(.headline)
 
               if let lastBackup = backupManager.lastBackupDate {
@@ -25,7 +25,7 @@ struct BackupSettingsView: View {
                   .font(.caption)
                   .foregroundColor(.secondary)
               } else {
-                Text("Never")
+                Text("more.backup.never".localized)
                   .font(.caption)
                   .foregroundColor(.secondary)
               }
@@ -33,21 +33,21 @@ struct BackupSettingsView: View {
 
             Spacer()
 
-            Text("\(backupManager.backupCount) backups")
+            Text(String(format: "more.backup.backupsCount".localized, backupManager.backupCount))
               .font(.caption)
               .foregroundColor(.secondary)
           }
         }
 
         // Backup Actions Section
-        Section("Backup Actions") {
+        Section("more.backup.actionsSection".localized) {
           Button(action: {
             showingCreateBackup = true
           }) {
             HStack {
               Image(systemName: "plus.circle.fill")
                 .foregroundColor(.blue)
-              Text("Create Backup")
+              Text("more.backup.createBackup".localized)
             }
           }
           .disabled(backupManager.isBackingUp)
@@ -56,7 +56,7 @@ struct BackupSettingsView: View {
             HStack {
               ProgressView()
                 .scaleEffect(0.8)
-              Text("Creating backup...")
+              Text("more.backup.creatingBackup".localized)
                 .foregroundColor(.secondary)
             }
           }
@@ -64,7 +64,7 @@ struct BackupSettingsView: View {
 
         // Available Backups Section
         if !backupManager.availableBackups.isEmpty {
-          Section("Available Backups") {
+          Section("more.backup.availableBackupsSection".localized) {
             ForEach(backupManager.availableBackups) { backup in
               BackupRowView(
                 backup: backup,
@@ -82,7 +82,7 @@ struct BackupSettingsView: View {
         }
 
         // Data Repair Section
-        Section("Data Repair") {
+        Section("more.backup.dataRepairSection".localized) {
           Button(action: {
             Task {
               do {
@@ -97,7 +97,7 @@ struct BackupSettingsView: View {
             HStack {
               Image(systemName: "wrench.and.screwdriver.fill")
                 .foregroundColor(.orange)
-              Text("Repair Data")
+              Text("more.backup.repairData".localized)
             }
           }
           .disabled(repairUtility.isRepairing)
@@ -106,39 +106,39 @@ struct BackupSettingsView: View {
             HStack {
               ProgressView()
                 .scaleEffect(0.8)
-              Text("Repairing data...")
+              Text("more.backup.repairingData".localized)
                 .foregroundColor(.secondary)
             }
           }
         }
 
         // Backup Settings Section
-        Section("Backup Settings") {
+        Section("more.backup.settingsSection".localized) {
           HStack {
             Image(systemName: "clock.fill")
               .foregroundColor(.blue)
-            Text("Automatic Backups")
+            Text("more.backup.automaticBackups".localized)
             Spacer()
-            Text("Every 24 hours")
+            Text("more.backup.every24Hours".localized)
               .foregroundColor(.secondary)
           }
 
           HStack {
             Image(systemName: "number.circle.fill")
               .foregroundColor(.blue)
-            Text("Keep Backups")
+            Text("more.backup.keepBackups".localized)
             Spacer()
-            Text("10 backups")
+            Text("more.backup.keep10Backups".localized)
               .foregroundColor(.secondary)
           }
         }
       }
-      .navigationTitle("Backup & Recovery")
+      .navigationTitle("more.backup.title".localized)
       .navigationBarTitleDisplayMode(.large)
     }
-    .alert("Restore Backup", isPresented: $showingRestoreAlert) {
-      Button("Cancel", role: .cancel) { }
-      Button("Restore", role: .destructive) {
+    .alert("more.backup.restoreBackup".localized, isPresented: $showingRestoreAlert) {
+      Button("common.cancel".localized, role: .cancel) { }
+      Button("more.backup.restore".localized, role: .destructive) {
         if let backup = selectedBackup {
           Task {
             try? await backupManager.restore(from: backup)
@@ -148,7 +148,7 @@ struct BackupSettingsView: View {
     } message: {
       if let backup = selectedBackup {
         Text(
-          "Are you sure you want to restore from backup created on \(backup.formattedDate)? This will replace your current data.")
+          String(format: "more.backup.restoreConfirm".localized, backup.formattedDate))
       }
     }
     .sheet(isPresented: $showingRepairResults) {
@@ -179,23 +179,23 @@ struct RepairResultsView: View {
   var body: some View {
     NavigationView {
       List {
-        Section("Repair Summary") {
+        Section("more.backup.repairSummary".localized) {
           HStack {
-            Text("Issues Found")
+            Text("more.backup.issuesFound".localized)
             Spacer()
             Text("\(summary.totalIssuesFound)")
               .foregroundColor(.red)
           }
 
           HStack {
-            Text("Issues Fixed")
+            Text("more.backup.issuesFixed".localized)
             Spacer()
             Text("\(summary.totalIssuesFixed)")
               .foregroundColor(.green)
           }
         }
 
-        Section("Repair Details") {
+        Section("more.backup.repairDetails".localized) {
           ForEach(summary.repairResults.indices, id: \.self) { index in
             let result = summary.repairResults[index]
             VStack(alignment: .leading, spacing: 4) {
@@ -208,13 +208,13 @@ struct RepairResultsView: View {
 
               HStack {
                 if result.issuesFound > 0 {
-                  Text("Found: \(result.issuesFound)")
+                  Text(String(format: "more.backup.foundCount".localized, result.issuesFound))
                     .font(.caption)
                     .foregroundColor(.red)
                 }
 
                 if result.issuesFixed > 0 {
-                  Text("Fixed: \(result.issuesFixed)")
+                  Text(String(format: "more.backup.fixedCount".localized, result.issuesFixed))
                     .font(.caption)
                     .foregroundColor(.green)
                 }
@@ -224,11 +224,11 @@ struct RepairResultsView: View {
           }
         }
       }
-      .navigationTitle("Repair Results")
+      .navigationTitle("more.backup.repairResults".localized)
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .navigationBarTrailing) {
-          Button("Done") {
+          Button("common.done".localized) {
             dismiss()
           }
         }
