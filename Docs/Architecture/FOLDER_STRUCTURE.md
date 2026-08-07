@@ -146,7 +146,6 @@ Core/Data/
 ├── Cache/                        # Caching system (1 file)
 ├── CacheManager.swift            # Cache management
 ├── CalendarGridViews.swift       # Calendar grid UI components
-├── CloudKitManager.swift         # CloudKit manager
 ├── Firestore/                    # Firestore integration (1 file)
 ├── GDPRDataDeletionManager.swift # GDPR data deletion
 ├── HabitRepository.swift         # Main habit repository (primary)

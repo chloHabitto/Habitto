@@ -31,7 +31,6 @@ Core/
 ├── Data/                    # Data management and persistence
 │   ├── HabitRepository.swift           # Live UI-facing singleton (HabitRepository.shared)
 │   ├── HabitStore.swift                # Actor backing HabitRepository
-│   ├── CloudKitManager.swift          # CloudKit status / iCloud checks
 │   ├── Protocols/                      # Data access protocols
 │   │   └── DataStorageProtocol.swift
 │   ├── Storage/                        # Storage implementations

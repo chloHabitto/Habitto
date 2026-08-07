@@ -67,8 +67,7 @@ class CoreDataToCloudKitMigration: MigrationStep {
     print("🔄 CoreDataToCloudKitMigration: Starting migration...")
 
     // Check if CloudKit is available
-    // Note: CloudKitManager doesn't have isCloudKitAvailable method yet
-    // For now, we'll assume CloudKit is not available
+    // CloudKit habit sync is not implemented; skip this migration step
     return .skipped(reason: "CloudKit not available (not fully implemented)")
   }
 

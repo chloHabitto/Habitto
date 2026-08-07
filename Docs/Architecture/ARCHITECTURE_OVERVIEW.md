@@ -119,13 +119,11 @@ iCloud (Cross-device sync)
 - **BackgroundQueueManager**: Offloads heavy operations
 - **Status**: ✅ Fully implemented
 
-### 7. **CloudKit Integration (Prepared)**
-- **CloudKitManager**: CloudKit container management
-- **CloudKitIntegrationService**: Sync coordination
-- **CloudKitModels**: CloudKit-compatible data models
-- **CloudKitSyncManager**: Actual sync operations
-- **CloudKitConflictResolver**: Conflict resolution
-- **Status**: ✅ Prepared but disabled for safety
+### 7. **Cloud sync**
+- **Primary cloud path**: Firebase/Firestore backup & sync (not CloudKit record sync)
+- **iCloud account status UI**: `ICloudStatusManager` (More tab status label only)
+- **iCloud Drive backups**: `CloudStorageManager` / `BackupStorageCoordinator` (document storage)
+- **Status**: CloudKit habit-sync scaffolding removed; CloudKit entitlements may still be present for documents/status checks
 
 ### 8. **Utilities & Infrastructure**
 - **UserDefaultsWrapper**: Type-safe UserDefaults access

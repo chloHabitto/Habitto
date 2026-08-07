@@ -649,11 +649,6 @@ class HabitRepository: ObservableObject {
           self.objectWillChange.send()
         }
 
-        // CloudKit sync is disabled - infrastructure archived
-        // if cloudKitIntegration.isEnabled {
-        //   await cloudKitIntegration.startSync()
-        // }
-
 
       } catch {
         debugLog("❌ HabitRepository: Failed to save habits: \(error.localizedDescription)")
@@ -1101,10 +1096,6 @@ class HabitRepository: ObservableObject {
   /// Guest data migration
   private let guestDataMigration = GuestDataMigration()
 
-  // CloudKit is disabled - infrastructure archived
-  // private lazy var cloudKitManager = CloudKitManager.shared
-  // private lazy var cloudKitIntegration = CloudKitIntegrationService.shared
-
   // MARK: - Post Launch Warmup
 
   func postLaunchWarmup() async {
@@ -1166,11 +1157,11 @@ class HabitRepository: ObservableObject {
 
   }
 
-  // MARK: - Safe CloudKit Initialization (DISABLED)
+  // MARK: - App lifecycle observer setup
 
   private func initializeCloudKitSafely() async {
-    // CloudKit sync is disabled - infrastructure archived
-    // See: Core/Data/CloudKit/Archive/ for archived CloudKit code
+    // Historical name retained; CloudKit sync scaffolding was removed.
+    // This only registers an app-active observer to reload local data.
 
     // Monitor app lifecycle to reload data when app becomes active
     NotificationCenter.default.addObserver(

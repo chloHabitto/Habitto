@@ -62,9 +62,9 @@ private func getUserCohort(userId: String) -> String {
 ### Made OFF by Default Until Implemented ✅
 
 #### CloudKit Sync (`cloudkit_sync = false`)
-- Gated in: `CloudKitIntegrationService.startSync()`
-- Gated in: `CloudKitManager.initializeCloudKitSync()`
-- **Confirmation**: All CloudKit operations disabled by default flag
+- Remote Config / `RemoteConfigService.enableCloudKitSync` defaults to OFF
+- Former gates (`CloudKitIntegrationService.startSync()`, `CloudKitManager.initializeCloudKitSync()`) referred to removed scaffolding
+- **Confirmation**: No live CloudKit habit-sync path remains in the app
 
 #### Field-Level Encryption (`field_level_encryption = false`)
 - Gated in: `FieldLevelEncryptionManager.encryptField()`
