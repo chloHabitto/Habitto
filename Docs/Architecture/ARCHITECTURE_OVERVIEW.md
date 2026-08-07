@@ -22,8 +22,7 @@ This document provides a comprehensive overview of Habitto's current architectur
 ├─────────────────────────────────────────────────────────────┤
 │  Data Access Layer                                          │
 │  ├── HabitStore (actor backing HabitRepository)            │
-│  ├── HabitRepositoryProtocol (+ alternate protocol stack)  │
-│  └── StorageFactory (storage helpers; not UI entry point)  │
+│  └── HabitRepositoryProtocol (+ alternate protocol stack)  │
 ├─────────────────────────────────────────────────────────────┤
 │  Storage Layer (Protocol-based)                            │
 │  ├── SwiftDataStorage (Primary local persistence)          │
@@ -86,8 +85,7 @@ iCloud (Cross-device sync)
 - **Status**: ✅ Active — this is the production entry point for the app UI
 
 ### 2. **Protocol-based repository stack** (non-UI / alternate paths)
-- **HabitRepositoryProtocol**: Interface used by Firestore/DualWrite/Legacy/Normalized adapters
-- **StorageFactory**: Storage-type helpers (not the live UI repository constructor)
+- **HabitRepositoryProtocol**: Interface used by Legacy/Normalized adapters
 - **Status**: Present in the codebase for alternate / normalized-data work; UI does not go through these types today
 
 ### 3. **Storage Layer (Protocol-based)**

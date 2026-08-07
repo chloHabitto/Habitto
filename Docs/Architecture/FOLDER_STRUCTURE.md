@@ -147,8 +147,6 @@ Core/Data/
 ├── CacheManager.swift            # Cache management
 ├── CalendarGridViews.swift       # Calendar grid UI components
 ├── CloudKitManager.swift         # CloudKit manager
-├── Factory/                      # Factory pattern implementations (1 file)
-│   └── StorageFactory.swift
 ├── Firestore/                    # Firestore integration (1 file)
 ├── GDPRDataDeletionManager.swift # GDPR data deletion
 ├── HabitRepository.swift         # Main habit repository (primary)
@@ -609,7 +607,6 @@ website/
 - **Repository Pattern**: Data access abstraction in `Core/Data/`
 - **Manager Pattern**: Feature coordination in `Core/Managers/`
 - **Service Pattern**: Business logic services in `Core/Services/`
-- **Factory Pattern**: Object creation in `Core/Data/Factory/`
 - **Protocol-Based Design**: Interchangeable implementations
 
 ---

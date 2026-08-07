@@ -40,8 +40,6 @@ Core/
 │   │   └── FirestoreStorage.swift
 │   ├── Repositories/                   # Protocol-based repository stack (non-UI)
 │   │   └── HabitRepositoryProtocol.swift
-│   ├── Factory/                        # Storage factory
-│   │   └── StorageFactory.swift
 │   ├── Migration/                      # Data migration system
 │   │   ├── DataMigrationManager.swift
 │   │   ├── MigrationService.swift
