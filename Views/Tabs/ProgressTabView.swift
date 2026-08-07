@@ -325,40 +325,6 @@ struct ProgressTabView: View {
         // Weekly Progress Card
         weeklyProgressCard
 
-        // Weekly Calendar Grid and Stats Container - Hidden when All habits is selected
-        // VStack(spacing: 0) {
-        //   // Weekly Calendar Grid
-        //   WeeklyCalendarGridView(
-        //     userHabits: getActiveHabits(),
-        //     selectedWeekStartDate: selectedWeekStartDate)
-        //
-        //   // Summary Statistics
-        //   WeeklySummaryStatsView(
-        //     completionRate: 0,
-        //     bestStreak: streakStatistics.longestStreak,
-        //     consistencyRate: 0)
-        //     .padding(.horizontal, 16)
-        //     .padding(.top, 12)
-        //     .padding(.bottom, 16)
-        // }
-        // .background(
-        //   RoundedRectangle(cornerRadius: 24)
-        //     .fill(.appSurface01)
-        //     .overlay(
-        //       LinearGradient(
-        //         stops: [
-        //           Gradient.Stop(color: .white.opacity(0.07), location: 0.00),
-        //           Gradient.Stop(color: .white.opacity(0.03), location: 1.00),
-        //         ],
-        //         startPoint: UnitPoint(x: 0.08, y: 0.09),
-        //         endPoint: UnitPoint(x: 0.88, y: 1)
-        //       )
-        //       .clipShape(RoundedRectangle(cornerRadius: 24))
-        //     ))
-        // .overlay(
-        //   RoundedRectangle(cornerRadius: 24)
-        //     .stroke(Color("appOutline1Variant"), lineWidth: 2))
-
         // All Habits Weekly Progress (Total)
         AllHabitsWeeklyProgressView(
           habits: getActiveHabits(),
