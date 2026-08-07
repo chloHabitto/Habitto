@@ -76,6 +76,7 @@
 		8965022C2F3B9AB00046226C /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		89662C282F1FECB6002E2059 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		896B96922F191C7100E4AAA2 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		897161DE302474AE00970592 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8978D5372F23B9EB00635F52 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		897A76092F13907D004338E4 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		897D09442F1CD1F40074EA87 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -117,12 +118,28 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				.gitignore,
+				.firebaserc,
+				Docs,
+				Scripts,
+				"Tests/GoldenScenarios",
+				"Tests/SkipFeatureTest.swift",
+				"Tests/WidgetTimezoneTest.swift",
+				"Tests/firestore.rules.test.js",
+				archive,
 				"Config/App-Info.plist",
 				firebase.json,
+				firestore-debug.log,
+				firestore.indexes.json,
+				firestore.rules,
+				get_user_id.swift,
 				HabittoWidget/HabittoWidget.swift,
 				HabittoWidget/HabittoWidgetBundle.swift,
 				HabittoWidget/Info.plist,
+				node_modules,
+				"package-lock.json",
 				package.json,
+				verify_firestore.sh,
+				website,
 			);
 			target = 89C17A362DF73D8A00B2480F /* Habitto */;
 		};
@@ -153,6 +170,14 @@
 			exceptions = (
 				8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */,
 				89BA7A132F13B18700FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */,
+			);
+			explicitFolders = (
+				Docs,
+				Scripts,
+				"Tests/GoldenScenarios",
+				archive,
+				node_modules,
+				website,
 			);
 			path = .;
 			sourceTree = "<group>";
@@ -285,6 +310,11 @@
 			sourceTree = "<group>";
 		};
 		896B96B22F191C7100E4AAA2 /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		8971621D302474AE00970592 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -568,6 +598,10 @@
 					ProjectRef = 89EC32CE2F3C72D0006BFBA2 /* Habitto.xcodeproj */;
 				},
 				{
+					ProductGroup = 8971621D302474AE00970592 /* Products */;
+					ProjectRef = 897161DE302474AE00970592 /* Habitto.xcodeproj */;
+				},
+				{
 					ProductGroup = 892CC76C2F1E3B1900A1AD64 /* Products */;
 					ProjectRef = 892CC7432F1E3B1900A1AD64 /* Habitto.xcodeproj */;
 				},
@@ -759,13 +793,13 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				MARKETING_VERSION = 1.1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto.HabittoWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -794,13 +828,13 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
+				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				MARKETING_VERSION = 1.1.7;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto.HabittoWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -967,6 +1001,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				MARKETING_VERSION = 1.1.7;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
@@ -980,7 +1015,6 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_GENERATE_DEBUGGING_SYMBOLS = YES;
 				SWIFT_VERSION = 5.0;
@@ -1020,6 +1054,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				MARKETING_VERSION = 1.1.7;
 				OTHER_SWIFT_FLAGS = "$(inherited) -g";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.chloe-lee.Habitto";
@@ -1033,7 +1068,6 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
-				LOCALIZED_STRING_SWIFTUI_SUPPORT = NO;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_GENERATE_DEBUGGING_SYMBOLS = YES;
 				SWIFT_VERSION = 5.0;

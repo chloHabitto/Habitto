@@ -26,9 +26,11 @@
   "jest": {
     "testEnvironment": "node",
     "testMatch": [
+      "**/Tests/**/*.test.js",
       "**/tests/**/*.test.js"
     ],
     "collectCoverageFrom": [
+      "Tests/**/*.js",
       "tests/**/*.js"
     ],
     "coveragePathIgnorePatterns": [

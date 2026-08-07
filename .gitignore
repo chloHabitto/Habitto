@@ -136,6 +136,10 @@ Temporary Items
 *.swp
 *.swo
 
+# Firebase / Node (rules unit tests)
+node_modules/
+.firebase/
+
 # Archive/Test files
 archive/
 *.test

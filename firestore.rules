@@ -1,55 +1,277 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ✅ ANONYMOUS BACKUP: Users can only access their own data (including anonymous users)
-    // Anonymous users are authenticated via Firebase Auth, so request.auth.uid will be their anonymous UID
-    match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
     }
-    
-    // Specific collections for better organization
-    match /users/{uid}/habits/{habitId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
-    
-    // ✅ ANONYMOUS BACKUP: Completions organized by year-month
-    match /users/{uid}/completions/{yearMonth}/records/{recordId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isValidDateString(dateStr) {
+      // YYYY-MM-DD (calendar day key used throughout the app)
+      return dateStr is string && dateStr.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
     }
-    
-    // ✅ ANONYMOUS BACKUP: Daily awards
-    match /users/{uid}/daily_awards/{dateKey} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isValidYearMonth(yearMonth) {
+      return yearMonth is string && yearMonth.matches('^[0-9]{4}-[0-9]{2}$');
     }
-    
-    match /users/{uid}/goalVersions/{versionId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isValidGoal(goal) {
+      return goal is int && goal >= 0;
     }
-    
-    match /users/{uid}/completions/{date}/{habitId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isValidCount(count) {
+      return count is int && count >= 0;
     }
-    
-    match /users/{uid}/xp/state {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isValidHabitType(typeValue) {
+      return typeValue is string && typeValue in ['formation', 'breaking'];
     }
-    
-    match /users/{uid}/xp/ledger/{eventId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function isValidHabitName(name) {
+      return name is string && name.size() > 0 && name.size() <= 100;
     }
-    
-    match /users/{uid}/streaks/{habitId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    function hasTimestamp(field) {
+      return field is timestamp;
     }
-    
-    // Migration state documents
-    match /users/{uid}/meta/migration {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    // -------------------------------------------------------------------------
+    // User-scoped access
+    //
+    // Narrowed wildcard: owner may READ their own subtree, but WRITES must go
+    // through the collection-specific rules below (so immutability + field
+    // validation can actually take effect — Firestore ORs matching rules).
+    // -------------------------------------------------------------------------
+    match /users/{userId}/{document=**} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if false;
     }
-    
-    // Device management (optional - wildcard rule above already covers this)
-    match /users/{uid}/devices/{deviceId} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+
+    // -------------------------------------------------------------------------
+    // Habits — /users/{uid}/habits/{habitId}
+    // Supports both the simple schema (type/active) used by FirestoreRepository
+    // / rules tests, and the SyncEngine backup schema (habitType/isActive).
+    // -------------------------------------------------------------------------
+    match /users/{userId}/habits/{habitId} {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId)
+        && isValidHabitName(request.resource.data.name)
+        && hasTimestamp(request.resource.data.createdAt)
+        && (
+          // Simple / test schema
+          (
+            request.resource.data.keys().hasAll(['name', 'color', 'type', 'createdAt', 'active'])
+            && request.resource.data.color is string
+            && request.resource.data.color.size() > 0
+            && isValidHabitType(request.resource.data.type)
+            && request.resource.data.active is bool
+          )
+          ||
+          // SyncEngine / FirestoreHabit backup schema
+          (
+            request.resource.data.keys().hasAll(['name', 'habitType', 'createdAt', 'isActive'])
+            && isValidHabitType(request.resource.data.habitType)
+            && request.resource.data.isActive is bool
+          )
+        );
+
+      allow update: if isSignedIn() && isOwner(userId)
+        && isValidHabitName(request.resource.data.name)
+        && (
+          // Simple schema: createdAt is immutable; only name/color/active
+          (
+            resource.data.keys().hasAll(['type', 'active'])
+            && request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['name', 'color', 'active'])
+          )
+          ||
+          // Sync schema: allow syncing mutable habit fields, but not createdAt
+          (
+            resource.data.keys().hasAny(['habitType', 'isActive'])
+            && !request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(['createdAt'])
+            && (
+              !request.resource.data.keys().hasAny(['habitType'])
+              || isValidHabitType(request.resource.data.habitType)
+            )
+            && (
+              !request.resource.data.keys().hasAny(['name'])
+              || isValidHabitName(request.resource.data.name)
+            )
+          )
+        );
+
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Goal versions — immutable after create
+    // App path:  /users/{uid}/goalVersions/{habitId}/versions/{versionId}
+    // -------------------------------------------------------------------------
+    match /users/{userId}/goalVersions/{habitId}/versions/{versionId} {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId)
+        && request.resource.data.keys().hasAll(['habitId', 'effectiveLocalDate', 'goal', 'createdAt'])
+        && request.resource.data.habitId is string
+        && request.resource.data.habitId == habitId
+        && isValidDateString(request.resource.data.effectiveLocalDate)
+        && isValidGoal(request.resource.data.goal)
+        && hasTimestamp(request.resource.data.createdAt);
+
+      allow update: if false; // immutable
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Completions — dated habit progress
+    // App path (FirestoreRepository): /users/{uid}/completions/{date}/habits/{habitId}
+    // -------------------------------------------------------------------------
+    match /users/{userId}/completions/{dateStr}/habits/{habitId} {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId)
+        && isValidDateString(dateStr)
+        && request.resource.data.keys().hasAll(['count', 'updatedAt'])
+        && isValidCount(request.resource.data.count)
+        && hasTimestamp(request.resource.data.updatedAt);
+
+      allow update: if isSignedIn() && isOwner(userId)
+        && isValidDateString(dateStr)
+        && isValidCount(request.resource.data.count)
+        && hasTimestamp(request.resource.data.updatedAt);
+
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // Backup / SyncEngine completions (year-month buckets)
+    match /users/{userId}/completions/{yearMonth}/records/{recordId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId)
+        && isValidYearMonth(yearMonth);
+    }
+
+    match /users/{userId}/completions/{yearMonth}/completions/{recordId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId)
+        && isValidYearMonth(yearMonth);
+    }
+
+    // -------------------------------------------------------------------------
+    // Daily awards
+    // -------------------------------------------------------------------------
+    match /users/{userId}/daily_awards/{dateKey} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
+    }
+
+    // -------------------------------------------------------------------------
+    // XP state
+    // -------------------------------------------------------------------------
+    match /users/{userId}/xp/state {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow write: if isSignedIn() && isOwner(userId)
+        && request.resource.data.keys().hasAll(['totalXP', 'level', 'currentLevelXP', 'lastUpdated'])
+        && request.resource.data.totalXP is int
+        && request.resource.data.totalXP >= 0
+        && request.resource.data.level is int
+        && request.resource.data.level >= 1
+        && request.resource.data.currentLevelXP is int
+        && request.resource.data.currentLevelXP >= 0
+        && hasTimestamp(request.resource.data.lastUpdated);
+    }
+
+    // -------------------------------------------------------------------------
+    // XP ledger — append-only
+    // Test / documented path: /users/{uid}/xp/ledger/entries/{eventId}
+    // App path (FirestoreRepository): /users/{uid}/xp_ledger/{eventId}
+    // -------------------------------------------------------------------------
+    match /users/{userId}/xp/ledger/entries/{eventId} {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId)
+        && request.resource.data.keys().hasAll(['delta', 'reason'])
+        && request.resource.data.delta is int
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.reason.size() <= 500
+        && (
+          (request.resource.data.keys().hasAny(['timestamp'])
+            && hasTimestamp(request.resource.data.timestamp))
+          || (request.resource.data.keys().hasAny(['ts'])
+            && hasTimestamp(request.resource.data.ts))
+        );
+
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /users/{userId}/xp_ledger/{eventId} {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId)
+        && request.resource.data.keys().hasAll(['delta', 'reason'])
+        && request.resource.data.delta is int
+        && request.resource.data.reason is string
+        && request.resource.data.reason.size() > 0
+        && request.resource.data.reason.size() <= 500
+        && (
+          (request.resource.data.keys().hasAny(['timestamp'])
+            && hasTimestamp(request.resource.data.timestamp))
+          || (request.resource.data.keys().hasAny(['ts'])
+            && hasTimestamp(request.resource.data.ts))
+        );
+
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Streaks
+    // -------------------------------------------------------------------------
+    match /users/{userId}/streaks/{habitId} {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow write: if isSignedIn() && isOwner(userId)
+        && request.resource.data.keys().hasAll(['current', 'longest', 'updatedAt'])
+        && request.resource.data.current is int
+        && request.resource.data.current >= 0
+        && request.resource.data.longest is int
+        && request.resource.data.longest >= 0
+        && hasTimestamp(request.resource.data.updatedAt)
+        && (
+          !request.resource.data.keys().hasAny(['lastCompletionDate'])
+          || request.resource.data.lastCompletionDate == null
+          || isValidDateString(request.resource.data.lastCompletionDate)
+        );
+    }
+
+    // -------------------------------------------------------------------------
+    // Meta / devices (owner-only; no extra field schema required here)
+    // -------------------------------------------------------------------------
+    match /users/{userId}/meta/migration {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    match /users/{userId}/devices/{deviceId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Deny everything else
+    // -------------------------------------------------------------------------
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }

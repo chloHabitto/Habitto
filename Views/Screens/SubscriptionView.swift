@@ -119,51 +119,42 @@ struct SubscriptionView: View {
           Text(message)
         }
       }
-      .onAppear {
-        startAutoScroll()
-      }
-      .onDisappear {
-        stopAutoScroll()
-      }
       .task {
         await loadProducts()
       }
-    }
-  }
-  
-  private func startAutoScroll() {
-    stopAutoScroll() // Stop any existing timer
-    autoScrollTimer = Timer.scheduledTimer(withTimeInterval: 6.0, repeats: true) { _ in
-      let nextIndex = currentReviewIndex + 1
-      let totalCount = reviews.count + 2 // reviews + 2 duplicates
-      
-      // If we're at the duplicate last item (index = totalCount - 1), jump to real first item (index 1) without animation
-      if nextIndex == totalCount {
-        // Jump to real first item without animation
-        currentReviewIndex = 1
-        // Small delay then continue to second item
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-          withAnimation(.easeInOut(duration: 1.2)) {
-            currentReviewIndex = 2
+      // Restarts whenever currentReviewIndex changes (auto-advance or manual swipe),
+      // matching the old Timer restart-on-change behavior.
+      .task(id: currentReviewIndex) {
+        while !Task.isCancelled {
+          try? await Task.sleep(for: .seconds(6))
+          guard !Task.isCancelled else { break }
+          
+          let nextIndex = currentReviewIndex + 1
+          let totalCount = reviews.count + 2 // reviews + 2 duplicates
+          
+          // If we're at the duplicate last item (index = totalCount - 1), jump to real first item (index 1) without animation
+          if nextIndex == totalCount {
+            // Jump to real first item without animation
+            currentReviewIndex = 1
+            // Small delay then continue to second item
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+              withAnimation(.easeInOut(duration: 1.2)) {
+                currentReviewIndex = 2
+              }
+            }
+          } else {
+            withAnimation(.easeInOut(duration: 1.2)) {
+              currentReviewIndex = nextIndex
+            }
           }
-        }
-      } else {
-        withAnimation(.easeInOut(duration: 1.2)) {
-          currentReviewIndex = nextIndex
         }
       }
     }
-  }
-  
-  private func stopAutoScroll() {
-    autoScrollTimer?.invalidate()
-    autoScrollTimer = nil
   }
   
   @Environment(\.dismiss) private var dismiss
   @State private var selectedOption: SubscriptionOption = .lifetime
   @State private var currentReviewIndex: Int = 1 // Start at 1 (first real item)
-  @State private var autoScrollTimer: Timer?
   @State private var isRestoring = false
   @State private var restoreMessage: String?
   @State private var showingRestoreAlert = false
@@ -253,8 +244,7 @@ struct SubscriptionView: View {
             currentReviewIndex = 1
           }
         }
-        // Restart timer when user manually swipes
-        startAutoScroll()
+        // Auto-scroll .task(id: currentReviewIndex) restarts on this change
       }
       
       // Page controls (only show real reviews, not duplicates)

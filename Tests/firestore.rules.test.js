@@ -50,6 +50,36 @@ const createStreakData = () => ({
   updatedAt: new Date(),
 });
 
+/** Path helper matching FirestoreRepository: goalVersions/{habitId}/versions/{versionId} */
+const goalVersionRef = (db, userId, habitId, versionId) =>
+  db
+    .collection('users')
+    .doc(userId)
+    .collection('goalVersions')
+    .doc(habitId)
+    .collection('versions')
+    .doc(versionId);
+
+/** Path helper matching FirestoreRepository: completions/{date}/habits/{habitId} */
+const completionRefFor = (db, userId, dateStr, habitId) =>
+  db
+    .collection('users')
+    .doc(userId)
+    .collection('completions')
+    .doc(dateStr)
+    .collection('habits')
+    .doc(habitId);
+
+/** Path helper: /users/{uid}/xp/ledger/entries/{eventId} */
+const xpLedgerRef = (db, userId, eventId) =>
+  db
+    .collection('users')
+    .doc(userId)
+    .collection('xp')
+    .doc('ledger')
+    .collection('entries')
+    .doc(eventId);
+
 // Setup and teardown
 beforeAll(async () => {
   // Read the rules file
@@ -269,26 +299,14 @@ describe('Habits Collection Rules', () => {
 describe('Goal Versions Rules', () => {
   test('User can create valid goal version', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const goalRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('goalVersions')
-      .doc('habit1')
-      .collection('habit1')
-      .doc('version1');
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'version1');
 
     await assertSucceeds(goalRef.set(createGoalVersionData('habit1')));
   });
 
   test('User cannot create goal with invalid date format', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const goalRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('goalVersions')
-      .doc('habit1')
-      .collection('habit1')
-      .doc('version1');
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'version1');
 
     const invalidData = createGoalVersionData('habit1');
     invalidData.effectiveLocalDate = '2025/10/15'; // Wrong format
@@ -298,13 +316,7 @@ describe('Goal Versions Rules', () => {
 
   test('User cannot create goal with negative goal value', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const goalRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('goalVersions')
-      .doc('habit1')
-      .collection('habit1')
-      .doc('version1');
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'version1');
 
     const invalidData = createGoalVersionData('habit1');
     invalidData.goal = -1;
@@ -314,13 +326,7 @@ describe('Goal Versions Rules', () => {
 
   test('User can create goal with zero value', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const goalRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('goalVersions')
-      .doc('habit1')
-      .collection('habit1')
-      .doc('version1');
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'version1');
 
     const validData = createGoalVersionData('habit1');
     validData.goal = 0;
@@ -330,25 +336,13 @@ describe('Goal Versions Rules', () => {
 
   test('User cannot update goal version (immutable)', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const goalRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('goalVersions')
-      .doc('habit1')
-      .collection('habit1')
-      .doc('version1');
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'version1');
 
     // Create goal first
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context
-        .firestore()
-        .collection('users')
-        .doc('user1')
-        .collection('goalVersions')
-        .doc('habit1')
-        .collection('habit1')
-        .doc('version1')
-        .set(createGoalVersionData('habit1'));
+      await goalVersionRef(context.firestore(), 'user1', 'habit1', 'version1').set(
+        createGoalVersionData('habit1')
+      );
     });
 
     // Try to update
@@ -357,25 +351,13 @@ describe('Goal Versions Rules', () => {
 
   test('User can delete goal version', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const goalRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('goalVersions')
-      .doc('habit1')
-      .collection('habit1')
-      .doc('version1');
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'version1');
 
     // Create goal first
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context
-        .firestore()
-        .collection('users')
-        .doc('user1')
-        .collection('goalVersions')
-        .doc('habit1')
-        .collection('habit1')
-        .doc('version1')
-        .set(createGoalVersionData('habit1'));
+      await goalVersionRef(context.firestore(), 'user1', 'habit1', 'version1').set(
+        createGoalVersionData('habit1')
+      );
     });
 
     await assertSucceeds(goalRef.delete());
@@ -389,39 +371,21 @@ describe('Goal Versions Rules', () => {
 describe('Completions Rules', () => {
   test('User can create valid completion', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const completionRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('completions')
-      .doc('2025-10-15')
-      .collection('2025-10-15')
-      .doc('habit1');
+    const completionRef = completionRefFor(authedDb, 'user1', '2025-10-15', 'habit1');
 
     await assertSucceeds(completionRef.set(createCompletionData()));
   });
 
   test('User cannot create completion with invalid date format', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const completionRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('completions')
-      .doc('10-15-2025') // Invalid format
-      .collection('10-15-2025')
-      .doc('habit1');
+    const completionRef = completionRefFor(authedDb, 'user1', '10-15-2025', 'habit1');
 
     await assertFails(completionRef.set(createCompletionData()));
   });
 
   test('User cannot create completion with negative count', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const completionRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('completions')
-      .doc('2025-10-15')
-      .collection('2025-10-15')
-      .doc('habit1');
+    const completionRef = completionRefFor(authedDb, 'user1', '2025-10-15', 'habit1');
 
     const invalidData = createCompletionData();
     invalidData.count = -1;
@@ -431,25 +395,13 @@ describe('Completions Rules', () => {
 
   test('User can update completion count', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const completionRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('completions')
-      .doc('2025-10-15')
-      .collection('2025-10-15')
-      .doc('habit1');
+    const completionRef = completionRefFor(authedDb, 'user1', '2025-10-15', 'habit1');
 
     // Create completion first
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context
-        .firestore()
-        .collection('users')
-        .doc('user1')
-        .collection('completions')
-        .doc('2025-10-15')
-        .collection('2025-10-15')
-        .doc('habit1')
-        .set(createCompletionData());
+      await completionRefFor(context.firestore(), 'user1', '2025-10-15', 'habit1').set(
+        createCompletionData()
+      );
     });
 
     await assertSucceeds(
@@ -462,25 +414,13 @@ describe('Completions Rules', () => {
 
   test('User cannot update completion with negative count', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const completionRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('completions')
-      .doc('2025-10-15')
-      .collection('2025-10-15')
-      .doc('habit1');
+    const completionRef = completionRefFor(authedDb, 'user1', '2025-10-15', 'habit1');
 
     // Create completion first
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context
-        .firestore()
-        .collection('users')
-        .doc('user1')
-        .collection('completions')
-        .doc('2025-10-15')
-        .collection('2025-10-15')
-        .doc('habit1')
-        .set(createCompletionData());
+      await completionRefFor(context.firestore(), 'user1', '2025-10-15', 'habit1').set(
+        createCompletionData()
+      );
     });
 
     await assertFails(
@@ -573,26 +513,14 @@ describe('XP State Rules', () => {
 describe('XP Ledger Rules', () => {
   test('User can create valid ledger entry', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const ledgerRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('xp')
-      .doc('ledger')
-      .collection('ledger')
-      .doc('event1');
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event1');
 
     await assertSucceeds(ledgerRef.set(createXPLedgerData()));
   });
 
   test('User can create ledger entry with negative delta', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const ledgerRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('xp')
-      .doc('ledger')
-      .collection('ledger')
-      .doc('event1');
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event1');
 
     const validData = createXPLedgerData();
     validData.delta = -25;
@@ -602,13 +530,7 @@ describe('XP Ledger Rules', () => {
 
   test('User cannot create ledger entry with empty reason', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const ledgerRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('xp')
-      .doc('ledger')
-      .collection('ledger')
-      .doc('event1');
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event1');
 
     const invalidData = createXPLedgerData();
     invalidData.reason = '';
@@ -618,13 +540,7 @@ describe('XP Ledger Rules', () => {
 
   test('User cannot create ledger entry with reason > 500 chars', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const ledgerRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('xp')
-      .doc('ledger')
-      .collection('ledger')
-      .doc('event1');
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event1');
 
     const invalidData = createXPLedgerData();
     invalidData.reason = 'a'.repeat(501);
@@ -634,25 +550,11 @@ describe('XP Ledger Rules', () => {
 
   test('User cannot update ledger entry (immutable)', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const ledgerRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('xp')
-      .doc('ledger')
-      .collection('ledger')
-      .doc('event1');
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event1');
 
     // Create ledger entry first
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context
-        .firestore()
-        .collection('users')
-        .doc('user1')
-        .collection('xp')
-        .doc('ledger')
-        .collection('ledger')
-        .doc('event1')
-        .set(createXPLedgerData());
+      await xpLedgerRef(context.firestore(), 'user1', 'event1').set(createXPLedgerData());
     });
 
     // Try to update
@@ -661,25 +563,11 @@ describe('XP Ledger Rules', () => {
 
   test('User cannot delete ledger entry', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
-    const ledgerRef = authedDb
-      .collection('users')
-      .doc('user1')
-      .collection('xp')
-      .doc('ledger')
-      .collection('ledger')
-      .doc('event1');
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event1');
 
     // Create ledger entry first
     await testEnv.withSecurityRulesDisabled(async (context) => {
-      await context
-        .firestore()
-        .collection('users')
-        .doc('user1')
-        .collection('xp')
-        .doc('ledger')
-        .collection('ledger')
-        .doc('event1')
-        .set(createXPLedgerData());
+      await xpLedgerRef(context.firestore(), 'user1', 'event1').set(createXPLedgerData());
     });
 
     await assertFails(ledgerRef.delete());
@@ -861,6 +749,115 @@ describe('Deny Unknown Paths', () => {
     await assertFails(
       authedDb.collection('unknown').doc('doc1').set({ data: 'test' })
     );
+  });
+});
+
+// ============================================================================
+// SECURITY GAP REGRESSION
+// These cases were previously allowed by the blanket
+// match /users/{uid}/{document=**} { allow read, write: ... } rule.
+// ============================================================================
+
+describe('Security gap regression (blanket wildcard)', () => {
+  test('Owner cannot update an existing goalVersions document', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'v-gap');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await goalVersionRef(context.firestore(), 'user1', 'habit1', 'v-gap').set(
+        createGoalVersionData('habit1')
+      );
+    });
+
+    await assertFails(goalRef.update({ goal: 99, effectiveLocalDate: '2025-12-01' }));
+  });
+
+  test('Owner cannot update an xp/ledger entry', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'gap-event');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await xpLedgerRef(context.firestore(), 'user1', 'gap-event').set(
+        createXPLedgerData()
+      );
+    });
+
+    await assertFails(ledgerRef.update({ reason: 'tampered' }));
+  });
+
+  test('Owner cannot delete an xp/ledger entry', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'gap-event-del');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await xpLedgerRef(context.firestore(), 'user1', 'gap-event-del').set(
+        createXPLedgerData()
+      );
+    });
+
+    await assertFails(ledgerRef.delete());
+  });
+
+  test('Owner cannot create habit with invalid type', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const habitRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('habits')
+      .doc('gap-habit-type');
+
+    const invalidData = createHabitData();
+    invalidData.type = 'neither';
+
+    await assertFails(habitRef.set(invalidData));
+  });
+
+  test('Owner cannot create habit with out-of-range goal via goalVersions', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const goalRef = goalVersionRef(authedDb, 'user1', 'habit1', 'v-neg');
+
+    const invalidData = createGoalVersionData('habit1');
+    invalidData.goal = -100;
+
+    await assertFails(goalRef.set(invalidData));
+  });
+
+  test('Owner can append to xp_ledger collection used by FirestoreRepository', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ledgerRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('xp_ledger')
+      .doc('repo-event');
+
+    await assertSucceeds(
+      ledgerRef.set({
+        delta: 10,
+        reason: 'Award',
+        ts: new Date(),
+      })
+    );
+  });
+
+  test('Owner cannot update xp_ledger entry (append-only)', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ledgerRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('xp_ledger')
+      .doc('repo-event-upd');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context
+        .firestore()
+        .collection('users')
+        .doc('user1')
+        .collection('xp_ledger')
+        .doc('repo-event-upd')
+        .set({ delta: 10, reason: 'Award', ts: new Date() });
+    });
+
+    await assertFails(ledgerRef.update({ delta: 999 }));
   });
 });
 
