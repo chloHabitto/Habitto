@@ -145,7 +145,6 @@ Core/Data/
 ├── Backup/                       # Backup system (2 files)
 ├── Cache/                        # Caching system (1 file)
 ├── CacheManager.swift            # Cache management
-├── CalendarGridViews.swift       # Calendar grid UI components
 ├── DataStorageProtocol.swift     # Data access protocols
 ├── FirestoreRepository.swift     # Firestore repository helpers
 ├── GDPRDataDeletionManager.swift # GDPR data deletion
@@ -167,7 +166,6 @@ Core/Data/
 ├── Store/                        # HabitStore actor (backs HabitRepository.shared)
 │   └── HabitStore.swift
 ├── StreakDataCalculator.swift    # Streak calculation logic
-├── StreakViewComponents.swift    # Streak UI components
 ├── SwiftData/                    # SwiftData models and management
 └── SyncEngine.swift              # Data synchronization
 ```
@@ -367,12 +365,14 @@ Core/UI/
 │   ├── HabitIconView.swift
 │   ├── HeaderView.swift
 │   └── WhiteSheetContainer.swift
-├── Components/                   # Reusable components (33 files)
+├── Components/                   # Reusable components (includes calendar/streak grids)
 │   ├── AnimatedCheckbox.swift
+│   ├── CalendarGridViews.swift   # Progress calendar grids (moved from Core/Data)
 │   ├── CelebrationView.swift
 │   ├── ExpandableCalendar.swift
 │   ├── HabitEmptyStateView.swift
 │   ├── ProgressChartComponents.swift
+│   ├── StreakViewComponents.swift # Overview streak UI (moved from Core/Data)
 │   ├── XPDisplayView.swift
 │   └── [Other components]
 ├── Forms/                        # Form components (14 files)
