@@ -82,6 +82,7 @@
 		897D09442F1CD1F40074EA87 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		8982A1FA2F2B5902009A110A /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		898A62A62F1CE996002AFDEC /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
+		898F8B2E30258FE400FD63E8 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		899C6A6A2F24B9CD008A9104 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		899CA2832F20D1FE0080D4E3 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
 		899D54032F2248CF00332D56 /* Habitto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Habitto.xcodeproj; sourceTree = "<group>"; };
@@ -117,18 +118,13 @@
 		8940C6EE2E885F2D00E7B437 /* Exceptions for "." folder in "Habitto" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				.gitignore,
 				.firebaserc,
-				Docs,
-				Scripts,
-				"Tests/GoldenScenarios",
-				"Tests/SkipFeatureTest.swift",
-				"Tests/WidgetTimezoneTest.swift",
-				"Tests/firestore.rules.test.js",
+				.gitignore,
 				archive,
 				"Config/App-Info.plist",
+				Docs,
 				firebase.json,
-				firestore-debug.log,
+				"firestore-debug.log",
 				firestore.indexes.json,
 				firestore.rules,
 				get_user_id.swift,
@@ -138,6 +134,11 @@
 				node_modules,
 				"package-lock.json",
 				package.json,
+				Scripts,
+				Tests/firestore.rules.test.js,
+				Tests/GoldenScenarios,
+				Tests/SkipFeatureTest.swift,
+				Tests/WidgetTimezoneTest.swift,
 				verify_firestore.sh,
 				website,
 			);
@@ -172,11 +173,11 @@
 				89BA7A132F13B18700FD46B4 /* Exceptions for "." folder in "HabittoWidgetExtension" target */,
 			);
 			explicitFolders = (
-				Docs,
-				Scripts,
-				"Tests/GoldenScenarios",
 				archive,
+				Docs,
 				node_modules,
+				Scripts,
+				Tests/GoldenScenarios,
 				website,
 			);
 			path = .;
@@ -340,6 +341,11 @@
 			sourceTree = "<group>";
 		};
 		898A62CA2F1CE996002AFDEC /* Products */ = {
+			isa = PBXGroup;
+			name = Products;
+			sourceTree = "<group>";
+		};
+		898F8B3D30258FE400FD63E8 /* Products */ = {
 			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
@@ -720,6 +726,10 @@
 				{
 					ProductGroup = 89BA65FF2F139B2100FD46B4 /* Products */;
 					ProjectRef = 89BA65E62F139B2100FD46B4 /* Habitto.xcodeproj */;
+				},
+				{
+					ProductGroup = 898F8B3D30258FE400FD63E8 /* Products */;
+					ProjectRef = 898F8B2E30258FE400FD63E8 /* Habitto.xcodeproj */;
 				},
 				{
 					ProductGroup = 8946B15A2F1F694C00A3187C /* Products */;
