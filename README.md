@@ -39,9 +39,7 @@ Core/
 │   │   ├── SwiftDataStorage.swift     # Primary local persistence (via HabitStore)
 │   │   └── FirestoreStorage.swift
 │   ├── Repositories/                   # Protocol-based repository stack (non-UI)
-│   │   ├── HabitRepositoryProtocol.swift
-│   │   ├── FirestoreHabitRepository.swift
-│   │   └── DualWriteHabitRepository.swift
+│   │   └── HabitRepositoryProtocol.swift
 │   ├── Factory/                        # Storage factory
 │   │   └── StorageFactory.swift
 │   ├── Migration/                      # Data migration system
