@@ -124,6 +124,54 @@ service cloud.firestore {
         );
     }
 
+    // SyncEngine ProgressEvent documents
+    // Path: /users/{uid}/events/{yearMonth}/events/{eventId}
+    function isValidProgressEventData(userId) {
+      return request.resource.data.keys().hasAll([
+          'id', 'habitId', 'dateKey', 'eventType', 'progressDelta',
+          'createdAt', 'occurredAt', 'utcDayStart', 'utcDayEnd',
+          'deviceId', 'userId', 'timezoneIdentifier', 'operationId',
+          'syncVersion', 'isRemote'
+        ])
+        && isNonEmptyString(request.resource.data.id, 200)
+        && isNonEmptyString(request.resource.data.habitId, 100)
+        && isValidDateString(request.resource.data.dateKey)
+        && request.resource.data.eventType is string
+        && request.resource.data.eventType in [
+          'INCREMENT', 'DECREMENT', 'SET', 'TOGGLE_COMPLETE',
+          'SYSTEM_RESET', 'BULK_ADJUST', 'BACKFILL', 'SYNC_IMPORT'
+        ]
+        // progressDelta may be negative (DECREMENT); only type-check
+        && request.resource.data.progressDelta is int
+        && hasTimestamp(request.resource.data.createdAt)
+        && hasTimestamp(request.resource.data.occurredAt)
+        && hasTimestamp(request.resource.data.utcDayStart)
+        && hasTimestamp(request.resource.data.utcDayEnd)
+        && isNonEmptyString(request.resource.data.deviceId, 200)
+        && request.resource.data.userId is string
+        && request.resource.data.userId == userId
+        && isNonEmptyString(request.resource.data.timezoneIdentifier, 100)
+        && isNonEmptyString(request.resource.data.operationId, 200)
+        && request.resource.data.syncVersion is int
+        && request.resource.data.syncVersion >= 0
+        && request.resource.data.isRemote is bool
+        && (
+          !request.resource.data.keys().hasAny(['note'])
+          || (request.resource.data.note is string
+              && request.resource.data.note.size() <= 2000)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['metadata'])
+          || (request.resource.data.metadata is string
+              && request.resource.data.metadata.size() <= 5000)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['deletedAt'])
+          || request.resource.data.deletedAt == null
+          || hasTimestamp(request.resource.data.deletedAt)
+        );
+    }
+
     function isValidMigrationStatus(status) {
       // MigrationStateData uses "completed"; FirebaseMigrationState / DualWrite use "complete"
       return status is string && status in [
@@ -333,6 +381,20 @@ service cloud.firestore {
       allow create, update: if isSignedIn() && isOwner(userId)
         && isValidYearMonth(yearMonth)
         && isValidSyncCompletionData(userId);
+
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // -------------------------------------------------------------------------
+    // Progress events — SyncEngine event-sourcing sync
+    // App path: /users/{uid}/events/{yearMonth}/events/{eventId}
+    // -------------------------------------------------------------------------
+    match /users/{userId}/events/{yearMonth}/events/{eventId} {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create, update: if isSignedIn() && isOwner(userId)
+        && isValidYearMonth(yearMonth)
+        && isValidProgressEventData(userId);
 
       allow delete: if isSignedIn() && isOwner(userId);
     }

@@ -114,7 +114,7 @@ actor SyncEngine {
     
     /// Sync all unsynced events to Firestore
     ///
-    /// Events are written to: `/users/{userId}/events/{yearMonth}/{eventId}`
+    /// Events are written to: `/users/{userId}/events/{yearMonth}/events/{eventId}`
     /// Uses `operationId` for idempotency to prevent duplicate writes
     func syncEvents() async throws {
         // Prevent concurrent syncs
@@ -255,7 +255,7 @@ actor SyncEngine {
             // Generate yearMonth from dateKey (format: "yyyy-MM-dd" -> "yyyy-MM")
             let yearMonth = String(eventData.dateKey.prefix(7)) // "2025-10-31" -> "2025-10"
             
-            // Firestore path: /users/{userId}/events/{yearMonth}/{eventId}
+            // Firestore path: /users/{userId}/events/{yearMonth}/events/{eventId}
             let eventRef = firestore.collection("users")
                 .document(userId)
                 .collection("events")

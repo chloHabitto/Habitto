@@ -1302,6 +1302,146 @@ describe('SyncEngine Completion Bucket Rules', () => {
 });
 
 // ============================================================================
+// PROGRESS EVENTS — SyncEngine event path
+// Path: /users/{uid}/events/{yearMonth}/events/{eventId}
+// Mirrors ProgressEvent.toFirestore() + SyncEngine.syncBatch
+// ============================================================================
+
+/** Exact field set from ProgressEvent.toFirestore() */
+const createProgressEventData = (userId, overrides = {}) => {
+  const now = overrides.createdAt || new Date('2026-08-07T10:00:00.000Z');
+  const dateKey = overrides.dateKey || '2026-08-07';
+  const habitId = overrides.habitId || '9996D0CC-630C-4626-91E1-97EFF445E7BF';
+  const deviceId = overrides.deviceId || 'iOS_iPhone_1FCCE3B4-4B25-4861-A708-D7F4A9D9B688';
+  const id =
+    overrides.id ||
+    `evt_${habitId}_${dateKey}_${deviceId}_1`;
+  return {
+    id,
+    habitId,
+    dateKey,
+    eventType: 'INCREMENT',
+    progressDelta: 1,
+    createdAt: now,
+    occurredAt: now,
+    utcDayStart: new Date('2026-08-07T00:00:00.000Z'),
+    utcDayEnd: new Date('2026-08-07T23:59:59.999Z'),
+    deviceId,
+    userId,
+    timezoneIdentifier: 'Asia/Seoul',
+    operationId: `${deviceId}_${now.getTime()}_op`,
+    syncVersion: 1,
+    isRemote: false,
+    ...overrides,
+  };
+};
+
+const progressEventRef = (db, userId, yearMonth, eventId) =>
+  db
+    .collection('users')
+    .doc(userId)
+    .collection('events')
+    .doc(yearMonth)
+    .collection('events')
+    .doc(eventId);
+
+describe('SyncEngine Progress Event Rules', () => {
+  test('Owner can create valid progress event', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createProgressEventData('user1');
+    const ref = progressEventRef(authedDb, 'user1', '2026-08', data.id);
+
+    await assertSucceeds(ref.set(data));
+  });
+
+  test('Owner can create progress event with negative progressDelta (DECREMENT)', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createProgressEventData('user1', {
+      eventType: 'DECREMENT',
+      progressDelta: -1,
+      id: 'evt_dec_1',
+    });
+    const ref = progressEventRef(authedDb, 'user1', '2026-08', data.id);
+
+    await assertSucceeds(ref.set(data));
+  });
+
+  test('Non-owner cannot create progress event', async () => {
+    const authedDb = testEnv.authenticatedContext('user2').firestore();
+    const data = createProgressEventData('user1');
+    const ref = progressEventRef(authedDb, 'user1', '2026-08', data.id);
+
+    await assertFails(ref.set(data));
+  });
+
+  test('Owner cannot create progress event with mismatched userId field', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createProgressEventData('user2'); // field claims other user
+    const ref = progressEventRef(authedDb, 'user1', '2026-08', data.id);
+
+    await assertFails(ref.set(data));
+  });
+
+  test('Owner cannot create progress event with invalid yearMonth path', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createProgressEventData('user1');
+    const ref = progressEventRef(authedDb, 'user1', '202608', data.id);
+
+    await assertFails(ref.set(data));
+  });
+
+  test('Owner cannot create progress event missing required fields', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = progressEventRef(authedDb, 'user1', '2026-08', 'evt_incomplete');
+
+    await assertFails(
+      ref.set({
+        id: 'evt_incomplete',
+        habitId: 'habit1',
+        progressDelta: 1,
+      })
+    );
+  });
+
+  test('Owner can update progress event (merge)', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createProgressEventData('user1', { id: 'evt_upd' });
+    const ref = progressEventRef(authedDb, 'user1', '2026-08', data.id);
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await progressEventRef(context.firestore(), 'user1', '2026-08', data.id).set(
+        data
+      );
+    });
+
+    await assertSucceeds(
+      ref.set(
+        createProgressEventData('user1', {
+          id: 'evt_upd',
+          isRemote: true,
+          syncVersion: 2,
+        }),
+        { merge: true }
+      )
+    );
+  });
+
+  test('Owner can delete progress event', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createProgressEventData('user1', { id: 'evt_del' });
+    const ref = progressEventRef(authedDb, 'user1', '2026-08', data.id);
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await progressEventRef(context.firestore(), 'user1', '2026-08', data.id).set(
+        data
+      );
+    });
+
+    await assertSucceeds(ref.delete());
+  });
+});
+
+// ============================================================================
 // FIREBASE BACKUP SERVICE — real write shapes
 // Mirrors Core/Services/FirebaseBackupService.swift + FirestoreHabit.toFirestoreData()
 // ============================================================================
