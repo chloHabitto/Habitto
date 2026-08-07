@@ -124,6 +124,8 @@ class FirebaseBackupService {
         .document(habit.id.uuidString)
 
       try await docRef.setData(dataWithTimestamp, merge: true)
+      print("✅ [CLOUD_BACKUP] Habit backed up: '\(habit.name)' (\(habit.id.uuidString.prefix(8))…)")
+      logger.info("✅ FirebaseBackupService: Backed up habit '\(habit.name)'")
       
     } catch {
       // ✅ IMPROVED: Better error handling for permission errors

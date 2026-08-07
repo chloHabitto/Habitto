@@ -1206,6 +1206,18 @@ struct HomeView: View {
 
         // Debug current state
         state.debugCurrentState()
+
+        #if DEBUG
+        // Launch-arg E2E: exercises the real HabitRepository → HabitStore →
+        // FirebaseBackupService.backupHabit write path after HomeView is showing.
+        if ProcessInfo.processInfo.arguments.contains("-e2eCloudBackupVerify") {
+          Task { @MainActor in
+            // Let initial habit load settle
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await Self.runE2ECloudBackupVerify(state: state)
+          }
+        }
+        #endif
       }
       .onReceive(NotificationCenter.default
         .publisher(for: UIApplication.willResignActiveNotification))
@@ -1435,6 +1447,64 @@ struct HomeView: View {
       }
     }
   }
+
+  #if DEBUG
+  /// Exercises create/update → HabitRepository → HabitStore → FirebaseBackupService
+  /// when launched with `-e2eCloudBackupVerify` (after onboarding is complete).
+  @MainActor
+  private static func runE2ECloudBackupVerify(state: HomeViewState) async {
+    print("🧪 [E2E] Cloud backup verify starting (habits loaded: \(state.habits.count))")
+    if let existing = state.habits.first {
+      let stamp = Int(Date().timeIntervalSince1970) % 100_000
+      let updated = Habit(
+        id: existing.id,
+        name: "\(existing.name) · e2e\(stamp)",
+        description: existing.description,
+        icon: existing.icon,
+        color: existing.color,
+        habitType: existing.habitType,
+        schedule: existing.schedule,
+        goal: existing.goal,
+        reminder: existing.reminder,
+        startDate: existing.startDate,
+        endDate: existing.endDate,
+        createdAt: existing.createdAt,
+        reminders: existing.reminders,
+        baseline: existing.baseline,
+        target: existing.target,
+        completionHistory: existing.completionHistory,
+        completionStatus: existing.completionStatus,
+        completionTimestamps: existing.completionTimestamps,
+        difficultyHistory: existing.difficultyHistory,
+        actualUsage: existing.actualUsage,
+        goalHistory: existing.goalHistory,
+        lastSyncedAt: existing.lastSyncedAt,
+        syncStatus: existing.syncStatus,
+        skippedDays: existing.skippedDays
+      )
+      print("🧪 [E2E] Updating habit via HomeViewState.updateHabit: '\(updated.name)' id=\(updated.id.uuidString.prefix(8))…")
+      await state.updateHabit(updated)
+    } else {
+      let habit = Habit(
+        name: "E2E Backup Verify",
+        description: "Created by -e2eCloudBackupVerify",
+        icon: "checkmark.circle",
+        color: CodableColor(.blue),
+        habitType: .formation,
+        schedule: "Everyday",
+        goal: "1 time",
+        reminder: "No reminder",
+        startDate: Date(),
+        target: 1
+      )
+      print("🧪 [E2E] Creating habit via HomeViewState.createHabit: '\(habit.name)'")
+      await state.createHabit(habit)
+    }
+    // Allow FirebaseBackupService.Task.detached to finish
+    try? await Task.sleep(nanoseconds: 5_000_000_000)
+    print("🧪 [E2E] Cloud backup verify finished waiting for backup Task")
+  }
+  #endif
 }
 
 #Preview {
