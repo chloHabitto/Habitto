@@ -392,6 +392,15 @@ struct HabittoApp: App {
                 }
               }
             }
+
+            // Reinstall restore: UserDefaults (hasCompletedOnboarding) is wiped on uninstall,
+            // but Firebase Auth's Keychain session can survive. Listen for the first auth
+            // callback during the existing splash budget — do not add extra delay.
+            installReturningUserOnboardingRestoreIfNeeded()
+
+            #if DEBUG
+            runE2EOnboardingReinstallSetupIfNeeded()
+            #endif
           }
         } else if !hasCompletedOnboarding {
           OnboardingFlowView()
@@ -615,6 +624,13 @@ struct HabittoApp: App {
         }
       }
       .animation(.easeInOut(duration: 0.4), value: hasCompletedOnboarding)
+      .onChange(of: showSplash) { _, isShowing in
+        #if DEBUG
+        if !isShowing {
+          logE2EOnboardingReinstallVerifyIfNeeded()
+        }
+        #endif
+      }
     }
   }
 
@@ -632,7 +648,154 @@ struct HabittoApp: App {
   @State private var xpManager: XPManager
   @State private var showSplash = true
   @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-  
+  /// Ensures the reinstall-restore auth listener is only attached once per process.
+  @State private var didInstallOnboardingRestoreListener = false
+
+  // MARK: - Returning-user onboarding restore (reinstall)
+
+  /// If UserDefaults was wiped (uninstall/reinstall) but a non-anonymous Firebase Auth
+  /// session survived in the Keychain, mark onboarding complete before splash ends so
+  /// routing goes to HomeView instead of OnboardingFlowView.
+  ///
+  /// Uses the first `addStateDidChangeListener` callback only — races naturally against
+  /// the existing splash duration (~3.7s Lottie / 5s fallback). No extra wait is added.
+  private func installReturningUserOnboardingRestoreIfNeeded() {
+    guard !didInstallOnboardingRestoreListener else { return }
+    didInstallOnboardingRestoreListener = true
+
+    // Already completed — nothing to restore.
+    guard !hasCompletedOnboarding else { return }
+    guard FirebaseApp.app() != nil else {
+      print("ℹ️ [ONBOARDING_RESTORE] Firebase not configured — skipping restore listener")
+      return
+    }
+
+    final class ListenerBox {
+      var handle: AuthStateDidChangeListenerHandle?
+    }
+    let box = ListenerBox()
+
+    box.handle = Auth.auth().addStateDidChangeListener { _, user in
+      if let handle = box.handle {
+        Auth.auth().removeStateDidChangeListener(handle)
+        box.handle = nil
+      }
+
+      // IMPORTANT: Anonymous sessions also persist in the Keychain across reinstall.
+      // Skipping onboarding for those would incorrectly treat a fresh / anonymous install
+      // as a returning registered user. Only genuinely authenticated providers
+      // (Apple, email, Google, etc. — i.e. !user.isAnonymous) should skip onboarding.
+      guard let user, !user.isAnonymous else {
+        let kind = user == nil ? "nil" : "anonymous"
+        print("ℹ️ [ONBOARDING_RESTORE] First auth callback was \(kind) — leaving hasCompletedOnboarding as-is")
+        return
+      }
+
+      Task { @MainActor in
+        // Re-check: splash may already have routed, or onboarding may have completed normally.
+        guard !UserDefaults.standard.bool(forKey: "hasCompletedOnboarding") else { return }
+        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        hasCompletedOnboarding = true
+        print("✅ [ONBOARDING_RESTORE] Non-anonymous session restored (uid: \(user.uid.prefix(8))…) — skipping onboarding")
+      }
+    }
+  }
+
+  #if DEBUG
+  /// Stable E2E credentials for `-e2eOnboardingReinstallSetupNonAnonymous` (Email/Password).
+  private static let e2eOnboardingReinstallEmail = "e2e-onboarding-reinstall@habitto-e2e.test"
+  private static let e2eOnboardingReinstallPassword = "E2eOnboardingReinstall!2026"
+
+  /// Launch args:
+  /// - `-e2eOnboardingReinstallSetupNonAnonymous` — sign in email user + mark onboarding done
+  /// - `-e2eOnboardingReinstallSetupAnonymous` — ensure anonymous session + mark onboarding done
+  /// - `-e2eOnboardingReinstallVerify` — after splash, log route + PASS/FAIL vs `-e2eExpectHome` / `-e2eExpectOnboarding`
+  private func runE2EOnboardingReinstallSetupIfNeeded() {
+    let args = ProcessInfo.processInfo.arguments
+    if args.contains("-e2eOnboardingReinstallSetupNonAnonymous") {
+      Task { @MainActor in
+        do {
+          try await Self.e2eEnsureNonAnonymousSession()
+          hasCompletedOnboarding = true
+          let user = Auth.auth().currentUser
+          print("✅ [E2E_ONBOARDING_REINSTALL] setupNonAnonymous ready uid=\(user?.uid ?? "nil") isAnonymous=\(user?.isAnonymous ?? true)")
+        } catch {
+          print("❌ [E2E_ONBOARDING_REINSTALL] setupNonAnonymous failed: \(error.localizedDescription)")
+        }
+      }
+    } else if args.contains("-e2eOnboardingReinstallSetupAnonymous") {
+      Task { @MainActor in
+        do {
+          try await Self.e2eEnsureAnonymousSession()
+          hasCompletedOnboarding = true
+          let user = Auth.auth().currentUser
+          print("✅ [E2E_ONBOARDING_REINSTALL] setupAnonymous ready uid=\(user?.uid ?? "nil") isAnonymous=\(user?.isAnonymous ?? true)")
+        } catch {
+          print("❌ [E2E_ONBOARDING_REINSTALL] setupAnonymous failed: \(error.localizedDescription)")
+        }
+      }
+    }
+  }
+
+  private func logE2EOnboardingReinstallVerifyIfNeeded() {
+    let args = ProcessInfo.processInfo.arguments
+    guard args.contains("-e2eOnboardingReinstallVerify") else { return }
+
+    let user = Auth.auth().currentUser
+    let route = hasCompletedOnboarding ? "Home" : "Onboarding"
+    let isAnonymousDesc = user.map { String($0.isAnonymous) } ?? "nil"
+    print("🧪 [E2E_ONBOARDING_REINSTALL] route=\(route) hasCompletedOnboarding=\(hasCompletedOnboarding) uid=\(user?.uid ?? "nil") isAnonymous=\(isAnonymousDesc)")
+
+    if args.contains("-e2eExpectHome") {
+      let pass = hasCompletedOnboarding && (user?.isAnonymous == false)
+      print(pass
+        ? "✅ [E2E_ONBOARDING_REINSTALL] PASS: Home for non-anonymous returning user"
+        : "❌ [E2E_ONBOARDING_REINSTALL] FAIL: expected Home for non-anonymous (route=\(route) isAnonymous=\(isAnonymousDesc))")
+    }
+    if args.contains("-e2eExpectOnboarding") {
+      let pass = !hasCompletedOnboarding
+      print(pass
+        ? "✅ [E2E_ONBOARDING_REINSTALL] PASS: Onboarding after wipe (anonymous/nil session)"
+        : "❌ [E2E_ONBOARDING_REINSTALL] FAIL: expected Onboarding (route=\(route) isAnonymous=\(isAnonymousDesc))")
+    }
+  }
+
+  @MainActor
+  private static func e2eEnsureNonAnonymousSession() async throws {
+    if let user = Auth.auth().currentUser, !user.isAnonymous {
+      print("ℹ️ [E2E_ONBOARDING_REINSTALL] Already non-anonymous: \(user.uid)")
+      return
+    }
+    if Auth.auth().currentUser != nil {
+      try Auth.auth().signOut()
+    }
+    do {
+      let result = try await Auth.auth().signIn(
+        withEmail: e2eOnboardingReinstallEmail,
+        password: e2eOnboardingReinstallPassword)
+      print("ℹ️ [E2E_ONBOARDING_REINSTALL] Signed in email user: \(result.user.uid)")
+    } catch {
+      let result = try await Auth.auth().createUser(
+        withEmail: e2eOnboardingReinstallEmail,
+        password: e2eOnboardingReinstallPassword)
+      print("ℹ️ [E2E_ONBOARDING_REINSTALL] Created email user: \(result.user.uid)")
+    }
+  }
+
+  @MainActor
+  private static func e2eEnsureAnonymousSession() async throws {
+    if let user = Auth.auth().currentUser, user.isAnonymous {
+      print("ℹ️ [E2E_ONBOARDING_REINSTALL] Already anonymous: \(user.uid)")
+      return
+    }
+    if Auth.auth().currentUser != nil {
+      try Auth.auth().signOut()
+    }
+    let result = try await Auth.auth().signInAnonymously()
+    print("ℹ️ [E2E_ONBOARDING_REINSTALL] Signed in anonymously: \(result.user.uid)")
+  }
+  #endif
+
   // MARK: - Integrity Checks
   
   /// Repair userId mismatches on CompletionRecords and DailyAward records
