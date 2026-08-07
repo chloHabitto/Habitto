@@ -32,7 +32,12 @@ service cloud.firestore {
     }
 
     function isValidHabitType(typeValue) {
-      return typeValue is string && typeValue in ['formation', 'breaking'];
+      // FirestoreRepository / rules tests use short keys; FirestoreHabit /
+      // FirebaseBackupService persist HabitType.rawValue display strings.
+      return typeValue is string && typeValue in [
+        'formation', 'breaking',
+        'Habit Building', 'Habit Breaking'
+      ];
     }
 
     function isValidHabitName(name) {
@@ -242,11 +247,15 @@ service cloud.firestore {
                  .hasOnly(['name', 'color', 'active'])
           )
           ||
-          // Sync schema: allow syncing mutable habit fields, but not createdAt
+          // Sync / FirebaseBackupService schema: full-document merge is allowed,
+          // but createdAt must remain unchanged and habitType must stay valid.
           (
             resource.data.keys().hasAny(['habitType', 'isActive'])
-            && !request.resource.data.diff(resource.data).affectedKeys()
-                 .hasAny(['createdAt'])
+            && (
+              !request.resource.data.keys().hasAny(['createdAt'])
+              || !resource.data.keys().hasAny(['createdAt'])
+              || request.resource.data.createdAt == resource.data.createdAt
+            )
             && (
               !request.resource.data.keys().hasAny(['habitType'])
               || isValidHabitType(request.resource.data.habitType)
@@ -254,6 +263,10 @@ service cloud.firestore {
             && (
               !request.resource.data.keys().hasAny(['name'])
               || isValidHabitName(request.resource.data.name)
+            )
+            && (
+              !request.resource.data.keys().hasAny(['isActive'])
+              || request.resource.data.isActive is bool
             )
           )
         );
@@ -325,10 +338,11 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // Daily awards — create/delete only (ledger-like)
-    // SyncEngine path:  /users/{uid}/daily_awards/{userId}#{dateKey}
-    // Backup path:      /users/{uid}/daily_awards/{dateKey}
-    // Revocation / integrity cleanup deletes the doc; clients must not mutate awards.
+    // Daily awards
+    // SyncEngine path:  /users/{uid}/daily_awards/{userId}#{dateKey} (create-once)
+    // Backup path:      /users/{uid}/daily_awards/{dateKey} (setData merge)
+    // Core award fields are immutable on update; grantedAt/syncedAt may refresh.
+    // Revocation / integrity cleanup deletes the doc.
     // -------------------------------------------------------------------------
     match /users/{userId}/daily_awards/{awardDocId} {
       allow read: if isSignedIn() && isOwner(userId);
@@ -337,7 +351,32 @@ service cloud.firestore {
         && isValidDailyAwardDocId(awardDocId)
         && isValidDailyAwardData();
 
-      allow update: if false;
+      allow update: if isSignedIn() && isOwner(userId)
+        && isValidDailyAwardDocId(awardDocId)
+        && isValidDailyAwardData()
+        // Lock award semantics; allow timestamp / metadata refresh (backup merge)
+        && request.resource.data.xpGranted == resource.data.xpGranted
+        && request.resource.data.allHabitsCompleted == resource.data.allHabitsCompleted
+        && (
+          !resource.data.keys().hasAny(['dateKey'])
+          || request.resource.data.dateKey == resource.data.dateKey
+        )
+        && (
+          !resource.data.keys().hasAny(['date'])
+          || !request.resource.data.keys().hasAny(['date'])
+          || request.resource.data.date == resource.data.date
+        )
+        && (
+          !resource.data.keys().hasAny(['userId'])
+          || !request.resource.data.keys().hasAny(['userId'])
+          || request.resource.data.userId == resource.data.userId
+        )
+        && (
+          !resource.data.keys().hasAny(['userIdDateKey'])
+          || !request.resource.data.keys().hasAny(['userIdDateKey'])
+          || request.resource.data.userIdDateKey == resource.data.userIdDateKey
+        );
+
       allow delete: if isSignedIn() && isOwner(userId);
     }
 
@@ -441,6 +480,19 @@ service cloud.firestore {
 
       allow create, update: if isSignedIn() && isOwner(userId)
         && isValidMigrationData();
+
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // Written by FirestoreService.markXPMigrationComplete / deleteXPMigrationMarker
+    match /users/{userId}/meta/xp_migration {
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create, update: if isSignedIn() && isOwner(userId)
+        && request.resource.data.keys().hasAll(['status', 'completedAt', 'version'])
+        && request.resource.data.status == 'complete'
+        && hasTimestamp(request.resource.data.completedAt)
+        && isNonEmptyString(request.resource.data.version, 50);
 
       allow delete: if isSignedIn() && isOwner(userId);
     }

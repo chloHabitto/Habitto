@@ -938,7 +938,7 @@ describe('Daily Awards Rules', () => {
     await assertFails(ref.set(invalid));
   });
 
-  test('User cannot update daily award (immutable)', async () => {
+  test('User cannot update daily award xpGranted (core fields locked)', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
     const ref = dailyAwardRef(authedDb, 'user1', 'user1#2025-10-18');
 
@@ -949,6 +949,31 @@ describe('Daily Awards Rules', () => {
     });
 
     await assertFails(ref.update({ xpGranted: 999 }));
+  });
+
+  test('User can refresh daily award timestamps without changing award', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', '2025-10-21');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await dailyAwardRef(context.firestore(), 'user1', '2025-10-21').set(
+        createDailyAwardBackupData('2025-10-21')
+      );
+    });
+
+    // FirebaseBackupService setData(merge:true) rewrites timestamps only in practice
+    await assertSucceeds(
+      ref.set(
+        {
+          dateKey: '2025-10-21',
+          xpGranted: 50,
+          allHabitsCompleted: true,
+          grantedAt: new Date(),
+          syncedAt: new Date(),
+        },
+        { merge: true }
+      )
+    );
   });
 
   test('User can delete their own daily award', async () => {
@@ -1272,6 +1297,252 @@ describe('SyncEngine Completion Bucket Rules', () => {
 
     await assertFails(
       ref.set(createSyncCompletionData('user1', 'habit1', '2025-10-15'))
+    );
+  });
+});
+
+// ============================================================================
+// FIREBASE BACKUP SERVICE — real write shapes
+// Mirrors Core/Services/FirebaseBackupService.swift + FirestoreHabit.toFirestoreData()
+// ============================================================================
+
+/** Exact field set from FirestoreHabit.toFirestoreData() + syncedAt (performHabitBackup) */
+const createFirebaseBackupHabitPayload = (overrides = {}) => {
+  const createdAt = overrides.createdAt || new Date('2025-01-15T10:00:00.000Z');
+  return {
+    name: 'Morning Run',
+    description: 'Go for a run',
+    icon: 'figure.run',
+    color: '#34C759',
+    habitType: 'Habit Building', // HabitType.formation.rawValue — NOT "formation"
+    schedule: 'daily',
+    goal: '1',
+    reminder: 'none',
+    startDate: new Date('2025-01-15T00:00:00.000Z'),
+    createdAt,
+    reminders: [],
+    remindersJSON: '[]',
+    baseline: 0,
+    target: 1,
+    completionHistory: {},
+    completionStatus: {},
+    completionTimestamps: {},
+    difficultyHistory: {},
+    actualUsage: {},
+    skippedDaysJSON: '{}',
+    isActive: true,
+    syncStatus: 'pending',
+    syncedAt: new Date(),
+    ...overrides,
+  };
+};
+
+describe('FirebaseBackupService real write shapes', () => {
+  test('Habit backup create succeeds with Habit Building rawValue', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const habitRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('habits')
+      .doc('11111111-1111-1111-1111-111111111111');
+
+    await assertSucceeds(
+      habitRef.set(createFirebaseBackupHabitPayload(), { merge: true })
+    );
+  });
+
+  test('Habit backup create succeeds with Habit Breaking rawValue', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const habitRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('habits')
+      .doc('22222222-2222-2222-2222-222222222222');
+
+    await assertSucceeds(
+      habitRef.set(
+        createFirebaseBackupHabitPayload({
+          name: 'No Soda',
+          habitType: 'Habit Breaking',
+        }),
+        { merge: true }
+      )
+    );
+  });
+
+  test('Habit backup merge update succeeds (full payload + new syncedAt)', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const habitId = '33333333-3333-3333-3333-333333333333';
+    const habitRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('habits')
+      .doc(habitId);
+
+    const createdAt = new Date('2025-01-15T10:00:00.000Z');
+    const initial = createFirebaseBackupHabitPayload({ createdAt });
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context
+        .firestore()
+        .collection('users')
+        .doc('user1')
+        .collection('habits')
+        .doc(habitId)
+        .set(initial);
+    });
+
+    // Second backup: same createdAt, refreshed syncedAt / mutable fields
+    await assertSucceeds(
+      habitRef.set(
+        createFirebaseBackupHabitPayload({
+          createdAt,
+          name: 'Morning Run Updated',
+          target: 2,
+          syncedAt: new Date(),
+          syncStatus: 'synced',
+        }),
+        { merge: true }
+      )
+    );
+  });
+
+  test('Habit backup create still rejects empty name', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const habitRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('habits')
+      .doc('44444444-4444-4444-4444-444444444444');
+
+    await assertFails(
+      habitRef.set(createFirebaseBackupHabitPayload({ name: '' }), { merge: true })
+    );
+  });
+
+  test('Habit backup create still rejects unknown habitType', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const habitRef = authedDb
+      .collection('users')
+      .doc('user1')
+      .collection('habits')
+      .doc('55555555-5555-5555-5555-555555555555');
+
+    await assertFails(
+      habitRef.set(
+        createFirebaseBackupHabitPayload({ habitType: 'neither' }),
+        { merge: true }
+      )
+    );
+  });
+
+  test('Daily award backup create then merge refresh succeeds', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', '2025-11-01');
+
+    const payload = {
+      dateKey: '2025-11-01',
+      xpGranted: 50,
+      allHabitsCompleted: true,
+      grantedAt: new Date(),
+      syncedAt: new Date(),
+    };
+
+    await assertSucceeds(ref.set(payload, { merge: true }));
+    await assertSucceeds(
+      ref.set(
+        {
+          ...payload,
+          grantedAt: new Date(),
+          syncedAt: new Date(),
+        },
+        { merge: true }
+      )
+    );
+  });
+
+  test('Daily award backup merge cannot escalate xpGranted', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', '2025-11-02');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await dailyAwardRef(context.firestore(), 'user1', '2025-11-02').set({
+        dateKey: '2025-11-02',
+        xpGranted: 50,
+        allHabitsCompleted: true,
+        grantedAt: new Date(),
+        syncedAt: new Date(),
+      });
+    });
+
+    await assertFails(
+      ref.set(
+        {
+          dateKey: '2025-11-02',
+          xpGranted: 500,
+          allHabitsCompleted: true,
+          grantedAt: new Date(),
+          syncedAt: new Date(),
+        },
+        { merge: true }
+      )
+    );
+  });
+});
+
+// ============================================================================
+// META / XP MIGRATION
+// ============================================================================
+
+describe('Meta XP Migration Rules', () => {
+  const xpMigrationRef = (db, userId) =>
+    db.collection('users').doc(userId).collection('meta').doc('xp_migration');
+
+  test('User can mark XP migration complete (FirestoreService shape)', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    await assertSucceeds(
+      xpMigrationRef(authedDb, 'user1').set({
+        status: 'complete',
+        completedAt: new Date(),
+        version: '1.0',
+      })
+    );
+  });
+
+  test('User cannot write xp_migration with invalid status', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    await assertFails(
+      xpMigrationRef(authedDb, 'user1').set({
+        status: 'pending',
+        completedAt: new Date(),
+        version: '1.0',
+      })
+    );
+  });
+
+  test('User can delete xp_migration marker', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = xpMigrationRef(authedDb, 'user1');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await xpMigrationRef(context.firestore(), 'user1').set({
+        status: 'complete',
+        completedAt: new Date(),
+        version: '1.0',
+      });
+    });
+
+    await assertSucceeds(ref.delete());
+  });
+
+  test('User cannot write another users xp_migration', async () => {
+    const authedDb = testEnv.authenticatedContext('user2').firestore();
+    await assertFails(
+      xpMigrationRef(authedDb, 'user1').set({
+        status: 'complete',
+        completedAt: new Date(),
+        version: '1.0',
+      })
     );
   });
 });
