@@ -1127,11 +1127,12 @@ class HabitRepository: ObservableObject {
 
     Task.detached(priority: .background) { [snapshotHabits] in
       guard !snapshotHabits.isEmpty else { return }
-      let notificationManager = NotificationManager.shared
-      notificationManager.initializeNotificationCategories()
-      notificationManager.setDeterministicCalendarForDST()
-      notificationManager.rescheduleAllNotifications(for: snapshotHabits)
       await MainActor.run {
+        let notificationManager = NotificationManager.shared
+        notificationManager.initializeNotificationCategories()
+        notificationManager.setDeterministicCalendarForDST()
+        // Completion lookups (getIncompleteScheduledHabits → isCompleted) require MainActor/SwiftData
+        notificationManager.rescheduleAllNotifications(for: snapshotHabits)
         notificationManager.rescheduleDailyReminders()
       }
     }

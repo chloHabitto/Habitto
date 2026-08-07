@@ -36,8 +36,23 @@ class StreakDataCalculator {
         return calculatedBest
       }
     }
-    
-    // Fallback: Calculate from history if HabitData not available
+
+    // Fallback: Calculate from history using live isCompleted (safe on main; off-main prefer map overload)
+    return calculateBestStreakFromHistoryUsingCompletions(for: habit, progressByDateKey: nil)
+  }
+
+  /// Best-streak walk using a prefetched `[dateKey: progress]` map (no per-date SwiftData hops).
+  static func calculateBestStreakFromHistory(
+    for habit: Habit,
+    progressByDateKey: [String: Int]) -> Int
+  {
+    calculateBestStreakFromHistoryUsingCompletions(for: habit, progressByDateKey: progressByDateKey)
+  }
+
+  private static func calculateBestStreakFromHistoryUsingCompletions(
+    for habit: Habit,
+    progressByDateKey: [String: Int]?) -> Int
+  {
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
     let startDate = habit.startDate
@@ -47,16 +62,20 @@ class StreakDataCalculator {
     var currentStreak = 0
     var currentDate = startDate
 
-    // Iterate through all dates from habit start to today
     while currentDate <= today {
-      // Skip vacation days during active vacation - they don't count toward or break streaks
       if vacationManager.isActive, vacationManager.isVacationDay(currentDate) {
-        // Move to next day without affecting streak
         currentDate = calendar.date(byAdding: .day, value: 1, to: currentDate) ?? currentDate
         continue
       }
 
-      if habit.isCompleted(for: currentDate) {
+      let completed: Bool
+      if let progressByDateKey {
+        completed = habit.isCompleted(for: currentDate, progressByDateKey: progressByDateKey)
+      } else {
+        completed = habit.isCompleted(for: currentDate)
+      }
+
+      if completed {
         currentStreak += 1
         maxStreak = max(maxStreak, currentStreak)
       } else {
@@ -186,7 +205,8 @@ class StreakDataCalculator {
   static func getYearlyHeatmapData(
     for habit: Habit,
     dayIndex: Int,
-    targetDate: Date) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double)
+    targetDate: Date,
+    progressByDateKey: [String: Int]? = nil) -> (intensity: Int, isScheduled: Bool, completionPercentage: Double)
   {
     let calendar = Calendar.current
 
@@ -199,9 +219,10 @@ class StreakDataCalculator {
     let isScheduled = shouldShowHabitOnDate(habit, date: targetDate)
 
     // Get completion percentage for this date
-    let completionPercentage = calculateCompletionPercentage(for: habit, date: targetDate)
-
-    // Debug: Print heatmap data for troubleshooting (disabled for performance)
+    let completionPercentage = calculateCompletionPercentage(
+      for: habit,
+      date: targetDate,
+      progressByDateKey: progressByDateKey)
 
     // If not scheduled, return 0 intensity and 0% completion
     if !isScheduled {
@@ -227,7 +248,8 @@ class StreakDataCalculator {
   static func getWeeklyHeatmapIntensity(
     for habit: Habit,
     dayIndex: Int,
-    weekStartDate: Date) -> Int
+    weekStartDate: Date,
+    progressByDateKey: [String: Int]? = nil) -> Int
   {
     let calendar = Calendar.current
     let weekStart = calendar.startOfDay(for: weekStartDate)
@@ -236,7 +258,13 @@ class StreakDataCalculator {
     let targetDate = calendar.date(byAdding: .day, value: dayIndex, to: weekStart) ?? weekStart
 
     // Check if habit was completed on this date
-    if habit.isCompleted(for: targetDate) {
+    let completed: Bool
+    if let progressByDateKey {
+      completed = habit.isCompleted(for: targetDate, progressByDateKey: progressByDateKey)
+    } else {
+      completed = habit.isCompleted(for: targetDate)
+    }
+    if completed {
       return 3 // High intensity for completed days
     }
 
@@ -610,8 +638,25 @@ class StreakDataCalculator {
 
   // MARK: - Completion Percentage Calculation
 
-  static func calculateCompletionPercentage(for habit: Habit, date: Date) -> Double {
-    let actualProgress = habit.getProgress(for: date)
+  static func calculateCompletionPercentage(
+    for habit: Habit,
+    date: Date,
+    progressByDateKey: [String: Int]? = nil) -> Double
+  {
+    let dateKey = Habit.dateKey(for: date)
+    let actualProgress: Int
+    if let progressByDateKey {
+      // Prefer in-memory for today; map for historical
+      let calendar = Calendar.current
+      let today = calendar.startOfDay(for: Date())
+      if calendar.startOfDay(for: date) >= today {
+        actualProgress = habit.getProgress(for: date)
+      } else {
+        actualProgress = progressByDateKey[dateKey] ?? habit.getProgress(for: date)
+      }
+    } else {
+      actualProgress = habit.getProgress(for: date)
+    }
     let goalAmount = parseGoalAmount(from: habit.goal)
 
     // If no goal amount specified, treat as binary completion (0% or 100%)
@@ -653,7 +698,9 @@ class StreakDataCalculator {
     cacheManager.clear()
   }
 
-  /// Async version of generateYearlyDataFromHabits for background processing
+  /// Async version of generateYearlyDataFromHabits for background processing.
+  /// Prefetches CompletionRecord progress once on the main actor, then walks the year off-main.
+  /// On prefetch failure: falls back to main-actor sync generation (never crashes, never empty-map wrong data).
   static func generateYearlyDataFromHabitsAsync(
     _ habits: [Habit],
     startIndex: Int,
@@ -662,132 +709,137 @@ class StreakDataCalculator {
     progress: @escaping (Double) -> Void = { _ in }) async -> [[
     (intensity: Int, isScheduled: Bool, completionPercentage: Double)
   ]] {
-    await withCheckedContinuation { continuation in
-      Task.detached {
-        // Performance optimization: Check cache first (year-specific)
-        let cachedData = habits.compactMap { habit in
-          cacheManager.get(forKey: "\(habit.id.uuidString)_\(year)")
-        }
+    let calendar = Calendar.current
+    var components = DateComponents()
+    components.year = year
+    components.month = 1
+    components.day = 1
+    guard let yearStartDate = calendar.date(from: components) else {
+      return []
+    }
+    let daysInYear = calendar.isLeapYear(year) ? 366 : 365
+    let yearEndDate = calendar.date(byAdding: .day, value: daysInYear - 1, to: yearStartDate)
+      ?? yearStartDate
 
-        if !cachedData.isEmpty, cachedData.count == habits.count {
-          // Return cached data for the requested range
-          let endIndex = min(startIndex + itemsPerPage, cachedData.count)
-          let result = Array(cachedData[startIndex ..< endIndex])
-          continuation.resume(returning: result)
-          return
-        }
+    let endIndex = min(startIndex + itemsPerPage, habits.count)
+    guard startIndex < endIndex else { return [] }
+    let habitsToProcess = Array(habits[startIndex ..< endIndex])
 
-        // Cache miss or expired - calculate new data
-        var yearlyData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
-        let endIndex = min(startIndex + itemsPerPage, habits.count)
-        let habitsToProcess = Array(habits[startIndex ..< endIndex])
-
-        for (index, habit) in habitsToProcess.enumerated() {
-          var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] =
-            []
-
-          let calendar = Calendar.current
-
-          // Create date components for January 1st of the specified year
-          var components = DateComponents()
-          components.year = year
-          components.month = 1
-          components.day = 1
-
-          guard let yearStartDate = calendar.date(from: components) else {
-            continue
-          }
-
-          // Handle leap years - use 366 days for leap years, 365 for regular years
-          let isLeapYear = calendar.isLeapYear(year)
-          let daysInYear = isLeapYear ? 366 : 365
-
-          // Generate data for each day of the year
-          for day in 0 ..< daysInYear {
-            let targetDate = calendar
-              .date(byAdding: .day, value: day, to: yearStartDate) ?? yearStartDate
-            let heatmapData = getYearlyHeatmapData(
-              for: habit,
-              dayIndex: day,
-              targetDate: targetDate)
-            habitYearlyData.append(heatmapData)
-          }
-
-          yearlyData.append(habitYearlyData)
-
-          // Cache this habit's data for future use (year-specific)
-          cacheManager.set(habitYearlyData, forKey: "\(habit.id.uuidString)_\(year)")
-
-          // Report progress
-          let progressValue = Double(index + 1) / Double(habitsToProcess.count)
-          DispatchQueue.main.async {
-            progress(progressValue)
-          }
-        }
-        continuation.resume(returning: yearlyData)
+    let progressByHabit: [UUID: [String: Int]]
+    do {
+      progressByHabit = try await MainActor.run {
+        try Habit.prefetchCompletionProgress(
+          habitIds: habitsToProcess.map(\.id),
+          from: yearStartDate,
+          to: yearEndDate)
+      }
+    } catch {
+      print(
+        "⚠️ generateYearlyDataFromHabitsAsync: prefetch failed (\(error.localizedDescription)) — falling back to main-actor generation"
+      )
+      return await MainActor.run {
+        generateYearlyDataFromHabits(habitsToProcess, forYear: year)
       }
     }
+
+    return await Task.detached(priority: .userInitiated) {
+      var yearlyData: [[(intensity: Int, isScheduled: Bool, completionPercentage: Double)]] = []
+
+      for (index, habit) in habitsToProcess.enumerated() {
+        let map = progressByHabit[habit.id] ?? [:]
+        var habitYearlyData: [(intensity: Int, isScheduled: Bool, completionPercentage: Double)] =
+          []
+
+        for day in 0 ..< daysInYear {
+          let targetDate = calendar
+            .date(byAdding: .day, value: day, to: yearStartDate) ?? yearStartDate
+          let heatmapData = getYearlyHeatmapData(
+            for: habit,
+            dayIndex: day,
+            targetDate: targetDate,
+            progressByDateKey: map)
+          habitYearlyData.append(heatmapData)
+        }
+
+        yearlyData.append(habitYearlyData)
+        cacheManager.set(habitYearlyData, forKey: "\(habit.id.uuidString)_\(year)")
+
+        let progressValue = Double(index + 1) / Double(habitsToProcess.count)
+        DispatchQueue.main.async {
+          progress(progressValue)
+        }
+      }
+      return yearlyData
+    }.value
   }
 
-  /// Async version of calculateStreakStatistics for background processing
+  /// Async version of calculateStreakStatistics for background processing.
+  /// Prefetches CompletionRecord progress once, then runs streak loops against the map.
+  ///
+  /// Prefetch failure policy: do **not** degrade to an empty map (that silently zeros history).
+  /// Fall back to `calculateStreakStatistics` on the main actor so results stay correct.
   static func calculateStreakStatisticsAsync(
     from habits: [Habit],
     progress: @escaping (Double) -> Void = { _ in }) async -> StreakStatistics
   {
-    await withCheckedContinuation { continuation in
-      Task.detached {
-        guard !habits.isEmpty else {
-          let result = StreakStatistics(
-            currentStreak: 0,
-            longestStreak: 0,
-            totalCompletionDays: 0)
-          continuation.resume(returning: result)
-          return
-        }
+    guard !habits.isEmpty else {
+      return StreakStatistics(
+        currentStreak: 0,
+        longestStreak: 0,
+        totalCompletionDays: 0)
+    }
 
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: Date())
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let from = habits.map { calendar.startOfDay(for: $0.startDate) }.min() ?? today
 
-        // Calculate current streak - only count when ALL habits are completed
-        let currentStreak = calculateOverallStreakWhenAllCompleted(
-          from: habits,
-          calendar: calendar,
-          today: today)
-
-        DispatchQueue.main.async {
-          progress(0.2)
-        }
-
-        // Calculate best streak - find the longest consecutive streak in history
-        let bestStreak = habits.map { calculateBestStreakFromHistory(for: $0) }.max() ?? 0
-
-        DispatchQueue.main.async {
-          progress(0.4)
-        }
-
-        // Calculate completed habits today
-        let completedHabitsToday = habits.filter { $0.isCompleted(for: today) }.count
-
-        DispatchQueue.main.async {
-          progress(0.6)
-        }
-
-        DispatchQueue.main.async {
-          progress(0.8)
-        }
-
-        DispatchQueue.main.async {
-          progress(1.0)
-        }
-
-        let result = StreakStatistics(
-          currentStreak: currentStreak,
-          longestStreak: bestStreak,
-          totalCompletionDays: completedHabitsToday)
-
-        continuation.resume(returning: result)
+    let progressByHabit: [UUID: [String: Int]]
+    do {
+      progressByHabit = try await MainActor.run {
+        try Habit.prefetchCompletionProgress(
+          habitIds: habits.map(\.id),
+          from: from,
+          to: today)
+      }
+    } catch {
+      print(
+        "⚠️ calculateStreakStatisticsAsync: prefetch failed (\(error.localizedDescription)) — falling back to main-actor calculation"
+      )
+      return await MainActor.run {
+        calculateStreakStatistics(from: habits)
       }
     }
+
+    DispatchQueue.main.async { progress(0.2) }
+
+    return await Task.detached(priority: .userInitiated) {
+      let currentStreak = calculateOverallStreakWhenAllCompleted(
+        from: habits,
+        calendar: calendar,
+        today: today,
+        progressByHabit: progressByHabit)
+
+      DispatchQueue.main.async { progress(0.4) }
+
+      let bestStreak = habits.map { habit in
+        calculateBestStreakFromHistory(
+          for: habit,
+          progressByDateKey: progressByHabit[habit.id] ?? [:])
+      }.max() ?? 0
+
+      DispatchQueue.main.async { progress(0.6) }
+
+      let completedHabitsToday = habits.filter { habit in
+        habit.isCompleted(for: today, progressByDateKey: progressByHabit[habit.id] ?? [:])
+      }.count
+
+      DispatchQueue.main.async { progress(1.0) }
+
+      return StreakStatistics(
+        currentStreak: currentStreak,
+        longestStreak: bestStreak,
+        totalCompletionDays: completedHabitsToday)
+    }.value
   }
 
   // MARK: Private
@@ -807,21 +859,26 @@ class StreakDataCalculator {
   private static func calculateOverallStreakWhenAllCompleted(
     from habits: [Habit],
     calendar: Calendar,
-    today: Date) -> Int
+    today: Date,
+    progressByHabit: [UUID: [String: Int]]? = nil) -> Int
   {
     guard !habits.isEmpty else { return 0 }
 
     var streak = 0
-    
+
     // ✅ CRITICAL FIX: Start from YESTERDAY, not TODAY
     // Today's incomplete state should NOT break the streak until the day is over
     var currentDate = calendar.date(byAdding: .day, value: -1, to: today) ?? today
 
     // Count consecutive days backwards from YESTERDAY where ALL habits were completed
     while true {
-      // Check if all habits were completed on this date
       let allCompletedOnThisDate = habits.allSatisfy { habit in
-        habit.isCompleted(for: currentDate)
+        if let progressByHabit {
+          return habit.isCompleted(
+            for: currentDate,
+            progressByDateKey: progressByHabit[habit.id] ?? [:])
+        }
+        return habit.isCompleted(for: currentDate)
       }
 
       if allCompletedOnThisDate {
@@ -840,7 +897,8 @@ class StreakDataCalculator {
   private static func calculateConsistencyRate(
     for habits: [Habit],
     calendar: Calendar,
-    today: Date) -> Int
+    today: Date,
+    progressByHabit: [UUID: [String: Int]]? = nil) -> Int
   {
     let vacationManager = VacationManager.shared
     let last7Days = (0 ..< 7).compactMap { dayOffset in
@@ -852,7 +910,12 @@ class StreakDataCalculator {
       .filter { !(vacationManager.isActive && vacationManager.isVacationDay($0)) }
 
     let totalCompletions = nonVacationDays.reduce(0) { total, date in
-      total + habits.filter { $0.isCompleted(for: date) }.count
+      total + habits.filter { habit in
+        if let progressByHabit {
+          return habit.isCompleted(for: date, progressByDateKey: progressByHabit[habit.id] ?? [:])
+        }
+        return habit.isCompleted(for: date)
+      }.count
     }
 
     // Only count non-vacation days in the total possible

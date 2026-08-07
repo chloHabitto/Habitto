@@ -928,7 +928,9 @@ class NotificationManager: ObservableObject {
 
   // MARK: - Friendly Reminder System
 
-  /// Get incomplete scheduled habits for a specific date
+  /// Get incomplete scheduled habits for a specific date.
+  /// Uses sync `isCompleted(for:)` — must run on the main thread for historical dates
+  /// (SwiftData). Background callers should hop to MainActor first (see HabitRepository warmup).
   func getIncompleteScheduledHabits(for date: Date, habits: [Habit]) -> [Habit] {
     habits.filter { habit in
       // Check if habit should be shown on this date
@@ -937,6 +939,18 @@ class NotificationManager: ObservableObject {
       // Check if habit is not completed for this date
       return !habit.isCompleted(for: date)
     }
+  }
+
+  /// Async variant that hops per-habit for historical SwiftData lookups when needed.
+  func getIncompleteScheduledHabitsAsync(for date: Date, habits: [Habit]) async -> [Habit] {
+    var incomplete: [Habit] = []
+    for habit in habits {
+      guard shouldShowHabitOnDate(habit, date: date) else { continue }
+      if await !habit.isCompletedAsync(for: date) {
+        incomplete.append(habit)
+      }
+    }
+    return incomplete
   }
 
   /// Schedule friendly reminder notifications for incomplete habits

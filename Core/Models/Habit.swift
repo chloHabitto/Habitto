@@ -654,29 +654,54 @@ struct Habit: Identifiable, Codable, Equatable {
   }
 
   func isCompleted(for date: Date) -> Bool {
-    // If it's a vacation day AND vacation is currently active, treat it as neutral
-    let vacationManager = VacationManager.shared
-    if vacationManager.isActive, vacationManager.isVacationDay(date) {
-      // For vacation days during active vacation, we need to determine if the habit would have been
-      // completed
-      // based on the previous non-vacation day's completion status
-      let calendar = Calendar.current
-      var checkDate = calendar.date(byAdding: .day, value: -1, to: date) ?? date
+    isCompletedInternal(for: effectiveCompletionCheckDate(for: date))
+  }
 
-      // Look back to find the last non-vacation day
-      while vacationManager.isActive, vacationManager.isVacationDay(checkDate) {
-        guard let prevDate = calendar.date(byAdding: .day, value: -1, to: checkDate) else {
-          break
-        }
-        checkDate = prevDate
-      }
+  /// Async completion check that hops to the main actor for historical SwiftData lookups.
+  /// Prefer this (or the prefetched-map overload) from background/`Task.detached` work.
+  func isCompletedAsync(for date: Date) async -> Bool {
+    await isCompletedInternalAsync(for: effectiveCompletionCheckDate(for: date))
+  }
 
-      // Return the completion status of the last non-vacation day
-      return isCompletedInternal(for: checkDate)
+  /// Sync completion check using a prefetched `[dateKey: progress]` map (no SwiftData hop).
+  /// Applies the same vacation-day remapping as `isCompleted(for:)`.
+  func isCompleted(for date: Date, progressByDateKey: [String: Int]) -> Bool {
+    isCompletedInternal(for: effectiveCompletionCheckDate(for: date), progressByDateKey: progressByDateKey)
+  }
+
+  /// Single source of truth for "does this progress meet the goal?"
+  static func isProgressComplete(progress: Int, goalAmount: Int) -> Bool {
+    goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
+  }
+
+  /// Prefetch CompletionRecord progress for many habits/dates in one MainActor hop.
+  /// Returns `[habitId: [dateKey: progress]]`.
+  @MainActor
+  static func prefetchCompletionProgress(
+    habitIds: [UUID],
+    from: Date,
+    to: Date) throws -> [UUID: [String: Int]]
+  {
+    guard !habitIds.isEmpty else { return [:] }
+
+    let fromKey = dateKey(for: from)
+    let toKey = dateKey(for: to)
+    let ids = habitIds
+    let context = SwiftDataContainer.shared.modelContext
+
+    let predicate = #Predicate<CompletionRecord> { record in
+      ids.contains(record.habitId) && record.dateKey >= fromKey && record.dateKey <= toKey
     }
+    let records = try context.fetch(FetchDescriptor<CompletionRecord>(predicate: predicate))
 
-    // For non-vacation days or historical vacation days, use the normal completion logic
-    return isCompletedInternal(for: date)
+    var result: [UUID: [String: Int]] = [:]
+    for record in records {
+      var byDate = result[record.habitId] ?? [:]
+      let existing = byDate[record.dateKey] ?? 0
+      byDate[record.dateKey] = max(existing, record.progress)
+      result[record.habitId] = byDate
+    }
+    return result
   }
 
   // MARK: - Streak Mode Completion Check
@@ -957,90 +982,138 @@ struct Habit: Identifiable, Codable, Equatable {
 
   // MARK: Private
 
-  /// Internal completion check that doesn't consider vacation days
+  /// Remap an active vacation day to the last non-vacation day (same rules as public isCompleted).
+  private func effectiveCompletionCheckDate(for date: Date) -> Date {
+    let vacationManager = VacationManager.shared
+    guard vacationManager.isActive, vacationManager.isVacationDay(date) else {
+      return date
+    }
+
+    let calendar = Calendar.current
+    var checkDate = calendar.date(byAdding: .day, value: -1, to: date) ?? date
+
+    while vacationManager.isActive, vacationManager.isVacationDay(checkDate) {
+      guard let prevDate = calendar.date(byAdding: .day, value: -1, to: checkDate) else {
+        break
+      }
+      checkDate = prevDate
+    }
+    return checkDate
+  }
+
+  /// Evaluate completion for a date using progress + historical goal (shared comparison).
+  private func evaluateCompletion(progress: Int, for date: Date, storedStatus: Bool? = nil) -> Bool {
+    let goalAmount = parseGoalAmount(from: goalString(for: date)) ?? 0
+    let calculatedCompleted = Self.isProgressComplete(progress: progress, goalAmount: goalAmount)
+
+    if let storedStatus {
+      // If stored status matches the calculated one, trust it; otherwise trust calculated.
+      return storedStatus == calculatedCompleted ? storedStatus : calculatedCompleted
+    }
+    return calculatedCompleted
+  }
+
+  /// Internal completion check that doesn't consider vacation days (sync; SwiftData only on main).
   private func isCompletedInternal(for date: Date) -> Bool {
     let dateKey = Self.dateKey(for: date)
     let calendar = Calendar.current
     let today = calendar.startOfDay(for: Date())
     let normalizedDate = calendar.startOfDay(for: date)
-    
-    // ✅ FIX: For historical dates, query CompletionRecords from SwiftData
-    // The in-memory dictionary only has today's data, not historical data
     let isHistoricalDate = normalizedDate < today
-    
+
     if isHistoricalDate {
-      // For historical dates, query CompletionRecords from SwiftData
       if let progress = queryCompletionRecordFromSwiftData(for: date) {
-        let historicalGoal = goalString(for: date)
-        let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
-        let isComplete = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
-        
-        return isComplete
-      } else {
-        // No CompletionRecord found - check dictionary as fallback
-        let progress = completionHistory[dateKey] ?? 0
-        let historicalGoal = goalString(for: date)
-        let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
-        let calculatedCompleted = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
-        
-        return calculatedCompleted
+        return evaluateCompletion(progress: progress, for: date)
       }
+      let progress = completionHistory[dateKey] ?? 0
+      return evaluateCompletion(progress: progress, for: date)
     }
-    
-    // For today, use the in-memory dictionary (which has today's data)
+
     let progress = completionHistory[dateKey] ?? 0
-    let historicalGoal = goalString(for: date)
-    let goalAmount = parseGoalAmount(from: historicalGoal) ?? 0
-    let storedStatus = completionStatus[dateKey]
+    return evaluateCompletion(
+      progress: progress,
+      for: date,
+      storedStatus: completionStatus[dateKey])
+  }
 
-    // Derive completion from underlying data (progress vs historical goal).
-    let calculatedCompleted = goalAmount > 0 ? (progress >= goalAmount) : (progress > 0)
+  /// Async internal completion check — hops to MainActor for historical SwiftData queries.
+  private func isCompletedInternalAsync(for date: Date) async -> Bool {
+    let dateKey = Self.dateKey(for: date)
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let normalizedDate = calendar.startOfDay(for: date)
+    let isHistoricalDate = normalizedDate < today
 
-    if let storedStatus {
-      // If stored status matches the calculated one, trust it.
-      if storedStatus == calculatedCompleted {
-        return storedStatus
+    if isHistoricalDate {
+      let progress = await MainActor.run { () -> Int? in
+        queryCompletionRecordFromSwiftDataOnMainActor(for: date)
       }
-      // If they disagree, trust the calculated result based on historical goal and progress.
-      return calculatedCompleted
+      if let progress {
+        return evaluateCompletion(progress: progress, for: date)
+      }
+      let fallback = completionHistory[dateKey] ?? 0
+      return evaluateCompletion(progress: fallback, for: date)
     }
 
-    // No stored status – use the calculated value.
-    return calculatedCompleted
+    let progress = completionHistory[dateKey] ?? 0
+    return evaluateCompletion(
+      progress: progress,
+      for: date,
+      storedStatus: completionStatus[dateKey])
   }
-  
-  /// Query CompletionRecord progress from SwiftData for a specific date
-  /// Returns the progress value (Int) if a completed record is found, nil otherwise
+
+  /// Internal completion check using a prefetched progress map (no SwiftData access).
+  private func isCompletedInternal(for date: Date, progressByDateKey: [String: Int]) -> Bool {
+    let dateKey = Self.dateKey(for: date)
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: Date())
+    let normalizedDate = calendar.startOfDay(for: date)
+    let isHistoricalDate = normalizedDate < today
+
+    if isHistoricalDate {
+      let progress = progressByDateKey[dateKey] ?? completionHistory[dateKey] ?? 0
+      return evaluateCompletion(progress: progress, for: date)
+    }
+
+    // Today: in-memory dict is authoritative when present
+    let progress = completionHistory[dateKey] ?? progressByDateKey[dateKey] ?? 0
+    return evaluateCompletion(
+      progress: progress,
+      for: date,
+      storedStatus: completionStatus[dateKey])
+  }
+
+  /// Query CompletionRecord progress from SwiftData for a specific date.
+  /// Sync path: returns nil when off the main thread (callers should use async or prefetch).
   private func queryCompletionRecordFromSwiftData(for date: Date) -> Int? {
-    // ✅ FIX: SwiftDataContainer requires MainActor, so check if we're on main thread
     guard Thread.isMainThread else {
-      // Not on main thread - can't query SwiftData, fall back to dictionary
       return nil
     }
-    
+    return MainActor.assumeIsolated {
+      queryCompletionRecordFromSwiftDataOnMainActor(for: date)
+    }
+  }
+
+  /// SwiftData fetch — must run on the main actor.
+  @MainActor
+  private func queryCompletionRecordFromSwiftDataOnMainActor(for date: Date) -> Int? {
     let dateKey = Self.dateKey(for: date)
     let habitId = self.id
-    
-    // Move all SwiftData operations inside MainActor.assumeIsolated closure
-    // Extract only the primitive progress value to avoid Sendable issues
-    return MainActor.assumeIsolated {
-      do {
-        let context = SwiftDataContainer.shared.modelContext
-        
-        // Query for CompletionRecord matching this habit ID and date
-        let predicate = #Predicate<CompletionRecord> { record in
-          record.habitId == habitId && record.dateKey == dateKey && record.isCompleted == true
-        }
-        let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
-        let records = try context.fetch(descriptor)
-        
-        // Return the progress value from the first matching record (should be unique per habit+date)
-        return records.first?.progress
-      } catch {
-        // If query fails, return nil to fall back to dictionary
-        print("⚠️ queryCompletionRecordFromSwiftData: Failed to query for \(dateKey): \(error.localizedDescription)")
-        return nil
+
+    do {
+      let context = SwiftDataContainer.shared.modelContext
+      let predicate = #Predicate<CompletionRecord> { record in
+        record.habitId == habitId && record.dateKey == dateKey
       }
+      let descriptor = FetchDescriptor<CompletionRecord>(predicate: predicate)
+      let records = try context.fetch(descriptor)
+      // Prefer highest progress if duplicates exist
+      return records.map(\.progress).max()
+    } catch {
+      print(
+        "⚠️ queryCompletionRecordFromSwiftData: Failed to query for \(dateKey): \(error.localizedDescription)"
+      )
+      return nil
     }
   }
 
