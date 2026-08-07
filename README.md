@@ -1,6 +1,6 @@
 # Habitto - Habit Tracking App
 
-A comprehensive habit tracking application built with SwiftUI, featuring a modern Repository pattern architecture with comprehensive data validation, performance monitoring, and future CloudKit sync capabilities.
+A comprehensive habit tracking application built with SwiftUI, featuring a modern Repository pattern architecture with SwiftData local persistence, Firebase/Firestore cloud sync, comprehensive data validation, and performance monitoring.
 
 ## 🏗️ Architecture Overview
 
@@ -13,7 +13,7 @@ Habitto uses a modern, scalable architecture with clear separation of concerns:
 - **Performance Monitoring**: Built-in analytics and performance tracking
 - **Data Validation**: Robust data integrity and validation
 - **Migration System**: Seamless data migration capabilities
-- **CloudKit Ready**: Prepared for future cross-device sync
+- **Cloud Sync**: Firebase/Firestore for habit data; iCloud Drive for optional backups
 
 ## 📁 Project Structure
 
@@ -22,7 +22,8 @@ The project has been reorganized for better maintainability and clarity. Here's 
 ### 🚀 App
 ```
 App/
-└── HabittoApp.swift         # Main app entry point with migration integration
+├── HabittoApp.swift         # Main app entry point with migration integration
+└── AppFirebase.swift        # Firebase configuration and initialization
 ```
 
 ### 🏗️ Core Architecture
@@ -35,18 +36,20 @@ Core/
 │   ├── SyncEngine.swift                # Sync engine
 │   ├── Store/                          # HabitStore actor (backs HabitRepository)
 │   │   └── HabitStore.swift
+│   ├── SwiftData/                      # SwiftData models + primary local store
+│   │   └── SwiftDataStorage.swift     # Primary local persistence (via HabitStore)
 │   ├── Storage/                        # Storage implementations
-│   │   ├── UserDefaultsStorage.swift
-│   │   ├── SwiftDataStorage.swift     # Primary local persistence (via HabitStore)
+│   │   ├── UserDefaultsStorage.swift  # Legacy / migration paths
 │   │   └── FirestoreStorage.swift
 │   ├── Repositories/                   # Protocol-based repository stack (non-UI)
 │   │   └── HabitRepositoryProtocol.swift
 │   ├── Migration/                      # Data migration system
 │   │   ├── DataMigrationManager.swift
-│   │   ├── MigrationService.swift
 │   │   ├── StorageMigrations.swift
 │   │   └── DataFormatMigrations.swift
 │   └── BackgroundQueueManager.swift    # Background processing
+├── Services/                # Business services
+│   └── MigrationService.swift          # Migration UI orchestration
 ├── Models/                  # Data models
 │   └── Habit.swift
 ├── Validation/              # Data validation
@@ -180,10 +183,10 @@ Tests/
 12. **Error Handling**: Robust error management and recovery
 
 ### 🔒 **Security & Privacy**
-13. **Local-First**: Data stays on device with optional cloud sync
+13. **Local-First**: Data stays on device with optional Firebase/Firestore sync
 14. **Privacy-Focused**: Clear data classification and minimal collection
-15. **Secure Storage**: Sensitive data in Keychain, user data in UserDefaults
-16. **Future-Ready**: CloudKit integration prepared for cross-device sync
+15. **Secure Storage**: Sensitive data in Keychain; habit data in SwiftData
+16. **Cloud Backup**: Optional iCloud Drive backups via the backup subsystem
 
 ### 📈 **Scalability & Maintainability**
 17. **Modular Design**: Components can be updated independently
@@ -195,9 +198,9 @@ Tests/
 
 ### **Data Management**
 - ✅ **Repository Pattern**: Clean data access with protocol-based storage
-- ✅ **UserDefaults Storage**: Optimized individual habit storage with history capping
+- ✅ **SwiftData Storage**: Primary local persistence via HabitStore
 - ✅ **Data Validation**: Comprehensive validation before save/load operations
-- ✅ **Migration System**: Automatic migration from old storage formats
+- ✅ **Migration System**: Automatic migration from legacy storage formats
 - ✅ **Background Processing**: Heavy operations offloaded to background queues
 
 ### **Performance & Analytics**
@@ -212,11 +215,10 @@ Tests/
 - ✅ **Data Integrity Tests**: Continuous validation of data consistency
 - ✅ **Performance Tests**: Benchmarking for large datasets
 
-### **Future-Ready Architecture**
-- 🔄 **CloudKit Integration**: Prepared for cross-device synchronization
-- 🔄 **Core Data Migration**: Ready for structured database implementation
-- 🔄 **Conflict Resolution**: CloudKit conflict handling system
-- 🔄 **Advanced Analytics**: AI-powered insights and recommendations
+### **Cloud & Backup**
+- ✅ **Firebase/Firestore Sync**: Habit data, completions, progress events, XP
+- ✅ **iCloud Drive Backups**: Optional document backups via CloudStorageManager
+- ✅ **iCloud Status UI**: Account availability shown on More tab (ICloudStatusManager)
 
 ## 🔥 Running with Firebase Emulator Suite
 
@@ -387,8 +389,8 @@ Access the Firebase demo screen to:
 
 ### Troubleshooting
 
-**App startup lag / CloudKit errors**:
-If you see 10-15 second startup lag or CloudKit validation errors in console:
+**App startup lag / SwiftData CloudKit validation noise**:
+If you see long startup lag or leftover CloudKit schema-validation messages in console (entitlements may still list CloudKit for documents/status, but habit sync scaffolding is gone):
 ```bash
 # Run the cleanup script
 ./Scripts/shell/clean_cloudkit_artifacts.sh
@@ -397,8 +399,7 @@ If you see 10-15 second startup lag or CloudKit validation errors in console:
 # 1. Product → Clean Build Folder (⌘+Shift+K)
 # 2. Product → Run (⌘+R)
 ```
-CloudKit sync remains off by default; see `Docs/Features/FEATURE_FLAGS_README.md` (`cloudkit_sync`).
-The old `CLOUDKIT_DISABLED_FIX.md` note was removed — the script above is the supported fix.
+Habit data sync uses Firebase/Firestore (`SyncEngine`), not CloudKit record sync. See `Docs/Features/FEATURE_FLAGS_README.md` for remaining `cloudkit_sync` flag notes.
 
 **Emulator won't start**:
 ```bash
@@ -450,8 +451,8 @@ Edit `firebase.json` to change emulator ports if needed.
 - ✅ Data migration is automatic and seamless
 
 ### **Future Migrations (Planned)**
-- 🔄 **Core Data**: Migrate from UserDefaults to Core Data for better performance
-- 🔄 **CloudKit Sync**: Enable cross-device synchronization
-- 🔄 **Advanced Analytics**: Add AI-powered insights and recommendations
+- 🔄 **Firestore Sync Hardening**: Continue tightening security rules and sync reliability
+- 🔄 **Backup UX**: Improve optional iCloud Drive / local backup flows
+- 🔄 **Advanced Analytics**: Add deeper insights and recommendations
 
 This architecture follows iOS development best practices and provides a solid foundation for future development while maintaining backward compatibility.

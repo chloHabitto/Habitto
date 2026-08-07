@@ -2,9 +2,9 @@
 
 This document provides a comprehensive overview of the Habitto project's folder structure, explaining the purpose and organization of each directory and key files.
 
-**Last Updated**: February 2025  
+**Last Updated**: August 2026  
 **Project**: Habitto iOS Habit Tracking App  
-**Platform**: iOS 15.0+  
+**Platform**: iOS 18.0+  
 **Language**: Swift / SwiftUI
 
 ---
@@ -149,9 +149,8 @@ Core/Data/
 ├── FirestoreRepository.swift     # Firestore repository helpers
 ├── GDPRDataDeletionManager.swift # GDPR data deletion
 ├── HabitRepository.swift         # Main habit repository (primary)
-├── Migration/                    # Data migration system (14 files)
+├── Migration/                    # Data migration system
 │   ├── DataMigrationManager.swift
-│   ├── MigrationService.swift
 │   ├── StorageMigrations.swift
 │   └── DataFormatMigrations.swift
 ├── OptimizedHabitStorageManager.swift # Optimized storage manager
@@ -216,10 +215,12 @@ Core/Managers/
 ├── AuthenticationManager.swift   # User authentication (Google Sign-In, Guest)
 ├── AuthRoutingManager.swift      # Authentication routing logic
 ├── CompletionStateManager.swift  # Habit completion state management
+├── DeviceManager.swift           # Device registration / management
 ├── EnhancedMigrationTelemetryManager.swift # Migration telemetry
 ├── I18nPreferences.swift         # Internationalization preferences
 ├── ICloudStatusManager.swift     # iCloud status monitoring
 ├── KeychainManager.swift         # Secure keychain access
+├── LocalizationManager.swift     # Localization coordination
 ├── MigrationTelemetryManager.swift # Migration tracking
 ├── NotificationManager.swift     # Local notification management
 ├── PermissionManager.swift       # iOS permission handling

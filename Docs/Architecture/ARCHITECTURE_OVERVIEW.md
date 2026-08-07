@@ -1,8 +1,8 @@
 # Habitto Architecture Overview
 
-## Current Architecture (Updated 2024)
+## Current Architecture (Updated August 2026)
 
-This document provides a comprehensive overview of Habitto's current architecture, reflecting all recent improvements and refactoring work.
+This document provides a comprehensive overview of Habitto's current architecture, reflecting the live data path and cloud sync approach verified in the codebase.
 
 ## 🏗️ High-Level Architecture
 
@@ -17,7 +17,7 @@ This document provides a comprehensive overview of Habitto's current architectur
 │  Business Logic Layer                                       │
 │  ├── HabitRepository.shared (Live UI-facing coordinator)   │
 │  ├── DataValidationService (Data integrity)                │
-│  ├── MigrationService (Data migration)                     │
+│  ├── MigrationService (Core/Services — UI orchestration)   │
 │  └── Analytics Services (Performance, User, Data Usage)    │
 ├─────────────────────────────────────────────────────────────┤
 │  Data Access Layer                                          │
@@ -26,11 +26,12 @@ This document provides a comprehensive overview of Habitto's current architectur
 ├─────────────────────────────────────────────────────────────┤
 │  Storage Layer (Protocol-based)                            │
 │  ├── SwiftDataStorage (Primary local persistence)          │
-│  ├── UserDefaultsStorage (legacy / fallback paths)         │
-│  └── Firestore / CloudKit helpers (sync & future)          │
+│  ├── UserDefaultsStorage (legacy / migration-only paths)   │
+│  └── Firestore helpers (cloud sync / backup payloads)      │
 ├─────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer                                       │
 │  ├── BackgroundQueueManager (Performance)                  │
+│  ├── SyncEngine (Firebase/Firestore sync)                   │
 │  ├── UserDefaultsWrapper (Type-safe access)                │
 │  ├── DateUtilities & ISO8601DateHelper (Date handling)     │
 │  └── TestRunner (Comprehensive testing)                    │
@@ -45,33 +46,18 @@ User Action
     ↓
 SwiftUI View
     ↓
-HabitRepository (@MainActor)
+HabitRepository.shared (@MainActor)
     ↓
-DataValidationService
+HabitStore (actor)
     ↓
-UserDefaultsStorage (Background Queue)
+SwiftDataStorage / SwiftDataContainer
     ↓
-UserDefaultsWrapper (Type-safe)
+SwiftData (on-device)
     ↓
-UserDefaults (iOS)
+SyncEngine (when signed in) → Firebase/Firestore
 ```
 
-### Future Data Flow (Planned)
-```
-User Action
-    ↓
-SwiftUI View
-    ↓
-HabitRepository (@MainActor)
-    ↓
-DataValidationService
-    ↓
-CoreDataStorage (Background Queue)
-    ↓
-Core Data + CloudKit Sync
-    ↓
-iCloud (Cross-device sync)
-```
+Optional backups (separate from habit record sync): `CloudStorageManager` / `BackupStorageCoordinator` → iCloud Drive documents. More-tab iCloud label uses `ICloudStatusManager` (account status only).
 
 ## 📊 Key Components
 
@@ -89,15 +75,11 @@ iCloud (Cross-device sync)
 - **Status**: Present in the codebase for alternate / normalized-data work; UI does not go through these types today
 
 ### 3. **Storage Layer (Protocol-based)**
-- **SwiftDataStorage**: Primary local persistence used via `HabitStore`
-- **UserDefaultsStorage**: Legacy / secondary paths
-  - Individual habit storage by UUID
-  - Background queue operations
-  - Type-safe UserDefaultsWrapper integration
-  - History capping (365 days)
-  - Debounced saves
-- **CoreDataStorage**: Disabled (missing model)
-- **Status**: ✅ UserDefaults active, Core Data disabled
+- **SwiftDataStorage** (`Core/Data/SwiftData/SwiftDataStorage.swift`): Primary local persistence used via `HabitStore`
+- **UserDefaultsStorage**: Legacy / migration-only paths (not the live habit store)
+  - Still constructed for migrations, retention helpers, and factory leftovers history
+  - Type-safe UserDefaultsWrapper integration where used
+- **Status**: ✅ SwiftData primary; UserDefaults legacy/migration-only
 
 ### 4. **Data Validation & Integrity**
 - **DataValidationService**: Validates habit data before save/load
@@ -106,8 +88,8 @@ iCloud (Cross-device sync)
 - **Status**: ✅ Fully implemented
 
 ### 5. **Migration System**
-- **DataMigrationManager**: Orchestrates migration steps
-- **MigrationService**: UI integration and progress tracking
+- **DataMigrationManager** (`Core/Data/Migration/`): Orchestrates migration steps
+- **MigrationService** (`Core/Services/MigrationService.swift`): UI integration and progress tracking
 - **StorageMigrations**: Storage type changes
 - **DataFormatMigrations**: Data model changes
 - **Status**: ✅ Implemented and ready
@@ -120,10 +102,10 @@ iCloud (Cross-device sync)
 - **Status**: ✅ Fully implemented
 
 ### 7. **Cloud sync**
-- **Primary cloud path**: Firebase/Firestore backup & sync (not CloudKit record sync)
+- **Primary cloud path**: Firebase/Firestore backup & sync (`SyncEngine`, not CloudKit record sync)
 - **iCloud account status UI**: `ICloudStatusManager` (More tab status label only)
 - **iCloud Drive backups**: `CloudStorageManager` / `BackupStorageCoordinator` (document storage)
-- **Status**: CloudKit habit-sync scaffolding removed; CloudKit entitlements may still be present for documents/status checks
+- **Status**: CloudKit habit-sync scaffolding removed; entitlements may still list CloudKit for documents/status checks
 
 ### 8. **Utilities & Infrastructure**
 - **UserDefaultsWrapper**: Type-safe UserDefaults access
@@ -138,14 +120,13 @@ iCloud (Cross-device sync)
 - **@MainActor**: Applied to UI-related classes
 - **Background Queues**: Heavy operations offloaded
 - **Async/Await**: Modern concurrency patterns
-- **Thread Safety**: Proper isolation and synchronization
+- **Thread Safety**: Proper isolation and synchronization (including `HabitStore` actor)
 
 ### Data Storage Strategy
-- **Primary**: UserDefaults with individual habit storage
-- **Type Safety**: UserDefaultsWrapper for safe access
-- **Performance**: Background queue operations
-- **Migration**: Automatic migration from old storage
-- **Future**: Core Data + CloudKit sync
+- **Primary**: SwiftData via `HabitStore` / `SwiftDataStorage`
+- **Legacy**: UserDefaults for migration and secondary helpers only
+- **Cloud**: Firebase/Firestore for authenticated (including anonymous) users
+- **Backups**: Optional iCloud Drive document backups
 
 ### Error Handling
 - **DataError**: Comprehensive error types
@@ -159,6 +140,7 @@ iCloud (Cross-device sync)
 - **Performance Tests**: Performance benchmarking
 - **DST Tests**: Daylight saving time handling
 - **Data Integrity Tests**: Data consistency validation
+- **Firestore Rules Tests**: `npm run emu:test` against `firestore.rules`
 
 ## 📈 Performance Optimizations
 
@@ -173,8 +155,8 @@ iCloud (Cross-device sync)
 - **Memory Monitoring**: Track memory usage
 
 ### Data Efficiency
-- **Individual Storage**: Store habits separately
-- **Debounced Saves**: Prevent excessive I/O
+- **SwiftData models**: Structured local persistence
+- **Debounced Saves**: Prevent excessive I/O where used
 - **Type Safety**: Prevent runtime errors
 
 ## 🔒 Security & Privacy
@@ -182,10 +164,11 @@ iCloud (Cross-device sync)
 ### Data Classification
 | Data Type | Storage Location | Security Level |
 |-----------|------------------|----------------|
-| **Authentication** | Firebase Auth | High (OAuth) |
+| **Authentication** | Firebase Auth | High (OAuth / anonymous) |
 | **Sensitive Info** | iOS Keychain | High (Hardware) |
-| **Habit Data** | UserDefaults | Medium (Local) |
-| **Sync Data** | CloudKit (Future) | High (Apple) |
+| **Habit Data** | SwiftData (local) | Medium (Local) |
+| **Synced Habit Data** | Firebase/Firestore | High (rules + auth) |
+| **Optional Backups** | iCloud Drive documents | High (Apple account) |
 
 ### Privacy Principles
 - **Local First**: Data stays on device
@@ -195,23 +178,17 @@ iCloud (Cross-device sync)
 
 ## 🚀 Future Roadmap
 
-### Phase 1: Core Data Migration (Planned)
-- Implement proper Core Data model
-- Enable CoreDataStorage
-- Migrate from UserDefaults
-- Performance improvements
+### Near-term (active direction)
+- Harden Firebase/Firestore sync (security rules, SyncEngine reliability)
+- Improve optional backup / restore UX (iCloud Drive + local)
+- Continue SwiftData schema migrations as the product evolves
 
-### Phase 2: CloudKit Sync (Planned)
-- Enable CloudKit integration
-- Cross-device synchronization
-- Conflict resolution
-- Offline-first architecture
+### Longer-term ideas
+- Deeper analytics and insights
+- Social / sharing features
+- Custom themes and personalization
 
-### Phase 3: Advanced Features (Future)
-- AI-powered insights
-- Social features
-- Advanced analytics
-- Custom themes
+*(Legacy “Phase 1 Core Data / Phase 2 CloudKit habit sync” plans are obsolete — CloudKit habit-sync scaffolding was removed; Core Data is not the active store.)*
 
 ## 🧪 Testing Strategy
 
@@ -221,6 +198,7 @@ iCloud (Cross-device sync)
 - **Performance Tests**: Speed and memory testing
 - **DST Tests**: Time zone handling
 - **Data Integrity Tests**: Data consistency
+- **Firestore Rules**: Jest + emulator (`Tests/firestore.rules.test.js`)
 
 ### Test Categories
 1. **Streak Calculations**: Consecutive days, gaps, DST
@@ -233,18 +211,17 @@ iCloud (Cross-device sync)
 
 ### Current Documentation
 - **ARCHITECTURE_OVERVIEW.md**: This file - high-level architecture
+- **FOLDER_STRUCTURE.md**: Directory layout
 - **FIREBASE_ARCHITECTURE.md**: Firebase usage clarification
-- **CORE_DATA_IMPLEMENTATION.md**: Core Data implementation details
-- **OPTIMIZED_STORAGE_IMPLEMENTATION.md**: UserDefaults optimization
-- **PROJECT_STRUCTURE.md**: File organization
 - **README.md**: Project overview
+- **Docs/Features/**: Feature guides and flags
+- **Docs/data/**: Schema / storage inventory
 
 ### Documentation Updates
-- ✅ Updated to reflect current architecture
-- ✅ Corrected Firebase usage claims
-- ✅ Added new components and patterns
+- ✅ Updated to reflect SwiftData-primary local store
+- ✅ Corrected Firebase/Firestore as live cloud sync path
+- ✅ Removed obsolete Core Data / CloudKit habit-sync roadmap framing
 - ✅ Updated data flow diagrams
-- ✅ Added performance optimizations
 
 ## 🎯 Key Benefits
 
@@ -253,14 +230,12 @@ iCloud (Cross-device sync)
 - **Modular Design**: Components can be updated independently
 - **Type Safety**: Compile-time error prevention
 - **Comprehensive Testing**: Reliable codebase
-- **Future-Ready**: Easy to add new features
 
 ### For Users
 - **Performance**: Fast and responsive
 - **Reliability**: Stable and consistent
-- **Privacy**: Data stays on device
-- **Offline**: Works without internet
-- **Future Sync**: Cross-device synchronization planned
+- **Privacy**: Local-first with optional cloud sync
+- **Offline**: Works without internet; syncs when signed in
 
 ## 🔍 Monitoring & Analytics
 
@@ -286,7 +261,7 @@ iCloud (Cross-device sync)
 
 ### Code Organization
 - **Protocol-First**: Define interfaces before implementations
-- **Dependency Injection**: Use factory patterns
+- **Actor / MainActor boundaries**: Keep store and UI isolation clear
 - **Background Operations**: Offload heavy work
 - **Error Handling**: Comprehensive error management
 
@@ -295,15 +270,16 @@ iCloud (Cross-device sync)
 - **Integration Tests**: Component interactions
 - **Performance Tests**: Large dataset handling
 - **DST Tests**: Time zone edge cases
+- **Rules Tests**: Update Firestore rules tests when changing `firestore.rules`
 
 ### Documentation Standards
-- **Architecture Docs**: Keep up to date
+- **Architecture Docs**: Keep up to date with the live path
 - **API Documentation**: Document public interfaces
 - **Migration Guides**: Document breaking changes
 - **Performance Notes**: Document optimizations
 
 ---
 
-**Last Updated**: September 2024  
-**Architecture Version**: 2.0  
-**Status**: Production Ready with Future Enhancements Planned
+**Last Updated**: August 2026  
+**Architecture Version**: 3.0  
+**Status**: Production — SwiftData local + Firebase/Firestore sync
