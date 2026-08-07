@@ -46,22 +46,6 @@ class StorageFactory {
     }
   }
 
-  /// Create a habit repository with the specified storage type
-  /// - Parameter type: The storage type to use
-  /// - Returns: A habit repository implementation
-  @MainActor
-  func createHabitRepository(type: StorageType) -> any HabitRepositoryProtocol {
-    switch type {
-    case .hybrid:
-      // Use DualWriteStorage directly
-      let storage = createHabitStorage(type: .hybrid)
-      return HabitRepositoryImpl(storage: storage)
-    default:
-      let storage = createHabitStorage(type: type)
-      return HabitRepositoryImpl(storage: storage)
-    }
-  }
-
   /// Get the recommended storage type based on app configuration
   /// - Returns: The recommended storage type
   func getRecommendedStorageType() -> StorageType {

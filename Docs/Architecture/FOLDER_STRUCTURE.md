@@ -160,9 +160,9 @@ Core/Data/
 ├── OptimizedHabitStorageManager.swift # Optimized storage manager
 ├── Protocols/                    # Data access protocols (1 file)
 │   └── DataStorageProtocol.swift
-├── Repositories/                 # Repository implementations (4 files)
-├── Repository/                   # Repository pattern (2 files)
-│   └── HabitRepositoryImpl.swift
+├── Repositories/                 # Protocol-based repository adapters
+├── Repository/                   # HabitStore actor (backs HabitRepository.shared)
+│   └── HabitStore.swift
 ├── RepositoryProvider.swift      # Repository provider
 ├── Retention/                    # Data retention policies (2 files)
 ├── SchemaVersion.swift           # Data schema versioning
@@ -561,9 +561,9 @@ website/
 ```
 [Root Directory]
 ├── README.md                     # Main project README
-├── APP_OVERVIEW.md               # Comprehensive app overview
+├── Docs/Product/APP_OVERVIEW.md   # Comprehensive app overview
 ├── CHANGELOG.md                  # Version changelog
-├── FOLDER_STRUCTURE.md           # This file
+├── Docs/Architecture/FOLDER_STRUCTURE.md           # This file
 ├── firebase.json                 # Firebase configuration
 ├── firestore.rules               # Firestore security rules
 ├── firestore.indexes.json        # Firestore indexes
@@ -655,7 +655,7 @@ website/
 
 **For more detailed information about specific areas, refer to:**
 - `README.md` - General project overview
-- `APP_OVERVIEW.md` - Comprehensive app functionality
+- `Docs/Product/APP_OVERVIEW.md` - Comprehensive app functionality
 - `Docs/Architecture/` - Architecture documentation
 - `Docs/Guides/` - Development guides
 

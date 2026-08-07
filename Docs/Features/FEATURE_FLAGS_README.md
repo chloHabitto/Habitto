@@ -73,7 +73,7 @@ private func getUserCohort(userId: String) -> String {
 
 #### Migration Kill Switch Tested (`migration_kill_switch = true`)
 - Gated in: `DataMigrationManager.executeMigrations()`
-- Gated in: `HabitRepositoryImpl.saveHabits()`
+- (Former `HabitRepositoryImpl.saveHabits()` gate removed with dead `HabitRepositoryImpl`; live UI uses `HabitRepository.shared`)
 - **Confirmation**: Migration kill switch powered by these gated implementations
 
 ## Implementation Evidence

@@ -29,18 +29,19 @@ App/
 ```
 Core/
 ├── Data/                    # Data management and persistence
-│   ├── HabitRepository.swift           # Main data coordinator
-│   ├── HabitRepositoryNew.swift        # Repository facade
-│   ├── HabitRepositoryImpl.swift       # Repository implementation
-│   ├── CoreDataManager.swift          # Core Data management
-│   ├── CloudKitManager.swift          # CloudKit integration
+│   ├── HabitRepository.swift           # Live UI-facing singleton (HabitRepository.shared)
+│   ├── HabitStore.swift                # Actor backing HabitRepository
+│   ├── CloudKitManager.swift          # CloudKit status / iCloud checks
 │   ├── Protocols/                      # Data access protocols
 │   │   └── DataStorageProtocol.swift
 │   ├── Storage/                        # Storage implementations
-│   │   ├── UserDefaultsStorage.swift  # Primary storage (active)
-│   │   └── CoreDataStorage.swift      # Future storage (disabled)
-│   ├── Repository/                     # Repository implementations
-│   │   └── HabitRepositoryImpl.swift
+│   │   ├── UserDefaultsStorage.swift
+│   │   ├── SwiftDataStorage.swift     # Primary local persistence (via HabitStore)
+│   │   └── FirestoreStorage.swift
+│   ├── Repositories/                   # Protocol-based repository stack (non-UI)
+│   │   ├── HabitRepositoryProtocol.swift
+│   │   ├── FirestoreHabitRepository.swift
+│   │   └── DualWriteHabitRepository.swift
 │   ├── Factory/                        # Storage factory
 │   │   └── StorageFactory.swift
 │   ├── Migration/                      # Data migration system
@@ -48,12 +49,6 @@ Core/
 │   │   ├── MigrationService.swift
 │   │   ├── StorageMigrations.swift
 │   │   └── DataFormatMigrations.swift
-│   ├── CloudKit/                       # CloudKit integration
-│   │   ├── CloudKitModels.swift
-│   │   ├── CloudKitSyncManager.swift
-│   │   ├── CloudKitSchema.swift
-│   │   ├── CloudKitConflictResolver.swift
-│   │   └── CloudKitIntegrationService.swift
 │   └── Background/                     # Background processing
 │       └── BackgroundQueueManager.swift
 ├── Models/                  # Data models
@@ -143,14 +138,21 @@ Assets/
 
 ### 📚 Documentation
 ```
-Documentation/
-├── ARCHITECTURE_OVERVIEW.md    # Comprehensive architecture overview
-├── CORE_DATA_IMPLEMENTATION.md # Core Data implementation details
-├── FIREBASE_ARCHITECTURE.md    # Firebase usage and data architecture
-├── HABIT_EDITING_SUMMARY.md    # Habit editing functionality
-├── OPTIMIZED_STORAGE_IMPLEMENTATION.md # UserDefaults optimization
-├── DATA_SECURITY_GUIDELINES.md # Security and privacy guidelines
-└── PROJECT_STRUCTURE.md        # Detailed project structure documentation
+Docs/
+├── Architecture/               # Architecture & structure
+│   ├── ARCHITECTURE_OVERVIEW.md
+│   ├── DATA_ARCHITECTURE.md
+│   ├── DATA_SECURITY_GUIDELINES.md
+│   ├── FIREBASE_ARCHITECTURE.md
+│   ├── FOLDER_STRUCTURE.md
+│   └── …
+├── Product/                    # Product-facing overviews
+│   ├── APP_OVERVIEW.md
+│   └── SUBSCRIPTION_ANALYSIS.md
+├── Features/                   # Feature guides & flags
+├── Guides/                     # Setup guides
+├── data/                       # Schema / storage inventory
+└── archive/                    # Historical investigation & fix notes
 ```
 
 ### 🧪 Tests
@@ -399,7 +401,8 @@ If you see 10-15 second startup lag or CloudKit validation errors in console:
 # 1. Product → Clean Build Folder (⌘+Shift+K)
 # 2. Product → Run (⌘+R)
 ```
-See `CLOUDKIT_DISABLED_FIX.md` for more details.
+CloudKit sync remains off by default; see `Docs/Features/FEATURE_FLAGS_README.md` (`cloudkit_sync`).
+The old `CLOUDKIT_DISABLED_FIX.md` note was removed — the script above is the supported fix.
 
 **Emulator won't start**:
 ```bash

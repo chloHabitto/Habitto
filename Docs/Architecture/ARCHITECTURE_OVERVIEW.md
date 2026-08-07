@@ -15,20 +15,20 @@ This document provides a comprehensive overview of Habitto's current architectur
 │  └── Tab-based navigation with custom UI components        │
 ├─────────────────────────────────────────────────────────────┤
 │  Business Logic Layer                                       │
-│  ├── HabitRepository (Main data coordinator)               │
+│  ├── HabitRepository.shared (Live UI-facing coordinator)   │
 │  ├── DataValidationService (Data integrity)                │
 │  ├── MigrationService (Data migration)                     │
 │  └── Analytics Services (Performance, User, Data Usage)    │
 ├─────────────────────────────────────────────────────────────┤
-│  Data Access Layer (Repository Pattern)                    │
-│  ├── HabitRepositoryProtocol (Interface)                   │
-│  ├── HabitRepositoryImpl (Implementation)                  │
-│  └── StorageFactory (Storage selection)                    │
+│  Data Access Layer                                          │
+│  ├── HabitStore (actor backing HabitRepository)            │
+│  ├── HabitRepositoryProtocol (+ alternate protocol stack)  │
+│  └── StorageFactory (storage helpers; not UI entry point)  │
 ├─────────────────────────────────────────────────────────────┤
 │  Storage Layer (Protocol-based)                            │
-│  ├── UserDefaultsStorage (Primary - Active)                │
-│  ├── CoreDataStorage (Disabled - Future)                   │
-│  └── CloudKit Integration (Prepared - Future)              │
+│  ├── SwiftDataStorage (Primary local persistence)          │
+│  ├── UserDefaultsStorage (legacy / fallback paths)         │
+│  └── Firestore / CloudKit helpers (sync & future)          │
 ├─────────────────────────────────────────────────────────────┤
 │  Infrastructure Layer                                       │
 │  ├── BackgroundQueueManager (Performance)                  │
@@ -76,24 +76,23 @@ iCloud (Cross-device sync)
 
 ## 📊 Key Components
 
-### 1. **HabitRepository** (Main Coordinator)
-- **Purpose**: Central data management and coordination
+### 1. **HabitRepository** (`Core/Data/HabitRepository.swift`) — live UI layer
+- **Purpose**: Central data management for SwiftUI (`HabitRepository.shared`)
 - **Features**: 
-  - `@MainActor` for UI thread safety
+  - `@MainActor` facade over `HabitStore`
   - Performance monitoring integration
   - User analytics tracking
   - Data usage analytics
-  - CloudKit integration preparation
-- **Status**: ✅ Active and fully functional
+- **Status**: ✅ Active — this is the production entry point for the app UI
 
-### 2. **Repository Pattern Implementation**
-- **HabitRepositoryProtocol**: Defines data operations interface
-- **HabitRepositoryImpl**: Concrete implementation
-- **StorageFactory**: Creates appropriate storage instances
-- **Status**: ✅ Implemented and working
+### 2. **Protocol-based repository stack** (non-UI / alternate paths)
+- **HabitRepositoryProtocol**: Interface used by Firestore/DualWrite/Legacy/Normalized adapters
+- **StorageFactory**: Storage-type helpers (not the live UI repository constructor)
+- **Status**: Present in the codebase for alternate / normalized-data work; UI does not go through these types today
 
 ### 3. **Storage Layer (Protocol-based)**
-- **UserDefaultsStorage**: Primary active storage
+- **SwiftDataStorage**: Primary local persistence used via `HabitStore`
+- **UserDefaultsStorage**: Legacy / secondary paths
   - Individual habit storage by UUID
   - Background queue operations
   - Type-safe UserDefaultsWrapper integration
