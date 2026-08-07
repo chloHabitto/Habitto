@@ -134,7 +134,7 @@ self.habits[index].updateStreakWithReset()
 **Classification**: [DENORMALIZED write] - Updates denormalized streak field
 
 ### 3. HabitStore.swift - Streak Updates
-**File**: `Core/Data/Repository/HabitStore.swift`
+**File**: `Core/Data/Store/HabitStore.swift`
 
 #### Line 401: Update Streak After Progress Change
 ```swift
@@ -199,7 +199,7 @@ habits[index].difficultyHistory[dateKey] = difficulty
 **Classification**: [DENORMALIZED write] - Updates completion history directly
 
 ### 3. HabitStore.swift - Completion Updates
-**File**: `Core/Data/Repository/HabitStore.swift`
+**File**: `Core/Data/Store/HabitStore.swift`
 
 #### Line 374-398: Update Progress with Timestamps
 ```swift

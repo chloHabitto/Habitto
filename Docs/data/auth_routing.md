@@ -168,7 +168,7 @@ class HabitStorageManager {
 **Analysis**: ❌ **CRITICAL ISSUE** - Singleton cache that survives sign-out
 
 ### 3. HabitStore.swift - Actor Cache
-**File**: `Core/Data/Repository/HabitStore.swift:10`
+**File**: `Core/Data/Store/HabitStore.swift:10`
 
 ```swift
 final actor HabitStore {

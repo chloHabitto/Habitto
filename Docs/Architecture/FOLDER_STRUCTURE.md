@@ -146,7 +146,8 @@ Core/Data/
 ├── Cache/                        # Caching system (1 file)
 ├── CacheManager.swift            # Cache management
 ├── CalendarGridViews.swift       # Calendar grid UI components
-├── Firestore/                    # Firestore integration (1 file)
+├── DataStorageProtocol.swift     # Data access protocols
+├── FirestoreRepository.swift     # Firestore repository helpers
 ├── GDPRDataDeletionManager.swift # GDPR data deletion
 ├── HabitRepository.swift         # Main habit repository (primary)
 ├── Migration/                    # Data migration system (14 files)
@@ -155,28 +156,27 @@ Core/Data/
 │   ├── StorageMigrations.swift
 │   └── DataFormatMigrations.swift
 ├── OptimizedHabitStorageManager.swift # Optimized storage manager
-├── Protocols/                    # Data access protocols (1 file)
-│   └── DataStorageProtocol.swift
 ├── Repositories/                 # Protocol-based repository adapters
-├── Repository/                   # HabitStore actor (backs HabitRepository.shared)
-│   └── HabitStore.swift
+│   └── HabitRepositoryProtocol.swift
 ├── RepositoryProvider.swift      # Repository provider
 ├── Retention/                    # Data retention policies (2 files)
 ├── SchemaVersion.swift           # Data schema versioning
-├── Storage/                      # Storage implementations (9 files)
-│   ├── UserDefaultsStorage.swift # Primary storage (active)
-│   └── CoreDataStorage.swift     # Future storage (disabled)
+├── Storage/                      # Storage implementations
+│   ├── UserDefaultsStorage.swift # Legacy / secondary paths
+│   └── (other storage backends)
+├── Store/                        # HabitStore actor (backs HabitRepository.shared)
+│   └── HabitStore.swift
 ├── StreakDataCalculator.swift    # Streak calculation logic
 ├── StreakViewComponents.swift    # Streak UI components
-├── SwiftData/                    # SwiftData models and management (10 files)
-└── Sync/                         # Data synchronization (1 file)
+├── SwiftData/                    # SwiftData models and management
+└── SyncEngine.swift              # Data synchronization
 ```
 
 **Key Components**:
 - **Repository Pattern**: Clean data access abstraction
-- **Storage Implementations**: Multiple storage backends (UserDefaults, CoreData, SwiftData)
+- **Storage Implementations**: Multiple storage backends (UserDefaults, SwiftData, Firestore)
 - **Migration System**: Seamless data format migrations
-- **CloudKit/Firestore**: Cloud sync capabilities
+- **Cloud sync**: Firebase/Firestore + iCloud Drive backups (not CloudKit habit sync)
 
 ### Core/Debug/
 

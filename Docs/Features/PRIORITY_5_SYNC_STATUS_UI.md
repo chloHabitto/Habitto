@@ -195,7 +195,7 @@ List {
 
 ## Related Files
 
-- `Core/Data/Sync/SyncEngine.swift` - Sync engine implementation
+- `Core/Data/SyncEngine.swift` - Sync engine implementation
 - `Views/Components/SyncSuccessToast.swift` - Success toast
 - `Views/Components/SyncErrorToast.swift` - Error toast
 - `Views/Tabs/HomeTabView.swift` - Home screen

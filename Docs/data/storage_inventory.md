@@ -44,7 +44,7 @@ if UserDefaults.standard.bool(forKey: migrationKey) {
 **Key**: `migrationKey` (specific key not shown in snippet)
 
 ### 5. Legacy Habit Storage Check
-**File**: `Core/Data/Repository/HabitStore.swift:156`
+**File**: `Core/Data/Store/HabitStore.swift:156`
 ```swift
 if let habitsData = UserDefaults.standard.data(forKey: key) {
 ```
@@ -56,7 +56,7 @@ if let habitsData = UserDefaults.standard.data(forKey: key) {
 - `"LegacyHabits"`
 
 ### 6. Migration Completion Flag
-**File**: `Core/Data/Repository/HabitStore.swift` (referenced in data_layer_fix_plan.md:508)
+**File**: `Core/Data/Store/HabitStore.swift` (referenced in data_layer_fix_plan.md:508)
 ```swift
 userDefaults.set(true, forKey: "migration_to_swiftdata_complete")
 ```
@@ -122,7 +122,7 @@ class HabitStorageManager {
 **Issue**: Cached business data that survives app lifecycle
 
 ### 4. HabitStore Actor
-**File**: `Core/Data/Repository/HabitStore.swift:10`
+**File**: `Core/Data/Store/HabitStore.swift:10`
 ```swift
 final actor HabitStore {
     static let shared = HabitStore()

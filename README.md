@@ -30,9 +30,11 @@ App/
 Core/
 ├── Data/                    # Data management and persistence
 │   ├── HabitRepository.swift           # Live UI-facing singleton (HabitRepository.shared)
-│   ├── HabitStore.swift                # Actor backing HabitRepository
-│   ├── Protocols/                      # Data access protocols
-│   │   └── DataStorageProtocol.swift
+│   ├── DataStorageProtocol.swift       # Data access protocols
+│   ├── FirestoreRepository.swift       # Firestore repository helpers
+│   ├── SyncEngine.swift                # Sync engine
+│   ├── Store/                          # HabitStore actor (backs HabitRepository)
+│   │   └── HabitStore.swift
 │   ├── Storage/                        # Storage implementations
 │   │   ├── UserDefaultsStorage.swift
 │   │   ├── SwiftDataStorage.swift     # Primary local persistence (via HabitStore)
@@ -44,8 +46,7 @@ Core/
 │   │   ├── MigrationService.swift
 │   │   ├── StorageMigrations.swift
 │   │   └── DataFormatMigrations.swift
-│   └── Background/                     # Background processing
-│       └── BackgroundQueueManager.swift
+│   └── BackgroundQueueManager.swift    # Background processing
 ├── Models/                  # Data models
 │   └── Habit.swift
 ├── Validation/              # Data validation
