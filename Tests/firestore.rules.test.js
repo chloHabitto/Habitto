@@ -518,14 +518,24 @@ describe('XP Ledger Rules', () => {
     await assertSucceeds(ledgerRef.set(createXPLedgerData()));
   });
 
-  test('User can create ledger entry with negative delta', async () => {
+  test('User cannot create ledger entry with negative delta', async () => {
     const authedDb = testEnv.authenticatedContext('user1').firestore();
     const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event1');
 
-    const validData = createXPLedgerData();
-    validData.delta = -25;
+    const invalidData = createXPLedgerData();
+    invalidData.delta = -25;
 
-    await assertSucceeds(ledgerRef.set(validData));
+    await assertFails(ledgerRef.set(invalidData));
+  });
+
+  test('User cannot create ledger entry with zero delta', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ledgerRef = xpLedgerRef(authedDb, 'user1', 'event-zero');
+
+    const invalidData = createXPLedgerData();
+    invalidData.delta = 0;
+
+    await assertFails(ledgerRef.set(invalidData));
   });
 
   test('User cannot create ledger entry with empty reason', async () => {
@@ -858,6 +868,411 @@ describe('Security gap regression (blanket wildcard)', () => {
     });
 
     await assertFails(ledgerRef.update({ delta: 999 }));
+  });
+});
+
+// ============================================================================
+// DAILY AWARDS
+// ============================================================================
+
+const createDailyAwardSyncData = (userId, dateKey) => ({
+  userId,
+  dateKey,
+  xpGranted: 50,
+  allHabitsCompleted: true,
+  createdAt: new Date(),
+  userIdDateKey: `${userId}#${dateKey}`,
+});
+
+const createDailyAwardBackupData = (dateKey) => ({
+  dateKey,
+  xpGranted: 50,
+  allHabitsCompleted: true,
+  grantedAt: new Date(),
+  syncedAt: new Date(),
+});
+
+const dailyAwardRef = (db, userId, docId) =>
+  db.collection('users').doc(userId).collection('daily_awards').doc(docId);
+
+describe('Daily Awards Rules', () => {
+  test('User can create valid SyncEngine daily award', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', 'user1#2025-10-15');
+
+    await assertSucceeds(ref.set(createDailyAwardSyncData('user1', '2025-10-15')));
+  });
+
+  test('User can create valid backup-schema daily award', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', '2025-10-15');
+
+    await assertSucceeds(ref.set(createDailyAwardBackupData('2025-10-15')));
+  });
+
+  test('User cannot create daily award with non-positive xpGranted', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', '2025-10-16');
+
+    const invalid = createDailyAwardBackupData('2025-10-16');
+    invalid.xpGranted = 0;
+
+    await assertFails(ref.set(invalid));
+  });
+
+  test('User cannot create daily award with invalid dateKey', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', 'bad-date');
+
+    const invalid = createDailyAwardBackupData('10/15/2025');
+    await assertFails(ref.set(invalid));
+  });
+
+  test('User cannot create daily award with non-bool allHabitsCompleted', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', '2025-10-17');
+
+    const invalid = createDailyAwardBackupData('2025-10-17');
+    invalid.allHabitsCompleted = 'yes';
+
+    await assertFails(ref.set(invalid));
+  });
+
+  test('User cannot update daily award (immutable)', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', 'user1#2025-10-18');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await dailyAwardRef(context.firestore(), 'user1', 'user1#2025-10-18').set(
+        createDailyAwardSyncData('user1', '2025-10-18')
+      );
+    });
+
+    await assertFails(ref.update({ xpGranted: 999 }));
+  });
+
+  test('User can delete their own daily award', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', 'user1#2025-10-19');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await dailyAwardRef(context.firestore(), 'user1', 'user1#2025-10-19').set(
+        createDailyAwardSyncData('user1', '2025-10-19')
+      );
+    });
+
+    await assertSucceeds(ref.delete());
+  });
+
+  test('User cannot write another users daily award', async () => {
+    const authedDb = testEnv.authenticatedContext('user2').firestore();
+    const ref = dailyAwardRef(authedDb, 'user1', 'user1#2025-10-20');
+
+    await assertFails(ref.set(createDailyAwardSyncData('user1', '2025-10-20')));
+  });
+});
+
+// ============================================================================
+// DEVICES
+// ============================================================================
+
+const createDeviceData = (deviceId) => ({
+  id: deviceId,
+  deviceName: 'iPhone 15',
+  deviceModel: 'iPhone 15',
+  lastLogin: new Date(),
+  createdAt: new Date(),
+  appVersion: '1.2.3',
+});
+
+const deviceRef = (db, userId, deviceId) =>
+  db.collection('users').doc(userId).collection('devices').doc(deviceId);
+
+describe('Devices Rules', () => {
+  test('User can create valid device', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    await assertSucceeds(
+      deviceRef(authedDb, 'user1', 'device-abc').set(createDeviceData('device-abc'))
+    );
+  });
+
+  test('User cannot create device with mismatched id', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createDeviceData('other-id');
+    await assertFails(deviceRef(authedDb, 'user1', 'device-abc').set(data));
+  });
+
+  test('User cannot create device with empty deviceName', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createDeviceData('device-abc');
+    data.deviceName = '';
+    await assertFails(deviceRef(authedDb, 'user1', 'device-abc').set(data));
+  });
+
+  test('User can update lastLogin and deviceName', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = deviceRef(authedDb, 'user1', 'device-upd');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deviceRef(context.firestore(), 'user1', 'device-upd').set(
+        createDeviceData('device-upd')
+      );
+    });
+
+    await assertSucceeds(
+      ref.update({
+        lastLogin: new Date(),
+        deviceName: 'Chloe Phone',
+        appVersion: '1.2.4',
+      })
+    );
+  });
+
+  test('User cannot change createdAt on device', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = deviceRef(authedDb, 'user1', 'device-immutable');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deviceRef(context.firestore(), 'user1', 'device-immutable').set(
+        createDeviceData('device-immutable')
+      );
+    });
+
+    await assertFails(ref.update({ createdAt: new Date() }));
+  });
+
+  test('User can delete their device', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = deviceRef(authedDb, 'user1', 'device-del');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await deviceRef(context.firestore(), 'user1', 'device-del').set(
+        createDeviceData('device-del')
+      );
+    });
+
+    await assertSucceeds(ref.delete());
+  });
+
+  test('User cannot write another users device', async () => {
+    const authedDb = testEnv.authenticatedContext('user2').firestore();
+    await assertFails(
+      deviceRef(authedDb, 'user1', 'device-x').set(createDeviceData('device-x'))
+    );
+  });
+});
+
+// ============================================================================
+// META / MIGRATION
+// ============================================================================
+
+const createMigrationData = () => ({
+  status: 'running',
+  itemsProcessed: 0,
+  version: '1.0.0',
+  metadata: { started_by: 'system' },
+  startedAt: new Date(),
+});
+
+const migrationRef = (db, userId) =>
+  db.collection('users').doc(userId).collection('meta').doc('migration');
+
+describe('Meta Migration Rules', () => {
+  test('User can create valid migration state', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    await assertSucceeds(migrationRef(authedDb, 'user1').set(createMigrationData()));
+  });
+
+  test('User can write BackfillJob partial migration status', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    await assertSucceeds(
+      migrationRef(authedDb, 'user1').set(
+        { status: 'complete', finishedAt: new Date() },
+        { merge: true }
+      )
+    );
+  });
+
+  test('User cannot write migration with invalid status', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    await assertFails(
+      migrationRef(authedDb, 'user1').set({ status: 'bogus', itemsProcessed: 0 })
+    );
+  });
+
+  test('User cannot write migration with negative itemsProcessed', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const data = createMigrationData();
+    data.itemsProcessed = -1;
+    await assertFails(migrationRef(authedDb, 'user1').set(data));
+  });
+
+  test('User can update migration progress', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = migrationRef(authedDb, 'user1');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await migrationRef(context.firestore(), 'user1').set(createMigrationData());
+    });
+
+    await assertSucceeds(
+      ref.update({
+        itemsProcessed: 10,
+        lastItemKey: 'habit-1',
+        status: 'running',
+      })
+    );
+  });
+
+  test('User can delete migration state', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = migrationRef(authedDb, 'user1');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await migrationRef(context.firestore(), 'user1').set(createMigrationData());
+    });
+
+    await assertSucceeds(ref.delete());
+  });
+
+  test('User cannot write another users migration state', async () => {
+    const authedDb = testEnv.authenticatedContext('user2').firestore();
+    await assertFails(migrationRef(authedDb, 'user1').set(createMigrationData()));
+  });
+});
+
+// ============================================================================
+// SYNCENGINE COMPLETION BUCKETS
+// ============================================================================
+
+const createSyncCompletionData = (userId, habitId, dateKey) => ({
+  userId,
+  habitId,
+  dateKey,
+  isCompleted: true,
+  progress: 1,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  completionId: `comp_${habitId}_${dateKey}`,
+});
+
+const syncCompletionRef = (db, userId, yearMonth, recordId, subcollection = 'completions') =>
+  db
+    .collection('users')
+    .doc(userId)
+    .collection('completions')
+    .doc(yearMonth)
+    .collection(subcollection)
+    .doc(recordId);
+
+describe('SyncEngine Completion Bucket Rules', () => {
+  test('User can create valid completion in completions bucket', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = syncCompletionRef(
+      authedDb,
+      'user1',
+      '2025-10',
+      'comp_habit1_2025-10-15'
+    );
+
+    await assertSucceeds(
+      ref.set(createSyncCompletionData('user1', 'habit1', '2025-10-15'))
+    );
+  });
+
+  test('User can create valid completion in legacy records bucket', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = syncCompletionRef(
+      authedDb,
+      'user1',
+      '2025-10',
+      'comp_habit1_2025-10-15',
+      'records'
+    );
+
+    await assertSucceeds(
+      ref.set(createSyncCompletionData('user1', 'habit1', '2025-10-15'))
+    );
+  });
+
+  test('User cannot create sync completion with negative progress', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = syncCompletionRef(authedDb, 'user1', '2025-10', 'bad-progress');
+    const data = createSyncCompletionData('user1', 'habit1', '2025-10-15');
+    data.progress = -1;
+
+    await assertFails(ref.set(data));
+  });
+
+  test('User cannot create sync completion with invalid dateKey', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = syncCompletionRef(authedDb, 'user1', '2025-10', 'bad-date');
+    const data = createSyncCompletionData('user1', 'habit1', '10-15-2025');
+
+    await assertFails(ref.set(data));
+  });
+
+  test('User cannot create sync completion with invalid yearMonth path', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    // Must stay a single path segment (no '/'); use a non YYYY-MM value
+    const ref = syncCompletionRef(authedDb, 'user1', '202510', 'bad-ym');
+
+    await assertFails(
+      ref.set(createSyncCompletionData('user1', 'habit1', '2025-10-15'))
+    );
+  });
+
+  test('User cannot create sync completion missing required fields', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = syncCompletionRef(authedDb, 'user1', '2025-10', 'incomplete');
+
+    await assertFails(
+      ref.set({
+        habitId: 'habit1',
+        progress: 1,
+      })
+    );
+  });
+
+  test('User can update sync completion progress', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = syncCompletionRef(authedDb, 'user1', '2025-10', 'comp-upd');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await syncCompletionRef(context.firestore(), 'user1', '2025-10', 'comp-upd').set(
+        createSyncCompletionData('user1', 'habit1', '2025-10-15')
+      );
+    });
+
+    await assertSucceeds(
+      ref.update({
+        progress: 3,
+        isCompleted: true,
+        updatedAt: new Date(),
+      })
+    );
+  });
+
+  test('User can delete sync completion', async () => {
+    const authedDb = testEnv.authenticatedContext('user1').firestore();
+    const ref = syncCompletionRef(authedDb, 'user1', '2025-10', 'comp-del');
+
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await syncCompletionRef(context.firestore(), 'user1', '2025-10', 'comp-del').set(
+        createSyncCompletionData('user1', 'habit1', '2025-10-15')
+      );
+    });
+
+    await assertSucceeds(ref.delete());
+  });
+
+  test('User cannot write another users sync completion', async () => {
+    const authedDb = testEnv.authenticatedContext('user2').firestore();
+    const ref = syncCompletionRef(authedDb, 'user1', '2025-10', 'comp-x');
+
+    await assertFails(
+      ref.set(createSyncCompletionData('user1', 'habit1', '2025-10-15'))
+    );
   });
 });
 

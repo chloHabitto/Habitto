@@ -43,6 +43,154 @@ service cloud.firestore {
       return field is timestamp;
     }
 
+    function isNonEmptyString(value, maxLen) {
+      return value is string && value.size() > 0 && value.size() <= maxLen;
+    }
+
+    // Doc id is either YYYY-MM-DD (FirebaseBackupService) or "{userId}#{dateKey}" (SyncEngine)
+    function isValidDailyAwardDocId(docId) {
+      return isValidDateString(docId)
+        || (docId is string && docId.matches('^.+#[0-9]{4}-[0-9]{2}-[0-9]{2}$'));
+    }
+
+    // Shared field checks for daily_awards (SyncEngine + backup + FirestoreService shapes)
+    function isValidDailyAwardData() {
+      return request.resource.data.xpGranted is int
+        && request.resource.data.xpGranted > 0
+        && request.resource.data.allHabitsCompleted is bool
+        && (
+          (request.resource.data.keys().hasAny(['dateKey'])
+            && isValidDateString(request.resource.data.dateKey))
+          || (request.resource.data.keys().hasAny(['date'])
+            && isValidDateString(request.resource.data.date))
+        )
+        && (
+          !request.resource.data.keys().hasAny(['userId'])
+          || (request.resource.data.userId is string
+              && request.resource.data.userId == request.auth.uid)
+        )
+        && (
+          // SyncEngine: createdAt timestamp
+          (request.resource.data.keys().hasAny(['createdAt'])
+            && hasTimestamp(request.resource.data.createdAt))
+          // FirebaseBackupService / FirestoreDailyAward: grantedAt timestamp
+          || (request.resource.data.keys().hasAny(['grantedAt'])
+            && hasTimestamp(request.resource.data.grantedAt))
+        )
+        && (
+          !request.resource.data.keys().hasAny(['syncedAt'])
+          || hasTimestamp(request.resource.data.syncedAt)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['habitCount'])
+          || (request.resource.data.habitCount is int
+              && request.resource.data.habitCount >= 0)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['bonusXP'])
+          || (request.resource.data.bonusXP is int
+              && request.resource.data.bonusXP >= 0)
+        );
+    }
+
+    // SyncEngine / FirebaseBackupService completion bucket documents
+    function isValidSyncCompletionData(userId) {
+      return request.resource.data.keys().hasAll([
+          'habitId', 'dateKey', 'isCompleted', 'progress', 'createdAt', 'updatedAt'
+        ])
+        && isNonEmptyString(request.resource.data.habitId, 100)
+        && isValidDateString(request.resource.data.dateKey)
+        && request.resource.data.isCompleted is bool
+        && isValidCount(request.resource.data.progress)
+        && hasTimestamp(request.resource.data.createdAt)
+        && hasTimestamp(request.resource.data.updatedAt)
+        && (
+          !request.resource.data.keys().hasAny(['userId'])
+          || (request.resource.data.userId is string
+              && request.resource.data.userId == userId)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['completionId'])
+          || isNonEmptyString(request.resource.data.completionId, 200)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['date'])
+          || hasTimestamp(request.resource.data.date)
+        );
+    }
+
+    function isValidMigrationStatus(status) {
+      // MigrationStateData uses "completed"; FirebaseMigrationState / DualWrite use "complete"
+      return status is string && status in [
+        'not_started', 'running', 'paused', 'completed', 'complete', 'failed', 'cancelled'
+      ];
+    }
+
+    function isValidMigrationData() {
+      return request.resource.data.keys().hasAny(['status'])
+        && isValidMigrationStatus(request.resource.data.status)
+        && (
+          !request.resource.data.keys().hasAny(['itemsProcessed'])
+          || (request.resource.data.itemsProcessed is int
+              && request.resource.data.itemsProcessed >= 0)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['totalItems'])
+          || request.resource.data.totalItems == null
+          || (request.resource.data.totalItems is int
+              && request.resource.data.totalItems >= 0)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['version'])
+          || isNonEmptyString(request.resource.data.version, 50)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['error'])
+          || request.resource.data.error == null
+          || (request.resource.data.error is string
+              && request.resource.data.error.size() <= 2000)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['lastItemKey'])
+          || request.resource.data.lastItemKey == null
+          || (request.resource.data.lastItemKey is string
+              && request.resource.data.lastItemKey.size() <= 500)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['lastKey'])
+          || request.resource.data.lastKey == null
+          || (request.resource.data.lastKey is string
+              && request.resource.data.lastKey.size() <= 500)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['startedAt'])
+          || request.resource.data.startedAt == null
+          || hasTimestamp(request.resource.data.startedAt)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['finishedAt'])
+          || request.resource.data.finishedAt == null
+          || hasTimestamp(request.resource.data.finishedAt)
+        )
+        && (
+          !request.resource.data.keys().hasAny(['metadata'])
+          || request.resource.data.metadata is map
+        );
+    }
+
+    function isValidDeviceData(deviceId) {
+      return request.resource.data.keys().hasAll([
+          'id', 'deviceName', 'deviceModel', 'lastLogin', 'createdAt', 'appVersion'
+        ])
+        && request.resource.data.id is string
+        && request.resource.data.id == deviceId
+        && isNonEmptyString(request.resource.data.deviceName, 100)
+        && isNonEmptyString(request.resource.data.deviceModel, 100)
+        && isNonEmptyString(request.resource.data.appVersion, 50)
+        && hasTimestamp(request.resource.data.lastLogin)
+        && hasTimestamp(request.resource.data.createdAt);
+    }
+
     // -------------------------------------------------------------------------
     // User-scoped access
     //
@@ -154,24 +302,43 @@ service cloud.firestore {
     }
 
     // Backup / SyncEngine completions (year-month buckets)
+    // Primary write path: .../completions/{yearMonth}/completions/{recordId}
+    // Legacy path:        .../completions/{yearMonth}/records/{recordId} (read/migrate/delete)
     match /users/{userId}/completions/{yearMonth}/records/{recordId} {
       allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId)
-        && isValidYearMonth(yearMonth);
+
+      allow create, update: if isSignedIn() && isOwner(userId)
+        && isValidYearMonth(yearMonth)
+        && isValidSyncCompletionData(userId);
+
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
     match /users/{userId}/completions/{yearMonth}/completions/{recordId} {
       allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId)
-        && isValidYearMonth(yearMonth);
+
+      allow create, update: if isSignedIn() && isOwner(userId)
+        && isValidYearMonth(yearMonth)
+        && isValidSyncCompletionData(userId);
+
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
     // -------------------------------------------------------------------------
-    // Daily awards
+    // Daily awards — create/delete only (ledger-like)
+    // SyncEngine path:  /users/{uid}/daily_awards/{userId}#{dateKey}
+    // Backup path:      /users/{uid}/daily_awards/{dateKey}
+    // Revocation / integrity cleanup deletes the doc; clients must not mutate awards.
     // -------------------------------------------------------------------------
-    match /users/{userId}/daily_awards/{dateKey} {
+    match /users/{userId}/daily_awards/{awardDocId} {
       allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId)
+        && isValidDailyAwardDocId(awardDocId)
+        && isValidDailyAwardData();
+
+      allow update: if false;
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
     // -------------------------------------------------------------------------
@@ -195,6 +362,11 @@ service cloud.firestore {
     // XP ledger — append-only
     // Test / documented path: /users/{uid}/xp/ledger/entries/{eventId}
     // App path (FirestoreRepository): /users/{uid}/xp_ledger/{eventId}
+    //
+    // delta must be > 0. Negative XP reversals are NOT written to the ledger:
+    // DailyAwardService deletes DailyAward / daily_awards docs and recalculates
+    // xp/state instead. The only FirestoreRepository.awardXP call site
+    // (FirestoreRepoDemoView) always passes a positive delta.
     // -------------------------------------------------------------------------
     match /users/{userId}/xp/ledger/entries/{eventId} {
       allow read: if isSignedIn() && isOwner(userId);
@@ -202,6 +374,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(userId)
         && request.resource.data.keys().hasAll(['delta', 'reason'])
         && request.resource.data.delta is int
+        && request.resource.data.delta > 0
         && request.resource.data.reason is string
         && request.resource.data.reason.size() > 0
         && request.resource.data.reason.size() <= 500
@@ -222,6 +395,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(userId)
         && request.resource.data.keys().hasAll(['delta', 'reason'])
         && request.resource.data.delta is int
+        && request.resource.data.delta > 0
         && request.resource.data.reason is string
         && request.resource.data.reason.size() > 0
         && request.resource.data.reason.size() <= 500
@@ -257,14 +431,34 @@ service cloud.firestore {
     }
 
     // -------------------------------------------------------------------------
-    // Meta / devices (owner-only; no extra field schema required here)
+    // Meta / devices
     // -------------------------------------------------------------------------
+    // Migration state is intentionally mutable (progress updates, resume, reset).
+    // Supports MigrationStateData (status/itemsProcessed/version/metadata) and
+    // FirebaseMigrationState / BackfillJob (status/lastKey, partial merges).
     match /users/{userId}/meta/migration {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create, update: if isSignedIn() && isOwner(userId)
+        && isValidMigrationData();
+
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
+    // Device registration is mutable: lastLogin updates on every launch,
+    // deviceName is user-editable; createdAt must not change after create.
     match /users/{userId}/devices/{deviceId} {
-      allow read, write: if isSignedIn() && isOwner(userId);
+      allow read: if isSignedIn() && isOwner(userId);
+
+      allow create: if isSignedIn() && isOwner(userId)
+        && isValidDeviceData(deviceId);
+
+      allow update: if isSignedIn() && isOwner(userId)
+        && isValidDeviceData(deviceId)
+        && !request.resource.data.diff(resource.data).affectedKeys()
+             .hasAny(['createdAt', 'id']);
+
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
     // -------------------------------------------------------------------------
