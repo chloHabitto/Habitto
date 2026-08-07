@@ -21,109 +21,107 @@ class BackgroundQueueManager: ObservableObject {
   @Published var isProcessing = false
   @Published var activeOperations = 0
 
+  // MARK: - Operation Counter
+
+  /// Begin tracking a background operation. Must be called on the main actor
+  /// before hopping onto a GCD queue.
+  private func beginOperation() {
+    activeOperations += 1
+    isProcessing = true
+  }
+
+  /// End tracking a background operation. Floors at 0 as a safety net;
+  /// callers must still pair every begin with exactly one end.
+  private func endOperation() {
+    activeOperations = max(0, activeOperations - 1)
+    if activeOperations == 0 {
+      isProcessing = false
+    }
+  }
+
   // MARK: - Public Methods
 
   /// Execute a task on the background queue
   func execute<T>(_ task: @escaping () throws -> T) async throws -> T {
-    try await withCheckedThrowingContinuation { continuation in
-      backgroundQueue.async { [weak self] in
-        do {
-          let result = try task()
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
+    beginOperation()
+    do {
+      let result = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, Error>) in
+        backgroundQueue.async {
+          do {
+            continuation.resume(returning: try task())
+          } catch {
+            continuation.resume(throwing: error)
           }
-          continuation.resume(returning: result)
-        } catch {
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
-          }
-          continuation.resume(throwing: error)
         }
       }
+      endOperation()
+      return result
+    } catch {
+      endOperation()
+      throw error
     }
   }
 
   /// Execute a task on the background queue without returning a value
   func execute(_ task: @escaping () throws -> Void) async throws {
-    try await withCheckedThrowingContinuation { continuation in
-      backgroundQueue.async { [weak self] in
-        do {
-          try task()
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
+    beginOperation()
+    do {
+      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        backgroundQueue.async {
+          do {
+            try task()
+            continuation.resume()
+          } catch {
+            continuation.resume(throwing: error)
           }
-          continuation.resume()
-        } catch {
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
-          }
-          continuation.resume(throwing: error)
         }
       }
+      endOperation()
+    } catch {
+      endOperation()
+      throw error
     }
   }
 
   /// Execute a task on the serial queue (for operations that need to be sequential)
   func executeSerial<T>(_ task: @escaping () throws -> T) async throws -> T {
-    try await withCheckedThrowingContinuation { continuation in
-      serialQueue.async { [weak self] in
-        do {
-          let result = try task()
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
+    beginOperation()
+    do {
+      let result = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<T, Error>) in
+        serialQueue.async {
+          do {
+            continuation.resume(returning: try task())
+          } catch {
+            continuation.resume(throwing: error)
           }
-          continuation.resume(returning: result)
-        } catch {
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
-          }
-          continuation.resume(throwing: error)
         }
       }
+      endOperation()
+      return result
+    } catch {
+      endOperation()
+      throw error
     }
   }
 
   /// Execute a task on the serial queue without returning a value
   func executeSerial(_ task: @escaping () throws -> Void) async throws {
-    try await withCheckedThrowingContinuation { continuation in
-      serialQueue.async { [weak self] in
-        do {
-          try task()
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
+    beginOperation()
+    do {
+      try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+        serialQueue.async {
+          do {
+            try task()
+            continuation.resume()
+          } catch {
+            continuation.resume(throwing: error)
           }
-          continuation.resume()
-        } catch {
-          Task { @MainActor in
-            self?.activeOperations -= 1
-            if self?.activeOperations == 0 {
-              self?.isProcessing = false
-            }
-          }
-          continuation.resume(throwing: error)
         }
       }
+      endOperation()
+    } catch {
+      endOperation()
+      throw error
     }
   }
 
@@ -132,29 +130,18 @@ class BackgroundQueueManager: ObservableObject {
     _ task: @escaping () throws -> T,
     completion: @escaping (Result<T, Error>) -> Void)
   {
-    Task { @MainActor in
-      activeOperations += 1
-      isProcessing = true
-    }
+    beginOperation()
 
     backgroundQueue.async { [weak self] in
+      let outcome: Result<T, Error>
       do {
-        let result = try task()
-        Task { @MainActor in
-          self?.activeOperations -= 1
-          if self?.activeOperations == 0 {
-            self?.isProcessing = false
-          }
-        }
-        completion(.success(result))
+        outcome = .success(try task())
       } catch {
-        Task { @MainActor in
-          self?.activeOperations -= 1
-          if self?.activeOperations == 0 {
-            self?.isProcessing = false
-          }
-        }
-        completion(.failure(error))
+        outcome = .failure(error)
+      }
+      Task { @MainActor in
+        self?.endOperation()
+        completion(outcome)
       }
     }
   }
@@ -164,29 +151,18 @@ class BackgroundQueueManager: ObservableObject {
     _ task: @escaping () throws -> T,
     completion: @escaping (Result<T, Error>) -> Void)
   {
-    Task { @MainActor in
-      activeOperations += 1
-      isProcessing = true
-    }
+    beginOperation()
 
     serialQueue.async { [weak self] in
+      let outcome: Result<T, Error>
       do {
-        let result = try task()
-        Task { @MainActor in
-          self?.activeOperations -= 1
-          if self?.activeOperations == 0 {
-            self?.isProcessing = false
-          }
-        }
-        completion(.success(result))
+        outcome = .success(try task())
       } catch {
-        Task { @MainActor in
-          self?.activeOperations -= 1
-          if self?.activeOperations == 0 {
-            self?.isProcessing = false
-          }
-        }
-        completion(.failure(error))
+        outcome = .failure(error)
+      }
+      Task { @MainActor in
+        self?.endOperation()
+        completion(outcome)
       }
     }
   }
@@ -264,3 +240,65 @@ extension BackgroundQueueManager {
     }
   }
 }
+
+#if DEBUG
+extension BackgroundQueueManager {
+  /// Focused repro for operation-counter drift.
+  /// Fires concurrent async + completion-handler work and reports the final counter state.
+  func runCounterIntegrityRepro() async -> (passed: Bool, activeOperations: Int, isProcessing: Bool) {
+    enum ReproError: Error { case boom }
+
+    await withTaskGroup(of: Void.self) { group in
+      for _ in 0..<6 {
+        group.addTask { @MainActor in
+          _ = try? await self.execute {
+            Thread.sleep(forTimeInterval: 0.005)
+            return 1
+          }
+        }
+        group.addTask { @MainActor in
+          _ = try? await self.execute { throw ReproError.boom }
+        }
+        group.addTask { @MainActor in
+          _ = try? await self.executeSerial {
+            Thread.sleep(forTimeInterval: 0.005)
+            return 1
+          }
+        }
+        group.addTask { @MainActor in
+          _ = try? await self.executeSerial { throw ReproError.boom }
+        }
+      }
+
+      for _ in 0..<4 {
+        group.addTask { @MainActor in
+          await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            self.execute({
+              Thread.sleep(forTimeInterval: 0.005)
+              return 1
+            }, completion: { _ in cont.resume() })
+          }
+        }
+        group.addTask { @MainActor in
+          await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            self.execute({ throw ReproError.boom }, completion: { _ in cont.resume() })
+          }
+        }
+        group.addTask { @MainActor in
+          await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            self.executeSerial({ 1 }, completion: { _ in cont.resume() })
+          }
+        }
+        group.addTask { @MainActor in
+          await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            self.executeSerial({ throw ReproError.boom }, completion: { _ in cont.resume() })
+          }
+        }
+      }
+    }
+
+    let passed = activeOperations == 0 && isProcessing == false
+    return (passed, activeOperations, isProcessing)
+  }
+}
+#endif
